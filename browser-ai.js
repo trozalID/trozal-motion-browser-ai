@@ -354,9 +354,13 @@ async function composeMetadataFromCaptions(captions, groundedEvidence = "") {
     });
     const raw = result?.choices?.[0]?.message?.content || "";
     try {
-      return { parsed: parseMetadataJson(raw), evidence, source: "browser-ai" };
+      const parsed = parseMetadataJson(raw);
+      const title = String(parsed.title || "").trim();
+      const description = String(parsed.description || "").trim();
+      if (!title || !description) throw new Error("Model bahasa mengembalikan JSON tanpa judul/deskripsi.");
+      return { parsed: { ...parsed, title, description }, evidence, source: "browser-ai" };
     } catch (parseError) {
-      setVisionStatus("Format JSON AI tidak valid. Menggunakan metadata cadangan dari caption visual…");
+      setVisionStatus("Output AI kosong/tidak valid. Membuat metadata cadangan dari caption visual…");
       return { parsed: fallback(), evidence, source: "caption-fallback", parseWarning: parseError.message };
     }
   } catch (error) {
@@ -400,13 +404,13 @@ function applyBrowserMetadata(parsed, captions, evidenceLabel, visualEvidence = 
   if (typeof scheduleAutosave === "function") scheduleAutosave();
   return { title, description, category, keywords };
 }
-async function analyzeCurrentPreviewWithBrowserVision() {
+async function analyzeCurrentPreviewWithBrowserVision(options = {}) {
   const button = $("trozalVisionAnalyzeBtn");
   if (button?.disabled) return;
   if (button) button.disabled = true;
   try {
     let images = [];
-    const selected = [...($("trozalVisionImages")?.files || [])].slice(0, 3);
+    const selected = options.forcePreview ? [] : [...($("trozalVisionImages")?.files || [])].slice(0, 3);
     if (selected.length) {
       for (const file of selected) {
         if (file.size > 12 * 1024 * 1024) throw new Error("Ukuran " + file.name + " melebihi 12 MB.");
@@ -464,9 +468,10 @@ async function analyzeSourceWithBrowserVision(kind) {
     try{frameChanges=await measureFrameChanges(images);}catch(_){}
     const groundedEvidence=buildGroundedVisionEvidence(captions,objectEvidence,frameChanges);
     setMetadataSourceStatus("Menyusun metadata berdasarkan caption dan deteksi objek…");
-    const {parsed}=await composeMetadataFromCaptions(captions,groundedEvidence);
-    applyBrowserMetadata(parsed,captions,source.label,{objects:objectEvidence.objects,averageChange:frameChanges.averageChange});
-    setMetadataSourceStatus("SELESAI · Metadata " + source.label + " dihasilkan dari " + captions.length + " frame Preview aktual.");
+    const {parsed,source:metadataEngine}=await composeMetadataFromCaptions(captions,groundedEvidence);
+    const applied=applyBrowserMetadata(parsed,captions,source.label,{objects:objectEvidence.objects,averageChange:frameChanges.averageChange});
+    setMetadataSourceStatus("SELESAI · Metadata " + source.label + " dihasilkan dari " + captions.length + " frame Preview aktual" + (metadataEngine==="caption-fallback" ? " menggunakan fallback caption karena model bahasa tidak menghasilkan metadata lengkap." : "."));
+    window.trozalMetadataSceneLastAnalysis={createdAt:new Date().toISOString(),source:source.label,metadataEngine,...applied,captions,objects:objectEvidence.objects,averageChange:frameChanges.averageChange};
   } catch (error) {
     setMetadataSourceStatus("GAGAL · " + (error?.message || String(error)), true);
   } finally {
@@ -524,20 +529,40 @@ async function analyzeWithGeminiCloud() {
     ].join("\n");
     setCloudStatus("Mengirim " + images.length + " frame ke Gemini Cloud Accurate…");
     const parts = [{ text: prompt }, ...images.map(data => ({ inlineData: { mimeType: "image/jpeg", data } }))];
-    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts }],
-        generationConfig: { temperature: 0.15, maxOutputTokens: 1400, responseMimeType: "application/json" }
-      }),
-      signal: controller.signal
+    const requestBody = JSON.stringify({
+      contents: [{ role: "user", parts }],
+      generationConfig: { temperature: 0.15, maxOutputTokens: 1400, responseMimeType: "application/json" }
     });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      const detail = payload?.error?.message || ("HTTP " + response.status);
-      throw new Error(detail + (response.status === 400 || response.status === 404 ? " · Periksa model/API key dan akses Gemini API." : ""));
+    const models = ["gemini-3.8-flash", "gemini-3.5-flash-lite"];
+    let response = null, payload = {}, activeModel = models[0], lastFailure = "";
+    for (let modelIndex = 0; modelIndex < models.length; modelIndex++) {
+      activeModel = models[modelIndex];
+      const attempts = modelIndex === 0 ? 3 : 2;
+      for (let attempt = 0; attempt < attempts; attempt++) {
+        setCloudStatus("Menghubungi " + activeModel + " · percobaan " + (attempt + 1) + "/" + attempts + "…");
+        response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + activeModel + ":generateContent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+          body: requestBody,
+          signal: controller.signal
+        });
+        payload = await response.json().catch(() => ({}));
+        if (response.ok) break;
+        const detail = payload?.error?.message || ("HTTP " + response.status);
+        lastFailure = detail;
+        const transient = response.status === 429 || response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504;
+        if (!transient) throw new Error(detail + (response.status === 400 || response.status === 401 || response.status === 403 || response.status === 404 ? " · Periksa API key, akses Gemini API, dan nama model." : ""));
+        if (attempt + 1 < attempts) {
+          const retryHeader = Number(response.headers.get("Retry-After"));
+          const waitMs = Number.isFinite(retryHeader) && retryHeader > 0 ? Math.min(15000, retryHeader * 1000) : 1200 * Math.pow(2, attempt);
+          setCloudStatus("Gemini sedang padat / membatasi permintaan. Mencoba ulang dalam " + Math.ceil(waitMs / 1000) + " detik…");
+          await new Promise(resolve => setTimeout(resolve, waitMs));
+        }
+      }
+      if (response?.ok) break;
+      if (modelIndex + 1 < models.length) setCloudStatus("Model utama sedang padat. Beralih ke Gemini Flash Lite…");
     }
+    if (!response?.ok) throw new Error("Gemini sedang tidak tersedia setelah percobaan ulang dan fallback model. " + lastFailure + " · Coba beberapa menit lagi.");
     const raw = (payload?.candidates?.[0]?.content?.parts || []).map(part => part.text || "").join("");
     const parsed = parseMetadataJson(raw);
     const title = String(parsed.title || "").trim();
@@ -554,7 +579,7 @@ async function analyzeWithGeminiCloud() {
     const category = categoryOptions.find(value => value.toLowerCase() === String(parsed.category || "").trim().toLowerCase()) || "Graphic Resources";
     const applied = applyBrowserMetadata({ ...parsed, title, description, category, keywords }, [String(parsed.visual_summary || ""), ...(Array.isArray(parsed.visible_objects) ? parsed.visible_objects : [])].filter(Boolean), "Gemini Cloud Accurate", { objects: (Array.isArray(parsed.visible_objects) ? parsed.visible_objects : []).map(label => ({ label: String(label) })), averageChange: null });
     if ($("metadataEvidence")) $("metadataEvidence").textContent = "GEMINI CLOUD ACCURATE · " + images.length + " frame dianalisis. " + String(parsed.visual_summary || "") + (parsed.motion_evidence ? " Bukti gerak: " + parsed.motion_evidence : "") + (parsed.confidence_notes ? " Catatan: " + parsed.confidence_notes : "") + " · Periksa hasil sebelum ekspor.";
-    window.trozalGeminiLastAnalysis = { model: "gemini-3.8-flash", createdAt: new Date().toISOString(), ...applied, visualSummary: parsed.visual_summary || "", visibleObjects: parsed.visible_objects || [], motionEvidence: parsed.motion_evidence || "", confidenceNotes: parsed.confidence_notes || "" };
+    window.trozalGeminiLastAnalysis = { model: activeModel, createdAt: new Date().toISOString(), ...applied, visualSummary: parsed.visual_summary || "", visibleObjects: parsed.visible_objects || [], motionEvidence: parsed.motion_evidence || "", confidenceNotes: parsed.confidence_notes || "" };
     setCloudStatus("SELESAI · Judul, deskripsi, kategori, dan " + keywords.length + " keyword berhasil dibuat. Periksa sebelum ekspor.");
   } catch (error) {
     setCloudStatus((error?.name === "AbortError" ? "Waktu analisis habis (120 detik)." : (error?.message || String(error))), true);
