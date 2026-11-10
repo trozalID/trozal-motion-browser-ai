@@ -3988,7 +3988,7 @@ async function trozalMetadataAnalyzeSource(kind){
 // Browser Vision module handles source analysis.
 
 /* TROZAL LOCAL VISION — visual-first metadata through Ollama on the user's PC */
-let trozalLocalVisionLastAnalysis=null;
+var trozalLocalVisionLastAnalysis=null; // Hoisted so earlier metadata quality helpers can safely read it.
 const TROZAL_VISION_BASE=(location.hostname==='127.0.0.1'||location.hostname==='localhost')?location.origin:'http://127.0.0.1:11435';
 const TROZAL_VISION_ORIGIN='https://irzalbudiman2-cell.github.io';
 function trozalVisionSetStatus(message,isError=false){
