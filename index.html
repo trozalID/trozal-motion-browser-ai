@@ -4045,7 +4045,7 @@ async function trozalVisionResizeImage(dataUrl,maxSide=1280){
 async function trozalVisionCapturePreviewFrames(){
  if(playing)throw new Error('Hentikan Putar terlebih dahulu agar frame yang dianalisis stabil.');
  const stage=$('stage');if(!stage)throw new Error('Area Preview tidak ditemukan.');
- const original=playhead,duration=Math.max(.1,+$('duration').value||10),times=[0,duration*.25,duration*.5,duration*.75,duration*.95],images=[];
+ const original=playhead,duration=Math.max(.1,+$('duration').value||10),times=[0,duration*.5,duration*.95],images=[];
  try{
   const renderer=htmlMotionIframe?.contentDocument?null:await ensureHtmlToImage();
   for(let i=0;i<times.length;i++){
