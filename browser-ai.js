@@ -373,18 +373,17 @@ function applyBrowserMetadata(parsed, captions, evidenceLabel, visualEvidence = 
   const detectedLabels = (visualEvidence.objects || []).map(item => item.label);
   const evidenceText = captions.concat(detectedLabels).join(" ").toLowerCase();
   const evidenceTokens = new Set(evidenceText.match(/[a-z0-9]+/g) || []);
-  const stopWords = new Set(["the","a","an","and","or","with","on","in","at","of","to","is","are","this","that","from","image","picture","photo","frame","showing","shows","there","its"]);
+  const stopWords = new Set(["the","a","an","and","or","with","on","in","at","of","to","is","are","this","that","from","image","picture","photo","frame","showing","shows","there","its","for"]);
   const modelKeywords = (Array.isArray(parsed.keywords) ? parsed.keywords : [])
-    .map((item) => String(item).trim().toLowerCase().replace(/\\s+/g, " "))
+    .map((item) => String(item).trim().toLowerCase().replace(/\s+/g, " "))
     .filter((item) => {
       const words = item.match(/[a-z0-9]+/g) || [];
-      return words.length > 0 && words.length <= 4 && words.some((word) => evidenceTokens.has(word)) &&
-        words.every((word) => stopWords.has(word) || evidenceTokens.has(word));
+      return words.length > 0 && words.length <= 5 && words.some((word) => evidenceTokens.has(word));
     });
   const evidenceWords = (captions.join(" ") + " " + detectedLabels.join(" "))
     .toLowerCase().match(/[a-z][a-z-]{2,}/g) || [];
   const fallbackKeywords = evidenceWords.filter((word) => !stopWords.has(word));
-  const keywords = [...new Set([...modelKeywords, ...fallbackKeywords])].slice(0, 20);
+  const keywords = [...new Set([...modelKeywords, ...fallbackKeywords])].slice(0, 25);
   $("metadataTitle").value = title;
   $("metadataTitle").dataset.baseTitle = title;
   $("metadataDescription").value = description;
