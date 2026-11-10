@@ -39,6 +39,7 @@ jobs:
           set -euo pipefail
           mkdir -p site/vendor/ffmpeg site/vendor/prores-core
           cp index.html site/index.html
+          cp browser-ai.js site/browser-ai.js
           touch site/.nojekyll
 
       - name: Validate inline JavaScript syntax
