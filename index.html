@@ -721,41 +721,32 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
    <label>Deskripsi visual yang benar-benar terlihat (prioritas utama)</label><textarea id="metadataSubject" rows="3" placeholder="Contoh: Sebuah cincin berlian berputar perlahan di atas kain beludru hitam. Tuliskan hanya yang benar-benar tampak pada hasil akhir."></textarea>
    <p class="help">Isi kolom ini setelah memeriksa preview atau hasil render. Prompt AI dan rencana scene hanya menunjukkan niat pembuatan, bukan bukti bahwa objek benar-benar muncul.</p>
    <div id="metadataEvidence" class="metadata-evidence">Belum dianalisis. Sistem akan memisahkan deskripsi terverifikasi, prompt/rencana, dan teks SVG/HTML.</div>
-   <section class="metadata-evidence" id="trozalLocalVisionPanel" style="display:none;margin-top:12px;border:1px solid #269b75;background:rgba(20,150,105,.07)">
-    <div style="font-weight:800;color:#38c995;margin-bottom:6px">✦ TROZAL LOCAL VISION · AI BERDASARKAN GAMBAR</div>
-    <p class="help">Analisis dilakukan oleh model lokal di PC Anda. Gambar preview tidak dikirim ke OpenAI atau layanan cloud.</p>
+   <section class="metadata-evidence" id="trozalLocalVisionPanel" style="margin-top:12px;border:1px solid #269b75;background:rgba(20,150,105,.07)">
+    <div style="font-weight:800;color:#38c995;margin-bottom:6px">✦ TROZAL BROWSER VISION · METADATA DARI PIXEL</div>
+    <p class="help">Model image-captioning dijalankan di browser. Sistem membaca frame hasil Preview, lalu menyusun judul, deskripsi, kategori, dan keyword berdasarkan caption visual. Tidak memakai Ollama atau Bridge.</p>
     <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap">
-     <button type="button" id="trozalVisionCheckBtn">↻ Cek Ollama</button>
-     <select id="trozalVisionModel" aria-label="Model AI Vision" style="flex:1;min-width:150px"><option value="qwen3-vl:2b">Qwen3-VL 2B · disarankan</option><option value="qwen3-vl:4b">Qwen3-VL 4B · lebih berat</option></select>
+     <button type="button" id="trozalVisionCheckBtn">Periksa Browser Vision</button>
+     <span class="help">GPU WebGPU diutamakan · CPU fallback tersedia</span>
     </div>
-    <div id="trozalVisionConnection" class="help" aria-live="polite">Belum terhubung · Ollama lokal: http://127.0.0.1:11435</div>
     <label style="margin-top:8px">Gambar bukti (opsional)</label>
     <input type="file" id="trozalVisionImages" accept="image/png,image/jpeg,image/webp" multiple>
-    <small class="help">Pilih hingga 4 screenshot PNG/JPG/WebP. Jika tidak memilih gambar, TROZAL akan mencoba menangkap 3 frame langsung dari Preview pada waktu 0%, 50%, dan 85%.</small>
+    <small class="help">Pilih hingga 3 screenshot. Jika kosong, sistem menangkap 3 frame dari Preview utama TROZAL pada 0%, 50%, dan 85% durasi.</small>
     <div class="row" style="margin-top:8px;flex-wrap:wrap">
-     <button type="button" class="primary" id="trozalVisionAnalyzeBtn">✦ ANALISIS VISUAL SEBENARNYA</button>
+     <button type="button" class="primary" id="trozalVisionAnalyzeBtn">✦ ANALISIS VISUAL DENGAN BROWSER AI</button>
      <button type="button" id="trozalVisionClearImagesBtn">Hapus gambar pilihan</button>
     </div>
-    <div id="trozalVisionStatus" class="help" aria-live="polite">Siap menunggu Ollama dan model lokal.</div>
-    <details style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">Panduan instalasi satu kali</summary>
-     <ol class="help">
-      <li>Pasang Ollama untuk Windows.</li>
-      <li>Jalankan <code>ollama pull qwen3-vl:2b</code> di PowerShell.</li>
-      <li>Tambahkan environment variable Windows <code>OLLAMA_ORIGINS</code> dengan nilai <code>https://irzalbudiman2-cell.github.io</code>, lalu tutup Ollama dari system tray dan jalankan kembali.</li>
-      <li>Kembali ke sini dan tekan Cek Ollama.</li>
-     </ol>
-     <p class="help"><a href="https://ollama.com/download/windows" target="_blank" rel="noopener">Unduh Ollama Windows</a> · <a href="https://ollama.com/library/qwen3-vl" target="_blank" rel="noopener">Info model Qwen3-VL</a></p>
-    </details>
+    <div id="trozalVisionStatus" class="help" aria-live="polite">Model Vision belum dimuat. Tekan Periksa Browser Vision untuk mengecek dukungan.</div>
+    <div id="trozalVisionConnection" class="help" aria-live="polite">Browser Vision berjalan lokal setelah model diunduh.</div>
    </section>
    <div id="metadataPlatformValidation" class="metadata-evidence">Pilih platform untuk melihat pemeriksaan judul dan keyword.</div>
    <section class="metadata-evidence" id="trozalMetadataSourcePanel" style="margin:12px 0;border:1px solid #b18aff;background:rgba(125,78,190,.09)">
     <div style="font-weight:800;color:#c9a7ff;margin-bottom:6px">✦ TROZAL METADATA · PILIH SUMBER HASIL</div>
-    <p class="help">Tahap migrasi berikutnya: analisis visual metadata langsung dari frame Preview menggunakan model vision di browser. Fitur ini sementara dinonaktifkan agar tidak bergantung pada Ollama atau Bridge lama. Metadata manual dan generator berbasis teks tetap tersedia.</p>
+    <p class="help">Pilih sumber HTML Motion atau Scene AI. TROZAL akan memuat sumber tersebut ke Preview utama, mengambil frame yang benar-benar tampil, lalu menganalisisnya dengan Browser Vision AI.</p>
     <div class="row" style="gap:8px;flex-wrap:wrap">
-     <button type="button" class="primary" id="metadataFromHtmlMotionBtn" style="flex:1" disabled>① METADATA HTML MOTION · SEGERA</button>
-     <button type="button" class="primary" id="metadataFromSceneAiBtn" style="flex:1" disabled>② METADATA SCENE AI · SEGERA</button>
+     <button type="button" class="primary" id="metadataFromHtmlMotionBtn" style="flex:1">① METADATA HTML MOTION</button>
+     <button type="button" class="primary" id="metadataFromSceneAiBtn" style="flex:1">② METADATA SCENE AI</button>
     </div>
-    <div id="trozalMetadataSourceStatus" class="help" aria-live="polite">Browser Vision AI sedang disiapkan. Gunakan metadata manual sementara waktu.</div>
+    <div id="trozalMetadataSourceStatus" class="help" aria-live="polite">Siap menganalisis frame Preview menggunakan Browser Vision AI.</div>
    </section>
    <div class="row" style="margin-top:8px"><button id="generateMetadataBtn" type="button">Generate dari bukti teks / manual</button><button id="clearMetadataBtn" type="button">Bersihkan</button></div>
    <label>Judul (English)</label><input id="metadataTitle" type="text" placeholder="English title — review against the actual visual">
@@ -3993,8 +3984,8 @@ async function trozalMetadataAnalyzeSource(kind){
  }catch(error){const message=error?.message||String(error);trozalMetadataSourceStatus('GAGAL · '+label+': '+message+(message.includes('Failed to fetch')?' · Browser menolak akses Loopback. Pastikan Chrome memberi izin Local Network Access dan Bridge aktif.':''),true);}
  finally{button.disabled=false;if(other)other.disabled=false;}
 }
-$('metadataFromHtmlMotionBtn')?.setAttribute('disabled','disabled');
-$('metadataFromSceneAiBtn')?.setAttribute('disabled','disabled');
+// Browser Vision module handles source analysis.
+// Browser Vision module handles source analysis.
 
 /* TROZAL LOCAL VISION — visual-first metadata through Ollama on the user's PC */
 let trozalLocalVisionLastAnalysis=null;
