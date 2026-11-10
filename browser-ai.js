@@ -503,8 +503,8 @@ async function analyzeWithGeminiCloud() {
   if (button) button.disabled = true;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 120000);
+  let images = [];
   try {
-    let images = [];
     const selected = [...($("trozalVisionImages")?.files || [])].slice(0, 3);
     if (selected.length) {
       for (const file of selected) {
@@ -582,7 +582,21 @@ async function analyzeWithGeminiCloud() {
     window.trozalGeminiLastAnalysis = { model: activeModel, createdAt: new Date().toISOString(), ...applied, visualSummary: parsed.visual_summary || "", visibleObjects: parsed.visible_objects || [], motionEvidence: parsed.motion_evidence || "", confidenceNotes: parsed.confidence_notes || "" };
     setCloudStatus("SELESAI · Judul, deskripsi, kategori, dan " + keywords.length + " keyword berhasil dibuat. Periksa sebelum ekspor.");
   } catch (error) {
-    setCloudStatus((error?.name === "AbortError" ? "Waktu analisis habis (120 detik)." : (error?.message || String(error))), true);
+    const message = error?.message || String(error);
+    if (images.length && /Gemini sedang tidak tersedia setelah percobaan ulang/i.test(message)) {
+      try {
+        setCloudStatus("Gemini sedang padat. Menjalankan fallback Browser Vision lokal dari frame yang sama…");
+        const captions = await captionImages(images);
+        const fallback = buildMetadataFallback(captions, [...($("metadataCategory")?.options || [])].map(option => option.text));
+        const applied = applyBrowserMetadata(fallback, captions, "Gemini Cloud fallback · Browser Vision", { objects: [], averageChange: null });
+        window.trozalGeminiLastAnalysis = { model: "browser-vision-caption-fallback", createdAt: new Date().toISOString(), ...applied, captions, cloudFallback: true };
+        setCloudStatus("GEMINI SEDANG PADAT · Metadata cadangan berhasil dibuat dari caption Browser Vision lokal. Periksa hasil sebelum ekspor.");
+      } catch (fallbackError) {
+        setCloudStatus("Gemini gagal dan fallback Browser Vision juga gagal: " + (fallbackError?.message || String(fallbackError)), true);
+      }
+    } else {
+      setCloudStatus((error?.name === "AbortError" ? "Waktu analisis habis (120 detik)." : message), true);
+    }
   } finally {
     clearTimeout(timeout);
     if (button) button.disabled = false;
