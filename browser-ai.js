@@ -375,18 +375,26 @@ function applyBrowserMetadata(parsed, captions, evidenceLabel, visualEvidence = 
   const categories = [...($("metadataCategory")?.options || [])].map((option) => option.text);
   const category = categories.find((value) => value.toLowerCase() === String(parsed.category || "").trim().toLowerCase()) || "Graphic Resources";
   const detectedLabels = (visualEvidence.objects || []).map(item => item.label);
-  const evidenceText = captions.concat(detectedLabels).join(" ").toLowerCase();
+  const visualText = captions.concat(detectedLabels).join(" ").toLowerCase();
+  const evidenceText = [visualText, String(parsed.visual_summary || ""), String(parsed.motion_evidence || ""), String(parsed.title || ""), String(parsed.description || "")].join(" ").toLowerCase();
   const evidenceTokens = new Set(evidenceText.match(/[a-z0-9]+/g) || []);
-  const stopWords = new Set(["the","a","an","and","or","with","on","in","at","of","to","is","are","this","that","from","image","picture","photo","frame","showing","shows","there","its","for"]);
+  const stopWords = new Set(["the","a","an","and","or","with","on","in","at","of","to","is","are","this","that","from","image","picture","photo","frame","showing","shows","there","its","for","into","over","under","near","very","some","many","scene","video"]);
+  const cleanKeyword = value => String(value || "").trim().toLowerCase().replace(/[^a-z0-9 -]/g, " ").replace(/\s+/g, " ").trim();
   const modelKeywords = (Array.isArray(parsed.keywords) ? parsed.keywords : [])
-    .map((item) => String(item).trim().toLowerCase().replace(/\s+/g, " "))
-    .filter((item) => {
+    .map(cleanKeyword)
+    .filter(item => {
       const words = item.match(/[a-z0-9]+/g) || [];
-      return words.length > 0 && words.length <= 5 && words.some((word) => evidenceTokens.has(word));
+      return words.length > 0 && words.length <= 5 && words.some(word => evidenceTokens.has(word));
     });
-  const evidenceWords = (captions.join(" ") + " " + detectedLabels.join(" "))
-    .toLowerCase().match(/[a-z][a-z-]{2,}/g) || [];
-  const fallbackKeywords = evidenceWords.filter((word) => !stopWords.has(word));
+  const evidenceWords = (visualText.match(/[a-z][a-z-]{2,}/g) || []).filter(word => !stopWords.has(word));
+  const phraseKeywords = [];
+  for (let n = 3; n >= 2; n--) {
+    for (let i = 0; i <= evidenceWords.length - n; i++) {
+      const phrase = evidenceWords.slice(i, i + n).join(" ");
+      if (phrase.length <= 48 && phrase.split(" ").every(word => evidenceTokens.has(word))) phraseKeywords.push(phrase);
+    }
+  }
+  const fallbackKeywords = [...phraseKeywords, ...evidenceWords];
   const keywords = [...new Set([...modelKeywords, ...fallbackKeywords])].slice(0, 25);
   $("metadataTitle").value = title;
   $("metadataTitle").dataset.baseTitle = title;
@@ -502,7 +510,7 @@ async function analyzeWithGeminiCloud() {
   if (button?.disabled) return;
   if (button) button.disabled = true;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 120000);
+  const timeout = setTimeout(() => controller.abort(), 300000);
   let images = [];
   try {
     const selected = [...($("trozalVisionImages")?.files || [])].slice(0, 3);
@@ -595,7 +603,7 @@ async function analyzeWithGeminiCloud() {
         setCloudStatus("Gemini gagal dan fallback Browser Vision juga gagal: " + (fallbackError?.message || String(fallbackError)), true);
       }
     } else {
-      setCloudStatus((error?.name === "AbortError" ? "Waktu analisis habis (120 detik)." : message), true);
+      setCloudStatus((error?.name === "AbortError" ? "Waktu analisis habis (300 detik)." : message), true);
     }
   } finally {
     clearTimeout(timeout);
