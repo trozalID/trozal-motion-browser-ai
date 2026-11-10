@@ -177,27 +177,26 @@ $("generateVisualMotionAiBtn")?.addEventListener("click", generateScene);
  * WebLLM engine then formats conservative stock metadata from those captions.
  */
 let visionCaptionerPromise = null;
+let objectDetectorPromise = null;
 async function ensureVisionCaptioner() {
   if (visionCaptionerPromise) return visionCaptionerPromise;
   visionCaptionerPromise = (async () => {
     const { pipeline } = await import("https://esm.sh/@huggingface/transformers@3.8.1");
-    setVisionStatus("Mengunduh dan menyiapkan model image-captioning untuk browser…");
-    try {
-      return await pipeline("image-to-text", "Xenova/vit-gpt2-image-captioning", {
-        device: "webgpu",
-        dtype: "q4",
-      });
-    } catch (gpuError) {
-      setVisionStatus("Vision WebGPU tidak tersedia untuk model ini. Beralih ke CPU/WASM…");
-      return await pipeline("image-to-text", "Xenova/vit-gpt2-image-captioning", {
-        dtype: "q8",
-      });
-    }
-  })().catch((error) => {
-    visionCaptionerPromise = null;
-    throw error;
-  });
+    setVisionStatus("Menyiapkan model caption visual…");
+    try { return await pipeline("image-to-text", "Xenova/vit-gpt2-image-captioning", { device: "webgpu", dtype: "q4" }); }
+    catch (_) { setVisionStatus("Captioner memakai CPU/WASM…"); return await pipeline("image-to-text", "Xenova/vit-gpt2-image-captioning", { dtype: "q8" }); }
+  })().catch(error => { visionCaptionerPromise = null; throw error; });
   return visionCaptionerPromise;
+}
+async function ensureObjectDetector() {
+  if (objectDetectorPromise) return objectDetectorPromise;
+  objectDetectorPromise = (async () => {
+    const { pipeline } = await import("https://esm.sh/@huggingface/transformers@3.8.1");
+    setVisionStatus("Memuat detektor objek DETR terkuantisasi…");
+    try { return await pipeline("object-detection", "Xenova/detr-resnet-50", { device: "webgpu", dtype: "q4f16" }); }
+    catch (_) { setVisionStatus("DETR beralih ke CPU/WASM…"); return await pipeline("object-detection", "Xenova/detr-resnet-50", { dtype: "q8" }); }
+  })().catch(error => { objectDetectorPromise = null; throw error; });
+  return objectDetectorPromise;
 }
 function setVisionStatus(message, isError = false) {
   const node = $("trozalVisionStatus");
@@ -242,6 +241,51 @@ async function captionImages(base64Images) {
   if (!captions.length) throw new Error("Model Vision tidak menghasilkan caption. Coba gambar lain atau pastikan objek terlihat jelas.");
   return captions;
 }
+function toVisionDataUrl(value) {
+  const raw = String(value || "");
+  return raw.startsWith("data:image/") ? raw : "data:image/jpeg;base64," + raw.replace(/^data:[^,]*,/, "");
+}
+async function analyzeObjectEvidence(images) {
+  const detector = await ensureObjectDetector(), totals = new Map(), perFrame = [];
+  for (let i=0; i<images.length; i++) {
+    setVisionStatus("Mendeteksi objek pada frame "+(i+1)+" dari "+images.length+"…");
+    const result = await detector(toVisionDataUrl(images[i]), { threshold: 0.35 });
+    const detections = (Array.isArray(result)?result:[]).filter(x=>x?.label&&Number(x.score)>=0.35).slice(0,12)
+      .map(x=>({label:String(x.label).toLowerCase(),score:Math.round(Number(x.score)*100)/100}));
+    perFrame.push(detections);
+    for (const item of detections) {
+      const old=totals.get(item.label)||{label:item.label,maxScore:0,frameCount:0};
+      old.maxScore=Math.max(old.maxScore,item.score);old.frameCount++;totals.set(item.label,old);
+    }
+  }
+  return {perFrame,objects:[...totals.values()].sort((x,y)=>y.maxScore-x.maxScore).slice(0,18)};
+}
+async function measureFrameChanges(images) {
+  if(images.length<2)return {averageChange:0,pairChanges:[]};
+  const samples=[];
+  for(const value of images){
+    const img=await base64ToImage(toVisionDataUrl(value).split(",")[1]);
+    const canvas=document.createElement("canvas");canvas.width=64;canvas.height=36;
+    const ctx=canvas.getContext("2d",{willReadFrequently:true});ctx.drawImage(img,0,0,64,36);
+    samples.push(ctx.getImageData(0,0,64,36).data);
+  }
+  const pairChanges=[];
+  for(let i=1;i<samples.length;i++){
+    let changed=0;
+    for(let p=0;p<samples[i].length;p+=4){
+      const d=(Math.abs(samples[i][p]-samples[i-1][p])+Math.abs(samples[i][p+1]-samples[i-1][p+1])+Math.abs(samples[i][p+2]-samples[i-1][p+2]))/3;
+      if(d>18)changed++;
+    }
+    pairChanges.push(Math.round(changed/(64*36)*100));
+  }
+  return {averageChange:Math.round(pairChanges.reduce((x,y)=>x+y,0)/pairChanges.length),pairChanges};
+}
+function buildGroundedVisionEvidence(captions,objectEvidence,frameChanges){
+  const labels=(objectEvidence?.objects||[]).map(x=>x.label+" ("+Math.round(x.maxScore*100)+"%; "+x.frameCount+" frame)");
+  return "Captions: "+captions.map((x,i)=>"F"+(i+1)+": "+x).join(" | ")+
+    "\nDETR object detections: "+(labels.join(", ")||"none")+
+    "\nFrame pixel change: "+(frameChanges?.averageChange??0)+"% average changed area. This is visual change only; do not infer a specific action from it.";
+}
 function parseMetadataJson(raw) {
   let text = String(raw || "").trim().replace(/^\uFEFF/, "");
   text = text.replace(/^\s*```(?:json)?/i, "").replace(/\s*```\s*$/, "");
@@ -283,7 +327,7 @@ function buildMetadataFallback(captions, categories) {
     confidence_notes: "Fallback metadata generated directly from image captions because the language model did not return valid JSON. Review before export."
   };
 }
-async function composeMetadataFromCaptions(captions) {
+async function composeMetadataFromCaptions(captions, groundedEvidence = "") {
   const categories = [...($("metadataCategory")?.options || [])].map((option) => option.text);
   const evidence = captions.map((caption, i) => "Frame " + (i + 1) + ": " + caption).join("\n");
   const fallback = () => buildMetadataFallback(captions, categories);
@@ -291,11 +335,11 @@ async function composeMetadataFromCaptions(captions) {
     const activeEngine = await ensureEngine();
     const prompt = [
       "Return one compact valid JSON object only. No markdown or explanation.",
-      "Use ONLY these image-caption observations. Do not invent details.",
+      "Use ONLY these image-caption and object-detection observations. Do not invent details.",
       'Keys: title, description, category, keywords, visual_summary, confidence_notes.',
       "title: English, max 100 characters. description: one factual sentence. keywords: array, max 15.",
       "category must exactly match one of: " + categories.join(" | "),
-      "Evidence: " + evidence,
+      "Evidence: " + evidence,\n      "Structured visual evidence: " + groundedEvidence,
     ].join("\n");
     const result = await activeEngine.chat.completions.create({
       messages: [
@@ -317,7 +361,7 @@ async function composeMetadataFromCaptions(captions) {
     return { parsed: fallback(), evidence, source: "caption-fallback", modelWarning: error?.message || String(error) };
   }
 }
-function applyBrowserMetadata(parsed, captions, evidenceLabel) {
+function applyBrowserMetadata(parsed, captions, evidenceLabel, visualEvidence = {}) {
   const title = String(parsed.title || "").trim().slice(0, 150);
   const description = String(parsed.description || "").trim();
   if (!title || !description) throw new Error("Judul atau deskripsi metadata kosong. Silakan ulangi analisis.");
@@ -337,7 +381,7 @@ function applyBrowserMetadata(parsed, captions, evidenceLabel) {
   $("metadataCategory").value = category;
   $("metadataKeywords").value = keywords.join(", ");
   if ($("metadataEvidence")) {
-    $("metadataEvidence").textContent = "BUKTI BROWSER VISION · " + evidenceLabel + " · " + captions.length + " frame. " + captions.join(" | ") + (parsed.confidence_notes ? " Catatan: " + parsed.confidence_notes : "") + " · Periksa kembali hasil sebelum ekspor.";
+    const objectSummary = detectedLabels.length ? " Deteksi objek: " + detectedLabels.join(", ") + "." : " Tidak ada objek terdeteksi pada ambang keyakinan.";\n    const changeSummary = typeof visualEvidence.averageChange === "number" ? " Perubahan piksel antar-frame rata-rata " + visualEvidence.averageChange + "% (bukan label aksi)." : "";\n    $("metadataEvidence").textContent = "BUKTI BROWSER VISION · " + evidenceLabel + " · " + captions.length + " frame. " + captions.join(" | ") + objectSummary + changeSummary + (parsed.confidence_notes ? " Catatan: " + parsed.confidence_notes : "") + " · Periksa kembali hasil sebelum ekspor.";
   }
   if (typeof updateMetadataCount === "function") updateMetadataCount();
   if (typeof trozalRefreshMetadataQuality === "function") trozalRefreshMetadataQuality();
@@ -369,9 +413,14 @@ async function analyzeCurrentPreviewWithBrowserVision() {
     }
     if (!images.length) throw new Error("Tidak ada frame yang dapat dianalisis.");
     const captions = await captionImages(images);
-    setVisionStatus("Menyusun metadata dari caption visual yang terukur…");
-    const { parsed } = await composeMetadataFromCaptions(captions);
-    const applied = applyBrowserMetadata(parsed, captions, "Preview utama");
+    let objectEvidence={objects:[],perFrame:[]};
+    try{objectEvidence=await analyzeObjectEvidence(images);}catch(e){setVisionStatus("Deteksi objek dilewati; caption tetap digunakan. "+(e?.message||String(e)));}
+    let frameChanges={averageChange:0,pairChanges:[]};
+    try{frameChanges=await measureFrameChanges(images);}catch(_){}
+    const groundedEvidence=buildGroundedVisionEvidence(captions,objectEvidence,frameChanges);
+    setVisionStatus("Menyusun metadata dari caption, deteksi objek, dan perubahan frame…");
+    const {parsed}=await composeMetadataFromCaptions(captions,groundedEvidence);
+    const applied=applyBrowserMetadata(parsed,captions,"Preview utama",{objects:objectEvidence.objects,averageChange:frameChanges.averageChange});
     setVisionStatus("SELESAI · " + captions.length + " frame dianalisis. Metadata diperbarui dari caption visual. Periksa hasilnya.");
     return applied;
   } catch (error) {
@@ -397,10 +446,15 @@ async function analyzeSourceWithBrowserVision(kind) {
     await window.generateMotionSvgLocally();
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const images = await window.trozalVisionCapturePreviewFrames();
-    const captions = await captionImages(images);
-    setMetadataSourceStatus("Menyusun metadata berdasarkan " + captions.length + " frame hasil render…");
-    const { parsed } = await composeMetadataFromCaptions(captions);
-    applyBrowserMetadata(parsed, captions, source.label);
+    const captions=await captionImages(images);
+    let objectEvidence={objects:[],perFrame:[]};
+    try{objectEvidence=await analyzeObjectEvidence(images);}catch(e){setMetadataSourceStatus("Deteksi objek dilewati; caption tetap digunakan. "+(e?.message||String(e)));}
+    let frameChanges={averageChange:0,pairChanges:[]};
+    try{frameChanges=await measureFrameChanges(images);}catch(_){}
+    const groundedEvidence=buildGroundedVisionEvidence(captions,objectEvidence,frameChanges);
+    setMetadataSourceStatus("Menyusun metadata berdasarkan caption dan deteksi objek…");
+    const {parsed}=await composeMetadataFromCaptions(captions,groundedEvidence);
+    applyBrowserMetadata(parsed,captions,source.label,{objects:objectEvidence.objects,averageChange:frameChanges.averageChange});
     setMetadataSourceStatus("SELESAI · Metadata " + source.label + " dihasilkan dari " + captions.length + " frame Preview aktual.");
   } catch (error) {
     setMetadataSourceStatus("GAGAL · " + (error?.message || String(error)), true);
@@ -413,9 +467,9 @@ $("trozalVisionCheckBtn")?.addEventListener("click", async () => {
   try {
     const { pipeline } = await import("https://esm.sh/@huggingface/transformers@3.8.1");
     if (!pipeline) throw new Error("Transformers.js tidak dapat dimuat.");
-    setVisionStatus("Transformers.js tersedia. Model Vision akan diunduh saat analisis pertama.");
+    setVisionStatus("Transformers.js tersedia. Captioner dan detektor objek DETR diunduh saat analisis pertama.");
     const connection = $("trozalVisionConnection");
-    if (connection) connection.textContent = "Browser Vision runtime tersedia · model Xenova/vit-gpt2-image-captioning";
+    if (connection) connection.textContent = "Browser Vision runtime tersedia · captioner ViT-GPT2 + detektor objek DETR";
   } catch (error) {
     setVisionStatus("Runtime Vision gagal dimuat · " + (error?.message || String(error)), true);
   }
