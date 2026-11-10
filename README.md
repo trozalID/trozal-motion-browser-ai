@@ -53,3 +53,16 @@ The custom FFmpeg core contains GPL-enabled FFmpeg components. See `THIRD_PARTY_
 
 ## Browser AI edition
 This repository is the separate browser-first edition. The legacy Ollama/Bridge setup files are intentionally not included. Browser AI integration is being migrated and validated in stages; do not assume AI inference is active until the WebGPU runtime is added and tested.
+
+
+## Browser AI status — Phase 1
+
+- **AI Scene Composer:** migrated to WebLLM with the Qwen2.5 0.5B Instruct quantized model, running in-browser through WebGPU.
+- The first model load requires an internet connection; browser caching is used for subsequent sessions.
+- Prompt inference is designed to run on-device. No Ollama process, localhost bridge, or API key is used by this Scene Composer path.
+- A procedural SVG generator remains available as a fallback.
+- **Visual metadata AI:** not yet migrated. The old Ollama vision panel is disabled in this edition until the browser image-analysis pipeline is implemented and validated.
+- WebGPU availability, GPU memory limits, browser version, and model load time vary by device. Runtime testing is still required before calling this production-ready.
+
+### Current target hardware
+Windows PC with 16 GB RAM and NVIDIA GTX 1660 Super. The 0.5B model is the initial low-memory compatibility target; performance and output quality must be measured on the actual browser/device.
