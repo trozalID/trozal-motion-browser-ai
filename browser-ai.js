@@ -247,8 +247,10 @@ function toVisionDataUrl(value) {
 }
 async function analyzeObjectEvidence(images) {
   const detector = await ensureObjectDetector(), totals = new Map(), perFrame = [];
-  for (let i=0; i<images.length; i++) {
-    setVisionStatus("Mendeteksi objek pada frame "+(i+1)+" dari "+images.length+"…");
+  const sampleIndexes = [...new Set([0, Math.floor((images.length - 1) / 2), images.length - 1])];
+  for (let sample=0; sample<sampleIndexes.length; sample++) {
+    const i = sampleIndexes[sample];
+    setVisionStatus("Mendeteksi objek pada frame terpilih "+(sample+1)+" dari "+sampleIndexes.length+"…");
     const result = await detector(toVisionDataUrl(images[i]), { threshold: 0.35 });
     const detections = (Array.isArray(result)?result:[]).filter(x=>x?.label&&Number(x.score)>=0.35).slice(0,12)
       .map(x=>({label:String(x.label).toLowerCase(),score:Math.round(Number(x.score)*100)/100}));
@@ -371,12 +373,18 @@ function applyBrowserMetadata(parsed, captions, evidenceLabel, visualEvidence = 
   const detectedLabels = (visualEvidence.objects || []).map(item => item.label);
   const evidenceText = captions.concat(detectedLabels).join(" ").toLowerCase();
   const evidenceTokens = new Set(evidenceText.match(/[a-z0-9]+/g) || []);
-  const keywords = [...new Set((Array.isArray(parsed.keywords) ? parsed.keywords : [])
-    .map((item) => String(item).trim().toLowerCase())
+  const stopWords = new Set(["the","a","an","and","or","with","on","in","at","of","to","is","are","this","that","from","image","picture","photo","frame","showing","shows","there","its"]);
+  const modelKeywords = (Array.isArray(parsed.keywords) ? parsed.keywords : [])
+    .map((item) => String(item).trim().toLowerCase().replace(/\\s+/g, " "))
     .filter((item) => {
       const words = item.match(/[a-z0-9]+/g) || [];
-      return words.length > 0 && words.length <= 4 && words.every((word) => evidenceTokens.has(word));
-    }))].slice(0, 20);
+      return words.length > 0 && words.length <= 4 && words.some((word) => evidenceTokens.has(word)) &&
+        words.every((word) => stopWords.has(word) || evidenceTokens.has(word));
+    });
+  const evidenceWords = (captions.join(" ") + " " + detectedLabels.join(" "))
+    .toLowerCase().match(/[a-z][a-z-]{2,}/g) || [];
+  const fallbackKeywords = evidenceWords.filter((word) => !stopWords.has(word));
+  const keywords = [...new Set([...modelKeywords, ...fallbackKeywords])].slice(0, 20);
   $("metadataTitle").value = title;
   $("metadataTitle").dataset.baseTitle = title;
   $("metadataDescription").value = description;
