@@ -226,8 +226,14 @@ async function captionImages(base64Images) {
   const captions = [];
   for (let i = 0; i < base64Images.length; i++) {
     setVisionStatus("Menganalisis gambar " + (i + 1) + " dari " + base64Images.length + " dengan model vision…");
-    const image = await base64ToImage(base64Images[i]);
-    const result = await captioner(image, { max_new_tokens: 48 });
+    // Transformers.js image-to-text accepts an image URL/string input. Passing
+    // an HTMLImageElement can throw: "Unsupported input type: object".
+    // Keep the frame in-memory as a data URL; no upload or remote image request.
+    const raw = String(base64Images[i] || "");
+    const imageInput = raw.startsWith("data:image/")
+      ? raw
+      : "data:image/jpeg;base64," + raw.replace(/^data:[^,]*,/, "");
+    const result = await captioner(imageInput, { max_new_tokens: 48 });
     const caption = Array.isArray(result)
       ? String(result[0]?.generated_text || "")
       : String(result?.generated_text || "");
