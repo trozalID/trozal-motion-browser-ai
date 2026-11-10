@@ -264,7 +264,7 @@ async function measureFrameChanges(images) {
   if(images.length<2)return {averageChange:0,pairChanges:[]};
   const samples=[];
   for(const value of images){
-    const img=await base64ToImage(toVisionDataUrl(value).split(",")[1]);
+    const img=new Image(); img.src=toVisionDataUrl(value); await img.decode();
     const canvas=document.createElement("canvas");canvas.width=64;canvas.height=36;
     const ctx=canvas.getContext("2d",{willReadFrequently:true});ctx.drawImage(img,0,0,64,36);
     samples.push(ctx.getImageData(0,0,64,36).data);
@@ -339,7 +339,8 @@ async function composeMetadataFromCaptions(captions, groundedEvidence = "") {
       'Keys: title, description, category, keywords, visual_summary, confidence_notes.',
       "title: English, max 100 characters. description: one factual sentence. keywords: array, max 15.",
       "category must exactly match one of: " + categories.join(" | "),
-      "Evidence: " + evidence,\n      "Structured visual evidence: " + groundedEvidence,
+      "Evidence: " + evidence,
+      "Structured visual evidence: " + groundedEvidence,
     ].join("\n");
     const result = await activeEngine.chat.completions.create({
       messages: [
@@ -367,7 +368,8 @@ function applyBrowserMetadata(parsed, captions, evidenceLabel, visualEvidence = 
   if (!title || !description) throw new Error("Judul atau deskripsi metadata kosong. Silakan ulangi analisis.");
   const categories = [...($("metadataCategory")?.options || [])].map((option) => option.text);
   const category = categories.find((value) => value.toLowerCase() === String(parsed.category || "").trim().toLowerCase()) || "Graphic Resources";
-  const evidenceText = captions.join(" ").toLowerCase();
+  const detectedLabels = (visualEvidence.objects || []).map(item => item.label);
+  const evidenceText = captions.concat(detectedLabels).join(" ").toLowerCase();
   const evidenceTokens = new Set(evidenceText.match(/[a-z0-9]+/g) || []);
   const keywords = [...new Set((Array.isArray(parsed.keywords) ? parsed.keywords : [])
     .map((item) => String(item).trim().toLowerCase())
