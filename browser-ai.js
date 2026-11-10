@@ -250,27 +250,72 @@ function parseMetadataJson(raw) {
   if (first < 0 || last <= first) throw new Error("Browser AI tidak mengembalikan JSON metadata yang valid.");
   return JSON.parse(text.slice(first, last + 1));
 }
+function buildMetadataFallback(captions, categories) {
+  const clean = captions.map((caption) => String(caption || "").replace(/\\s+/g, " ").trim()).filter(Boolean);
+  if (!clean.length) throw new Error("Tidak ada caption visual untuk membentuk metadata cadangan.");
+  const combined = clean.join(". ");
+  const first = clean[0].replace(/[.!?]+$/, "");
+  const title = first.charAt(0).toUpperCase() + first.slice(1);
+  const stop = new Set(["the","a","an","and","or","with","on","in","at","of","to","is","are","there","this","that","it","image","picture","photo","frame","showing","shows"]);
+  const words = (combined.toLowerCase().match(/[a-z][a-z-]{2,}/g) || []);
+  const keywords = [...new Set(words.filter((word) => !stop.has(word)))].slice(0, 20);
+  const lower = combined.toLowerCase();
+  const categoryHints = [
+    [/person|people|man |woman |child|human|face/, "People"],
+    [/plant|flower|tree|leaf|garden/, "Plants and Flowers"],
+    [/food|fruit|vegetable|dish|meal/, "Food"],
+    [/car|vehicle|truck|train|airplane|motorcycle/, "Transportation"],
+    [/building|house|architecture|bridge/, "Buildings and Architecture"],
+    [/mountain|ocean|sea|forest|river|animal|nature/, "Nature"],
+    [/computer|phone|screen|technology|electronic/, "Technology"],
+    [/sport|ball|football|basketball|athlete/, "Sports"],
+  ];
+  let category = "Graphic Resources";
+  for (const [pattern, candidate] of categoryHints) {
+    if (pattern.test(lower) && categories.includes(candidate)) { category = candidate; break; }
+  }
+  return {
+    title: title.slice(0, 100),
+    description: clean.slice(0, 3).join(". ").replace(/[.!?]*$/, ".").slice(0, 500),
+    category,
+    keywords,
+    visual_summary: clean.slice(0, 3).join("; "),
+    confidence_notes: "Fallback metadata generated directly from image captions because the language model did not return valid JSON. Review before export."
+  };
+}
 async function composeMetadataFromCaptions(captions) {
-  const activeEngine = await ensureEngine();
   const categories = [...($("metadataCategory")?.options || [])].map((option) => option.text);
   const evidence = captions.map((caption, i) => "Frame " + (i + 1) + ": " + caption).join("\n");
-  const prompt = [
-    "Create conservative stock-motion metadata using ONLY these image-caption observations.",
-    "Do not invent brands, exact locations, identities, hidden objects, or motion not evidenced by captions.",
-    "If a detail is uncertain, omit it. Return JSON only.",
-    'Schema: {"title":"English title max 100 chars","description":"English description 1-2 factual sentences","category":"one allowed category","keywords":["up to 20 specific English keywords"],"visual_summary":"brief evidence summary","confidence_notes":"uncertainty or empty string"}.',
-    "Allowed categories: " + categories.join(" | "),
-    "VISUAL EVIDENCE:\n" + evidence,
-  ].join("\n");
-  const result = await activeEngine.chat.completions.create({
-    messages: [
-      { role: "system", content: "You are a strict visual metadata editor. Never add details absent from evidence. Output valid JSON only." },
-      { role: "user", content: prompt },
-    ],
-    temperature: 0.1,
-    max_tokens: 650,
-  });
-  return { parsed: parseMetadataJson(result?.choices?.[0]?.message?.content || ""), evidence };
+  const fallback = () => buildMetadataFallback(captions, categories);
+  try {
+    const activeEngine = await ensureEngine();
+    const prompt = [
+      "Return one compact valid JSON object only. No markdown or explanation.",
+      "Use ONLY these image-caption observations. Do not invent details.",
+      'Keys: title, description, category, keywords, visual_summary, confidence_notes.',
+      "title: English, max 100 characters. description: one factual sentence. keywords: array, max 15.",
+      "category must exactly match one of: " + categories.join(" | "),
+      "Evidence: " + evidence,
+    ].join("\n");
+    const result = await activeEngine.chat.completions.create({
+      messages: [
+        { role: "system", content: "Output a single valid JSON object. No prose, no markdown, no trailing commas." },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0,
+      max_tokens: 420,
+    });
+    const raw = result?.choices?.[0]?.message?.content || "";
+    try {
+      return { parsed: parseMetadataJson(raw), evidence, source: "browser-ai" };
+    } catch (parseError) {
+      setVisionStatus("Format JSON AI tidak valid. Menggunakan metadata cadangan dari caption visual…");
+      return { parsed: fallback(), evidence, source: "caption-fallback", parseWarning: parseError.message };
+    }
+  } catch (error) {
+    setVisionStatus("Model bahasa tidak siap. Menyusun metadata langsung dari caption visual…");
+    return { parsed: fallback(), evidence, source: "caption-fallback", modelWarning: error?.message || String(error) };
+  }
 }
 function applyBrowserMetadata(parsed, captions, evidenceLabel) {
   const title = String(parsed.title || "").trim().slice(0, 150);
