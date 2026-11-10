@@ -735,6 +735,18 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
      <button type="button" class="primary" id="trozalVisionAnalyzeBtn">✦ ANALISIS VISUAL DENGAN BROWSER AI</button>
      <button type="button" id="trozalVisionClearImagesBtn">Hapus gambar pilihan</button>
     </div>
+    <section style="margin-top:12px;padding:12px;border:1px solid #d9a441;border-radius:10px;background:rgba(217,164,65,.08)">
+     <div style="font-weight:800;color:#f0c36c;margin-bottom:6px">✦ CLOUD ACCURATE · GEMINI VISION</div>
+     <p class="help">Analisis langsung oleh model multimodal cloud menggunakan 3 frame Preview. Tidak perlu mengunduh model vision lokal. API key hanya dipakai selama sesi ini dan tidak disimpan oleh TROZAL.</p>
+     <label for="trozalGeminiApiKey">Gemini API key</label>
+     <input id="trozalGeminiApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="Tempel API key dari Google AI Studio">
+     <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button type="button" class="primary" id="trozalGeminiAnalyzeBtn">✦ GENERATE METADATA CLOUD ACCURATE</button>
+      <a class="help" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Buat API key Google AI Studio ↗</a>
+     </div>
+     <div class="help">Catatan: frame Preview akan dikirim ke Google untuk dianalisis. Jangan gunakan untuk materi rahasia atau sensitif.</div>
+     <div id="trozalGeminiStatus" class="help" aria-live="polite">Cloud Accurate belum dijalankan.</div>
+    </section>
     <div id="trozalVisionStatus" class="help" aria-live="polite">Model Vision belum dimuat. Tekan Periksa Browser Vision untuk mengecek dukungan.</div>
     <div id="trozalVisionConnection" class="help" aria-live="polite">Browser Vision berjalan lokal setelah model diunduh.</div>
    </section>
