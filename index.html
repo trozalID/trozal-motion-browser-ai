@@ -4121,5 +4121,16 @@ $('trozalVisionClearImagesBtn')?.addEventListener('click',()=>{$('trozalVisionIm
 
 /* TROZAL BROWSER AI MODULE owns the Scene Composer controls. */
 </script>
+
+/* Explicit bridge from the classic TROZAL editor script to the Browser AI ES module.
+   ES modules cannot see classic-script top-level lexical declarations as window properties. */
+window.trozalVisionReadFile=trozalVisionReadFile;
+window.trozalVisionResizeImage=trozalVisionResizeImage;
+window.trozalVisionCapturePreviewFrames=trozalVisionCapturePreviewFrames;
+window.trozalMetadataCollectHtmlMotion=trozalMetadataCollectHtmlMotion;
+window.trozalMetadataCollectSceneAi=trozalMetadataCollectSceneAi;
+window.generateMotionSvgLocally=generateMotionSvgLocally;
+window.setMetadataSourceStatus=trozalMetadataSourceStatus;
+
 <script type="module" src="./browser-ai.js"></script>
 </body></html>
