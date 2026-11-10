@@ -45,45 +45,76 @@ async function ensureEngine() {
   }
   return enginePromise;
 }
-function cleanModelCode(raw) {
-  let code = String(raw || "").trim();
-  code = code.replace(/^\uFEFF/, "");
-  code = code.replace(/^\s*```(?:html|svg|xml)?\s*/i, "").replace(/\s*```\s*$/, "");
-  const lower = code.toLowerCase();
-  const starts = ["<!doctype html", "<html", "<svg"].map((x) => lower.indexOf(x)).filter((x) => x >= 0);
-  if (starts.length) code = code.slice(Math.min(...starts));
-  const check = code.toLowerCase();
-  if (!check.includes("<svg") || !check.includes("</svg>")) {
-    throw new Error("Model belum menghasilkan SVG lengkap. Coba brief lebih spesifik atau generate ulang.");
+function safeText(value, fallback, max = 80) {
+  const text = String(value || fallback).replace(/[<>\u0000-\u001f]/g, "").trim();
+  return text.slice(0, max) || fallback;
+}
+function extractPlan(raw, brief, accent) {
+  const source = String(raw || "").trim();
+  const match = source.match(/\{[\s\S]*\}/);
+  let plan = {};
+  if (match) {
+    try { plan = JSON.parse(match[0]); } catch (_) { plan = {}; }
   }
-  if (/<script\b|<iframe\b|<object\b|<embed\b/i.test(code)) {
-    throw new Error("Output memuat elemen aktif yang diblokir demi keamanan. Coba generate ulang.");
-  }
-  if (/\b(?:src|href)\s*=\s*["']https?:|@import\s|url\(\s*https?:/i.test(code)) {
-    throw new Error("Output mencoba memuat resource eksternal. Hanya SVG/CSS inline yang diizinkan.");
-  }
-  const doc = new DOMParser().parseFromString(code, "text/html");
-  const svg = doc.querySelector("svg");
-  if (!svg) throw new Error("Struktur SVG tidak valid.");
-  const groups = svg.querySelectorAll("g");
-  if (groups.length < 3) throw new Error("Adegan perlu minimal 3 grup SVG terpisah. Silakan generate ulang.");
-  if (!/<style[\s>]/i.test(code)) {
-    throw new Error("Animasi CSS belum ditemukan pada hasil. Generate ulang dengan brief gerakan yang lebih jelas.");
-  }
-  return code;
+  const ring = /ring|cincin|jewelry|jewellery|diamond|berlian/i.test(brief);
+  const watch = /watch|jam tangan|timepiece/i.test(brief);
+  const palette = /silver|perak|chrome/i.test(brief) ? ["#dce7f2","#8797aa","#f7fbff"]
+    : /blue|biru/i.test(brief) ? ["#8bd5ff","#2864b8","#e9f8ff"]
+    : /red|merah/i.test(brief) ? ["#ff9a8b","#a8293c","#ffe5dc"]
+    : ["#ffe6a0","#a96b18","#fff7d8"];
+  return {
+    subject: safeText(plan.subject, ring ? "Luxury diamond ring" : watch ? "Luxury wristwatch" : "Cinematic hero object"),
+    environment: safeText(plan.environment, "Dark premium studio with soft atmospheric glow"),
+    motion: safeText(plan.motion, "slow floating rotation with gentle light sweep"),
+    accent: palette[0],
+    metal: palette[1],
+    highlight: palette[2],
+    motif: ring ? "ring" : watch ? "watch" : "orb",
+    duration: Math.max(3, Math.min(60, Number(plan.duration) || 12))
+  };
+}
+function renderProceduralScene(plan, ratio, duration, brief) {
+  const esc = (s) => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  const ring = plan.motif === "ring";
+  const watch = plan.motif === "watch";
+  const subject = esc(plan.subject);
+  const safeDuration = Math.max(3, Math.min(60, Number(duration) || plan.duration || 12));
+  const hero = ring
+    ? '<ellipse cx="640" cy="405" rx="176" ry="68" fill="none" stroke="url(#metal)" stroke-width="42" transform="rotate(-18 640 405)"/><ellipse cx="640" cy="405" rx="176" ry="68" fill="none" stroke="#fff2c6" stroke-opacity=".7" stroke-width="4" transform="rotate(-18 640 405)"/><path d="M640 250 L680 310 L640 352 L600 310 Z" fill="url(#shine)" stroke="#fff" stroke-width="3"/><path d="M640 250 L640 352 M600 310 L680 310" stroke="#fff" stroke-opacity=".8" stroke-width="2"/>'
+    : watch
+    ? '<circle cx="640" cy="390" r="155" fill="url(#metal)" stroke="#fff2cf" stroke-width="8"/><circle cx="640" cy="390" r="126" fill="#101923" stroke="#f5d88b" stroke-width="5"/><path d="M640 390 L640 292 M640 390 L715 430" stroke="#fff2cf" stroke-width="9" stroke-linecap="round"/><circle cx="640" cy="390" r="12" fill="#fff"/>'
+    : '<circle cx="640" cy="380" r="150" fill="url(#metal)" stroke="#fff" stroke-opacity=".7" stroke-width="5"/><ellipse cx="590" cy="325" rx="58" ry="30" fill="#fff" opacity=".38" transform="rotate(-30 590 325)"/>';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-label="${subject}">
+  <defs>
+    <radialGradient id="bg"><stop stop-color="#26313c"/><stop offset="1" stop-color="#05070b"/></radialGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${plan.highlight}"/><stop offset=".28" stop-color="${plan.accent}"/><stop offset=".62" stop-color="${plan.metal}"/><stop offset="1" stop-color="#fff0c2"/></linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".5" stop-color="${plan.highlight}"/><stop offset="1" stop-color="${plan.accent}"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="18" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>
+      @keyframes heroFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-18px) rotate(2deg)}}
+      @keyframes haloPulse{0%,100%{opacity:.25;transform:scale(.92)}50%{opacity:.7;transform:scale(1.08)}}
+      @keyframes lightSweep{0%{transform:translateX(-260px);opacity:0}25%{opacity:.8}75%{opacity:.5}100%{transform:translateX(520px);opacity:0}}
+      @keyframes sparkle{0%,100%{opacity:.2;transform:scale(.65)}50%{opacity:1;transform:scale(1.3)}}
+      #main-subject{animation:heroFloat ${safeDuration}s ease-in-out infinite;transform-origin:640px 370px}
+      #environment{animation:haloPulse ${Math.max(4,safeDuration*.8)}s ease-in-out infinite;transform-origin:640px 360px}
+      #foreground{animation:lightSweep ${Math.max(5,safeDuration*.7)}s ease-in-out infinite}
+      #details .spark{animation:sparkle 2.4s ease-in-out infinite;transform-origin:center}
+    </style>
+  </defs>
+  <g id="background"><rect width="1280" height="720" fill="url(#bg)"/><path d="M0 570 Q640 500 1280 570 V720 H0Z" fill="#080b10"/><ellipse cx="640" cy="600" rx="390" ry="42" fill="#000" opacity=".55"/></g>
+  <g id="environment"><ellipse cx="640" cy="365" rx="300" ry="250" fill="none" stroke="${plan.accent}" stroke-opacity=".35" stroke-width="2" filter="url(#glow)"/><ellipse cx="640" cy="365" rx="235" ry="190" fill="${plan.accent}" opacity=".06"/></g>
+  <g id="main-subject">${hero}</g>
+  <g id="details"><path class="spark" d="M850 245 l8 24 24 8 -24 8 -8 24 -8 -24 -24 -8 24 -8Z" fill="#fff" filter="url(#glow)"/><path class="spark" d="M420 300 l5 15 15 5 -15 5 -5 15 -5 -15 -15 -5 15 -5Z" fill="${plan.highlight}"/><circle cx="790" cy="470" r="5" fill="#fff"/><circle cx="500" cy="475" r="4" fill="#fff"/></g>
+  <g id="foreground"><path d="M180 610 Q640 560 1100 610" fill="none" stroke="${plan.accent}" stroke-opacity=".35" stroke-width="2"/><rect x="0" y="0" width="1280" height="720" fill="url(#bg)" opacity="0"/></g>
+  <g id="caption"><text x="640" y="665" text-anchor="middle" fill="#f8e8c1" font-family="Arial,sans-serif" font-size="22" letter-spacing="5">${subject.toUpperCase()}</text></g>
+</svg>`;
 }
 async function generateScene() {
   const button = $("generateVisualMotionAiBtn");
   const brief = $("visualMotionPrompt")?.value?.trim();
-  if (!brief) {
-    setStatus("Tulis brief visual terlebih dahulu.", true);
-    return;
-  }
+  if (!brief) { setStatus("Tulis brief visual terlebih dahulu.", true); return; }
   if (button?.disabled) return;
-  if (button) {
-    button.disabled = true;
-    button.textContent = "BROWSER AI SEDANG BEKERJA…";
-  }
+  if (button) { button.disabled = true; button.textContent = "BROWSER AI SEDANG BEKERJA…"; }
   try {
     const activeEngine = await ensureEngine();
     const ratio = $("visualMotionRatio")?.value || "16:9";
@@ -92,66 +123,30 @@ async function generateScene() {
     const accent = $("visualMotionAccent")?.value || "Gold";
     const camera = $("visualMotionCamera")?.value || "Slow cinematic";
     const transition = $("visualMotionTransition")?.value || "Smooth";
-    setStatus("Menyusun komposisi SVG dan animasi secara lokal pada GPU…");
-    const system = [
-      "You are an SVG motion-graphics code generator.",
-      "Return ONLY one complete <svg>...</svg> element. No HTML wrapper, markdown, comments or explanation.",
-      "Use viewBox='0 0 1280 720' and preserve the requested aspect ratio through composition.",
-      "Create exactly 4 to 5 concise semantic <g> layers with unique ids: background, environment, main-subject, details, foreground.",
-      "Use simple but attractive vector geometry, gradients and inline <style> CSS.",
-      "Animate at least 3 groups independently with @keyframes; include animation-duration and transform-origin.",
-      "Keep SVG markup compact. Prefer reusable shapes and avoid excessive path coordinates.",
-      "All tags and CSS braces MUST be closed. End with </svg>.",
-      "No scripts, foreignObject, iframe, canvas, external URLs, remote images, fonts or embedded media."
-    ].join(" ");
-    const user = [
-      "VISUAL BRIEF: " + brief,
-      "Aspect ratio: " + ratio + ". Duration: " + duration + " seconds.",
-      "Style: " + style + ". Accent: " + accent + ". Camera: " + camera + ". Transition: " + transition + ".",
-      "Build one complete motion-graphic scene with distinct SVG layers and visible independent motion."
-    ].join("\n");
-    let code = "";
-    let lastError = null;
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      setStatus(attempt === 1
-        ? "AI menyusun SVG ringkas dengan beberapa layer gerak…"
-        : "SVG pertama belum valid · AI sedang memperbaiki struktur secara otomatis…");
-      const repair = lastError
-        ? "REPAIR REQUIRED: The previous output failed validation: " + lastError.message +
-          ". Return a fresh complete SVG only. Ensure 4-5 closed <g> layers, a <style> block, 3 independent CSS animations, and the final </svg> tag. Keep it compact."
-        : "";
-      const result = await activeEngine.chat.completions.create({
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user + (repair ? "\\n\\n" + repair : "") }
-        ],
-        temperature: attempt === 1 ? 0.25 : 0.15,
-        max_tokens: 2800,
-      });
-      const raw = result?.choices?.[0]?.message?.content || "";
-      try {
-        code = cleanModelCode(raw);
-        lastError = null;
-        break;
-      } catch (validationError) {
-        lastError = validationError;
-      }
-    }
-    if (!code) throw lastError || new Error("Model tidak menghasilkan SVG yang dapat digunakan.");
+    setStatus("Browser AI menyusun arahan adegan ringkas…");
+    const result = await activeEngine.chat.completions.create({
+      messages: [
+        { role: "system", content: 'Return ONLY compact JSON: {"subject":"...","environment":"...","motion":"...","duration":12}. No markdown. Keep each text field under 12 words.' },
+        { role: "user", content: "Brief: " + brief + ". Style: " + style + ". Accent: " + accent + ". Camera: " + camera + ". Transition: " + transition + ". Duration: " + duration + " seconds. Describe the subject and environment faithfully." }
+      ],
+      temperature: 0.2,
+      max_tokens: 220
+    });
+    const plan = extractPlan(result?.choices?.[0]?.message?.content || "", brief, accent);
+    setStatus("AI menyusun arahan gerak · mesin SVG TROZAL membangun layer dan animasi…");
+    const code = renderProceduralScene(plan, ratio, duration, brief);
+    if (!code.includes("</svg>")) throw new Error("Mesin SVG internal gagal menyelesaikan dokumen.");
     $("visualMotionOutput").value = code;
     $("visualMotionPreview").srcdoc = code;
     if (typeof visualMotionPreviewDoc !== "undefined") visualMotionPreviewDoc = null;
     if (typeof visualMotionPreviewAnimations !== "undefined") visualMotionPreviewAnimations = [];
-    setStatus("SELESAI · " + code.length.toLocaleString() + " karakter HTML/SVG dibuat oleh Browser AI. Periksa hasil preview sebelum digunakan.");
+    setStatus("SELESAI · Scene SVG dibuat oleh mesin internal TROZAL dengan arahan Browser AI. " + code.length.toLocaleString() + " karakter.");
     const status = $("visualMotionStatus");
-    if (status) status.textContent = "TROZAL Browser AI selesai. Hasil dibuat langsung di browser; klik “Kirim ke Preview TROZAL” untuk memuat ke renderer utama.";
+    if (status) status.textContent = "TROZAL Browser AI selesai. Scene SVG ber-layer dan animasi CSS siap diperiksa; klik “Kirim ke Preview TROZAL” untuk memuat ke renderer utama.";
   } catch (error) {
     setStatus("GAGAL · " + (error?.message || String(error)), true);
   } finally {
-    if (button) {
-      button.disabled = false;
-      button.textContent = "✦ MUAT AI & GENERATE ADEGAN";
-    }
+    if (button) { button.disabled = false; button.textContent = "✦ MUAT AI & GENERATE ADEGAN"; }
   }
 }
 async function checkBrowserAI() {
