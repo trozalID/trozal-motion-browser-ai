@@ -383,7 +383,9 @@ function applyBrowserMetadata(parsed, captions, evidenceLabel, visualEvidence = 
   $("metadataCategory").value = category;
   $("metadataKeywords").value = keywords.join(", ");
   if ($("metadataEvidence")) {
-    const objectSummary = detectedLabels.length ? " Deteksi objek: " + detectedLabels.join(", ") + "." : " Tidak ada objek terdeteksi pada ambang keyakinan.";\n    const changeSummary = typeof visualEvidence.averageChange === "number" ? " Perubahan piksel antar-frame rata-rata " + visualEvidence.averageChange + "% (bukan label aksi)." : "";\n    $("metadataEvidence").textContent = "BUKTI BROWSER VISION · " + evidenceLabel + " · " + captions.length + " frame. " + captions.join(" | ") + objectSummary + changeSummary + (parsed.confidence_notes ? " Catatan: " + parsed.confidence_notes : "") + " · Periksa kembali hasil sebelum ekspor.";
+    const objectSummary = detectedLabels.length ? " Deteksi objek: " + detectedLabels.join(", ") + "." : " Tidak ada objek terdeteksi pada ambang keyakinan.";
+    const changeSummary = typeof visualEvidence.averageChange === "number" ? " Perubahan piksel antar-frame rata-rata " + visualEvidence.averageChange + "% (bukan label aksi)." : "";
+    $("metadataEvidence").textContent = "BUKTI BROWSER VISION · " + evidenceLabel + " · " + captions.length + " frame. " + captions.join(" | ") + objectSummary + changeSummary + (parsed.confidence_notes ? " Catatan: " + parsed.confidence_notes : "") + " · Periksa kembali hasil sebelum ekspor.";
   }
   if (typeof updateMetadataCount === "function") updateMetadataCount();
   if (typeof trozalRefreshMetadataQuality === "function") trozalRefreshMetadataQuality();
