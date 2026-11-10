@@ -1,0 +1,172 @@
+name: Build ProRes WASM and Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - name: Checkout TROZAL MOTION
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Prepare static site
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p site/vendor/ffmpeg site/vendor/prores-core
+          cp index.html site/index.html
+          touch site/.nojekyll
+
+      - name: Validate inline JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const { spawnSync } = require('child_process');
+          const html = fs.readFileSync('site/index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)];
+          if (!scripts.length) throw new Error('No script blocks found in site/index.html');
+          scripts.forEach((match, index) => {
+            const file = path.join('/tmp', 'trozal-inline-' + index + '.js');
+            fs.writeFileSync(file, match[1], 'utf8');
+            const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
+            if (result.status !== 0) {
+              process.stderr.write('JavaScript syntax error in script block ' + (index + 1) + '\n');
+              process.stderr.write(result.stderr || result.stdout || '');
+              process.exit(1);
+            }
+          });
+          console.log('Validated JavaScript syntax in ' + scripts.length + ' script block(s).');
+          NODE
+
+      - name: Vendor FFmpeg worker package and JSZip locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/npm-ffmpeg /tmp/npm-jszip
+          npm pack @ffmpeg/ffmpeg@0.12.15 --pack-destination /tmp/npm-ffmpeg
+          tar -xzf /tmp/npm-ffmpeg/ffmpeg-ffmpeg-0.12.15.tgz -C /tmp/npm-ffmpeg
+          cp -R /tmp/npm-ffmpeg/package/dist/esm/. site/vendor/ffmpeg/
+          npm pack jszip@3.10.1 --pack-destination /tmp/npm-jszip
+          tar -xzf /tmp/npm-jszip/jszip-3.10.1.tgz -C /tmp/npm-jszip
+          cp /tmp/npm-jszip/package/dist/jszip.min.js site/vendor/jszip.min.js
+          test -s site/vendor/ffmpeg/index.js
+          test -s site/vendor/ffmpeg/worker.js
+          test -s site/vendor/jszip.min.js
+
+      - name: Build FFmpeg core with ProRes 4444 enabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch v12.15 https://github.com/ffmpegwasm/ffmpeg.wasm.git /tmp/ffmpeg-wasm
+          cd /tmp/ffmpeg-wasm
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path("Dockerfile")
+          text = p.read_text()
+
+          # Upstream emsdk Dockerfile uses Ubuntu apt repositories over HTTP.
+          # Force HTTPS so Docker build does not hang on archive.ubuntu.com:80.
+          apt_pattern = r"(?m)^(?P<indent>[ ]*)RUN apt-get update && \\\n(?P=indent)      apt-get install -y pkg-config autoconf automake libtool ragel\s*$"
+          apt_lines = [
+              "RUN find /etc/apt -type f \\( -name '*.list' -o -name '*.sources' \\) -exec sed -i \\",
+              "      -e 's|http://archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' \\",
+              "      -e 's|http://security.ubuntu.com/ubuntu|https://security.ubuntu.com/ubuntu|g' {} + && \\",
+              "      apt-get -o Acquire::Retries=5 -o Acquire::https::Timeout=60 update && \\",
+              "      apt-get install -y --no-install-recommends pkg-config autoconf automake libtool ragel",
+          ]
+          patched, apt_count = re.subn(
+              apt_pattern,
+              lambda m: "\n".join(m.group("indent") + line for line in apt_lines),
+              text,
+              count=1,
+          )
+          if apt_count != 1:
+              raise SystemExit("Could not locate emsdk apt dependency block; no build performed.")
+
+          # Keep retries on later apt-get layers as well (zimg-builder).
+          patched = patched.replace(
+              "RUN apt-get update && apt-get install -y git",
+              "RUN apt-get -o Acquire::Retries=5 -o Acquire::https::Timeout=60 update && apt-get install -y --no-install-recommends git",
+          )
+
+          # Enable the ProRes encoder and MOV/PNG input-output support.
+          pattern = r"(?m)^(?P<indent>[ ]*)RUN bash -x /src/build\.sh \\\n(?P=indent)      --enable-gpl \\\n"
+
+          def patch(match):
+              indent = match.group("indent")
+              lines = [
+                  "RUN bash -x /src/build.sh \\",
+                  "      --enable-encoder=prores_ks \\",
+                  "      --enable-decoder=png \\",
+                  "      --enable-demuxer=image2 \\",
+                  "      --enable-muxer=mov \\",
+                  "      --enable-protocol=file \\",
+                  "      --enable-gpl \\",
+              ]
+              return "\n".join(indent + line for line in lines) + "\n"
+
+          patched, count = re.subn(pattern, patch, patched, count=1)
+          if count != 1:
+              raise SystemExit("Could not locate FFmpeg configure block with indentation; no build performed.")
+          p.write_text(patched)
+
+          PY
+          make prd
+          mkdir -p "$GITHUB_WORKSPACE/site/vendor/prores-core"
+          cp packages/core/dist/esm/ffmpeg-core.js "$GITHUB_WORKSPACE/site/vendor/prores-core/"
+          cp packages/core/dist/esm/ffmpeg-core.wasm "$GITHUB_WORKSPACE/site/vendor/prores-core/"
+          test -s "$GITHUB_WORKSPACE/site/vendor/prores-core/ffmpeg-core.js"
+          test -s "$GITHUB_WORKSPACE/site/vendor/prores-core/ffmpeg-core.wasm"
+
+      - name: Verify build outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q -- '--enable-encoder=prores_ks' /tmp/ffmpeg-wasm/Dockerfile
+          test -s site/index.html
+          test -s site/vendor/ffmpeg/worker.js
+          test -s site/vendor/prores-core/ffmpeg-core.js
+          test -s site/vendor/prores-core/ffmpeg-core.wasm
+          ls -lh site/vendor/prores-core site/vendor/ffmpeg | head -40
+          du -sh site
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
