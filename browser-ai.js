@@ -94,16 +94,15 @@ async function generateScene() {
     const transition = $("visualMotionTransition")?.value || "Smooth";
     setStatus("Menyusun komposisi SVG dan animasi secara lokal pada GPU…");
     const system = [
-      "You are an expert motion graphics designer and SVG animation engineer.",
-      "Return only a complete standalone HTML document. No markdown or explanation.",
-      "Create a polished, coherent scene that depicts the user's brief accurately.",
-      "Use inline SVG with at least five semantic independently addressable <g> layers.",
-      "Give each group a unique descriptive id: background, environment, main-subject, secondary-objects, foreground.",
-      "Animate at least three groups independently with inline CSS @keyframes and sensible transform-origin.",
-      "Use detailed vector shapes, gradients, layered lighting and depth; avoid generic icon placeholders.",
-      "Set the SVG viewBox and preserve the requested aspect ratio. Keep all key objects inside the frame.",
-      "No JavaScript, scripts, iframe, canvas, external URLs, remote images, external fonts or embedded media.",
-      "Use complete valid HTML, SVG and CSS. Keep output concise enough to finish."
+      "You are an SVG motion-graphics code generator.",
+      "Return ONLY one complete <svg>...</svg> element. No HTML wrapper, markdown, comments or explanation.",
+      "Use viewBox='0 0 1280 720' and preserve the requested aspect ratio through composition.",
+      "Create exactly 4 to 5 concise semantic <g> layers with unique ids: background, environment, main-subject, details, foreground.",
+      "Use simple but attractive vector geometry, gradients and inline <style> CSS.",
+      "Animate at least 3 groups independently with @keyframes; include animation-duration and transform-origin.",
+      "Keep SVG markup compact. Prefer reusable shapes and avoid excessive path coordinates.",
+      "All tags and CSS braces MUST be closed. End with </svg>.",
+      "No scripts, foreignObject, iframe, canvas, external URLs, remote images, fonts or embedded media."
     ].join(" ");
     const user = [
       "VISUAL BRIEF: " + brief,
@@ -111,13 +110,34 @@ async function generateScene() {
       "Style: " + style + ". Accent: " + accent + ". Camera: " + camera + ". Transition: " + transition + ".",
       "Build one complete motion-graphic scene with distinct SVG layers and visible independent motion."
     ].join("\n");
-    const result = await activeEngine.chat.completions.create({
-      messages: [{ role: "system", content: system }, { role: "user", content: user }],
-      temperature: 0.45,
-      max_tokens: 1800,
-    });
-    const raw = result?.choices?.[0]?.message?.content || "";
-    const code = cleanModelCode(raw);
+    let code = "";
+    let lastError = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      setStatus(attempt === 1
+        ? "AI menyusun SVG ringkas dengan beberapa layer gerak…"
+        : "SVG pertama belum valid · AI sedang memperbaiki struktur secara otomatis…");
+      const repair = lastError
+        ? "REPAIR REQUIRED: The previous output failed validation: " + lastError.message +
+          ". Return a fresh complete SVG only. Ensure 4-5 closed <g> layers, a <style> block, 3 independent CSS animations, and the final </svg> tag. Keep it compact."
+        : "";
+      const result = await activeEngine.chat.completions.create({
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user + (repair ? "\\n\\n" + repair : "") }
+        ],
+        temperature: attempt === 1 ? 0.25 : 0.15,
+        max_tokens: 2800,
+      });
+      const raw = result?.choices?.[0]?.message?.content || "";
+      try {
+        code = cleanModelCode(raw);
+        lastError = null;
+        break;
+      } catch (validationError) {
+        lastError = validationError;
+      }
+    }
+    if (!code) throw lastError || new Error("Model tidak menghasilkan SVG yang dapat digunakan.");
     $("visualMotionOutput").value = code;
     $("visualMotionPreview").srcdoc = code;
     if (typeof visualMotionPreviewDoc !== "undefined") visualMotionPreviewDoc = null;
