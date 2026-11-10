@@ -482,14 +482,14 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
     <label class="inline-check"><input type="checkbox" id="visualMotionParticles" checked> Partikel / atmosfer</label>
     <label class="inline-check"><input type="checkbox" id="visualMotionDepth" checked> Layer kedalaman</label>
    </div>
-   <div class="metadata-evidence" style="margin:10px 0;border-color:#9262ca;background:#1a1030"><b style="color:#d8b7ff">AI GENERATOR LOKAL</b><div class="row" style="gap:8px;align-items:center;margin-top:7px"><select id="visualMotionAiModel" aria-label="Model AI pembuat adegan" style="flex:1"><option value="qwen3.5:4b">Qwen3.5 4B · disarankan untuk membuat SVG</option><option value="qwen3-vl:2b">Qwen3-VL 2B · ringan / cadangan</option><option value="qwen3-vl:4b">Qwen3-VL 4B · vision lebih detail</option></select><button type="button" id="visualMotionAiCheckBtn">Cek Ollama</button></div><div id="visualMotionAiStatus" class="help" aria-live="polite">AI lokal belum diperiksa. Pastikan Ollama dan model sudah terpasang.</div><button type="button" class="primary" id="generateVisualMotionAiBtn" style="width:100%;margin-top:8px">✦ GENERATE DENGAN AI LOKAL</button><p class="help">AI akan membuat komposisi SVG multi-objek dan animasi CSS. Tidak memakai API berbayar. Hasil perlu diperiksa; kualitas bergantung pada kemampuan model lokal.</p></div><details style="margin:8px 0"><summary style="cursor:pointer">Mode cadangan: generator SVG prosedural lama</summary><p class="help">Mode ini memakai template dan kata kunci, bukan AI generatif. Gunakan jika Ollama sedang tidak tersedia.</p><button type="button" id="generateVisualMotionBtn">◈ GENERATE SVG PROSEDURAL</button></details><button type="button" id="resetVisualMotionBtn">Reset Prompt & Hasil</button>
+   <div class="metadata-evidence" style="margin:10px 0;border-color:#36b98a;background:#10291f"><b style="color:#83e8b2">TROZAL BROWSER AI · WEBGPU</b><div class="row" style="gap:8px;align-items:center;margin-top:7px"><select id="visualMotionAiModel" aria-label="Model AI browser" style="flex:1"><option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC">Qwen2.5 0.5B · mode ringan</option></select><button type="button" id="visualMotionAiCheckBtn">Periksa WebGPU</button></div><div id="visualMotionAiStatus" class="help" aria-live="polite">AI berjalan di browser. Model diunduh satu kali dan disimpan dalam cache browser.</div><button type="button" class="primary" id="generateVisualMotionAiBtn" style="width:100%;margin-top:8px">✦ MUAT AI & GENERATE ADEGAN</button><p class="help">Inferensi teks-ke-SVG berjalan di perangkat melalui WebGPU. Tidak menggunakan Ollama, Bridge, API key, atau server AI. Unduhan model pertama kali memerlukan koneksi internet.</p></div><details style="margin:8px 0"><summary style="cursor:pointer">Mode cadangan: generator SVG prosedural lama</summary><p class="help">Mode ini memakai template dan kata kunci, bukan AI generatif. Gunakan jika Ollama sedang tidak tersedia.</p><button type="button" id="generateVisualMotionBtn">◈ GENERATE SVG PROSEDURAL</button></details><button type="button" id="resetVisualMotionBtn">Reset Prompt & Hasil</button>
    <div class="status" id="visualMotionStatus">Masukkan prompt visual untuk membuat adegan gambar bergerak.</div>
    <label>LIVE COMPOSER PREVIEW · DRAF SEBELUM DIIMPOR</label>
    <iframe id="visualMotionPreview" title="TROZAL AI Scene Composer synchronized draft preview" sandbox="allow-same-origin" style="display:block;width:100%;height:300px;border:1px solid #8452c7;border-radius:9px;background:#090615"></iframe>
    <label>HTML VISUAL MOTION · SIAP DIIMPOR KE TROZAL</label>
    <textarea id="visualMotionOutput" spellcheck="false" placeholder="Dokumen HTML berisi komposisi SVG dan animasi visual akan tampil di sini…" style="min-height:220px"></textarea>
    <div class="btnrow"><button type="button" id="copyVisualMotionBtn">Salin HTML</button><button type="button" class="green" id="previewVisualMotionBtn">▶ Kirim ke Preview TROZAL</button></div>
-   <p class="notice">AI Scene Composer menggunakan Ollama di komputer Anda melalui konektor lokal TROZAL. Jalankan TROZAL_OLLAMA_BRIDGE_START.bat terlebih dahulu dan biarkan jendelanya terbuka. Kode hasil AI divalidasi agar tidak memuat JavaScript, iframe, atau resource eksternal sebelum preview. Untuk revisi, ubah brief visual lalu generate ulang.</p>
+   <p class="notice">TROZAL Browser AI menggunakan WebGPU langsung di browser. Tidak memerlukan Ollama atau Bridge. Model diunduh saat pertama kali digunakan. Kode hasil AI divalidasi agar tidak memuat JavaScript, iframe, atau resource eksternal sebelum preview. Untuk revisi, ubah brief visual lalu generate ulang.</p>
   </section>
 
 
@@ -721,7 +721,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
    <label>Deskripsi visual yang benar-benar terlihat (prioritas utama)</label><textarea id="metadataSubject" rows="3" placeholder="Contoh: Sebuah cincin berlian berputar perlahan di atas kain beludru hitam. Tuliskan hanya yang benar-benar tampak pada hasil akhir."></textarea>
    <p class="help">Isi kolom ini setelah memeriksa preview atau hasil render. Prompt AI dan rencana scene hanya menunjukkan niat pembuatan, bukan bukti bahwa objek benar-benar muncul.</p>
    <div id="metadataEvidence" class="metadata-evidence">Belum dianalisis. Sistem akan memisahkan deskripsi terverifikasi, prompt/rencana, dan teks SVG/HTML.</div>
-   <section class="metadata-evidence" id="trozalLocalVisionPanel" style="margin-top:12px;border:1px solid #269b75;background:rgba(20,150,105,.07)">
+   <section class="metadata-evidence" id="trozalLocalVisionPanel" style="display:none;margin-top:12px;border:1px solid #269b75;background:rgba(20,150,105,.07)">
     <div style="font-weight:800;color:#38c995;margin-bottom:6px">✦ TROZAL LOCAL VISION · AI BERDASARKAN GAMBAR</div>
     <p class="help">Analisis dilakukan oleh model lokal di PC Anda. Gambar preview tidak dikirim ke OpenAI atau layanan cloud.</p>
     <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap">
@@ -3993,8 +3993,8 @@ async function trozalMetadataAnalyzeSource(kind){
  }catch(error){const message=error?.message||String(error);trozalMetadataSourceStatus('GAGAL · '+label+': '+message+(message.includes('Failed to fetch')?' · Browser menolak akses Loopback. Pastikan Chrome memberi izin Local Network Access dan Bridge aktif.':''),true);}
  finally{button.disabled=false;if(other)other.disabled=false;}
 }
-$('metadataFromHtmlMotionBtn')?.addEventListener('click',()=>trozalMetadataAnalyzeSource('html'));
-$('metadataFromSceneAiBtn')?.addEventListener('click',()=>trozalMetadataAnalyzeSource('scene'));
+$('metadataFromHtmlMotionBtn')?.setAttribute('disabled','disabled');
+$('metadataFromSceneAiBtn')?.setAttribute('disabled','disabled');
 
 /* TROZAL LOCAL VISION — visual-first metadata through Ollama on the user's PC */
 let trozalLocalVisionLastAnalysis=null;
@@ -4121,209 +4121,16 @@ async function trozalVisionAnalyze(){
   trozalVisionSetStatus('Analisis gagal: '+msg+(msg.includes('Failed to fetch')?' · Periksa Ollama/CORS.':msg.toLowerCase().includes('model')?' · Unduh model dengan: ollama pull qwen3-vl:2b':''),true);
  }finally{button.disabled=false;button.textContent='✦ ANALISIS VISUAL SEBENARNYA';}
 }
-$('trozalVisionCheckBtn')?.addEventListener('click',trozalVisionCheck);
-$('trozalVisionAnalyzeBtn')?.addEventListener('click',trozalVisionAnalyze);
+// Legacy Ollama vision handler disabled in Browser AI edition.
+// Legacy Ollama vision handler disabled in Browser AI edition.
 $('trozalVisionClearImagesBtn')?.addEventListener('click',()=>{$('trozalVisionImages').value='';trozalVisionSetStatus('Gambar pilihan dibersihkan. Analisis berikutnya akan mengambil frame dari Preview.')});
 // Do not probe localhost automatically on page load: Chrome Local Network Access
 // requires the first loopback request to be initiated by a user gesture.
 
 
-/* TROZAL AI SCENE COMPOSER — local text-to-SVG generation through Ollama */
-function visualMotionAiStatus(message,isError=false){
- const el=$('visualMotionAiStatus');if(el){el.textContent=message;el.style.color=isError?'#ff9292':'#c9b6e8';}
-}
-async function visualMotionAiCheck(){
- visualMotionAiStatus('Memeriksa Bridge dan izin Loopback Network…');
- const endpoint='http://127.0.0.1:11435/api/tags';
- // Start the permission query and the fetch together; do not await either
- // before fetch, so the network request remains tied to the button click.
- const permissionPromise=(async()=>{
-  try{const p=await navigator.permissions.query({name:'loopback-network'});return p.state;}
-  catch(_){return 'tidak didukung oleh Permissions API';}
- })();
- try{
-  const response=await fetch(endpoint,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store',targetAddressSpace:'loopback'});
-  if(!response.ok)throw new Error('Bridge merespons HTTP '+response.status);
-  const data=await response.json();
-  if(!Array.isArray(data.models))throw new Error('Respons Bridge tidak berisi daftar model.');
-  const models=data.models.map(x=>String(x.name||'')).filter(Boolean);
-  const chosen=$('visualMotionAiModel')?.value||'qwen3-vl:2b';
-  const found=models.some(n=>n===chosen||n.startsWith(chosen+':'));
-  const permissionState=await permissionPromise;
-  visualMotionAiStatus('OLLAMA TERHUBUNG · '+models.length+' model terdeteksi · '+(found?'Model '+chosen+' tersedia.':'Model '+chosen+' belum terpasang. Model: '+models.join(', '))+'. Izin Loopback: '+permissionState+'.');
-  return {models,found,permissionState};
- }catch(e){
-  const permissionState=await permissionPromise;
-  const reason=(e?.name?e.name+': ':'')+(e?.message||String(e));
-  let hint='Pastikan Bridge tetap terbuka.';
-  if(permissionState==='denied'){
-   hint='IZIN LOOPBACK DITOLAK. Buka Site settings untuk https://irzalbudiman2-cell.github.io, ubah Loopback network menjadi Allow, lalu reload.';
-  }else if(/failed to fetch|networkerror|load failed/i.test(reason)){
-   hint='Fetch diblokir browser. Periksa izin Loopback network (bukan hanya Local network), lalu coba lagi.';
-  }
-  visualMotionAiStatus('KONEKSI GAGAL · '+reason+' · Izin Loopback: '+permissionState+'. '+hint,true);
-  return null;
- }
-}
-function visualMotionAiExtractCode(raw){
- let code=String(raw||'').trim();
- const fence=String.fromCharCode(96).repeat(3);
- if(code.startsWith(fence)){code=code.slice(fence.length);const line=code.indexOf('\\n');if(line>=0)code=code.slice(line+1);const last=code.lastIndexOf(fence);if(last>=0)code=code.slice(0,last);}
- const low=code.toLowerCase();
- const startHtml=low.indexOf('<!doctype html'),startDoc=low.indexOf('<html'),startSvg=low.indexOf('<svg');
- const starts=[startHtml,startDoc,startSvg].filter(n=>n>=0);
- if(starts.length){const start=Math.min(...starts);code=code.slice(start);}
- const check=code.toLowerCase();
- if(!check.includes('<svg'))throw new Error('Model tidak menghasilkan SVG. Pilih model Qwen3.5 4B untuk pembuatan kode.');
- if(!check.includes('</svg>'))throw new Error('Kode SVG terpotong sebelum selesai. Coba lagi atau gunakan brief yang lebih singkat.');
- if((check.includes('<!doctype html')||check.includes('<html'))&&!check.includes('</html>'))throw new Error('Dokumen HTML terpotong sebelum selesai. Coba lagi dengan brief lebih singkat.');
- const groupCount=(check.match(/<g\\b/g)||[]).length;
- if(groupCount<3)throw new Error('Adegan belum memiliki pemisahan layer yang cukup ('+groupCount+' grup). Generate ulang dengan model Qwen3.5 4B.');
- if(check.includes('<script')||check.includes('<iframe')||check.includes('<object')||check.includes('<embed'))throw new Error('Output AI memuat elemen aktif/eksternal yang diblokir demi keamanan. Ulangi dengan instruksi SVG dan CSS saja.');
- if(check.includes('href="http')||check.includes("href='http")||check.includes('src="http')||check.includes("src='http")||check.includes('url(http')||check.includes('url(https')||check.includes('@import')||check.includes('//fonts.'))throw new Error('Output mengandung resource eksternal. Generator hanya menerima aset SVG/CSS lokal tanpa resource luar.');
- const parsed=new DOMParser().parseFromString(code,'text/html');
- if(!parsed.querySelector('svg'))throw new Error('Struktur SVG tidak valid.');
- return code;
-}
-async function generateVisualMotionWithLocalAi(){
- const btn=$('generateVisualMotionAiBtn');if(btn.disabled)return;
- const brief=$('visualMotionPrompt').value.trim();
- if(!brief){visualMotionAiStatus('Tulis brief visual terlebih dahulu.');return;}
- btn.disabled=true;btn.textContent='AI SEDANG MENYUSUN ADEGAN…';
- try{
-  const model=$('visualMotionAiModel').value,check=await visualMotionAiCheck();
-  if(!check)throw new Error('Ollama tidak dapat dihubungi.');
-  if(!check.found)throw new Error('Model '+model+' belum terpasang. Jalankan: ollama pull '+model);
-  const ratio=$('visualMotionRatio').value,duration=Math.max(3,Math.min(60,+$('visualMotionDuration').value||15));
-  const style=$('visualMotionStyle').value,accent=$('visualMotionAccent').value,camera=$('visualMotionCamera').value,transition=$('visualMotionTransition').value;
-  const system='You are a senior motion-graphics art director and SVG animation engineer. Return ONLY a complete standalone HTML5 document, no markdown. Create a polished, richly detailed, coherent scene that faithfully depicts the brief. Use SVG vector illustration, not generic icon placeholders. Structure the scene into at least 5 independently addressable semantic <g> layers with unique descriptive ids: background, environment, main subject, secondary objects, foreground/atmosphere. Animate at least 3 appropriate groups independently using CSS keyframes and transform-origin; use natural, subtle movement. Use gradients, layered shapes, carefully controlled highlights/shadows and depth. Preserve the requested aspect ratio and keep all important objects inside the viewBox. Include complete inline CSS and SVG. No JavaScript, external assets, remote URLs, external fonts, iframe, canvas, scripts or embedded media. Avoid text overlays unless the brief requires visible signage. Ensure the SVG and HTML are fully closed and syntactically complete. Keep output compact enough to finish in one response. Do not explain anything; output only code.';
-  const user='VISUAL BRIEF: '+brief+'\\nAspect ratio: '+ratio+'. Target duration: '+duration+' seconds. Visual style: '+style+'. Accent: '+accent+'. Camera direction: '+camera+'. Scene transition preference: '+transition+'. Produce a single coherent scene with distinct SVG groups/layers and CSS motion. Set animation duration to match '+duration+' seconds and make the animation loop smoothly when appropriate.';
-  visualMotionAiStatus('Mengirim brief ke '+model+' pada komputer lokal. Proses dapat memerlukan beberapa menit…');
-  const response=await fetch('http://127.0.0.1:11435/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},targetAddressSpace:'loopback',body:JSON.stringify({model,messages:[{role:'system',content:system},{role:'user',content:user}],think:false,stream:false,options:{temperature:.35,num_ctx:8192,num_predict:4096},keep_alive:'10m'})});
-  if(!response.ok){let detail='HTTP '+response.status;try{detail=(await response.json()).error||detail}catch(_){}throw new Error(detail);}
-  const data=await response.json();
-  const rawCode=String(data.message?.content||'').trim();
-  if(!rawCode)throw new Error('Ollama selesai tanpa mengirim isi kode. Coba ulangi; jika berulang, kirim hasil tes model di CMD.');
-  const code=visualMotionAiExtractCode(rawCode);
-  $('visualMotionOutput').value=code;$('visualMotionPreview').srcdoc=code;
-  visualMotionPreviewDoc=null;visualMotionPreviewAnimations=[];
-  visualMotionAiStatus('Berhasil · HTML/SVG AI dibuat ('+code.length.toLocaleString()+' karakter). Periksa Preview, lalu kirim ke Preview TROZAL. Hasil AI tetap perlu pemeriksaan visual.');
-  $('visualMotionStatus').textContent='AI Scene Composer selesai. Preview komposer dibuat dari kode hasil model lokal. Klik “Kirim ke Preview TROZAL” untuk melihat hasil akhir pada renderer utama.';
- }catch(e){visualMotionAiStatus('Gagal membuat adegan: '+(e?.message||String(e)),true);}
- finally{btn.disabled=false;btn.textContent='✦ GENERATE DENGAN AI LOKAL';}
-}
-$('visualMotionAiCheckBtn')?.addEventListener('click',visualMotionAiCheck);
-$('generateVisualMotionAiBtn')?.addEventListener('click',generateVisualMotionWithLocalAi);
-
+/* TROZAL BROWSER AI MODULE owns the Scene Composer controls. */
 </script>
+<script type="module" src="./browser-ai.js"></script>
 <script>
-/* TROZAL LNA CONNECTIVITY GUARD
-   Rebind visible Ollama check buttons and use Chrome's documented
-   permission-first, explicit-user-gesture flow for loopback access. */
-(function(){
- 'use strict';
- const URL=((location.hostname==='127.0.0.1'||location.hostname==='localhost')?location.origin:'http://127.0.0.1:11435')+'/api/tags';
- const ORIGIN='https://irzalbudiman2-cell.github.io';
- function status(kind,message,isError){
-  const ids=kind==='vision'?['trozalVisionConnection','trozalVisionStatus']:['visualMotionAiStatus'];
-  ids.forEach(id=>{const el=document.getElementById(id);if(el){el.textContent=message;el.style.color=isError?'#ff8b8b':'#72e6b2';}});
- }
- function buttonFor(id){
-  const old=document.getElementById(id);
-  if(!old)return null;
-  const fresh=old.cloneNode(true);
-  old.replaceWith(fresh);
-  return fresh;
- }
- async function readPermission(){
-  if(!navigator.permissions||!navigator.permissions.query)return 'unsupported';
-  try{
-   const p=await navigator.permissions.query({name:'loopback-network'});
-   return p.state;
-  }catch(_){return 'unsupported';}
- }
- function modelSummary(kind,data){
-  const models=(data.models||[]).map(x=>String(x.name||'')).filter(Boolean);
-  const chosen=(document.getElementById(kind==='vision'?'trozalVisionModel':'visualMotionAiModel')||{}).value||'qwen3-vl:2b';
-  const found=models.some(n=>n===chosen||n.startsWith(chosen+':'));
-  if(kind==='vision'){
-   const select=document.getElementById('trozalVisionModel');
-   if(select)[...select.options].forEach(o=>o.dataset.installed=models.some(n=>n===o.value||n.startsWith(o.value+':'))?'1':'0');
-   status(kind,'TERHUBUNG · '+models.length+' model terpasang · '+(found?'Model '+chosen+' tersedia.':'Model '+chosen+' belum terpasang.')+' · '+models.join(', '),false);
-   const detail=document.getElementById('trozalVisionStatus');
-   if(detail)detail.textContent='Bridge dan Ollama siap digunakan untuk Local Vision.';
-  }else{
-   status(kind,'OLLAMA TERHUBUNG · '+models.length+' model terpasang · '+(found?'Model '+chosen+' tersedia.':'Model '+chosen+' belum terpasang.')+' · '+models.join(', '),false);
-  }
-  return {models,found};
- }
- async function requestBridge(kind,button){
-  status(kind,'Meminta akses ke Ollama lokal melalui 127.0.0.1:11435…',false);
-  button.disabled=true;
-  try{
-   // This fetch is initiated directly by the explicit second click when permission was "prompt".
-   const response=await fetch(URL,{
-    method:'GET',mode:'cors',credentials:'omit',cache:'no-store',targetAddressSpace:'loopback'
-   });
-   if(!response.ok)throw new Error('HTTP '+response.status);
-   const data=await response.json();
-   if(!Array.isArray(data.models))throw new Error('Respons Bridge tidak valid (models bukan array).');
-   button.dataset.lnaStep='check';
-   button.textContent=kind==='vision'?'↻ Cek Ollama':'Cek Ollama';
-   modelSummary(kind,data);
-   return data;
-  }catch(error){
-   const reason=(error&&error.name?error.name+': ':'')+(error&&error.message?error.message:String(error));
-   const permission=await readPermission();
-   let advice='Pastikan jendela TROZAL Ollama Bridge masih terbuka.';
-   if(permission==='denied')advice='Izin Loopback sedang BLOCK. Buka pengaturan situs Chrome dan ubah Loopback network menjadi Allow.';
-   else if(/failed to fetch|networkerror|load failed/i.test(reason))advice='Chrome menolak fetch ke loopback. Pastikan izin Loopback network untuk situs TROZAL = Allow; Local network saja tidak cukup.';
-   status(kind,'KONEKSI GAGAL · '+reason+' · Izin loopback: '+permission+'. '+advice,true);
-   button.dataset.lnaStep='check';
-   button.textContent=kind==='vision'?'↻ Cek Ollama':'Cek Ollama';
-   return null;
-  }finally{button.disabled=false;}
- }
- async function onCheck(kind,button){
-  if(button.dataset.lnaStep==='request'){
-   await requestBridge(kind,button);
-   return;
-  }
-  status(kind,'Memeriksa izin Loopback Network Chrome…',false);
-  const permission=await readPermission();
-  if(permission==='denied'){
-   button.dataset.lnaStep='check';
-   status(kind,'IZIN LOOPBACK DITOLAK. Buka pengaturan situs Chrome untuk https://irzalbudiman2-cell.github.io, cari Loopback network, ubah ke Allow, lalu muat ulang halaman.',true);
-   return;
-  }
-  if(permission==='prompt'){
-   button.dataset.lnaStep='request';
-   button.textContent='IZINKAN AKSES LOOPBACK';
-   status(kind,'Chrome belum memberi izin Loopback. Klik tombol “IZINKAN AKSES LOOPBACK” sekali lagi untuk memulai permintaan koneksi. Jika Chrome menampilkan dialog izin jaringan lokal, pilih Allow.',false);
-   return;
-  }
-  if(permission==='granted'||permission==='unsupported'){
-   // With permission already granted, fetch is safe. On browsers that
-   // don't expose the permission name, this explicit click is the fallback.
-   await requestBridge(kind,button);
-   return;
-  }
-  status(kind,'Status izin Loopback tidak dikenal ('+permission+'). Klik lagi untuk mencoba koneksi.',true);
-  button.dataset.lnaStep='request';
-  button.textContent='COBA KONEKSI';
- }
- const scene=buttonFor('visualMotionAiCheckBtn');
- if(scene)scene.addEventListener('click',()=>onCheck('scene',scene));
- const vision=buttonFor('trozalVisionCheckBtn');
- if(vision)vision.addEventListener('click',()=>onCheck('vision',vision));
- // Expose a common check routine for the Generate button's preflight.
- window.trozalBridgeCheckFromScene=async function(){
-  const b=document.getElementById('visualMotionAiCheckBtn');
-  if(!b)return null;
-  if(b.dataset.lnaStep==='request'){return await requestBridge('scene',b);}
-  await onCheck('scene',b);
-  return null;
- };
-})();
-</script>
+
 </body></html>
