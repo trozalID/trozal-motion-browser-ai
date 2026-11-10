@@ -4045,7 +4045,7 @@ async function trozalVisionResizeImage(dataUrl,maxSide=1280){
 async function trozalVisionCapturePreviewFrames(){
  if(playing)throw new Error('Hentikan Putar terlebih dahulu agar frame yang dianalisis stabil.');
  const stage=$('stage');if(!stage)throw new Error('Area Preview tidak ditemukan.');
- const original=playhead,duration=Math.max(.1,+$('duration').value||10),times=[0,duration*.5,duration*.85],images=[];
+ const original=playhead,duration=Math.max(.1,+$('duration').value||10),times=[0,duration*.25,duration*.5,duration*.75,duration*.95],images=[];
  try{
   const renderer=htmlMotionIframe?.contentDocument?null:await ensureHtmlToImage();
   for(let i=0;i<times.length;i++){
@@ -4058,7 +4058,7 @@ async function trozalVisionCapturePreviewFrames(){
    let finalCanvas=canvas;
    if(scale<1){finalCanvas=document.createElement('canvas');finalCanvas.width=Math.max(1,Math.round(canvas.width*scale));finalCanvas.height=Math.max(1,Math.round(canvas.height*scale));finalCanvas.getContext('2d').drawImage(canvas,0,0,finalCanvas.width,finalCanvas.height);}
    images.push(finalCanvas.toDataURL('image/jpeg',.84).split(',')[1]);
-   trozalVisionSetStatus('Mengambil frame Preview '+(i+1)+' dari 3…');
+   trozalVisionSetStatus('Mengambil frame Preview '+(i+1)+' dari '+times.length+'…');
   }
  }finally{renderAt(original);}
  return images;
