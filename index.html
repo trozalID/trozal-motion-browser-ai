@@ -409,7 +409,50 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 .metadata-batch-item button{padding:3px 6px;font-size:9px}
 #metadataOptimizerPanel select{background:#211707;color:#fff5e3;border:1px solid #8b6425;border-radius:7px;padding:7px;width:100%}
 
-.trozal-frame-breakdown{margin:10px 0;padding:10px;border:1px solid #4f9d7c;border-radius:9px;background:#10251e}.trozal-frame-breakdown-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.trozal-frame-evidence-card{min-width:0;border:1px solid #356b56;border-radius:7px;overflow:hidden;background:#091a14}.trozal-frame-evidence-card img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#050a08}.trozal-frame-evidence-card div{padding:8px;display:grid;gap:5px}.trozal-frame-evidence-card strong{font-size:11px;color:#a9e9c9}.trozal-frame-evidence-card p{font-size:12px;margin:0;line-height:1.4}.trozal-frame-evidence-card small{font-size:10px;color:#b8cfc4;line-height:1.35}.trozal-frame-evidence-card .trozal-scene-change-cue{color:#f4c77d;font-weight:600}</style>
+.trozal-frame-breakdown{margin:10px 0;padding:10px;border:1px solid #4f9d7c;border-radius:9px;background:#10251e}.trozal-frame-breakdown-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.trozal-frame-evidence-card{min-width:0;border:1px solid #356b56;border-radius:7px;overflow:hidden;background:#091a14}.trozal-frame-evidence-card img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#050a08}.trozal-frame-evidence-card div{padding:8px;display:grid;gap:5px}.trozal-frame-evidence-card strong{font-size:11px;color:#a9e9c9}.trozal-frame-evidence-card p{font-size:12px;margin:0;line-height:1.4}.trozal-frame-evidence-card small{font-size:10px;color:#b8cfc4;line-height:1.35}.trozal-frame-evidence-card .trozal-scene-change-cue{color:#f4c77d;font-weight:600}/* TROZAL MOBILE RESPONSIVE — Android Chrome / iOS Safari */
+@media (max-width: 720px) {
+  html, body { width:100%; min-width:0; min-height:100%; overflow-x:hidden; }
+  body { display:block; }
+  .topbar { position:relative; top:auto; width:100%; min-height:48px; height:auto; padding:9px 12px; gap:8px; }
+  .topbar .brand { font-size:16px; }
+  .topnote { max-width:100%; white-space:normal; }
+  .topright { width:100%; margin:0; flex-wrap:wrap; }
+  .topright button { flex:1 1 auto; min-height:40px; }
+  .app { display:flex !important; flex-direction:column !important; width:100%; max-width:100%; height:auto !important; min-height:0 !important; overflow:visible !important; }
+  .main { order:0 !important; width:100%; min-width:0; min-height:0 !important; height:auto; overflow:visible !important; }
+  .sidebar, .right { display:block !important; width:100%; max-width:100%; min-width:0; max-height:none !important; height:auto; overflow:visible !important; padding:10px; border-left:0; border-right:0; }
+  .topcontrols { width:100%; padding:10px; gap:8px; }
+  .topcontrols .control { flex:1 1 135px; min-width:0 !important; max-width:none; }
+  .topcontrols .render { flex:1 1 100%; margin:0; }
+  .stagewrap { width:100%; min-width:0; height:auto !important; min-height:0 !important; max-height:none; padding:12px 10px 22px; overflow:visible; }
+  .stage { width:100%; max-width:100%; height:auto; max-height:none; aspect-ratio:16/9; }
+  .stageinfo { padding:4px 10px 12px; gap:8px; }
+  .timeline { width:100%; padding:10px; }
+  .parts { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .tabs { flex-wrap:wrap; }
+  .tabs button { min-height:40px; }
+  .panel { width:100%; min-width:0; padding:10px; overflow-wrap:anywhere; }
+  .panel button, button { min-height:38px; touch-action:manipulation; }
+  input, select, textarea { max-width:100%; min-width:0; font-size:16px; }
+  .row, .btnrow, .scene-actions { flex-wrap:wrap; }
+  .row > *, .btnrow > *, .scene-actions > * { min-width:0; }
+  .metadata-quality-grid, .visual-scene-fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .batch-queue-list { max-height:42vh; }
+}
+@media (max-width: 390px) {
+  .topbar { padding-left:9px; padding-right:9px; }
+  .sidebar, .right { padding:8px; }
+  .panel { padding:9px; }
+  .metadata-quality-grid, .visual-scene-fields { grid-template-columns:minmax(0,1fr); }
+  .parts { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .stagewrap { padding-left:7px; padding-right:7px; }
+}
+@supports (height: 100dvh) {
+  @media (min-width: 721px) {
+    .app { height:calc(100dvh - 54px); }
+  }
+}
+</style>
 </head>
 <body>
 <header class="topbar">
@@ -3276,49 +3319,6 @@ function buildSafeHtmlDocument(raw){
  // Capture doc.body below so body backgrounds and pseudo-elements remain visible.
  const layoutCss='html,body{box-sizing:border-box;margin:0!important;padding:0!important;width:'+htmlMotionWidth+'px!important;height:'+htmlMotionHeight+'px!important;min-width:'+htmlMotionWidth+'px!important;min-height:'+htmlMotionHeight+'px!important;overflow:hidden!important}#animove-scene{box-sizing:border-box}';
  return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+'
-/* TROZAL MOBILE RESPONSIVE — Android Chrome / iOS Safari */
-@media (max-width: 720px) {
-  html, body { width:100%; min-width:0; min-height:100%; overflow-x:hidden; }
-  body { display:block; }
-  .topbar { position:relative; top:auto; width:100%; min-height:48px; height:auto; padding:9px 12px; gap:8px; }
-  .topbar .brand { font-size:16px; }
-  .topnote { max-width:100%; white-space:normal; }
-  .topright { width:100%; margin:0; flex-wrap:wrap; }
-  .topright button { flex:1 1 auto; min-height:40px; }
-  .app { display:flex !important; flex-direction:column !important; width:100%; max-width:100%; height:auto !important; min-height:0 !important; overflow:visible !important; }
-  .main { order:0 !important; width:100%; min-width:0; min-height:0 !important; height:auto; overflow:visible !important; }
-  .sidebar, .right { display:block !important; width:100%; max-width:100%; min-width:0; max-height:none !important; height:auto; overflow:visible !important; padding:10px; border-left:0; border-right:0; }
-  .topcontrols { width:100%; padding:10px; gap:8px; }
-  .topcontrols .control { flex:1 1 135px; min-width:0 !important; max-width:none; }
-  .topcontrols .render { flex:1 1 100%; margin:0; }
-  .stagewrap { width:100%; min-width:0; height:auto !important; min-height:0 !important; max-height:none; padding:12px 10px 22px; overflow:visible; }
-  .stage { width:100%; max-width:100%; height:auto; max-height:none; aspect-ratio:16/9; }
-  .stageinfo { padding:4px 10px 12px; gap:8px; }
-  .timeline { width:100%; padding:10px; }
-  .parts { grid-template-columns:repeat(3,minmax(0,1fr)); }
-  .tabs { flex-wrap:wrap; }
-  .tabs button { min-height:40px; }
-  .panel { width:100%; min-width:0; padding:10px; overflow-wrap:anywhere; }
-  .panel button, button { min-height:38px; touch-action:manipulation; }
-  input, select, textarea { max-width:100%; min-width:0; font-size:16px; }
-  .row, .btnrow, .scene-actions { flex-wrap:wrap; }
-  .row > *, .btnrow > *, .scene-actions > * { min-width:0; }
-  .metadata-quality-grid, .visual-scene-fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .batch-queue-list { max-height:42vh; }
-}
-@media (max-width: 390px) {
-  .topbar { padding-left:9px; padding-right:9px; }
-  .sidebar, .right { padding:8px; }
-  .panel { padding:9px; }
-  .metadata-quality-grid, .visual-scene-fields { grid-template-columns:minmax(0,1fr); }
-  .parts { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .stagewrap { padding-left:7px; padding-right:7px; }
-}
-@supports (height: 100dvh) {
-  @media (min-width: 721px) {
-    .app { height:calc(100dvh - 54px); }
-  }
-}
 
 </style></head><body'+cleanBodyAttrs+'>'+safeRoot.outerHTML+'</body></html>';
 }
