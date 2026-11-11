@@ -3850,7 +3850,7 @@ wireStudioLayout();
 
 /* TROZAL METADATA NEXT — manual keyword review, scene evidence preview and batch exports */
 let trozalMetadataBatch=[];
-let trozalMetadataApproved=new Set();
+var trozalMetadataApproved = window.trozalMetadataApproved = new Set();
 let trozalMetadataSelectedScene=0;
 try{const saved=JSON.parse(localStorage.getItem('trozal_metadata_batch_v1')||'[]');if(Array.isArray(saved))trozalMetadataBatch=saved.filter(x=>x&&typeof x==='object'&&typeof x.title==='string').slice(0,500)}catch(_){}
 function trozalMetadataSaveBatch(){try{localStorage.setItem('trozal_metadata_batch_v1',JSON.stringify(trozalMetadataBatch))}catch(_){const el=$('metadataBatchSummary');if(el)el.textContent='Penyimpanan lokal penuh/tidak tersedia. Ekspor batch untuk menyimpan data.'}}
@@ -4007,7 +4007,7 @@ async function trozalMetadataAnalyzeSource(kind){
   trozalLocalVisionLastAnalysis={model,createdAt:new Date().toISOString(),imageCount:images.length,title,description,category,keywords,visualSummary:String(parsed.visual_summary||''),visibleObjects:Array.isArray(parsed.visible_objects)?parsed.visible_objects:[],confidenceNotes:String(parsed.confidence_notes||'')};
   $('metadataEvidence').textContent='BUKTI VISUAL · '+source.label+' · '+images.length+' frame dari Preview utama TROZAL dianalisis oleh '+model+'. '+trozalMetadataActiveSource.visualSummary+(trozalMetadataActiveSource.confidenceNotes?' Catatan: '+trozalMetadataActiveSource.confidenceNotes:'');
   updateMetadataCount();trozalRefreshMetadataQuality();trozalUpdateMetadataPlatformValidation();
-  if(typeof trozalMetadataRenderReview==='function'){trozalMetadataApproved?.clear?.();trozalMetadataRenderReview();}
+  if(typeof trozalMetadataRenderReview==='function'){window.trozalMetadataApproved?.clear?.();trozalMetadataRenderReview();}
   scheduleAutosave();
   trozalMetadataSourceStatus('SELESAI · Metadata '+label+' dibuat dari '+images.length+' frame Preview utama TROZAL, bukan hanya prompt atau kode.');
  }catch(error){const message=error?.message||String(error);trozalMetadataSourceStatus('GAGAL · '+label+': '+message+(message.includes('Failed to fetch')?' · Browser menolak akses Loopback. Pastikan Chrome memberi izin Local Network Access dan Bridge aktif.':''),true);}
