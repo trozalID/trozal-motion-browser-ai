@@ -3362,8 +3362,10 @@ async function captureHtmlMotionAt(seconds){
   const htmlSpeed=Math.max(.05,+$('speed').value||1),ms=Math.max(0,seconds*1000*htmlSpeed);
   // Use the exact same cached animation objects as preview; no per-frame DOM animation scan.
   if(Math.abs(ms-htmlMotionLastTime)>.01){htmlMotionAnimations.forEach(animation=>{try{animation.pause();animation.currentTime=ms;}catch(_){}});htmlMotionLastTime=ms;}
+  // Give Chromium one paint opportunity after seeking CSS/Web Animations so the
+  // DOM snapshot sees the same transform/perspective state as the visible Preview.
+  await new Promise(resolve=>requestAnimationFrame(resolve));
   if(htmlMotionFontsReady)await htmlMotionFontsReady;
-  // Force style/layout resolution synchronously; an extra RAF here halves export throughput.
   void scene.getBoundingClientRect();
   const [outW,outH]=($('resolution').value||'1920x1080').split('x').map(Number);
   const captureScale=Math.max(.25,Math.min(2,Math.max((outW||1920)/htmlMotionWidth,(outH||1080)/htmlMotionHeight)));
