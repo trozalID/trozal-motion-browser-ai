@@ -3352,8 +3352,7 @@ function buildSafeHtmlDocument(raw){
  // Do not force a transparent body background: it can erase an imported background.
  // Capture doc.body below so body backgrounds and pseudo-elements remain visible.
  const layoutCss='html,body{box-sizing:border-box;margin:0!important;padding:0!important;width:'+htmlMotionWidth+'px!important;height:'+htmlMotionHeight+'px!important;min-width:'+htmlMotionWidth+'px!important;min-height:'+htmlMotionHeight+'px!important;overflow:hidden!important}#animove-scene{box-sizing:border-box}';
- return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+'
-</style></head><body'+cleanBodyAttrs+'>'+safeRoot.outerHTML+'</body></html>';
+ return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+'\n</style></head><body'+cleanBodyAttrs+'>'+safeRoot.outerHTML+'</body></html>';
 }
 function installHtmlCaptureFallbacks(doc,scene){
  // Intentionally preserve the original composition. Earlier fallback code replaced
