@@ -564,8 +564,6 @@ async function analyzeWithGeminiCloud() {
   if (!apiKey) { setCloudStatus("Masukkan Gemini API key terlebih dahulu.", true); $("trozalGeminiApiKey")?.focus(); return; }
   if (button?.disabled) return;
   if (button) button.disabled = true;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 300000);
   let images = [];
   try {
     const selected = [...($("trozalVisionImages")?.files || [])].slice(0, 3);
@@ -597,7 +595,7 @@ async function analyzeWithGeminiCloud() {
       generationConfig: { temperature: 0.15, maxOutputTokens: 2200, responseMimeType: "application/json" }
     });
     // Stable multimodal model fallbacks: keys/projects can expose different model availability.
-    const models = ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
+    const models = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash"];
     let response = null, payload = {}, activeModel = models[0], lastFailure = "";
     const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     for (let modelIndex = 0; modelIndex < models.length; modelIndex++) {
@@ -606,18 +604,22 @@ async function analyzeWithGeminiCloud() {
       let moveToNextModel = false;
       for (let attempt = 0; attempt < attempts; attempt++) {
         setCloudStatus("Menghubungi " + activeModel + " · percobaan " + (attempt + 1) + "/" + attempts + "…");
+        const requestController = new AbortController();
+        const requestTimeout = setTimeout(() => requestController.abort(), 90000);
         try {
           response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + activeModel + ":generateContent", {
             method: "POST",
             headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
             body: requestBody,
-            signal: controller.signal
+            signal: requestController.signal
           });
         } catch (networkError) {
           lastFailure = networkError?.message || String(networkError);
           if (attempt + 1 < attempts) { setCloudStatus("Koneksi Gemini terputus. Mencoba ulang…"); await wait(1500); continue; }
           moveToNextModel = true;
           break;
+        } finally {
+          clearTimeout(requestTimeout);
         }
         payload = await response.json().catch(() => ({}));
         if (response.ok) break;
@@ -669,7 +671,7 @@ async function analyzeWithGeminiCloud() {
     setCloudStatus("SELESAI · Judul, deskripsi, kategori, dan " + keywords.length + " keyword berhasil dibuat. Periksa sebelum ekspor.");
   } catch (error) {
     const message = error?.message || String(error);
-    if (images.length && /Gemini sedang tidak tersedia setelah percobaan ulang/i.test(message)) {
+    if (images.length && /Gemini sedang tidak tersedia setelah percobaan ulang|Semua model Gemini cadangan gagal|signal is aborted|AbortError|Failed to fetch|NetworkError|timeout/i.test(message)) {
       try {
         setCloudStatus("Gemini sedang padat. Menjalankan fallback Browser Vision lokal dari frame yang sama…");
         const captions = await captionImages(images);
@@ -689,7 +691,6 @@ async function analyzeWithGeminiCloud() {
       setCloudStatus((error?.name === "AbortError" ? "Waktu analisis habis (300 detik)." : message), true);
     }
   } finally {
-    clearTimeout(timeout);
     if (button) button.disabled = false;
   }
 }
