@@ -282,6 +282,25 @@ async function measureFrameChanges(images) {
   }
   return {averageChange:Math.round(pairChanges.reduce((x,y)=>x+y,0)/pairChanges.length),pairChanges};
 }
+function renderBrowserFrameBreakdown(images,captions,objectEvidence,frameChanges){
+ const panel=$("trozalBrowserFrameBreakdown"),host=$("trozalBrowserFrameBreakdownList");
+ if(!panel||!host)return;
+ host.replaceChildren();
+ const perFrame=Array.isArray(objectEvidence?.perFrame)?objectEvidence.perFrame:[];
+ images.forEach((image,index)=>{
+  const card=document.createElement("article");card.className="trozal-frame-evidence-card";
+  const img=document.createElement("img");img.alt="Sampel frame "+(index+1);img.loading="lazy";img.src=toVisionDataUrl(image);
+  const body=document.createElement("div");
+  const heading=document.createElement("strong");heading.textContent="FRAME "+(index+1);
+  const caption=document.createElement("p");caption.textContent=captions[index]||"Caption tidak tersedia.";
+  const detected=(perFrame[index]||[]).map(item=>item.label+" ("+Math.round(item.score*100)+"%)");
+  const objects=document.createElement("small");objects.textContent="Objek terdeteksi: "+(detected.join(", ")||"Tidak ada deteksi dengan confidence ≥35%.");
+  const change=document.createElement("small");
+  change.textContent=index===0?"Perubahan: frame awal.":"Perubahan piksel dari frame sebelumnya: "+(frameChanges?.pairChanges?.[index-1]??"—")+"%.";
+  body.append(heading,caption,objects,change);card.append(img,body);host.append(card);
+ });
+ panel.hidden=!images.length;
+}
 function buildGroundedVisionEvidence(captions,objectEvidence,frameChanges){
   const labels=(objectEvidence?.objects||[]).map(x=>x.label+" ("+Math.round(x.maxScore*100)+"%; "+x.frameCount+" frame)");
   return "Captions: "+captions.map((x,i)=>"F"+(i+1)+": "+x).join(" | ")+
@@ -475,6 +494,7 @@ async function analyzeSourceWithBrowserVision(kind) {
     let frameChanges={averageChange:0,pairChanges:[]};
     try{frameChanges=await measureFrameChanges(images);}catch(_){}
     const groundedEvidence=buildGroundedVisionEvidence(captions,objectEvidence,frameChanges);
+    renderBrowserFrameBreakdown(images,captions,objectEvidence,frameChanges);
     setMetadataSourceStatus("Menyusun metadata berdasarkan caption dan deteksi objek…");
     const {parsed,source:metadataEngine}=await composeMetadataFromCaptions(captions,groundedEvidence);
     const applied=applyBrowserMetadata(parsed,captions,source.label,{objects:objectEvidence.objects,averageChange:frameChanges.averageChange});
