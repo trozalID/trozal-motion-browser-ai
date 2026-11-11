@@ -499,6 +499,35 @@ $("trozalVisionCheckBtn")?.addEventListener("click", async () => {
   }
 });
 
+function renderGeminiContactSheet(images, analysis = {}) {
+  const panel = $("trozalGeminiContactSheetPanel");
+  const host = $("trozalGeminiContactSheet");
+  if (!panel || !host) return;
+  host.replaceChildren();
+  (Array.isArray(images) ? images : []).forEach((image, index) => {
+    const card = document.createElement("div");
+    card.style.cssText = "min-width:0;border:1px solid rgba(240,195,108,.35);border-radius:7px;overflow:hidden;background:rgba(0,0,0,.2)";
+    const img = document.createElement("img");
+    const value = String(image || "");
+    img.src = value.startsWith("data:") ? value : "data:image/jpeg;base64," + value;
+    img.alt = "Gemini Preview frame " + (index + 1);
+    img.loading = "lazy";
+    img.style.cssText = "display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#101010";
+    const label = document.createElement("div");
+    label.textContent = "FRAME " + (index + 1);
+    label.style.cssText = "padding:5px 7px;font-size:11px;font-weight:800;color:#f0c36c";
+    card.append(img, label);
+    host.appendChild(card);
+  });
+  const summary = $("trozalGeminiVisualSummary");
+  if (summary) summary.textContent = analysis.visualSummary ? "RINGKASAN VISUAL · " + analysis.visualSummary : "";
+  const objects = $("trozalGeminiVisibleObjects");
+  if (objects) {
+    const list = Array.isArray(analysis.visibleObjects) ? analysis.visibleObjects.filter(Boolean) : [];
+    objects.textContent = list.length ? "OBJEK TERLIHAT · " + list.join(" · ") : "";
+  }
+  panel.style.display = images.length ? "block" : "none";
+}
 async function analyzeWithGeminiCloud() {
   const button = $("trozalGeminiAnalyzeBtn");
   const status = $("trozalGeminiStatus");
@@ -606,6 +635,7 @@ async function analyzeWithGeminiCloud() {
     const applied = applyBrowserMetadata({ ...parsed, title, description, category, keywords }, [String(parsed.visual_summary || ""), ...(Array.isArray(parsed.visible_objects) ? parsed.visible_objects : [])].filter(Boolean), "Gemini Cloud Accurate", { objects: (Array.isArray(parsed.visible_objects) ? parsed.visible_objects : []).map(label => ({ label: String(label) })), averageChange: null });
     if ($("metadataEvidence")) $("metadataEvidence").textContent = "GEMINI CLOUD ACCURATE · " + images.length + " frame dianalisis. " + String(parsed.visual_summary || "") + (parsed.motion_evidence ? " Bukti gerak: " + parsed.motion_evidence : "") + (parsed.confidence_notes ? " Catatan: " + parsed.confidence_notes : "") + " · Periksa hasil sebelum ekspor.";
     window.trozalGeminiLastAnalysis = { model: activeModel, createdAt: new Date().toISOString(), imageCount: images.length, ...applied, visualSummary: parsed.visual_summary || "", visibleObjects: parsed.visible_objects || [], motionEvidence: parsed.motion_evidence || "", confidenceNotes: parsed.confidence_notes || "" };
+    renderGeminiContactSheet(images, window.trozalGeminiLastAnalysis);
     if (typeof trozalRefreshMetadataQuality === "function") trozalRefreshMetadataQuality();
     if (typeof trozalUpdateMetadataPlatformValidation === "function") trozalUpdateMetadataPlatformValidation();
     if (typeof trozalMetadataRenderReview === "function") { if (typeof trozalMetadataApproved !== "undefined" && trozalMetadataApproved && typeof trozalMetadataApproved.clear === "function") trozalMetadataApproved.clear(); trozalMetadataRenderReview(); }
@@ -620,6 +650,7 @@ async function analyzeWithGeminiCloud() {
         const fallback = buildMetadataFallback(captions, [...($("metadataCategory")?.options || [])].map(option => option.text));
         const applied = applyBrowserMetadata(fallback, captions, "Gemini Cloud fallback · Browser Vision", { objects: [], averageChange: null });
         window.trozalGeminiLastAnalysis = { model: "browser-vision-caption-fallback", createdAt: new Date().toISOString(), imageCount: images.length, ...applied, captions, cloudFallback: true };
+        renderGeminiContactSheet(images, { visualSummary: captions.join(" · "), visibleObjects: [] });
         if (typeof trozalRefreshMetadataQuality === "function") trozalRefreshMetadataQuality();
         if (typeof trozalUpdateMetadataPlatformValidation === "function") trozalUpdateMetadataPlatformValidation();
         if (typeof trozalMetadataRenderReview === "function") { if (typeof trozalMetadataApproved !== "undefined" && trozalMetadataApproved && typeof trozalMetadataApproved.clear === "function") trozalMetadataApproved.clear(); trozalMetadataRenderReview(); }
