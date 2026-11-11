@@ -296,8 +296,12 @@ function renderBrowserFrameBreakdown(images,captions,objectEvidence,frameChanges
   const detected=(perFrame[index]||[]).map(item=>item.label+" ("+Math.round(item.score*100)+"%)");
   const objects=document.createElement("small");objects.textContent="Objek terdeteksi: "+(detected.join(", ")||"Tidak ada deteksi dengan confidence ≥35%.");
   const change=document.createElement("small");
-  change.textContent=index===0?"Perubahan: frame awal.":"Perubahan piksel dari frame sebelumnya: "+(frameChanges?.pairChanges?.[index-1]??"—")+"%.";
-  body.append(heading,caption,objects,change);card.append(img,body);host.append(card);
+  const changeValue=index===0?null:Number(frameChanges?.pairChanges?.[index-1]??0);
+  change.textContent=index===0?"Perubahan: frame awal.":"Perubahan piksel dari frame sebelumnya: "+changeValue+"%.";
+  const sceneCue=document.createElement("small");
+  sceneCue.className="trozal-scene-change-cue";
+  sceneCue.textContent=index===0?"Status: baseline visual.":changeValue>=22?"Kandidat perubahan adegan kuat — perlu verifikasi visual.":changeValue>=10?"Perubahan visual sedang — mungkin gerakan atau transisi.":"Perubahan visual rendah — kemungkinan adegan berlanjut.";
+  body.append(heading,caption,objects,change,sceneCue);card.append(img,body);host.append(card);
  });
  panel.hidden=!images.length;
 }
@@ -305,7 +309,9 @@ function buildGroundedVisionEvidence(captions,objectEvidence,frameChanges){
   const labels=(objectEvidence?.objects||[]).map(x=>x.label+" ("+Math.round(x.maxScore*100)+"%; "+x.frameCount+" frame)");
   return "Captions: "+captions.map((x,i)=>"F"+(i+1)+": "+x).join(" | ")+
     "\nDETR object detections: "+(labels.join(", ")||"none")+
-    "\nFrame pixel change: "+(frameChanges?.averageChange??0)+"% average changed area. This is visual change only; do not infer a specific action from it.";
+    "\nFrame pixel change: "+(frameChanges?.averageChange??0)+"% average changed area."+
+    "\nSampled scene-change cues: "+(frameChanges?.pairChanges||[]).map((value,index)=>"F"+(index+1)+" to F"+(index+2)+": "+value+"% pixel change ("+(value>=22?"strong candidate transition":value>=10?"moderate visual change":"low visual change")+")").join("; ")+
+    ". These are sparse-sample visual cues only; do not claim exact scene boundaries or infer a specific action.";
 }
 function parseMetadataJson(raw) {
   let text = String(raw || "").trim().replace(/^\uFEFF/, "");
