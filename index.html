@@ -3323,7 +3323,36 @@ function buildSafeHtmlDocument(raw){
  // Do not force a transparent body background: it can erase an imported background.
  // Capture doc.body below so body backgrounds and pseudo-elements remain visible.
  const layoutCss='html,body{box-sizing:border-box;margin:0!important;padding:0!important;width:'+htmlMotionWidth+'px!important;height:'+htmlMotionHeight+'px!important;min-width:'+htmlMotionWidth+'px!important;min-height:'+htmlMotionHeight+'px!important;overflow:hidden!important}#animove-scene{box-sizing:border-box}';
- return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+'</style></head><body'+cleanBodyAttrs+'>'+safeRoot.outerHTML+'</body></html>';
+ return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+'
+/* TROZAL FIX · Android Chrome desktop-mode: keep both side panels reachable */
+@media (min-width:721px) and (max-width:1050px) {
+  .app {
+    display:grid !important;
+    grid-template-columns:minmax(180px,20vw) 8px minmax(260px,1fr) 8px minmax(180px,20vw) !important;
+    width:100% !important;
+    max-width:100% !important;
+    height:calc(100vh - 54px) !important;
+    height:calc(100dvh - 54px) !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+  }
+  .sidebar,.right {
+    display:block !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    max-height:none !important;
+    height:100% !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .layout-resizer { display:block !important; }
+  .layout-resizer[data-edge="right"] { display:block !important; }
+  .main { min-width:0 !important; min-height:0 !important; overflow-y:auto !important; overflow-x:hidden !important; }
+}
+
+</style></head><body'+cleanBodyAttrs+'>'+safeRoot.outerHTML+'</body></html>';
 }
 function installHtmlCaptureFallbacks(doc,scene){
  // Intentionally preserve the original composition. Earlier fallback code replaced
