@@ -605,7 +605,11 @@ async function analyzeWithGeminiCloud() {
     const category = categoryOptions.find(value => value.toLowerCase() === String(parsed.category || "").trim().toLowerCase()) || "Graphic Resources";
     const applied = applyBrowserMetadata({ ...parsed, title, description, category, keywords }, [String(parsed.visual_summary || ""), ...(Array.isArray(parsed.visible_objects) ? parsed.visible_objects : [])].filter(Boolean), "Gemini Cloud Accurate", { objects: (Array.isArray(parsed.visible_objects) ? parsed.visible_objects : []).map(label => ({ label: String(label) })), averageChange: null });
     if ($("metadataEvidence")) $("metadataEvidence").textContent = "GEMINI CLOUD ACCURATE · " + images.length + " frame dianalisis. " + String(parsed.visual_summary || "") + (parsed.motion_evidence ? " Bukti gerak: " + parsed.motion_evidence : "") + (parsed.confidence_notes ? " Catatan: " + parsed.confidence_notes : "") + " · Periksa hasil sebelum ekspor.";
-    window.trozalGeminiLastAnalysis = { model: activeModel, createdAt: new Date().toISOString(), ...applied, visualSummary: parsed.visual_summary || "", visibleObjects: parsed.visible_objects || [], motionEvidence: parsed.motion_evidence || "", confidenceNotes: parsed.confidence_notes || "" };
+    window.trozalGeminiLastAnalysis = { model: activeModel, createdAt: new Date().toISOString(), imageCount: images.length, ...applied, visualSummary: parsed.visual_summary || "", visibleObjects: parsed.visible_objects || [], motionEvidence: parsed.motion_evidence || "", confidenceNotes: parsed.confidence_notes || "" };
+    if (typeof trozalRefreshMetadataQuality === "function") trozalRefreshMetadataQuality();
+    if (typeof trozalUpdateMetadataPlatformValidation === "function") trozalUpdateMetadataPlatformValidation();
+    if (typeof trozalMetadataRenderReview === "function") { trozalMetadataApproved?.clear?.(); trozalMetadataRenderReview(); }
+    if (typeof scheduleAutosave === "function") scheduleAutosave();
     setCloudStatus("SELESAI · Judul, deskripsi, kategori, dan " + keywords.length + " keyword berhasil dibuat. Periksa sebelum ekspor.");
   } catch (error) {
     const message = error?.message || String(error);
@@ -615,7 +619,11 @@ async function analyzeWithGeminiCloud() {
         const captions = await captionImages(images);
         const fallback = buildMetadataFallback(captions, [...($("metadataCategory")?.options || [])].map(option => option.text));
         const applied = applyBrowserMetadata(fallback, captions, "Gemini Cloud fallback · Browser Vision", { objects: [], averageChange: null });
-        window.trozalGeminiLastAnalysis = { model: "browser-vision-caption-fallback", createdAt: new Date().toISOString(), ...applied, captions, cloudFallback: true };
+        window.trozalGeminiLastAnalysis = { model: "browser-vision-caption-fallback", createdAt: new Date().toISOString(), imageCount: images.length, ...applied, captions, cloudFallback: true };
+        if (typeof trozalRefreshMetadataQuality === "function") trozalRefreshMetadataQuality();
+        if (typeof trozalUpdateMetadataPlatformValidation === "function") trozalUpdateMetadataPlatformValidation();
+        if (typeof trozalMetadataRenderReview === "function") { trozalMetadataApproved?.clear?.(); trozalMetadataRenderReview(); }
+        if (typeof scheduleAutosave === "function") scheduleAutosave();
         setCloudStatus("GEMINI SEDANG PADAT · Metadata cadangan berhasil dibuat dari caption Browser Vision lokal. Periksa hasil sebelum ekspor.");
       } catch (fallbackError) {
         setCloudStatus("Gemini gagal dan fallback Browser Vision juga gagal: " + (fallbackError?.message || String(fallbackError)), true);
