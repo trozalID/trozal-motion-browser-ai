@@ -3275,7 +3275,52 @@ function buildSafeHtmlDocument(raw){
  // Do not force a transparent body background: it can erase an imported background.
  // Capture doc.body below so body backgrounds and pseudo-elements remain visible.
  const layoutCss='html,body{box-sizing:border-box;margin:0!important;padding:0!important;width:'+htmlMotionWidth+'px!important;height:'+htmlMotionHeight+'px!important;min-width:'+htmlMotionWidth+'px!important;min-height:'+htmlMotionHeight+'px!important;overflow:hidden!important}#animove-scene{box-sizing:border-box}';
- return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+'</style></head><body'+cleanBodyAttrs+'>'+safeRoot.outerHTML+'</body></html>';
+ return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+'
+/* TROZAL MOBILE RESPONSIVE — Android Chrome / iOS Safari */
+@media (max-width: 720px) {
+  html, body { width:100%; min-width:0; min-height:100%; overflow-x:hidden; }
+  body { display:block; }
+  .topbar { position:relative; top:auto; width:100%; min-height:48px; height:auto; padding:9px 12px; gap:8px; }
+  .topbar .brand { font-size:16px; }
+  .topnote { max-width:100%; white-space:normal; }
+  .topright { width:100%; margin:0; flex-wrap:wrap; }
+  .topright button { flex:1 1 auto; min-height:40px; }
+  .app { display:flex !important; flex-direction:column !important; width:100%; max-width:100%; height:auto !important; min-height:0 !important; overflow:visible !important; }
+  .main { order:0 !important; width:100%; min-width:0; min-height:0 !important; height:auto; overflow:visible !important; }
+  .sidebar, .right { display:block !important; width:100%; max-width:100%; min-width:0; max-height:none !important; height:auto; overflow:visible !important; padding:10px; border-left:0; border-right:0; }
+  .topcontrols { width:100%; padding:10px; gap:8px; }
+  .topcontrols .control { flex:1 1 135px; min-width:0 !important; max-width:none; }
+  .topcontrols .render { flex:1 1 100%; margin:0; }
+  .stagewrap { width:100%; min-width:0; height:auto !important; min-height:0 !important; max-height:none; padding:12px 10px 22px; overflow:visible; }
+  .stage { width:100%; max-width:100%; height:auto; max-height:none; aspect-ratio:16/9; }
+  .stageinfo { padding:4px 10px 12px; gap:8px; }
+  .timeline { width:100%; padding:10px; }
+  .parts { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .tabs { flex-wrap:wrap; }
+  .tabs button { min-height:40px; }
+  .panel { width:100%; min-width:0; padding:10px; overflow-wrap:anywhere; }
+  .panel button, button { min-height:38px; touch-action:manipulation; }
+  input, select, textarea { max-width:100%; min-width:0; font-size:16px; }
+  .row, .btnrow, .scene-actions { flex-wrap:wrap; }
+  .row > *, .btnrow > *, .scene-actions > * { min-width:0; }
+  .metadata-quality-grid, .visual-scene-fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .batch-queue-list { max-height:42vh; }
+}
+@media (max-width: 390px) {
+  .topbar { padding-left:9px; padding-right:9px; }
+  .sidebar, .right { padding:8px; }
+  .panel { padding:9px; }
+  .metadata-quality-grid, .visual-scene-fields { grid-template-columns:minmax(0,1fr); }
+  .parts { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .stagewrap { padding-left:7px; padding-right:7px; }
+}
+@supports (height: 100dvh) {
+  @media (min-width: 721px) {
+    .app { height:calc(100dvh - 54px); }
+  }
+}
+
+</style></head><body'+cleanBodyAttrs+'>'+safeRoot.outerHTML+'</body></html>';
 }
 function installHtmlCaptureFallbacks(doc,scene){
  // Intentionally preserve the original composition. Earlier fallback code replaced
@@ -3851,6 +3896,7 @@ wireStudioLayout();
 /* TROZAL METADATA NEXT — manual keyword review, scene evidence preview and batch exports */
 let trozalMetadataBatch=[];
 var trozalMetadataApproved = window.trozalMetadataApproved = new Set();
+function trozalGetMetadataApproved(){if(!(window.trozalMetadataApproved instanceof Set))window.trozalMetadataApproved=new Set();return window.trozalMetadataApproved;}
 let trozalMetadataSelectedScene=0;
 try{const saved=JSON.parse(localStorage.getItem('trozal_metadata_batch_v1')||'[]');if(Array.isArray(saved))trozalMetadataBatch=saved.filter(x=>x&&typeof x==='object'&&typeof x.title==='string').slice(0,500)}catch(_){}
 function trozalMetadataSaveBatch(){try{localStorage.setItem('trozal_metadata_batch_v1',JSON.stringify(trozalMetadataBatch))}catch(_){const el=$('metadataBatchSummary');if(el)el.textContent='Penyimpanan lokal penuh/tidak tersedia. Ekspor batch untuk menyimpan data.'}}
@@ -3859,11 +3905,11 @@ function trozalMetadataRenderReview(){
  const analysis=trozalMetadataKeywordAnalysis();host.replaceChildren();
  if(!analysis.entries.length){host.textContent='Belum ada keyword untuk ditinjau.';return}
  analysis.entries.forEach(entry=>{
-  const chip=document.createElement('span');chip.className='metadata-keyword-chip'+(trozalMetadataApproved.has(entry.key)?' approved':'')+(entry.ratio===0?' unmatched':'');
+  const chip=document.createElement('span');chip.className='metadata-keyword-chip'+(trozalGetMetadataApproved().has(entry.key)?' approved':'')+(entry.ratio===0?' unmatched':'');
   const label=document.createElement('span');label.textContent=entry.term+' · '+(entry.exact?'cocok penuh':entry.ratio>0?'cocok sebagian':'belum cocok');chip.appendChild(label);
-  const approve=document.createElement('button');approve.type='button';approve.textContent=trozalMetadataApproved.has(entry.key)?'✓':'Setujui';approve.title='Setujui keyword ini berdasarkan tinjauan manual';
-  approve.addEventListener('click',()=>{if(trozalMetadataApproved.has(entry.key))trozalMetadataApproved.delete(entry.key);else trozalMetadataApproved.add(entry.key);trozalMetadataRenderReview()});chip.appendChild(approve);
-  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.title='Hapus keyword dari daftar';remove.addEventListener('click',()=>{const kept=String($('metadataKeywords').value||'').split(/[,;\n]+/).map(x=>x.trim()).filter(x=>x&&x.toLowerCase().match(/[a-z0-9]+/g).map(trozalMetadataWordKey).filter(Boolean).join(' ')!==entry.key);$('metadataKeywords').value=kept.join(', ');trozalMetadataApproved.delete(entry.key);updateMetadataCount();trozalRefreshMetadataQuality();trozalMetadataRenderReview()});chip.appendChild(remove);
+  const approve=document.createElement('button');approve.type='button';approve.textContent=trozalGetMetadataApproved().has(entry.key)?'✓':'Setujui';approve.title='Setujui keyword ini berdasarkan tinjauan manual';
+  approve.addEventListener('click',()=>{if(trozalGetMetadataApproved().has(entry.key))trozalGetMetadataApproved().delete(entry.key);else trozalGetMetadataApproved().add(entry.key);trozalMetadataRenderReview()});chip.appendChild(approve);
+  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.title='Hapus keyword dari daftar';remove.addEventListener('click',()=>{const kept=String($('metadataKeywords').value||'').split(/[,;\n]+/).map(x=>x.trim()).filter(x=>x&&x.toLowerCase().match(/[a-z0-9]+/g).map(trozalMetadataWordKey).filter(Boolean).join(' ')!==entry.key);$('metadataKeywords').value=kept.join(', ');trozalGetMetadataApproved().delete(entry.key);updateMetadataCount();trozalRefreshMetadataQuality();trozalMetadataRenderReview()});chip.appendChild(remove);
   host.appendChild(chip);
  });
 }
@@ -3924,11 +3970,11 @@ function trozalMetadataExportSidecar(){
  const payload={schema:'trozal-metadata-sidecar-v1',generatedAt:new Date().toISOString(),notice:'Metadata menyimpan sumber bukti dan jenis analisis. Analisis kode HTML/SVG tidak sama dengan analisis piksel; analisis gambar hanya berlaku jika Local Vision digunakan. Tinjau hasil terhadap preview aktual sebelum pengiriman.',assets:trozalMetadataBatch};
  trozalMetadataDownload('trozal_metadata_sidecar.json',JSON.stringify(payload,null,2),'application/json');$('metadataBatchSummary').textContent='JSON sidecar diekspor · '+trozalMetadataBatch.length+' aset.';
 }
-$('metadataKeywords')?.addEventListener('input',()=>{trozalMetadataApproved.clear();trozalMetadataRenderReview()});
+$('metadataKeywords')?.addEventListener('input',()=>{trozalGetMetadataApproved().clear();trozalMetadataRenderReview()});
 $('optimizeMetadataBtn')?.addEventListener('click',trozalMetadataRenderReview);
 $('metadataSceneSelect')?.addEventListener('change',()=>{trozalMetadataSelectedScene=Number($('metadataSceneSelect').value)||0;trozalMetadataRenderScenes()});
-$('metadataApplyApprovedBtn')?.addEventListener('click',()=>{const entries=trozalMetadataKeywordAnalysis().entries.filter(x=>trozalMetadataApproved.has(x.key));$('metadataKeywords').value=entries.map(x=>x.term).join(', ');trozalMetadataApproved.clear();updateMetadataCount();trozalRefreshMetadataQuality();trozalMetadataRenderReview();$('metadataOptimizerStatus').textContent=entries.length+' keyword yang disetujui diterapkan.'});
-$('metadataResetReviewBtn')?.addEventListener('click',()=>{trozalMetadataApproved.clear();trozalMetadataRenderReview()});
+$('metadataApplyApprovedBtn')?.addEventListener('click',()=>{const entries=trozalMetadataKeywordAnalysis().entries.filter(x=>trozalGetMetadataApproved().has(x.key));$('metadataKeywords').value=entries.map(x=>x.term).join(', ');trozalGetMetadataApproved().clear();updateMetadataCount();trozalRefreshMetadataQuality();trozalMetadataRenderReview();$('metadataOptimizerStatus').textContent=entries.length+' keyword yang disetujui diterapkan.'});
+$('metadataResetReviewBtn')?.addEventListener('click',()=>{trozalGetMetadataApproved().clear();trozalMetadataRenderReview()});
 $('metadataRefreshScenesBtn')?.addEventListener('click',trozalMetadataRenderScenes);
 $('metadataAddSceneBatchBtn')?.addEventListener('click',()=>{trozalMetadataRenderScenes();trozalMetadataAddScene()});
 $('metadataAddCurrentBatchBtn')?.addEventListener('click',trozalMetadataAddCurrent);
