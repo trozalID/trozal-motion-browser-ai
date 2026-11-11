@@ -664,7 +664,7 @@ async function analyzeWithGeminiCloud() {
     renderGeminiContactSheet(images, window.trozalGeminiLastAnalysis);
     if (typeof trozalRefreshMetadataQuality === "function") trozalRefreshMetadataQuality();
     if (typeof trozalUpdateMetadataPlatformValidation === "function") trozalUpdateMetadataPlatformValidation();
-    if (typeof trozalMetadataRenderReview === "function") { if (typeof trozalMetadataApproved !== "undefined" && trozalMetadataApproved && typeof trozalMetadataApproved.clear === "function") trozalMetadataApproved.clear(); trozalMetadataRenderReview(); }
+    if (typeof trozalMetadataRenderReview === "function") { if (window.trozalMetadataApproved && typeof window.trozalMetadataApproved.clear === "function") window.trozalMetadataApproved.clear(); trozalMetadataRenderReview(); }
     if (typeof scheduleAutosave === "function") scheduleAutosave();
     setCloudStatus("SELESAI · Judul, deskripsi, kategori, dan " + keywords.length + " keyword berhasil dibuat. Periksa sebelum ekspor.");
   } catch (error) {
@@ -679,7 +679,7 @@ async function analyzeWithGeminiCloud() {
         renderGeminiContactSheet(images, { visualSummary: captions.join(" · "), visibleObjects: [] });
         if (typeof trozalRefreshMetadataQuality === "function") trozalRefreshMetadataQuality();
         if (typeof trozalUpdateMetadataPlatformValidation === "function") trozalUpdateMetadataPlatformValidation();
-        if (typeof trozalMetadataRenderReview === "function") { if (typeof trozalMetadataApproved !== "undefined" && trozalMetadataApproved && typeof trozalMetadataApproved.clear === "function") trozalMetadataApproved.clear(); trozalMetadataRenderReview(); }
+        if (typeof trozalMetadataRenderReview === "function") { if (window.trozalMetadataApproved && typeof window.trozalMetadataApproved.clear === "function") window.trozalMetadataApproved.clear(); trozalMetadataRenderReview(); }
         if (typeof scheduleAutosave === "function") scheduleAutosave();
         setCloudStatus("GEMINI SEDANG PADAT · Metadata cadangan berhasil dibuat dari caption Browser Vision lokal. Periksa hasil sebelum ekspor.");
       } catch (fallbackError) {
