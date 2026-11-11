@@ -608,7 +608,7 @@ async function analyzeWithGeminiCloud() {
     window.trozalGeminiLastAnalysis = { model: activeModel, createdAt: new Date().toISOString(), imageCount: images.length, ...applied, visualSummary: parsed.visual_summary || "", visibleObjects: parsed.visible_objects || [], motionEvidence: parsed.motion_evidence || "", confidenceNotes: parsed.confidence_notes || "" };
     if (typeof trozalRefreshMetadataQuality === "function") trozalRefreshMetadataQuality();
     if (typeof trozalUpdateMetadataPlatformValidation === "function") trozalUpdateMetadataPlatformValidation();
-    if (typeof trozalMetadataRenderReview === "function") { trozalMetadataApproved?.clear?.(); trozalMetadataRenderReview(); }
+    if (typeof trozalMetadataRenderReview === "function") { if (typeof trozalMetadataApproved !== "undefined" && trozalMetadataApproved && typeof trozalMetadataApproved.clear === "function") trozalMetadataApproved.clear(); trozalMetadataRenderReview(); }
     if (typeof scheduleAutosave === "function") scheduleAutosave();
     setCloudStatus("SELESAI · Judul, deskripsi, kategori, dan " + keywords.length + " keyword berhasil dibuat. Periksa sebelum ekspor.");
   } catch (error) {
@@ -622,7 +622,7 @@ async function analyzeWithGeminiCloud() {
         window.trozalGeminiLastAnalysis = { model: "browser-vision-caption-fallback", createdAt: new Date().toISOString(), imageCount: images.length, ...applied, captions, cloudFallback: true };
         if (typeof trozalRefreshMetadataQuality === "function") trozalRefreshMetadataQuality();
         if (typeof trozalUpdateMetadataPlatformValidation === "function") trozalUpdateMetadataPlatformValidation();
-        if (typeof trozalMetadataRenderReview === "function") { trozalMetadataApproved?.clear?.(); trozalMetadataRenderReview(); }
+        if (typeof trozalMetadataRenderReview === "function") { if (typeof trozalMetadataApproved !== "undefined" && trozalMetadataApproved && typeof trozalMetadataApproved.clear === "function") trozalMetadataApproved.clear(); trozalMetadataRenderReview(); }
         if (typeof scheduleAutosave === "function") scheduleAutosave();
         setCloudStatus("GEMINI SEDANG PADAT · Metadata cadangan berhasil dibuat dari caption Browser Vision lokal. Periksa hasil sebelum ekspor.");
       } catch (fallbackError) {
