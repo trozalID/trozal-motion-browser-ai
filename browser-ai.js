@@ -539,38 +539,56 @@ async function analyzeWithGeminiCloud() {
     const parts = [{ text: prompt }, ...images.map(data => ({ inlineData: { mimeType: "image/jpeg", data } }))];
     const requestBody = JSON.stringify({
       contents: [{ role: "user", parts }],
-      generationConfig: { temperature: 0.15, maxOutputTokens: 1400, responseMimeType: "application/json" }
+      generationConfig: { temperature: 0.15, maxOutputTokens: 2200, responseMimeType: "application/json" }
     });
-    const models = ["gemini-3.8-flash", "gemini-3.5-flash-lite"];
+    // Stable multimodal model fallbacks: keys/projects can expose different model availability.
+    const models = ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
     let response = null, payload = {}, activeModel = models[0], lastFailure = "";
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     for (let modelIndex = 0; modelIndex < models.length; modelIndex++) {
       activeModel = models[modelIndex];
-      const attempts = modelIndex === 0 ? 3 : 2;
+      const attempts = modelIndex < 2 ? 2 : 1;
+      let moveToNextModel = false;
       for (let attempt = 0; attempt < attempts; attempt++) {
         setCloudStatus("Menghubungi " + activeModel + " · percobaan " + (attempt + 1) + "/" + attempts + "…");
-        response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + activeModel + ":generateContent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-          body: requestBody,
-          signal: controller.signal
-        });
+        try {
+          response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + activeModel + ":generateContent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+            body: requestBody,
+            signal: controller.signal
+          });
+        } catch (networkError) {
+          lastFailure = networkError?.message || String(networkError);
+          if (attempt + 1 < attempts) { setCloudStatus("Koneksi Gemini terputus. Mencoba ulang…"); await wait(1500); continue; }
+          moveToNextModel = true;
+          break;
+        }
         payload = await response.json().catch(() => ({}));
         if (response.ok) break;
         const detail = payload?.error?.message || ("HTTP " + response.status);
-        lastFailure = detail;
-        const transient = response.status === 429 || response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504;
-        if (!transient) throw new Error(detail + (response.status === 400 || response.status === 401 || response.status === 403 || response.status === 404 ? " · Periksa API key, akses Gemini API, dan nama model." : ""));
+        lastFailure = "HTTP " + response.status + ": " + detail;
+        const transient = [408, 429, 500, 502, 503, 504].includes(response.status);
+        const modelUnavailable = response.status === 404 || (response.status === 400 && /model|not supported|not found|not available/i.test(detail));
+        if (modelUnavailable) { moveToNextModel = true; break; }
+        if (!transient) {
+          if (response.status === 401 || response.status === 403) throw new Error(detail + " · API key ditolak atau Gemini API belum diaktifkan untuk project ini.");
+          throw new Error(detail + " · Periksa kuota, batas penggunaan, dan konfigurasi Gemini API.");
+        }
         if (attempt + 1 < attempts) {
           const retryHeader = Number(response.headers.get("Retry-After"));
-          const waitMs = Number.isFinite(retryHeader) && retryHeader > 0 ? Math.min(15000, retryHeader * 1000) : 1200 * Math.pow(2, attempt);
-          setCloudStatus("Gemini sedang padat / membatasi permintaan. Mencoba ulang dalam " + Math.ceil(waitMs / 1000) + " detik…");
-          await new Promise(resolve => setTimeout(resolve, waitMs));
-        }
+          const waitMs = Number.isFinite(retryHeader) && retryHeader > 0 ? Math.min(12000, retryHeader * 1000) : 1800 * Math.pow(2, attempt);
+          setCloudStatus("Gemini sedang padat / terkena rate limit. Mencoba ulang dalam " + Math.ceil(waitMs / 1000) + " detik…");
+          await wait(waitMs);
+        } else moveToNextModel = true;
       }
       if (response?.ok) break;
-      if (modelIndex + 1 < models.length) setCloudStatus("Model utama sedang padat. Beralih ke Gemini Flash Lite…");
+      if (modelIndex + 1 < models.length && moveToNextModel) {
+        setCloudStatus(activeModel + " tidak tersedia saat ini. Mencoba model Gemini cadangan " + models[modelIndex + 1] + "…");
+        continue;
+      }
     }
-    if (!response?.ok) throw new Error("Gemini sedang tidak tersedia setelah percobaan ulang dan fallback model. " + lastFailure + " · Coba beberapa menit lagi.");
+    if (!response?.ok) throw new Error("Semua model Gemini cadangan gagal. " + lastFailure + " · Periksa kuota/API key atau coba beberapa menit lagi.");
     const raw = (payload?.candidates?.[0]?.content?.parts || []).map(part => part.text || "").join("");
     const parsed = parseMetadataJson(raw);
     const title = String(parsed.title || "").trim();
