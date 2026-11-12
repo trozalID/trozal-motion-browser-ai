@@ -98,11 +98,16 @@ jobs:
           # Force HTTPS so Docker build does not hang on archive.ubuntu.com:80.
           apt_pattern = r"(?m)^(?P<indent>[ ]*)RUN apt-get update && \\\n(?P=indent)      apt-get install -y pkg-config autoconf automake libtool ragel\s*$"
           apt_lines = [
-              "RUN find /etc/apt -type f \\( -name '*.list' -o -name '*.sources' \\) -exec sed -i \\",
-              "      -e 's|http://archive.ubuntu.com/ubuntu|https://mirrors.edge.kernel.org/ubuntu|g' \\",
-              "      -e 's|http://security.ubuntu.com/ubuntu|https://mirrors.edge.kernel.org/ubuntu|g' {} + && \\",
-              "      apt-get -o Acquire::Retries=5 -o Acquire::https::Timeout=60 update && \\",
-              "      apt-get install -y --no-install-recommends pkg-config autoconf automake libtool ragel",
+              "RUN set -eu; \\",
+              "    for mirror in https://azure.archive.ubuntu.com/ubuntu https://archive.ubuntu.com/ubuntu https://mirrors.edge.kernel.org/ubuntu; do \\",
+              "      echo \\\"Trying Ubuntu mirror: $mirror\\\"; \\",
+              "      find /etc/apt -type f \\( -name '*.list' -o -name '*.sources' \\) -exec sed -i \\\\",
+              "        -e \\\"s|http://archive.ubuntu.com/ubuntu|$mirror|g\\\" \\\\",
+              "        -e \\\"s|https://archive.ubuntu.com/ubuntu|$mirror|g\\\" {} +; \\",
+              "      rm -rf /var/lib/apt/lists/*; \\",
+              "      if apt-get -o Acquire::Retries=2 -o Acquire::https::Timeout=30 update && apt-get install -y --no-install-recommends pkg-config autoconf automake libtool ragel; then exit 0; fi; \\",
+              "    done; \\",
+              "    echo \\\"All Ubuntu mirrors failed\\\"; exit 1",
           ]
           patched, apt_count = re.subn(
               apt_pattern,
