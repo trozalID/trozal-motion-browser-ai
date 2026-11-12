@@ -2726,11 +2726,23 @@ async function importVisualScenesToNativeTracks(){
   selectedLayerIndex=0;soloLayerIndex=-1;
   const sceneStarts=[],sceneEnds=[];let sceneCursor=0;
   items.forEach(item=>{const d=Math.max(.5,Math.min(60,Number(item.duration)||1));sceneStarts.push(sceneCursor);sceneCursor+=d;sceneEnds.push(sceneCursor)});
-  const loopFor={locked:0,pan:11,parallax:23,orbit:17,follow:23};
+  // Native Motion Director: map AI camera direction and transitions to editable layer presets.
+  const motionFor={
+   locked:{loop:0,intensity:0,label:'Kamera terkunci'},
+   pan:{loop:11,intensity:42,label:'Pan / drift horizontal'},
+   parallax:{loop:23,intensity:32,label:'Parallax berlapis'},
+   orbit:{loop:17,intensity:28,label:'Orbit kecil'},
+   follow:{loop:7,intensity:24,label:'Follow / float lembut'}
+  };
+  const entranceFor={crossfade:1,slide:5,zoom:2,glitch:7,cut:0};
+  const sceneMotion=items.map(item=>({
+   ...(motionFor[item.camera]||motionFor.parallax),
+   entrance:entranceFor[item.transition]??1
+  }));
   svgLayerHints=svgPieces.map((piece,index)=>{
-   const si=svgLayerSceneIndices[index]??-1,item=items[si];
+   const si=svgLayerSceneIndices[index]??-1,item=items[si],profile=sceneMotion[si];
    if(si<0||!item)return svgLayerHints[index]||{kind:'object',entrance:0,loop:0,intensity:35,reason:'Objek SVG independen; atur gerakan sesuai kebutuhan.'};
-   return {kind:'scene-object',entrance:1,loop:loopFor[item.camera]??23,intensity:35,reason:'Objek dari Scene '+(si+1)+' · '+String(item.text||'').replace(/\s+/g,' ').slice(0,90)+' · waktu mengikuti durasi scene.'};
+   return {kind:'scene-object',entrance:profile.entrance,loop:profile.loop,intensity:profile.intensity,reason:'Motion Director · Scene '+(si+1)+' · '+profile.label+' · '+String(item.text||'').replace(/\\s+/g,' ').slice(0,78)+' · transisi '+item.transition+'.'};
   });
   buildAutoLayerControls();
   svgPieces.forEach((piece,index)=>{
@@ -2738,8 +2750,9 @@ async function importVisualScenesToNativeTracks(){
    const start=sceneStarts[si>=0?si:0]??0,end=sceneEnds[si>=0?si:0]??total,d=Math.max(.5,end-start);
    const set=(id,value)=>{const el=$(id+index);if(!el)return;if(el.type==='checkbox')el.checked=!!value;else el.value=String(value)};
    set('Delay',0);set('Start',start.toFixed(2));set('End',end.toFixed(2));
-   set('In',1);set('Out',1);set('Duration',Math.min(.55,Math.max(.12,d*.16)).toFixed(2));
-   set('Loop',loopFor[item.camera]??23);set('Intensity',35);set('Scale',100);set('Rotation',0);
+   const profile=sceneMotion[si>=0?si:0]||sceneMotion[0];
+   set('In',profile.entrance);set('Out',1);set('Duration',Math.min(.75,Math.max(.18,d*.2)).toFixed(2));
+   set('Loop',profile.loop);set('Intensity',profile.intensity);set('Scale',100);set('Rotation',0);
    set('On',true);set('Visible',true);set('Direction','normal');
   });
   refreshTimelineEditor();renderAt(0);scheduleAutosave();
