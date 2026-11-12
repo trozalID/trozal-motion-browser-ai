@@ -53,61 +53,74 @@ function extractPlan(raw, brief, accent) {
   const source = String(raw || "").trim();
   const match = source.match(/\{[\s\S]*\}/);
   let plan = {};
-  if (match) {
-    try { plan = JSON.parse(match[0]); } catch (_) { plan = {}; }
-  }
-  const ring = /ring|cincin|jewelry|jewellery|diamond|berlian/i.test(brief);
-  const watch = /watch|jam tangan|timepiece/i.test(brief);
-  const palette = /silver|perak|chrome/i.test(brief) ? ["#dce7f2","#8797aa","#f7fbff"]
-    : /blue|biru/i.test(brief) ? ["#8bd5ff","#2864b8","#e9f8ff"]
-    : /red|merah/i.test(brief) ? ["#ff9a8b","#a8293c","#ffe5dc"]
+  if (match) { try { plan = JSON.parse(match[0]); } catch (_) { plan = {}; } }
+  const text = String(brief || "").toLowerCase();
+  const has = (pattern) => pattern.test(text);
+  const ring = has(/ring|cincin|jewelry|jewellery|diamond|berlian/);
+  const watch = has(/watch|jam tangan|timepiece/);
+  const planet = has(/planet|saturn|saturnus|earth|bumi|mars|jupiter|astronomy|astronomi|orbit|galaxy|galaksi/);
+  const car = has(/car|mobil|automotive|otomotif|vehicle|kendaraan|supercar|sports car/);
+  const flower = has(/flower|bunga|rose|mawar|tulip|flora|petal/);
+  const building = has(/building|gedung|architecture|arsitektur|house|rumah|skyscraper|pencakar langit|bridge|jembatan/);
+  const bottle = has(/bottle|botol|perfume|parfum|cosmetic|kosmetik|skincare|product packaging/);
+  const phone = has(/phone|smartphone|mobile phone|ponsel|handphone|tablet|device|gadget/);
+  const motif = ring ? "ring" : watch ? "watch" : planet ? "planet" : car ? "car" : flower ? "flower" : building ? "building" : bottle ? "bottle" : phone ? "phone" : "orb";
+  const palette = has(/silver|perak|chrome|metallic grey/) ? ["#dce7f2","#8797aa","#f7fbff"]
+    : has(/blue|biru|ocean|laut/) ? ["#8bd5ff","#2864b8","#e9f8ff"]
+    : has(/red|merah|crimson/) ? ["#ff9a8b","#a8293c","#ffe5dc"]
+    : has(/green|hijau|emerald/) ? ["#8ce0ad","#18794e","#eaffef"]
+    : has(/purple|ungu|violet/) ? ["#d2a5ff","#65349a","#f5e9ff"]
     : ["#ffe6a0","#a96b18","#fff7d8"];
   return {
-    subject: safeText(plan.subject, ring ? "Luxury diamond ring" : watch ? "Luxury wristwatch" : "Cinematic hero object"),
+    subject: safeText(plan.subject, ring ? "Luxury diamond ring" : watch ? "Luxury wristwatch" : planet ? "Cinematic planet" : car ? "Premium sports car" : flower ? "Elegant flower" : building ? "Modern architecture" : bottle ? "Premium product bottle" : phone ? "Modern smartphone" : "Cinematic hero object"),
     environment: safeText(plan.environment, "Dark premium studio with soft atmospheric glow"),
     motion: safeText(plan.motion, "slow floating rotation with gentle light sweep"),
-    accent: palette[0],
-    metal: palette[1],
-    highlight: palette[2],
-    motif: ring ? "ring" : watch ? "watch" : "orb",
+    accent: palette[0], metal: palette[1], highlight: palette[2], motif,
     duration: Math.max(3, Math.min(60, Number(plan.duration) || 12))
   };
 }
 function renderProceduralScene(plan, ratio, duration, brief) {
   const esc = (s) => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-  const ring = plan.motif === "ring";
-  const watch = plan.motif === "watch";
-  const subject = esc(plan.subject);
+  const motif = plan.motif || "orb", subject = esc(plan.subject);
   const safeDuration = Math.max(3, Math.min(60, Number(duration) || plan.duration || 12));
-  const hero = ring
-    ? '<ellipse cx="640" cy="405" rx="176" ry="68" fill="none" stroke="url(#metal)" stroke-width="42" transform="rotate(-18 640 405)"/><ellipse cx="640" cy="405" rx="176" ry="68" fill="none" stroke="#fff2c6" stroke-opacity=".7" stroke-width="4" transform="rotate(-18 640 405)"/><path d="M640 250 L680 310 L640 352 L600 310 Z" fill="url(#shine)" stroke="#fff" stroke-width="3"/><path d="M640 250 L640 352 M600 310 L680 310" stroke="#fff" stroke-opacity=".8" stroke-width="2"/>'
-    : watch
-    ? '<circle cx="640" cy="390" r="155" fill="url(#metal)" stroke="#fff2cf" stroke-width="8"/><circle cx="640" cy="390" r="126" fill="#101923" stroke="#f5d88b" stroke-width="5"/><path d="M640 390 L640 292 M640 390 L715 430" stroke="#fff2cf" stroke-width="9" stroke-linecap="round"/><circle cx="640" cy="390" r="12" fill="#fff"/>'
-    : '<circle cx="640" cy="380" r="150" fill="url(#metal)" stroke="#fff" stroke-opacity=".7" stroke-width="5"/><ellipse cx="590" cy="325" rx="58" ry="30" fill="#fff" opacity=".38" transform="rotate(-30 590 325)"/>';
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-label="${subject}">
-  <defs>
-    <radialGradient id="bg"><stop stop-color="#26313c"/><stop offset="1" stop-color="#05070b"/></radialGradient>
-    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${plan.highlight}"/><stop offset=".28" stop-color="${plan.accent}"/><stop offset=".62" stop-color="${plan.metal}"/><stop offset="1" stop-color="#fff0c2"/></linearGradient>
-    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".5" stop-color="${plan.highlight}"/><stop offset="1" stop-color="${plan.accent}"/></linearGradient>
-    <filter id="glow"><feGaussianBlur stdDeviation="18" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <style>
-      @keyframes heroFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-18px) rotate(2deg)}}
-      @keyframes haloPulse{0%,100%{opacity:.25;transform:scale(.92)}50%{opacity:.7;transform:scale(1.08)}}
-      @keyframes lightSweep{0%{transform:translateX(-260px);opacity:0}25%{opacity:.8}75%{opacity:.5}100%{transform:translateX(520px);opacity:0}}
-      @keyframes sparkle{0%,100%{opacity:.2;transform:scale(.65)}50%{opacity:1;transform:scale(1.3)}}
-      #main-subject{animation:heroFloat ${safeDuration}s ease-in-out infinite;transform-origin:640px 370px}
-      #environment{animation:haloPulse ${Math.max(4,safeDuration*.8)}s ease-in-out infinite;transform-origin:640px 360px}
-      #foreground{animation:lightSweep ${Math.max(5,safeDuration*.7)}s ease-in-out infinite}
-      #details .spark{animation:sparkle 2.4s ease-in-out infinite;transform-origin:center}
-    </style>
-  </defs>
-  <g id="background"><rect width="1280" height="720" fill="url(#bg)"/><path d="M0 570 Q640 500 1280 570 V720 H0Z" fill="#080b10"/><ellipse cx="640" cy="600" rx="390" ry="42" fill="#000" opacity=".55"/></g>
-  <g id="environment"><ellipse cx="640" cy="365" rx="300" ry="250" fill="none" stroke="${plan.accent}" stroke-opacity=".35" stroke-width="2" filter="url(#glow)"/><ellipse cx="640" cy="365" rx="235" ry="190" fill="${plan.accent}" opacity=".06"/></g>
-  <g id="main-subject">${hero}</g>
-  <g id="details"><path class="spark" d="M850 245 l8 24 24 8 -24 8 -8 24 -8 -24 -24 -8 24 -8Z" fill="#fff" filter="url(#glow)"/><path class="spark" d="M420 300 l5 15 15 5 -15 5 -5 15 -5 -15 -15 -5 15 -5Z" fill="${plan.highlight}"/><circle cx="790" cy="470" r="5" fill="#fff"/><circle cx="500" cy="475" r="4" fill="#fff"/></g>
-  <g id="foreground"><path d="M180 610 Q640 560 1100 610" fill="none" stroke="${plan.accent}" stroke-opacity=".35" stroke-width="2"/><rect x="0" y="0" width="1280" height="720" fill="url(#bg)" opacity="0"/></g>
-  <g id="caption"><text x="640" y="665" text-anchor="middle" fill="#f8e8c1" font-family="Arial,sans-serif" font-size="22" letter-spacing="5">${subject.toUpperCase()}</text></g>
-</svg>`;
+  const metal = plan.metal || "#a96b18", accent = plan.accent || "#ffe6a0", highlight = plan.highlight || "#fff7d8";
+  let hero = "";
+  if (motif === "ring") {
+    hero = '<ellipse cx="640" cy="405" rx="176" ry="68" fill="none" stroke="url(#metal)" stroke-width="42" transform="rotate(-18 640 405)"/><ellipse cx="640" cy="405" rx="176" ry="68" fill="none" stroke="#fff2c6" stroke-opacity=".7" stroke-width="4" transform="rotate(-18 640 405)"/><path d="M640 250 L680 310 L640 352 L600 310 Z" fill="url(#shine)" stroke="#fff" stroke-width="3"/><path d="M640 250 L640 352 M600 310 L680 310" stroke="#fff" stroke-opacity=".8" stroke-width="2"/>';
+  } else if (motif === "watch") {
+    hero = '<path d="M575 190 L705 190 L730 285 L550 285Z M550 495 L730 495 L705 590 L575 590Z" fill="url(#metal)" stroke="#fff2cf" stroke-width="7"/><circle cx="640" cy="390" r="155" fill="url(#metal)" stroke="#fff2cf" stroke-width="8"/><circle cx="640" cy="390" r="126" fill="#101923" stroke="#f5d88b" stroke-width="5"/><path d="M640 390 L640 292 M640 390 L715 430" stroke="#fff2cf" stroke-width="9" stroke-linecap="round"/><circle cx="640" cy="390" r="12" fill="#fff"/>';
+  } else if (motif === "planet") {
+    hero = '<ellipse cx="640" cy="390" rx="285" ry="82" fill="none" stroke="url(#shine)" stroke-width="22" transform="rotate(-17 640 390)" opacity=".9"/><ellipse cx="640" cy="390" rx="285" ry="82" fill="none" stroke="#fff" stroke-width="2" transform="rotate(-17 640 390)" opacity=".7"/><circle cx="640" cy="390" r="150" fill="url(#planetSurface)" stroke="#fff" stroke-opacity=".55" stroke-width="4"/><path d="M520 330 Q610 290 745 340 M500 405 Q630 455 770 390 M550 485 Q650 510 735 460" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="17"/>';
+  } else if (motif === "car") {
+    hero = '<path d="M365 455 L410 365 Q430 335 485 325 L745 325 Q795 335 835 390 L895 430 L915 500 L365 500Z" fill="url(#metal)" stroke="#fff0c8" stroke-width="8" stroke-linejoin="round"/><path d="M475 350 L725 350 Q765 355 800 415 L435 415Z" fill="#101b2a" stroke="#d9eaff" stroke-width="5"/><path d="M390 455 L890 455" stroke="#fff" stroke-opacity=".7" stroke-width="5"/><circle cx="485" cy="500" r="55" fill="#090d13" stroke="#c5d1df" stroke-width="12"/><circle cx="485" cy="500" r="19" fill="url(#shine)"/><circle cx="790" cy="500" r="55" fill="#090d13" stroke="#c5d1df" stroke-width="12"/><circle cx="790" cy="500" r="19" fill="url(#shine)"/><path d="M370 445 L425 445 M850 445 L905 445" stroke="#fff4ce" stroke-width="12" stroke-linecap="round"/>';
+  } else if (motif === "flower") {
+    hero = '<g fill="url(#shine)" stroke="#fff7df" stroke-opacity=".8" stroke-width="3">'+Array.from({length:8},(_,i)=>'<ellipse cx="640" cy="285" rx="48" ry="112" transform="rotate('+(i*45)+' 640 390)"/>').join("")+'</g><circle cx="640" cy="390" r="65" fill="url(#metal)" stroke="#fff2cf" stroke-width="5"/><path d="M640 455 Q620 545 650 600 M645 520 Q560 490 530 540 M645 545 Q720 485 760 530" fill="none" stroke="#54b77a" stroke-width="18" stroke-linecap="round"/>';
+  } else if (motif === "building") {
+    hero = '<path d="M475 590 L475 330 L640 205 L805 330 L805 590Z" fill="url(#metal)" stroke="#fff1ca" stroke-width="7"/><path d="M520 350 L760 350 M520 425 L760 425 M520 500 L760 500" stroke="#fff" stroke-opacity=".35" stroke-width="5"/>'+Array.from({length:3},(_,row)=>Array.from({length:4},(_,col)=>'<rect x="'+(535+col*58)+'" y="'+(370+row*72)+'" width="28" height="38" rx="3" fill="#142334" stroke="#fff0c8" stroke-opacity=".65"/>').join("")).join("")+'<path d="M615 590 L615 520 Q640 480 665 520 L665 590" fill="#17202c" stroke="#fff0c8" stroke-width="4"/>';
+  } else if (motif === "bottle") {
+    hero = '<path d="M600 210 L680 210 L680 285 L720 330 L745 565 Q745 595 710 600 L570 600 Q535 595 535 565 L560 330 L600 285Z" fill="url(#metal)" stroke="#fff4d5" stroke-width="7"/><rect x="605" y="155" width="70" height="62" rx="9" fill="url(#metal)" stroke="#fff" stroke-width="4"/><path d="M565 410 Q640 390 715 410 L725 525 Q640 545 555 525Z" fill="#14202b" stroke="#fff" stroke-opacity=".65" stroke-width="3"/><path d="M590 455 L690 455" stroke="#fff2cf" stroke-width="5" opacity=".8"/>';
+  } else if (motif === "phone") {
+    hero = '<rect x="525" y="185" width="230" height="420" rx="34" fill="url(#metal)" stroke="#fff2cf" stroke-width="8"/><rect x="542" y="210" width="196" height="370" rx="23" fill="#101923" stroke="#fff" stroke-opacity=".5" stroke-width="3"/><rect x="605" y="222" width="90" height="12" rx="6" fill="#7e8998"/><circle cx="640" cy="550" r="9" fill="#dce7f2"/><path d="M565 300 Q640 255 715 300 L715 470 Q640 520 565 470Z" fill="url(#shine)" opacity=".75"/>';
+  } else {
+    hero = '<circle cx="640" cy="380" r="150" fill="url(#metal)" stroke="#fff" stroke-opacity=".7" stroke-width="5"/><ellipse cx="590" cy="325" rx="58" ry="30" fill="#fff" opacity=".38" transform="rotate(-30 590 325)"/>';
+  }
+  const viewBox = ratio === "9:16" ? "280 0 720 720" : ratio === "1:1" ? "280 0 720 720" : "0 0 1280 720";
+  const svg = [
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+viewBox+'" role="img" aria-label="'+subject+'"><defs>',
+    '<radialGradient id="bg"><stop stop-color="#26313c"/><stop offset="1" stop-color="#05070b"/></radialGradient>',
+    '<linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+highlight+'"/><stop offset=".28" stop-color="'+accent+'"/><stop offset=".62" stop-color="'+metal+'"/><stop offset="1" stop-color="#fff0c2"/></linearGradient>',
+    '<linearGradient id="shine"><stop stop-color="#fff"/><stop offset=".5" stop-color="'+highlight+'"/><stop offset="1" stop-color="'+accent+'"/></linearGradient>',
+    '<radialGradient id="planetSurface"><stop stop-color="'+highlight+'"/><stop offset=".55" stop-color="'+accent+'"/><stop offset="1" stop-color="'+metal+'"/></radialGradient>',
+    '<filter id="glow"><feGaussianBlur stdDeviation="18" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>',
+    '<style>@keyframes heroFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-18px) rotate(2deg)}}@keyframes haloPulse{0%,100%{opacity:.25;transform:scale(.92)}50%{opacity:.7;transform:scale(1.08)}}@keyframes lightSweep{0%{transform:translateX(-260px);opacity:0}25%{opacity:.8}75%{opacity:.5}100%{transform:translateX(520px);opacity:0}}@keyframes sparkle{0%,100%{opacity:.2;transform:scale(.65)}50%{opacity:1;transform:scale(1.3)}}#main-subject{animation:heroFloat '+safeDuration+'s ease-in-out infinite;transform-origin:640px 390px}#environment{animation:haloPulse '+Math.max(4,safeDuration*.8)+'s ease-in-out infinite;transform-origin:640px 360px}#foreground{animation:lightSweep '+Math.max(5,safeDuration*.7)+'s ease-in-out infinite}#details .spark{animation:sparkle 2.4s ease-in-out infinite;transform-origin:center}</style></defs>',
+    '<g id="background"><rect width="1280" height="720" fill="url(#bg)"/><path d="M0 570 Q640 500 1280 570 V720 H0Z" fill="#080b10"/><ellipse cx="640" cy="600" rx="390" ry="42" fill="#000" opacity=".55"/></g>',
+    '<g id="environment"><ellipse cx="640" cy="365" rx="300" ry="250" fill="none" stroke="'+accent+'" stroke-opacity=".35" stroke-width="2" filter="url(#glow)"/><ellipse cx="640" cy="365" rx="235" ry="190" fill="'+accent+'" opacity=".06"/></g>',
+    '<g id="main-subject">'+hero+'</g>',
+    '<g id="details"><path class="spark" d="M850 245 l8 24 24 8 -24 8 -8 24 -8 -24 -24 -8 24 -8Z" fill="#fff" filter="url(#glow)"/><path class="spark" d="M420 300 l5 15 15 5 -15 5 -5 15 -5 -15 -15 -5 15 -5Z" fill="'+highlight+'"/><circle cx="790" cy="470" r="5" fill="#fff"/><circle cx="500" cy="475" r="4" fill="#fff"/></g>',
+    '<g id="foreground"><path d="M180 610 Q640 560 1100 610" fill="none" stroke="'+accent+'" stroke-opacity=".35" stroke-width="2"/></g>',
+    '<g id="caption"><text x="640" y="665" text-anchor="middle" fill="#f8e8c1" font-family="Arial,sans-serif" font-size="22" letter-spacing="5">'+subject.toUpperCase()+'</text></g></svg>'
+  ];
+  return svg.join("");
 }
 async function generateScene() {
   const button = $("generateVisualMotionAiBtn");
