@@ -107,7 +107,7 @@ jobs:
               "      rm -rf /var/lib/apt/lists/*; \\",
               "      if apt-get -o Acquire::Retries=2 -o Acquire::https::Timeout=30 update && apt-get install -y --no-install-recommends pkg-config autoconf automake libtool ragel; then exit 0; fi; \\",
               "    done; \\",
-              "    echo \\\"All Ubuntu mirrors failed\\\"; exit 1",
+              "    echo \"All Ubuntu mirrors failed\"; exit 1",
           ]
           patched, apt_count = re.subn(
               apt_pattern,
