@@ -2758,15 +2758,33 @@ async function importVisualScenesToNativeTracks(){
   };
   const entranceFor={crossfade:1,slide:5,zoom:2,glitch:7,cut:0};
   const exitFor={crossfade:1,slide:6,zoom:2,glitch:7,cut:0};
-  const sceneMotion=items.map(item=>({
-   ...(motionFor[item.camera]||motionFor.parallax),
-   entrance:entranceFor[item.transition]??1,
-   exit:exitFor[item.transition]??1
-  }));
+  // AI Object Motion Director: infer a restrained object-action loop from each scene brief.
+  // Values map to the native loopOptions indices declared by the editor.
+  const objectActionFor=(description)=>{
+   const t=String(description||'').toLowerCase();
+   if(/diam|statis|terkunci|still|static|tanpa gerak/.test(t))return {loop:0,intensity:0,label:'Objek diam'};
+   if(/berlari|lari|melompat|jump|run|chase|mengejar|berjalan cepat/.test(t))return {loop:18,intensity:38,label:'Aksi / lompatan ringan'};
+   if(/terbang|melayang|pesawat|airplane|helicopter|helikopter|roket|rocket|kapal|vehicle|kendaraan|mobil|car/.test(t))return {loop:11,intensity:34,label:'Gerak maju / drift'};
+   if(/ombak|gelombang|air terjun|waterfall|bendera|flag|angin|wind|daun|leaf|pohon|tree/.test(t))return {loop:13,intensity:30,label:'Gerak mengikuti angin'};
+   if(/burung|bird|ikan|fish|paus|whale|hewan|animal|kucing|cat|anjing|dog/.test(t))return {loop:8,intensity:24,label:'Gerak organik lembut'};
+   if(/berputar|orbit|mengitari|rotate|spinning|spin/.test(t))return {loop:17,intensity:28,label:'Orbit objek'};
+   if(/berdenyut|pulse|jantung|heartbeat|berkilau|glow|menyala|pulsing/.test(t))return {loop:2,intensity:24,label:'Denyut / kilau'};
+   return null;
+  };
+  const sceneMotion=items.map(item=>{
+   const camera=motionFor[item.camera]||motionFor.parallax;
+   const action=objectActionFor(item.text);
+   return {
+    ...camera,
+    ...(action?{loop:action.loop,intensity:action.intensity,actionLabel:action.label}:{}),
+    entrance:entranceFor[item.transition]??1,
+    exit:exitFor[item.transition]??1
+   };
+  });
   svgLayerHints=svgPieces.map((piece,index)=>{
    const si=svgLayerSceneIndices[index]??-1,item=items[si],profile=sceneMotion[si];
    if(si<0||!item)return svgLayerHints[index]||{kind:'object',entrance:0,loop:0,intensity:35,reason:'Objek SVG independen; atur gerakan sesuai kebutuhan.'};
-   return {kind:'scene-object',entrance:profile.entrance,loop:profile.loop,intensity:profile.intensity,reason:'Motion Director · Scene '+(si+1)+' · '+profile.label+' · '+String(item.text||'').replace(/\s+/g,' ').slice(0,78)+' · transisi '+item.transition+'.'};
+   return {kind:'scene-object',entrance:profile.entrance,loop:profile.loop,intensity:profile.intensity,reason:'Motion Director · Scene '+(si+1)+' · '+profile.label+(profile.actionLabel?' · Objek: '+profile.actionLabel:'')+' · '+String(item.text||'').replace(/\s+/g,' ').slice(0,78)+' · transisi '+item.transition+'.'};
   });
   buildAutoLayerControls();
   svgPieces.forEach((piece,index)=>{
