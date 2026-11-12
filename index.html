@@ -496,6 +496,8 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 .panel-tone-effects{--panel-accent:#df9cff;--panel-surface:#34243f;--panel-edge:#614274}
 .panel-tone-export{--panel-accent:#8cdda6;--panel-surface:#20372e;--panel-edge:#3b684f}
 .panel-tone-metadata,.panel-tone-quality{--panel-accent:#a9b6ff;--panel-surface:#252d49;--panel-edge:#46558a}
+.panel-tone-object{--panel-accent:#83e6d0;--panel-surface:#193b3b;--panel-edge:#34766f}
+.object-motion-summary{white-space:pre-line;border:1px solid var(--panel-edge);background:rgba(8,20,27,.28);border-radius:9px;padding:10px;color:#d9f7ef;font-size:12px;line-height:1.65}
 @media(prefers-reduced-transparency:reduce){.panel[class*="panel-tone-"]{background:var(--panel-surface)}}
 </style>
 </head>
@@ -592,6 +594,11 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
  <p class="help scene-object-help">Mode aktif mencoba memisahkan grup, bentuk, dan elemen SVG. Elemen yang saling bergantung (misalnya bagian tubuh/produk yang tersusun dari banyak path) dapat ikut terpisah; gunakan mode satu grup jika komposisi menjadi tidak utuh.</p>
  <div class="btnrow"><button type="button" id="clearVisualSequenceBtn">Kosongkan Timeline</button></div>
  <p class="notice">Pengaturan pada timeline ini akan dipakai saat membuat HTML visual. Total durasi hasil mengikuti jumlah durasi seluruh adegan, bukan lagi durasi default generator.</p>
+</section>
+<section class="panel ai-tools panel-tone-object" id="objectMotionDirectorPanel">
+ <h3><b>✦</b> AI OBJECT MOTION DIRECTOR</h3>
+ <p class="help">Ringkasan gerakan objek yang dipilih otomatis dari deskripsi setiap scene. Gerakan diterapkan sebagai preset native dan tetap dapat diedit pada Multi-Track Timeline.</p>
+ <div class="object-motion-summary" id="objectMotionSceneSummary" aria-live="polite">Belum ada analisis gerakan objek. Susun scene lalu pilih IMPOR SCENE KE MULTI-TRACK untuk melihat rekomendasi per scene.</div>
 </section>
 <section class="panel ai-tools panel-tone-story" id="motionPresetLibrary"><h3><b>✦</b> 6. MOTION PRESET LIBRARY</h3>
    <p class="help">Pilih preset untuk menerapkan gerakan yang sesuai dengan jenis objek. Background dan dekorasi tetap diam; teks dan objek utama mendapat gerakan berbeda.</p>
@@ -2781,6 +2788,13 @@ async function importVisualScenesToNativeTracks(){
     exit:exitFor[item.transition]??1
    };
   });
+  const objectSummary=$('objectMotionSceneSummary');
+  if(objectSummary)objectSummary.textContent=items.map((item,index)=>{
+   const profile=sceneMotion[index];
+   const action=profile.actionLabel||'Gerak kamera default (objek dapat diatur manual)';
+   const sceneText=String(item.text||'Scene '+(index+1)).replace(/\\s+/g,' ').trim().slice(0,96);
+   return 'SCENE '+String(index+1).padStart(2,'0')+' · '+sceneText+'\\nObjek: '+action+' · Intensitas '+profile.intensity+'%\\nKamera: '+profile.label+' · Transisi: '+item.transition;
+  }).join('\\n\\n');
   svgLayerHints=svgPieces.map((piece,index)=>{
    const si=svgLayerSceneIndices[index]??-1,item=items[si],profile=sceneMotion[si];
    if(si<0||!item)return svgLayerHints[index]||{kind:'object',entrance:0,loop:0,intensity:35,reason:'Objek SVG independen; atur gerakan sesuai kebutuhan.'};
