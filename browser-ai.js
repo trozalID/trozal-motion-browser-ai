@@ -400,16 +400,17 @@ function applyBrowserMetadata(parsed, captions, evidenceLabel, visualEvidence = 
   const categories = [...($("metadataCategory")?.options || [])].map((option) => option.text);
   const category = categories.find((value) => value.toLowerCase() === String(parsed.category || "").trim().toLowerCase()) || "Graphic Resources";
   const detectedLabels = (visualEvidence.objects || []).map(item => item.label);
+  // Ground keywords ONLY in independent visual observations. Do not let AI-written
+  // title/description/summary validate their own unsupported claims.
   const visualText = captions.concat(detectedLabels).join(" ").toLowerCase();
-  const evidenceText = [visualText, String(parsed.visual_summary || ""), String(parsed.motion_evidence || ""), String(parsed.title || ""), String(parsed.description || "")].join(" ").toLowerCase();
-  const evidenceTokens = new Set(evidenceText.match(/[a-z0-9]+/g) || []);
+  const evidenceTokens = new Set(visualText.match(/[a-z0-9]+/g) || []);
   const stopWords = new Set(["the","a","an","and","or","with","on","in","at","of","to","is","are","this","that","from","image","picture","photo","frame","showing","shows","there","its","for","into","over","under","near","very","some","many","scene","video"]);
   const cleanKeyword = value => String(value || "").trim().toLowerCase().replace(/[^a-z0-9 -]/g, " ").replace(/\s+/g, " ").trim();
   const modelKeywords = (Array.isArray(parsed.keywords) ? parsed.keywords : [])
     .map(cleanKeyword)
     .filter(item => {
       const words = item.match(/[a-z0-9]+/g) || [];
-      return words.length > 0 && words.length <= 5 && words.some(word => evidenceTokens.has(word));
+      return words.length > 0 && words.length <= 5 && words.every(word => evidenceTokens.has(word) || stopWords.has(word));
     });
   const evidenceWords = (visualText.match(/[a-z][a-z-]{2,}/g) || []).filter(word => !stopWords.has(word));
   const phraseKeywords = [];
