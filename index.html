@@ -2639,10 +2639,17 @@ async function buildVisualSceneSequenceFromPrompt(){
    planned=await window.trozalBrowserAiPlanScenes(lines.join(' '),Math.min(6,Math.max(3,Math.ceil(target/4))));
   }else throw new Error('Modul Browser AI belum siap.');
   const target=Math.max(5,Math.min(60,Number($('visualMotionDuration')?.value)||15));
-  const rawTotal=planned.reduce((sum,x)=>sum+Math.max(.5,Number(x.duration)||1),0);
+  // Allocate the exact project duration across scenes. A minimum scene length
+  // must not silently make the storyboard longer than the requested project.
+  const weights=planned.map(scene=>Math.max(.5,Number(scene.duration)||1));
+  const weightTotal=weights.reduce((sum,value)=>sum+value,0);
+  const minimum=Math.min(.75,target/planned.length);
+  const distributable=Math.max(0,target-minimum*planned.length);
   let used=0;
   visualSceneSequence=planned.map((scene,index)=>{
-   const d=index===planned.length-1?Math.max(.5,target-used):Math.max(.5,Math.round((target*(scene.duration/rawTotal))*10)/10);
+   const d=index===planned.length-1
+    ?Math.max(.1,Number((target-used).toFixed(2)))
+    :Number((minimum+distributable*(weights[index]/weightTotal)).toFixed(2));
    used+=d;
    return {id:'scene-'+Date.now()+'-'+index,text:scene.text,duration:d,transition:scene.transition,camera:scene.camera,style:scene.style};
   });
