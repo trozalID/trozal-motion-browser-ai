@@ -2625,7 +2625,7 @@ function moveVisualScene(from,to){
  if(from<0||to<0||from>=visualSceneSequence.length||to>=visualSceneSequence.length||from===to)return;
  const moved=visualSceneSequence.splice(from,1)[0];visualSceneSequence.splice(to,0,moved);renderVisualSceneSequence();
 }
-async function buildVisualSceneSequenceFromPrompt(){
+async async function buildVisualSceneSequenceFromPrompt(){
  const lines=visualMotionPromptLines();
  if(!lines.length){$('visualMotionStatus').textContent='Isi prompt visual terlebih dahulu, lalu susun adegannya.';return;}
  const button=$('buildVisualSequenceBtn');
@@ -2663,13 +2663,13 @@ $('addVisualSceneBtn').addEventListener('click',()=>{
  renderVisualSceneSequence();
 });
 $('clearVisualSequenceBtn').addEventListener('click',()=>{visualSceneSequence=[];renderVisualSceneSequence();$('visualMotionStatus').textContent='Timeline adegan dikosongkan.';});
-$('generateVisualSequenceBtn').addEventListener('click',()=>{
- if(!visualSceneSequence.length)buildVisualSceneSequenceFromPrompt();
+$('generateVisualSequenceBtn').addEventListener('click',async()=>{
+ if(!visualSceneSequence.length)await buildVisualSceneSequenceFromPrompt();
  if(visualSceneSequence.length)$('generateVisualMotionBtn').click();
 });
 
-function importVisualScenesToNativeTracks(){
- if(!visualSceneSequence.length)buildVisualSceneSequenceFromPrompt();
+async function importVisualScenesToNativeTracks(){
+ if(!visualSceneSequence.length)await buildVisualSceneSequenceFromPrompt();
  const items=visualSceneSequence.filter(x=>String(x.text||'').trim());
  if(!items.length){$('visualMotionStatus').textContent='Susun adegan dari prompt terlebih dahulu.';return;}
  const total=items.reduce((sum,x)=>sum+Math.max(.5,Math.min(60,Number(x.duration)||1)),0);
