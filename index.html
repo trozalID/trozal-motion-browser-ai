@@ -2742,6 +2742,12 @@ async function importVisualScenesToNativeTracks(){
   selectedLayerIndex=0;soloLayerIndex=-1;
   const sceneStarts=[],sceneEnds=[];let sceneCursor=0;
   items.forEach(item=>{const d=Math.max(.5,Math.min(60,Number(item.duration)||1));sceneStarts.push(sceneCursor);sceneCursor+=d;sceneEnds.push(sceneCursor)});
+  // Add navigable scene-boundary markers so storyboard beats remain visible in the native timeline.
+  timelineMarkers=items.map((item,index)=>({
+   id:'scene-marker-'+Date.now()+'-'+index,
+   t:Number(sceneStarts[index].toFixed(3)),
+   label:'SCENE '+String(index+1).padStart(2,'0')+' · '+String(item.text||'').replace(/\\s+/g,' ').trim().slice(0,54)
+  }));
   // Native Motion Director: map AI camera direction and transitions to editable layer presets.
   const motionFor={
    locked:{loop:0,intensity:0,label:'Kamera terkunci'},
