@@ -2757,9 +2757,11 @@ async function importVisualScenesToNativeTracks(){
    follow:{loop:7,intensity:24,label:'Follow / float lembut'}
   };
   const entranceFor={crossfade:1,slide:5,zoom:2,glitch:7,cut:0};
+  const exitFor={crossfade:1,slide:6,zoom:2,glitch:7,cut:0};
   const sceneMotion=items.map(item=>({
    ...(motionFor[item.camera]||motionFor.parallax),
-   entrance:entranceFor[item.transition]??1
+   entrance:entranceFor[item.transition]??1,
+   exit:exitFor[item.transition]??1
   }));
   svgLayerHints=svgPieces.map((piece,index)=>{
    const si=svgLayerSceneIndices[index]??-1,item=items[si],profile=sceneMotion[si];
@@ -2773,7 +2775,7 @@ async function importVisualScenesToNativeTracks(){
    const set=(id,value)=>{const el=$(id+index);if(!el)return;if(el.type==='checkbox')el.checked=!!value;else el.value=String(value)};
    set('Delay',0);set('Start',start.toFixed(2));set('End',end.toFixed(2));
    const profile=sceneMotion[si>=0?si:0]||sceneMotion[0];
-   set('In',profile.entrance);set('Out',1);set('Duration',Math.min(.75,Math.max(.18,d*.2)).toFixed(2));
+   set('In',profile.entrance);set('Out',profile.exit);set('Duration',Math.min(.75,Math.max(.18,d*.2)).toFixed(2));
    set('Loop',profile.loop);set('Intensity',profile.intensity);set('Scale',100);set('Rotation',0);
    set('On',true);set('Visible',true);set('Direction','normal');
   });
