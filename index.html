@@ -2746,7 +2746,7 @@ async function importVisualScenesToNativeTracks(){
   timelineMarkers=items.map((item,index)=>({
    id:'scene-marker-'+Date.now()+'-'+index,
    t:Number(sceneStarts[index].toFixed(3)),
-   label:'SCENE '+String(index+1).padStart(2,'0')+' · '+String(item.text||'').replace(/\\s+/g,' ').trim().slice(0,54)
+   label:'SCENE '+String(index+1).padStart(2,'0')+' · '+String(item.text||'').replace(/\s+/g,' ').trim().slice(0,54)
   }));
   // Native Motion Director: map AI camera direction and transitions to editable layer presets.
   const motionFor={
@@ -2766,7 +2766,7 @@ async function importVisualScenesToNativeTracks(){
   svgLayerHints=svgPieces.map((piece,index)=>{
    const si=svgLayerSceneIndices[index]??-1,item=items[si],profile=sceneMotion[si];
    if(si<0||!item)return svgLayerHints[index]||{kind:'object',entrance:0,loop:0,intensity:35,reason:'Objek SVG independen; atur gerakan sesuai kebutuhan.'};
-   return {kind:'scene-object',entrance:profile.entrance,loop:profile.loop,intensity:profile.intensity,reason:'Motion Director · Scene '+(si+1)+' · '+profile.label+' · '+String(item.text||'').replace(/\\s+/g,' ').slice(0,78)+' · transisi '+item.transition+'.'};
+   return {kind:'scene-object',entrance:profile.entrance,loop:profile.loop,intensity:profile.intensity,reason:'Motion Director · Scene '+(si+1)+' · '+profile.label+' · '+String(item.text||'').replace(/\s+/g,' ').slice(0,78)+' · transisi '+item.transition+'.'};
   });
   buildAutoLayerControls();
   svgPieces.forEach((piece,index)=>{
