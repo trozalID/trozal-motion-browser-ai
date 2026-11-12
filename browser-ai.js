@@ -71,19 +71,28 @@ function extractPlan(raw, brief, accent) {
     : has(/green|hijau|emerald/) ? ["#8ce0ad","#18794e","#eaffef"]
     : has(/purple|ungu|violet/) ? ["#d2a5ff","#65349a","#f5e9ff"]
     : ["#ffe6a0","#a96b18","#fff7d8"];
+  const userAccent = /^#[0-9a-f]{6}$/i.test(String(accent || "")) ? accent : palette[0];
   return {
     subject: safeText(plan.subject, ring ? "Luxury diamond ring" : watch ? "Luxury wristwatch" : planet ? "Cinematic planet" : car ? "Premium sports car" : flower ? "Elegant flower" : building ? "Modern architecture" : bottle ? "Premium product bottle" : phone ? "Modern smartphone" : "Cinematic hero object"),
     environment: safeText(plan.environment, "Dark premium studio with soft atmospheric glow"),
     motion: safeText(plan.motion, "slow floating rotation with gentle light sweep"),
-    accent: palette[0], metal: palette[1], highlight: palette[2], motif,
+    accent: userAccent, metal: palette[1], highlight: palette[2], motif,
     duration: Math.max(3, Math.min(60, Number(plan.duration) || 12))
   };
 }
-function renderProceduralScene(plan, ratio, duration, brief) {
+function renderProceduralScene(plan, ratio, duration, brief, options = {}) {
   const esc = (s) => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   const motif = plan.motif || "orb", subject = esc(plan.subject);
   const safeDuration = Math.max(3, Math.min(60, Number(duration) || plan.duration || 12));
   const metal = plan.metal || "#a96b18", accent = plan.accent || "#ffe6a0", highlight = plan.highlight || "#fff7d8";
+  const camera = options.camera || "parallax";
+  const visualStyle = options.style || "cinematic";
+  const transition = options.transition || "crossfade";
+  const particles = options.particles !== false;
+  const depth = options.depth !== false;
+  const heroMotion = camera === "locked" ? "none" : camera === "orbit" ? "heroOrbit" : camera === "pan" || camera === "follow" ? "heroPan" : "heroFloat";
+  const revealMotion = transition === "slide" ? "sceneSlide" : transition === "zoom" ? "sceneZoom" : transition === "glitch" ? "sceneGlitch" : "sceneFade";
+  const backgroundStart = visualStyle === "neon" ? "#10102b" : visualStyle === "papercut" ? "#25313a" : visualStyle === "illustration" ? "#263b42" : "#26313c";
   let hero = "";
   if (motif === "ring") {
     hero = '<ellipse cx="640" cy="405" rx="176" ry="68" fill="none" stroke="url(#metal)" stroke-width="42" transform="rotate(-18 640 405)"/><ellipse cx="640" cy="405" rx="176" ry="68" fill="none" stroke="#fff2c6" stroke-opacity=".7" stroke-width="4" transform="rotate(-18 640 405)"/><path d="M640 250 L680 310 L640 352 L600 310 Z" fill="url(#shine)" stroke="#fff" stroke-width="3"/><path d="M640 250 L640 352 M600 310 L680 310" stroke="#fff" stroke-opacity=".8" stroke-width="2"/>';
@@ -107,18 +116,18 @@ function renderProceduralScene(plan, ratio, duration, brief) {
   const viewBox = ratio === "9:16" ? "280 0 720 720" : ratio === "1:1" ? "280 0 720 720" : "0 0 1280 720";
   const svg = [
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+viewBox+'" role="img" aria-label="'+subject+'"><defs>',
-    '<radialGradient id="bg"><stop stop-color="#26313c"/><stop offset="1" stop-color="#05070b"/></radialGradient>',
+    '<radialGradient id="bg"><stop stop-color="'+backgroundStart+'"/><stop offset="1" stop-color="#05070b"/></radialGradient>',
     '<linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+highlight+'"/><stop offset=".28" stop-color="'+accent+'"/><stop offset=".62" stop-color="'+metal+'"/><stop offset="1" stop-color="#fff0c2"/></linearGradient>',
     '<linearGradient id="shine"><stop stop-color="#fff"/><stop offset=".5" stop-color="'+highlight+'"/><stop offset="1" stop-color="'+accent+'"/></linearGradient>',
     '<radialGradient id="planetSurface"><stop stop-color="'+highlight+'"/><stop offset=".55" stop-color="'+accent+'"/><stop offset="1" stop-color="'+metal+'"/></radialGradient>',
     '<filter id="glow"><feGaussianBlur stdDeviation="18" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>',
-    '<style>@keyframes heroFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-18px) rotate(2deg)}}@keyframes haloPulse{0%,100%{opacity:.25;transform:scale(.92)}50%{opacity:.7;transform:scale(1.08)}}@keyframes lightSweep{0%{transform:translateX(-260px);opacity:0}25%{opacity:.8}75%{opacity:.5}100%{transform:translateX(520px);opacity:0}}@keyframes sparkle{0%,100%{opacity:.2;transform:scale(.65)}50%{opacity:1;transform:scale(1.3)}}#main-subject{animation:heroFloat '+safeDuration+'s ease-in-out infinite;transform-origin:640px 390px}#environment{animation:haloPulse '+Math.max(4,safeDuration*.8)+'s ease-in-out infinite;transform-origin:640px 360px}#foreground{animation:lightSweep '+Math.max(5,safeDuration*.7)+'s ease-in-out infinite}#details .spark{animation:sparkle 2.4s ease-in-out infinite;transform-origin:center}</style></defs>',
-    '<g id="background"><rect width="1280" height="720" fill="url(#bg)"/><path d="M0 570 Q640 500 1280 570 V720 H0Z" fill="#080b10"/><ellipse cx="640" cy="600" rx="390" ry="42" fill="#000" opacity=".55"/></g>',
+    '<style>@keyframes heroFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-18px) rotate(2deg)}}@keyframes heroOrbit{0%{transform:rotate(-5deg) translateX(-18px)}50%{transform:rotate(5deg) translateX(18px)}100%{transform:rotate(-5deg) translateX(-18px)}}@keyframes heroPan{0%,100%{transform:translateX(-16px)}50%{transform:translateX(16px)}}@keyframes haloPulse{0%,100%{opacity:.25;transform:scale(.92)}50%{opacity:.7;transform:scale(1.08)}}@keyframes lightSweep{0%{transform:translateX(-260px);opacity:0}25%{opacity:.8}75%{opacity:.5}100%{transform:translateX(520px);opacity:0}}@keyframes sparkle{0%,100%{opacity:.2;transform:scale(.65)}50%{opacity:1;transform:scale(1.3)}}@keyframes sceneFade{from{opacity:0}to{opacity:1}}@keyframes sceneSlide{from{opacity:0;transform:translateX(70px)}to{opacity:1;transform:translateX(0)}}@keyframes sceneZoom{from{opacity:0;transform:scale(.72)}to{opacity:1;transform:scale(1)}}@keyframes sceneGlitch{0%{opacity:0;transform:translateX(-10px)}35%{opacity:.8;transform:translateX(7px)}70%{opacity:1;transform:translateX(-3px)}100%{opacity:1;transform:translateX(0)}}#main-subject{animation:'+(camera==="locked"?"none":heroMotion+" "+safeDuration+"s ease-in-out infinite")+';transform-origin:640px 390px}#environment{animation:haloPulse '+Math.max(4,safeDuration*.8)+'s ease-in-out infinite;transform-origin:640px 360px}#foreground{animation:lightSweep '+Math.max(5,safeDuration*.7)+'s ease-in-out infinite}#details .spark{animation:sparkle 2.4s ease-in-out infinite;transform-origin:center}#scene-content{animation:'+revealMotion+' .9s ease-out both}'+(depth?'#background{opacity:1}':'#environment{opacity:.35}')+(particles?'':'#details .spark{display:none}')+'</style></defs>',
+    '<g id="scene-content"><g id="background"><rect width="1280" height="720" fill="url(#bg)"/><path d="M0 570 Q640 500 1280 570 V720 H0Z" fill="#080b10"/><ellipse cx="640" cy="600" rx="390" ry="42" fill="#000" opacity=".55"/></g>',
     '<g id="environment"><ellipse cx="640" cy="365" rx="300" ry="250" fill="none" stroke="'+accent+'" stroke-opacity=".35" stroke-width="2" filter="url(#glow)"/><ellipse cx="640" cy="365" rx="235" ry="190" fill="'+accent+'" opacity=".06"/></g>',
     '<g id="main-subject">'+hero+'</g>',
     '<g id="details"><path class="spark" d="M850 245 l8 24 24 8 -24 8 -8 24 -8 -24 -24 -8 24 -8Z" fill="#fff" filter="url(#glow)"/><path class="spark" d="M420 300 l5 15 15 5 -15 5 -5 15 -5 -15 -15 -5 15 -5Z" fill="'+highlight+'"/><circle cx="790" cy="470" r="5" fill="#fff"/><circle cx="500" cy="475" r="4" fill="#fff"/></g>',
     '<g id="foreground"><path d="M180 610 Q640 560 1100 610" fill="none" stroke="'+accent+'" stroke-opacity=".35" stroke-width="2"/></g>',
-    '<g id="caption"><text x="640" y="665" text-anchor="middle" fill="#f8e8c1" font-family="Arial,sans-serif" font-size="22" letter-spacing="5">'+subject.toUpperCase()+'</text></g></svg>'
+    '<g id="caption"><text x="640" y="665" text-anchor="middle" fill="#f8e8c1" font-family="Arial,sans-serif" font-size="22" letter-spacing="5">'+subject.toUpperCase()+'</text></g></g></svg>'
   ];
   return svg.join("");
 }
@@ -147,7 +156,11 @@ async function generateScene() {
     });
     const plan = extractPlan(result?.choices?.[0]?.message?.content || "", brief, accent);
     setStatus("AI menyusun arahan gerak · mesin SVG TROZAL membangun layer dan animasi…");
-    const code = renderProceduralScene(plan, ratio, duration, brief);
+    const code = renderProceduralScene(plan, ratio, duration, brief, {
+      style, camera, transition,
+      particles: $("visualMotionParticles")?.checked !== false,
+      depth: $("visualMotionDepth")?.checked !== false
+    });
     if (!code.includes("</svg>")) throw new Error("Mesin SVG internal gagal menyelesaikan dokumen.");
     $("visualMotionOutput").value = code;
     $("visualMotionPreview").srcdoc = code;
