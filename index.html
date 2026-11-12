@@ -498,6 +498,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 .panel-tone-metadata,.panel-tone-quality{--panel-accent:#a9b6ff;--panel-surface:#252d49;--panel-edge:#46558a}
 .panel-tone-object{--panel-accent:#83e6d0;--panel-surface:#193b3b;--panel-edge:#34766f}
 .object-motion-summary{white-space:pre-line;border:1px solid var(--panel-edge);background:rgba(8,20,27,.28);border-radius:9px;padding:10px;color:#d9f7ef;font-size:12px;line-height:1.65}
+.object-motion-scene{border:1px solid #34766f;background:#102e30;border-radius:9px;padding:10px;margin-top:8px}.object-motion-scene strong{display:block;color:#a9f5e5;margin-bottom:7px}.object-motion-scene .row{display:flex;gap:8px;align-items:center}.object-motion-scene select{min-width:0;flex:1}.object-motion-scene input[type=range]{flex:1;min-width:70px}.object-motion-scene output{color:#b8fff0;min-width:42px;text-align:right;font-variant-numeric:tabular-nums}
 @media(prefers-reduced-transparency:reduce){.panel[class*="panel-tone-"]{background:var(--panel-surface)}}
 </style>
 </head>
@@ -599,6 +600,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
  <h3><b>✦</b> AI OBJECT MOTION DIRECTOR</h3>
  <p class="help">Ringkasan gerakan objek yang dipilih otomatis dari deskripsi setiap scene. Gerakan diterapkan sebagai preset native dan tetap dapat diedit pada Multi-Track Timeline.</p>
  <div class="object-motion-summary" id="objectMotionSceneSummary" aria-live="polite">Belum ada analisis gerakan objek. Susun scene lalu pilih IMPOR SCENE KE MULTI-TRACK untuk melihat rekomendasi per scene.</div>
+ <div class="object-motion-controls" id="objectMotionControls"><p class="help">Kontrol manual per scene akan muncul setelah impor ke Multi-Track.</p></div>
 </section>
 <section class="panel ai-tools panel-tone-story" id="motionPresetLibrary"><h3><b>✦</b> 6. MOTION PRESET LIBRARY</h3>
    <p class="help">Pilih preset untuk menerapkan gerakan yang sesuai dengan jenis objek. Background dan dekorasi tetap diam; teks dan objek utama mendapat gerakan berbeda.</p>
@@ -2698,6 +2700,47 @@ $('generateVisualSequenceBtn').addEventListener('click',async()=>{
  if(visualSceneSequence.length)$('generateVisualMotionBtn').click();
 });
 
+function renderObjectMotionControls(items,profiles){
+ const host=$('objectMotionControls');if(!host)return;
+ host.replaceChildren();
+ items.forEach((item,index)=>{
+  const profile=profiles[index]||{},card=document.createElement('div');
+  card.className='object-motion-scene';card.dataset.scene=String(index);
+  const title=document.createElement('strong');
+  title.textContent='SCENE '+String(index+1).padStart(2,'0')+' · '+String(item.text||'').replace(/\\s+/g,' ').trim().slice(0,90);
+  const row=document.createElement('div');row.className='row';
+  const select=document.createElement('select');select.dataset.objectMotionLoop=String(index);
+  const automatic=document.createElement('option');automatic.value='auto';automatic.textContent='Otomatis · '+(profile.actionLabel||'AI');select.appendChild(automatic);
+  loopOptions.forEach((label,loopIndex)=>{const option=document.createElement('option');option.value=String(loopIndex);option.textContent=label;select.appendChild(option);});
+  select.value='auto';
+  const intensity=document.createElement('input');intensity.type='range';intensity.min='0';intensity.max='200';intensity.step='5';intensity.value=String(profile.autoIntensity??profile.intensity??30);intensity.dataset.objectMotionIntensity=String(index);
+  const output=document.createElement('output');output.textContent=intensity.value+'%';
+  intensity.addEventListener('input',()=>{output.textContent=intensity.value+'%';applyObjectMotionSceneOverride(index,select.value,intensity.value);});
+  select.addEventListener('change',()=>{if(select.value==='auto'){intensity.value=String(profile.autoIntensity??profile.intensity??30);output.textContent=intensity.value+'%';}applyObjectMotionSceneOverride(index,select.value,intensity.value);});
+  row.append(select,intensity,output);card.append(title,row);host.appendChild(card);
+ });
+}
+function applyObjectMotionSceneOverride(sceneIndex,loopValue,intensityValue){
+ const profiles=window.trozalObjectMotionProfiles||[],profile=profiles[sceneIndex];if(!profile)return;
+ const loop=loopValue==='auto'?profile.autoLoop:Number(loopValue),intensity=Math.max(0,Math.min(200,Number(intensityValue)||0));
+ profile.loop=loop;profile.intensity=intensity;
+ let changed=0;
+ svgPieces.forEach((piece,layerIndex)=>{
+  if((svgLayerSceneIndices[layerIndex]??-1)!==sceneIndex)return;
+  const loopControl=$('autoLayerLoop'+layerIndex),intensityControl=$('autoLayerIntensity'+layerIndex);
+  if(loopControl)loopControl.value=String(loop);
+  if(intensityControl)intensityControl.value=String(intensity);
+  if(svgLayerHints[layerIndex]){
+   svgLayerHints[layerIndex].loop=loop;svgLayerHints[layerIndex].intensity=intensity;
+   svgLayerHints[layerIndex].reason=String(svgLayerHints[layerIndex].reason||'').replace(/ · Override manual.*/,'')+' · Override manual.';
+  }
+  const card=$('autoLayerControls')?.querySelector('.layer-control[data-layer="'+layerIndex+'"]');
+  const reason=card?.querySelector('.motion-reason');if(reason&&svgLayerHints[layerIndex])reason.textContent=svgLayerHints[layerIndex].reason;
+  changed++;
+ });
+ onAutoLayerChange();
+ const status=$('visualMotionStatus');if(status)status.textContent='Gerakan Scene '+(sceneIndex+1)+' diperbarui pada '+changed+' track native. Preview mengikuti perubahan; cek hasil render setelahnya.';
+}
 async function importVisualScenesToNativeTracks(){
  if(!visualSceneSequence.length)await buildVisualSceneSequenceFromPrompt();
  const items=visualSceneSequence.filter(x=>String(x.text||'').trim());
@@ -2781,13 +2824,18 @@ async function importVisualScenesToNativeTracks(){
   const sceneMotion=items.map(item=>{
    const camera=motionFor[item.camera]||motionFor.parallax;
    const action=objectActionFor(item.text);
+   const chosenLoop=action? action.loop : camera.loop;
+   const chosenIntensity=action? action.intensity : camera.intensity;
    return {
-    ...camera,
-    ...(action?{loop:action.loop,intensity:action.intensity,actionLabel:action.label}:{}),
+    ...camera,loop:chosenLoop,intensity:chosenIntensity,
+    autoLoop:chosenLoop,autoIntensity:chosenIntensity,
+    actionLabel:action?.label||'Gerak objek manual tersedia',
     entrance:entranceFor[item.transition]??1,
     exit:exitFor[item.transition]??1
    };
   });
+  window.trozalObjectMotionProfiles=sceneMotion;
+  renderObjectMotionControls(items,sceneMotion);
   const objectSummary=$('objectMotionSceneSummary');
   if(objectSummary)objectSummary.textContent=items.map((item,index)=>{
    const profile=sceneMotion[index];
