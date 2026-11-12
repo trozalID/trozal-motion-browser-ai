@@ -2625,7 +2625,7 @@ function moveVisualScene(from,to){
  if(from<0||to<0||from>=visualSceneSequence.length||to>=visualSceneSequence.length||from===to)return;
  const moved=visualSceneSequence.splice(from,1)[0];visualSceneSequence.splice(to,0,moved);renderVisualSceneSequence();
 }
-async async function buildVisualSceneSequenceFromPrompt(){
+async function buildVisualSceneSequenceFromPrompt(){
  const lines=visualMotionPromptLines();
  if(!lines.length){$('visualMotionStatus').textContent='Isi prompt visual terlebih dahulu, lalu susun adegannya.';return;}
  const button=$('buildVisualSequenceBtn');
