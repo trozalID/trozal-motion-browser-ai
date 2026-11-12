@@ -2625,11 +2625,36 @@ function moveVisualScene(from,to){
  if(from<0||to<0||from>=visualSceneSequence.length||to>=visualSceneSequence.length||from===to)return;
  const moved=visualSceneSequence.splice(from,1)[0];visualSceneSequence.splice(to,0,moved);renderVisualSceneSequence();
 }
-function buildVisualSceneSequenceFromPrompt(){
+async function buildVisualSceneSequenceFromPrompt(){
  const lines=visualMotionPromptLines();
  if(!lines.length){$('visualMotionStatus').textContent='Isi prompt visual terlebih dahulu, lalu susun adegannya.';return;}
- visualSceneSequence=visualMotionSceneDefaults(lines);renderVisualSceneSequence();
- $('visualMotionStatus').textContent='Timeline dibuat dari '+visualSceneSequence.length+' deskripsi visual. Edit isi, durasi, kamera, dan transisi tiap adegan.';
+ const button=$('buildVisualSequenceBtn');
+ if(button?.disabled)return;
+ if(button){button.disabled=true;button.textContent='AI MENYUSUN STORYBOARD…';}
+ $('visualMotionStatus').textContent='Browser AI sedang membagi cerita menjadi adegan dengan urutan aksi, kamera, dan transisi…';
+ try{
+  let planned=[];
+  if(typeof window.trozalBrowserAiPlanScenes==='function'){
+   const target=Math.max(5,Math.min(60,Number($('visualMotionDuration')?.value)||15));
+   planned=await window.trozalBrowserAiPlanScenes(lines.join(' '),Math.min(6,Math.max(3,Math.ceil(target/4))));
+  }else throw new Error('Modul Browser AI belum siap.');
+  const target=Math.max(5,Math.min(60,Number($('visualMotionDuration')?.value)||15));
+  const rawTotal=planned.reduce((sum,x)=>sum+Math.max(.5,Number(x.duration)||1),0);
+  let used=0;
+  visualSceneSequence=planned.map((scene,index)=>{
+   const d=index===planned.length-1?Math.max(.5,target-used):Math.max(.5,Math.round((target*(scene.duration/rawTotal))*10)/10);
+   used+=d;
+   return {id:'scene-'+Date.now()+'-'+index,text:scene.text,duration:d,transition:scene.transition,camera:scene.camera,style:scene.style};
+  });
+  renderVisualSceneSequence();
+  $('visualMotionStatus').textContent='BROWSER AI STORYBOARD SELESAI · '+visualSceneSequence.length+' adegan berurutan · '+visualMotionSceneDurationTotal().toFixed(1)+' detik. Periksa dan edit tiap adegan sebelum Generate.';
+ }catch(error){
+  visualSceneSequence=visualMotionSceneDefaults(lines);
+  renderVisualSceneSequence();
+  $('visualMotionStatus').textContent='AI storyboard tidak tersedia: '+(error?.message||String(error))+' · Timeline cadangan dibuat dari pemisahan prompt. Anda tetap dapat mengedit adegan.';
+ }finally{
+  if(button){button.disabled=false;button.textContent='✦ SUSUN ADEGAN DARI PROMPT';}
+ }
 }
 $('buildVisualSequenceBtn').addEventListener('click',buildVisualSceneSequenceFromPrompt);
 $('addVisualSceneBtn').addEventListener('click',()=>{
