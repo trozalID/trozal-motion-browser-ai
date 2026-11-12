@@ -113,7 +113,13 @@ function renderProceduralScene(plan, ratio, duration, brief, options = {}) {
   } else {
     hero = '<circle cx="640" cy="380" r="150" fill="url(#metal)" stroke="#fff" stroke-opacity=".7" stroke-width="5"/><ellipse cx="590" cy="325" rx="58" ry="30" fill="#fff" opacity=".38" transform="rotate(-30 590 325)"/>';
   }
-  const viewBox = ratio === "9:16" ? "280 0 720 720" : ratio === "1:1" ? "280 0 720 720" : "0 0 1280 720";
+  const frame = ratio === "9:16" ? { viewBox: "0 0 720 1280", transform: "translate(-184 310) scale(.85)" }
+    : ratio === "4:5" ? { viewBox: "0 0 576 720", transform: "translate(-281 50) scale(.9)" }
+    : ratio === "1:1" ? { viewBox: "0 0 720 720", transform: "translate(-280 0)" }
+    : ratio === "21:9" ? { viewBox: "0 0 1680 720", transform: "translate(200 0)" }
+    : { viewBox: "0 0 1280 720", transform: "" };
+  const viewBox = frame.viewBox;
+  const sceneTransform = frame.transform ? ' transform="'+frame.transform+'"' : "";
   const svg = [
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+viewBox+'" role="img" aria-label="'+subject+'"><defs>',
     '<radialGradient id="bg"><stop stop-color="'+backgroundStart+'"/><stop offset="1" stop-color="#05070b"/></radialGradient>',
@@ -122,7 +128,7 @@ function renderProceduralScene(plan, ratio, duration, brief, options = {}) {
     '<radialGradient id="planetSurface"><stop stop-color="'+highlight+'"/><stop offset=".55" stop-color="'+accent+'"/><stop offset="1" stop-color="'+metal+'"/></radialGradient>',
     '<filter id="glow"><feGaussianBlur stdDeviation="18" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>',
     '<style>@keyframes heroFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-18px) rotate(2deg)}}@keyframes heroOrbit{0%{transform:rotate(-5deg) translateX(-18px)}50%{transform:rotate(5deg) translateX(18px)}100%{transform:rotate(-5deg) translateX(-18px)}}@keyframes heroPan{0%,100%{transform:translateX(-16px)}50%{transform:translateX(16px)}}@keyframes haloPulse{0%,100%{opacity:.25;transform:scale(.92)}50%{opacity:.7;transform:scale(1.08)}}@keyframes lightSweep{0%{transform:translateX(-260px);opacity:0}25%{opacity:.8}75%{opacity:.5}100%{transform:translateX(520px);opacity:0}}@keyframes sparkle{0%,100%{opacity:.2;transform:scale(.65)}50%{opacity:1;transform:scale(1.3)}}@keyframes sceneFade{from{opacity:0}to{opacity:1}}@keyframes sceneSlide{from{opacity:0;transform:translateX(70px)}to{opacity:1;transform:translateX(0)}}@keyframes sceneZoom{from{opacity:0;transform:scale(.72)}to{opacity:1;transform:scale(1)}}@keyframes sceneGlitch{0%{opacity:0;transform:translateX(-10px)}35%{opacity:.8;transform:translateX(7px)}70%{opacity:1;transform:translateX(-3px)}100%{opacity:1;transform:translateX(0)}}#main-subject{animation:'+(camera==="locked"?"none":heroMotion+" "+safeDuration+"s ease-in-out infinite")+';transform-origin:640px 390px}#environment{animation:haloPulse '+Math.max(4,safeDuration*.8)+'s ease-in-out infinite;transform-origin:640px 360px}#foreground{animation:lightSweep '+Math.max(5,safeDuration*.7)+'s ease-in-out infinite}#details .spark{animation:sparkle 2.4s ease-in-out infinite;transform-origin:center}#scene-content{animation:'+revealMotion+' .9s ease-out both}'+(depth?'#background{opacity:1}':'#environment{opacity:.35}')+(particles?'':'#details .spark{display:none}')+'</style></defs>',
-    '<g id="scene-content"><g id="background"><rect width="1280" height="720" fill="url(#bg)"/><path d="M0 570 Q640 500 1280 570 V720 H0Z" fill="#080b10"/><ellipse cx="640" cy="600" rx="390" ry="42" fill="#000" opacity=".55"/></g>',
+    '<g id="scene-content"'+sceneTransform+'><g id="background"><rect x="-1500" y="-1500" width="4500" height="4500" fill="url(#bg)"/><path d="M0 570 Q640 500 1280 570 V720 H0Z" fill="#080b10"/><ellipse cx="640" cy="600" rx="390" ry="42" fill="#000" opacity=".55"/></g>',
     '<g id="environment"><ellipse cx="640" cy="365" rx="300" ry="250" fill="none" stroke="'+accent+'" stroke-opacity=".35" stroke-width="2" filter="url(#glow)"/><ellipse cx="640" cy="365" rx="235" ry="190" fill="'+accent+'" opacity=".06"/></g>',
     '<g id="main-subject">'+hero+'</g>',
     '<g id="details"><path class="spark" d="M850 245 l8 24 24 8 -24 8 -8 24 -8 -24 -24 -8 24 -8Z" fill="#fff" filter="url(#glow)"/><path class="spark" d="M420 300 l5 15 15 5 -15 5 -5 15 -5 -15 -15 -5 15 -5Z" fill="'+highlight+'"/><circle cx="790" cy="470" r="5" fill="#fff"/><circle cx="500" cy="475" r="4" fill="#fff"/></g>',
