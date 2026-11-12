@@ -481,6 +481,22 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
   .main { min-width:0 !important; min-height:0 !important; overflow-y:auto !important; overflow-x:hidden !important; }
 }
 
+
+/* TROZAL panel color system: editor-only surfaces; stage/preview/render remain untouched. */
+.panel[class*="panel-tone-"]{--panel-accent:#8bb8e8;--panel-surface:#202c3d;--panel-edge:#38516e;background:linear-gradient(135deg,color-mix(in srgb,var(--panel-surface) 92%,transparent),#191e29 88%);border-color:var(--panel-edge);border-left:3px solid var(--panel-accent);box-shadow:inset 0 1px 0 #ffffff08}
+.panel[class*="panel-tone-"] h3{color:var(--panel-accent)}
+.panel[class*="panel-tone-"] h3 b{color:var(--panel-accent)}
+.panel-tone-asset,.panel-tone-batch{--panel-accent:#79baff;--panel-surface:#20344b;--panel-edge:#365777}
+.panel-tone-ai,.panel-tone-story{--panel-accent:#c5a0ff;--panel-surface:#302544;--panel-edge:#594276}
+.panel-tone-terminal{--panel-accent:#a6b8ce;--panel-surface:#29313d;--panel-edge:#465466}
+.panel-tone-color,.panel-tone-transform{--panel-accent:#68d8ce;--panel-surface:#1d3939;--panel-edge:#32605d}
+.panel-tone-motion,.panel-tone-animation{--panel-accent:#ffc078;--panel-surface:#3a2c20;--panel-edge:#705032}
+.panel-tone-project{--panel-accent:#b5c1d2;--panel-surface:#2a303a;--panel-edge:#4b5665}
+.panel-tone-text{--panel-accent:#ff9fc4;--panel-surface:#3b2633;--panel-edge:#71445b}
+.panel-tone-effects{--panel-accent:#df9cff;--panel-surface:#34243f;--panel-edge:#614274}
+.panel-tone-export{--panel-accent:#8cdda6;--panel-surface:#20372e;--panel-edge:#3b684f}
+.panel-tone-metadata,.panel-tone-quality{--panel-accent:#a9b6ff;--panel-surface:#252d49;--panel-edge:#46558a}
+@media(prefers-reduced-transparency:reduce){.panel[class*="panel-tone-"]{background:var(--panel-surface)}}
 </style>
 </head>
 <body>
@@ -492,7 +508,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 <div class="app">
  <aside class="sidebar">
   <div class="tabs"><button class="active" data-mode="single">Single Object</button><button data-mode="multi">Multi Object</button><button data-mode="batch">Batch Folder</button></div>
-  <section class="panel"><h3><b>●</b> 1. OBJEK / ASSET</h3>
+  <section class="panel panel-tone-asset"><h3><b>●</b> 1. OBJEK / ASSET</h3>
    <div class="drop" id="drop">Klik untuk memilih file atau tarik file ke sini<br><small>SVG disarankan · PNG/JPG juga didukung</small></div>
    <input id="fileInput" type="file" accept=".svg,image/png,image/jpeg,image/webp" class="hidden">
    <div class="row" style="margin-top:8px"><button id="demoBtn">Pakai contoh</button><button id="clearBtn">Hapus objek</button></div>
@@ -502,7 +518,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
    <p class="help">Untuk Multi Object, unggah beberapa file sekaligus. Batch Folder membantu memilih banyak aset untuk ekspor satu per satu.</p>
    <input id="multiInput" type="file" accept=".svg,image/png,image/jpeg,image/webp" multiple class="hidden">
   </section>
-  <section class="panel" id="batchQueuePanel">
+  <section class="panel panel-tone-batch" id="batchQueuePanel">
    <h3><b>▤</b> BATCH ASSET QUEUE</h3>
    <p class="help">Kelola beberapa aset dalam satu antrean. Pilih aset untuk memuatnya ke stage, lalu atur animasi/render seperti biasa. Pengaturan tiap aset belum otomatis disalin ke aset lain.</p>
    <div class="row"><button id="batchAddBtn" type="button">＋ Tambah banyak file</button><button id="batchClearBtn" type="button">Kosongkan antrean</button></div>
@@ -513,7 +529,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
   </section>
 
 
-  <section class="panel ai-tools" id="svgMotionModePanel"><h3><b>✦</b> MODE HTML MOTION · GENERATE AI</h3>
+  <section class="panel ai-tools panel-tone-ai" id="svgMotionModePanel"><h3><b>✦</b> MODE HTML MOTION · GENERATE AI</h3>
    <p class="help">Buat konsep motion graphic HTML + CSS yang siap diimpor. Cari tema, pilih resolusi dan rasio, lalu tempel dokumen HTML lengkap ke terminal trozal_MOTION.</p>
    <label>Search tema AI</label><input id="svgAiThemeSearch" type="text" list="svgAiThemeSuggestions" autocomplete="off" placeholder="Cari tema: Cybersecurity, Ramadan, Space, Coffee..."><datalist id="svgAiThemeSuggestions"></datalist><p class="theme-search-hint" id="svgAiThemeSearchHint">Cari tema atau ketik tema khusus. Kategori visual dan subtema akan disesuaikan otomatis.</p>
    <label>Tema utama</label><select id="svgAiTheme"><option>Brand Identity & Logo</option></select>
@@ -532,7 +548,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
    <div class="status" id="svgAiPromptStatus"></div>
   </section>
 
-  <section class="panel ai-tools" id="textToAnimationPanel">
+  <section class="panel ai-tools panel-tone-ai" id="textToAnimationPanel">
    <h3>✦ TROZAL AI SCENE COMPOSER · LOCAL GENERATIVE</h3>
    <p class="help">Buat adegan motion graphic dari instruksi teks menggunakan model AI lokal Ollama. AI menyusun SVG/HTML visual yang dapat dipreview, diperiksa, lalu dikirim ke mesin TROZAL. Model lokal menghasilkan ilustrasi vektor, bukan foto/video fotorealistis.</p>
    <label>1 · BRIEF VISUAL / CERITA ADEGAN</label>
@@ -565,7 +581,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
   </section>
 
 
-<section class="panel ai-tools" id="visualSceneSequencer">
+<section class="panel ai-tools panel-tone-story" id="visualSceneSequencer">
  <h3>▰ VISUAL SCENE SEQUENCER · TIMELINE</h3>
  <p class="help">Atur setiap adegan visual secara terpisah. Urutan dapat diubah dengan drag-and-drop, durasi dapat berbeda, dan setiap adegan memiliki transisi, gerakan kamera, serta gaya visual sendiri.</p>
  <div class="btnrow"><button type="button" class="primary" id="buildVisualSequenceBtn">✦ SUSUN ADEGAN DARI PROMPT</button><button type="button" id="addVisualSceneBtn">＋ TAMBAH ADEGAN</button></div>
@@ -577,7 +593,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
  <div class="btnrow"><button type="button" id="clearVisualSequenceBtn">Kosongkan Timeline</button></div>
  <p class="notice">Pengaturan pada timeline ini akan dipakai saat membuat HTML visual. Total durasi hasil mengikuti jumlah durasi seluruh adegan, bukan lagi durasi default generator.</p>
 </section>
-<section class="panel ai-tools" id="motionPresetLibrary"><h3><b>✦</b> 6. MOTION PRESET LIBRARY</h3>
+<section class="panel ai-tools panel-tone-story" id="motionPresetLibrary"><h3><b>✦</b> 6. MOTION PRESET LIBRARY</h3>
    <p class="help">Pilih preset untuk menerapkan gerakan yang sesuai dengan jenis objek. Background dan dekorasi tetap diam; teks dan objek utama mendapat gerakan berbeda.</p>
    <div class="preset-grid">
     <button type="button" data-motion-preset="logo">Logo Reveal</button><button type="button" data-motion-preset="text">Kinetic Typography</button>
@@ -587,7 +603,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
    </div>
    <div class="status" id="motionPresetStatus">Preset akan diterapkan ke layer SVG yang sudah dipisahkan.</div>
   </section>
-  <section class="panel ai-tools" id="svgTerminalPanel"><h3><b>⌘</b> TERMINAL KODE HTML</h3>
+  <section class="panel ai-tools panel-tone-terminal" id="svgTerminalPanel"><h3><b>⌘</b> TERMINAL KODE HTML</h3>
    <p class="help">Tempel HTML lengkap dari AI. Engine mengimpor elemen HTML dan animasi CSS; JavaScript impor diblokir agar capture lebih konsisten.</p>
    <label>Paste kode HTML ke terminal</label>
    <textarea id="aiCodeTerminal" class="terminal" spellcheck="false" placeholder="Tempel dokumen HTML lengkap di sini: <!DOCTYPE html> ..."></textarea>
@@ -605,7 +621,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
    <div class="status" id="aiModeStatus"></div>
   </section>
 
-  <section class="panel"><h3><b>●</b> 2. WARNA & LATAR</h3>
+  <section class="panel panel-tone-color"><h3><b>●</b> 2. WARNA & LATAR</h3>
    <label>Warna objek (untuk SVG sederhana)</label><div class="swatches" id="swatches">
     <button class="swatch active" data-color="#ffbd45" style="background:#ffbd45"></button><button class="swatch" data-color="#e87824" style="background:#e87824"></button><button class="swatch" data-color="#111827" style="background:#111827"></button><button class="swatch" data-color="#ffffff" style="background:#ffffff"></button><button class="swatch" data-color="#25b878" style="background:#25b878"></button><button class="swatch" data-color="#4c8dff" style="background:#4c8dff"></button><button class="swatch" data-color="#ef6389" style="background:#ef6389"></button>
    </div>
@@ -613,13 +629,13 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
    <div class="row"><label style="flex:2">Warna kustom</label><input id="customBg" type="color" value="#f4f0e8" style="width:54px;flex:0 0 54px;padding:2px;height:30px"></div>
    <label><input type="checkbox" id="transparentBg" checked> Latar transparan pada ekspor (jika didukung)</label>
   </section>
-  <section class="panel" id="motionPartsPanel"><h3><b>●</b> 3. BAGIAN BERGERAK</h3>
+  <section class="panel panel-tone-motion" id="motionPartsPanel"><h3><b>●</b> 3. BAGIAN BERGERAK</h3>
    <p class="help">Atur gerakan, delay, waktu mulai/selesai, durasi, kecepatan, intensitas, skala, dan rotasi secara independen untuk setiap layer.</p>
    <div id="parts"></div>
    <div id="autoLayerControls"></div>
    <button id="addPart" style="width:100%;margin-top:8px">+ Tambah layer gerak</button>
   </section>
-  <section class="panel"><h3><b>●</b> 6. FILE & PROYEK</h3>
+  <section class="panel panel-tone-project"><h3><b>●</b> 6. FILE & PROYEK</h3>
    <div class="row"><button id="saveProject">Simpan proyek</button><button id="loadProject">Buka proyek</button></div>
    <input id="projectInput" type="file" accept=".json" class="hidden">
    <div class="row" style="margin-top:7px"><button id="downloadSvg">Unduh SVG</button><button id="exportFrames">Ekspor PNG saat ini</button></div>
@@ -652,7 +668,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
   <div class="status" id="status"></div></div>
  </main>
  <aside class="sidebar right">
-  <section class="panel" id="animationPanel"><h3><b>●</b> 4. ANIMASI</h3>
+  <section class="panel panel-tone-animation" id="animationPanel"><h3><b>●</b> 4. ANIMASI</h3>
    <label>Gaya pergerakan</label><select id="animation">
     <option value="none">1. Diam / Statis (fokus pada bagian bergerak)</option>
     <option value="spinBurst">2. Rotasi & Ledakan Cahaya</option>
@@ -722,7 +738,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
     <label class="inline-check"><input id="shapePathReveal" type="checkbox"> Aktifkan Trim Path / Stroke Reveal</label>
     <p class="help">Mask bentuk diterapkan konsisten pada preview dan frame render. Path Stroke menggambar outline secara progresif mengikuti playhead. Editable Bezier Path menerima SVG path data. Multi-mask berlapis akan menjadi iterasi selanjutnya.</p>
    </div>
-  <section class="panel" id="nativeTextPanel"><h3><b>✦</b>  TEXT ANIMATION STUDIO</h3>
+  <section class="panel panel-tone-text" id="nativeTextPanel"><h3><b>✦</b>  TEXT ANIMATION STUDIO</h3>
    <p class="help">Buat judul dan teks native. Teks ikut playhead serta masuk ke hasil render.</p>
    <div class="row" id="textLayerManager" style="gap:6px;flex-wrap:wrap">
     <button type="button" id="textAddBtn">＋ Tambah teks</button><button type="button" id="textDuplicateBtn">Duplikat</button><button type="button" id="textDeleteBtn">Hapus layer</button>
@@ -749,7 +765,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
    <div class="row"><div><label>Skala keyframe (%)</label><input type="number" id="textMotionScale" min="1" max="500" value="100"></div><div><label>Rotasi keyframe (°)</label><input type="number" id="textMotionRotation" min="-3600" max="3600" value="0"></div><div><label>Opacity keyframe (%)</label><input type="number" id="textMotionOpacity" min="0" max="100" value="100"></div></div>
    <div class="row"><button type="button" id="textLayerAddKey">◆ Tambah keyframe</button><button type="button" id="textLayerClearKeys">Hapus keyframe</button></div><div class="help" id="textLayerKeyStatus">Keyframe teks: belum ada</div><div class="row"><button type="button" id="textLayerReset">Reset</button><span class="help" id="textLayerStatus">Text layer nonaktif.</span></div>
   </section>
-  <section class="panel" id="effectsPanel"><h3><b>●</b> 5. EFEK VISUAL</h3>
+  <section class="panel panel-tone-effects" id="effectsPanel"><h3><b>●</b> 5. EFEK VISUAL</h3>
    <label>Preset efek</label><select id="effectPreset">
     <option value="none">Tanpa efek tambahan</option><option value="glow" selected>Glow / cahaya lembut</option><option value="outline">Outline / garis tepi</option><option value="particles">Partikel melayang</option><option value="confetti">Confetti / serpihan warna</option><option value="speedlines">Speed lines / garis gerak</option><option value="flash">Flash / kilatan cahaya</option><option value="glitch">Glitch / distorsi warna</option><option value="blur">Motion blur sederhana</option><option value="vignette">Vignette / sudut gelap</option><option value="snow">Salju turun</option><option value="rain">Hujan</option><option value="bubbles">Gelembung</option><option value="fireflies">Kunang-kunang</option><option value="dust">Debu atmosfer</option><option value="bokeh">Bokeh sinematik</option><option value="rays">Sinar cahaya</option><option value="scanlines">Scanline digital</option><option value="starfield">Starfield / bintang</option><option value="embers">Bara api</option><option value="smoke">Asap atmosfer</option><option value="aurora">Aurora bergerak</option>
    </select>
@@ -763,13 +779,13 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
    <label><input type="checkbox" id="effectOn" checked> Aktifkan efek pada preview dan render</label>
    <p class="help">Pilih preset untuk melihat efek langsung. Efek atmosfer, partikel, kilau, dan overlay diproses ulang pada setiap frame ekspor.</p>
   </section>
-  <section class="panel"><h3><b>●</b> 6. UKURAN & POSISI</h3>
+  <section class="panel panel-tone-transform"><h3><b>●</b> 6. UKURAN & POSISI</h3>
    <label>Skala objek <span class="value" id="scaleVal">35%</span></label><input id="scale" type="range" min="10" max="90" value="35">
    <div class="row"><div><label>Kiri / Kanan <span class="value" id="xVal">0</span></label><input id="posX" type="range" min="-45" max="45" value="0"></div><div><label>Atas / Bawah <span class="value" id="yVal">0</span></label><input id="posY" type="range" min="-40" max="40" value="0"></div></div>
    <label>Rotasi dasar <span class="value" id="rotVal">0°</span></label><input id="rotation" type="range" min="-180" max="180" value="0">
    <label>Opacity <span class="value" id="opacityVal">100%</span></label><input id="opacity" type="range" min="10" max="100" value="100">
   </section>
-  <section class="panel" id="exportPanel"><h3><b>●</b> 7. EKSPOR</h3>
+  <section class="panel panel-tone-export" id="exportPanel"><h3><b>●</b> 7. EKSPOR</h3>
    <label>Format video</label><select id="format"><option value="webm">WebM (ekspor langsung dari browser)</option><option value="mp4">MP4 / H.264</option><option value="mov" selected>MOV / QuickTime · ProRes 4444 + Alpha</option><option value="pngseq">PNG Sequence ZIP (transparansi / alpha)</option></select>
    
    <label>Preset kualitas</label><select id="quality"><option value="standard">Standar · file lebih kecil</option><option value="high" selected>Tinggi · detail tajam</option><option value="max">Maksimal · kualitas tertinggi</option></select>
@@ -785,7 +801,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
    <button id="convertPngToMov" type="button" style="display:none;width:100%;margin-top:8px">Convert PNG ke MOV ProRes 4444</button>
    <div id="exportStatus" class="status"></div>
   </section>
-  <section class="panel" id="stockMetadataPanel">
+  <section class="panel panel-tone-metadata" id="stockMetadataPanel">
    <h3><b>✦</b> 8. METADATA VIDEO MICROSTOCK</h3>
    <p class="help">Prioritas utama adalah hasil analisis frame Gemini Cloud atau Browser Vision lokal, lalu deskripsi visual yang Anda periksa sendiri. Prompt dan rencana scene tetap dianggap niat pembuatan, bukan bukti piksel. Semua saran AI wajib ditinjau sebelum dikirim ke marketplace.</p>
    <label>Platform tujuan</label>
@@ -856,7 +872,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
    <button type="button" class="green" id="copyAllMetadataBtn" style="width:100%;margin-top:7px">Salin Semua Metadata</button>
    <div id="metadataStatus" class="status" aria-live="polite"></div>
   </section>
-  <section class="panel" id="metadataOptimizerPanel">
+  <section class="panel panel-tone-quality" id="metadataOptimizerPanel">
    <h3><b>✧</b> 9. METADATA QUALITY & DELIVERY</h3>
    <p class="help">Audit editorial lokal untuk memeriksa kelengkapan, relevansi keyword terhadap sumber teks, duplikasi, dan aturan dasar platform. Skor kelengkapan ini bukan pemeriksaan visual dan bukan jaminan diterima marketplace.</p>
    <div class="metadata-evidence" id="metadataQualitySummary">Kelengkapan metadata menunggu analisis.</div>
