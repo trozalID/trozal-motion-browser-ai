@@ -137,6 +137,46 @@ function renderProceduralScene(plan, ratio, duration, brief, options = {}) {
   ];
   return svg.join("");
 }
+async function planVisualScenesWithBrowserAI(brief, preferredCount = 4) {
+  const text = String(brief || "").trim();
+  if (!text) throw new Error("Prompt cerita masih kosong.");
+  const activeEngine = await ensureEngine();
+  const result = await activeEngine.chat.completions.create({
+    messages: [
+      {
+        role: "system",
+        content: 'Kamu adalah sutradara storyboard animasi. Ubah brief menjadi storyboard visual berurutan. Balas HANYA JSON valid: {"scenes":[{"text":"deskripsi visual konkret dalam 12-24 kata","duration":3,"camera":"parallax","transition":"crossfade","style":"cinematic"}]}. Buat 3 sampai 6 scene yang berbeda dan saling menyambung, bukan mengulang prompt. Setiap scene harus menggambarkan satu momen yang bisa divisualkan. Enum camera: parallax, pan, orbit, follow, locked. Enum transition: crossfade, slide, zoom, glitch, cut. Enum style: cinematic, illustration, neon, papercut. Jangan sertakan markdown.'
+      },
+      {
+        role: "user",
+        content: "Buat storyboard untuk brief berikut. Target " + Math.max(3, Math.min(6, Number(preferredCount) || 4)) + " scene. Pastikan kontinuitas subjek, lokasi, dan urutan aksi. Brief: " + text
+      }
+    ],
+    temperature: 0.35,
+    max_tokens: 1000
+  });
+  const raw = String(result?.choices?.[0]?.message?.content || "").trim();
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error("Browser AI tidak mengembalikan JSON storyboard.");
+  let parsed;
+  try { parsed = JSON.parse(match[0]); }
+  catch (_) { throw new Error("Format storyboard dari Browser AI tidak valid."); }
+  const allowedCamera = new Set(["parallax","pan","orbit","follow","locked"]);
+  const allowedTransition = new Set(["crossfade","slide","zoom","glitch","cut"]);
+  const allowedStyle = new Set(["cinematic","illustration","neon","papercut"]);
+  const scenes = Array.isArray(parsed?.scenes) ? parsed.scenes : [];
+  const cleaned = scenes.slice(0, 8).map((scene) => ({
+    text: String(scene?.text || "").replace(/[<>\u0000-\u001f]/g, "").trim().slice(0, 420),
+    duration: Math.max(0.5, Math.min(60, Number(scene?.duration) || 3)),
+    camera: allowedCamera.has(scene?.camera) ? scene.camera : "parallax",
+    transition: allowedTransition.has(scene?.transition) ? scene.transition : "crossfade",
+    style: allowedStyle.has(scene?.style) ? scene.style : "cinematic"
+  })).filter(scene => scene.text);
+  if (cleaned.length < 2) throw new Error("Storyboard terlalu sedikit. Coba prompt yang lebih jelas.");
+  return cleaned;
+}
+window.trozalBrowserAiPlanScenes = planVisualScenesWithBrowserAI;
+
 async function generateScene() {
   const button = $("generateVisualMotionAiBtn");
   const brief = $("visualMotionPrompt")?.value?.trim();
