@@ -2887,6 +2887,7 @@ function visualSceneField(label,type,value,options){
 function renderVisualSceneSequence(){
  const host=$('visualSceneList');if(!host)return;host.replaceChildren();
  visualSceneSequence.forEach((item,index)=>{
+  if(!item.id)item.id='scene-'+Date.now()+'-'+index;
   const card=document.createElement('article');card.className='visual-scene-card';card.draggable=true;card.tabIndex=0;card.setAttribute('role','group');card.setAttribute('aria-label','Adegan '+(index+1)+' dari '+visualSceneSequence.length);card.dataset.index=String(index);card.dataset.sceneId=item.id||('scene-index-'+index);
   const head=document.createElement('div');head.className='visual-scene-head';
   const grip=document.createElement('span');grip.className='visual-scene-grip';grip.textContent='⠿';grip.title='Seret untuk mengubah urutan';grip.setAttribute('aria-hidden','true');
