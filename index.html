@@ -2843,7 +2843,19 @@ async function importVisualScenesToNativeTracks(){
    pan:{loop:11,intensity:42,label:'Pan / drift horizontal'},
    parallax:{loop:23,intensity:32,label:'Parallax berlapis'},
    orbit:{loop:17,intensity:28,label:'Orbit kecil'},
-   follow:{loop:7,intensity:24,label:'Follow / float lembut'}
+   follow:{loop:7,intensity:24,label:'Follow / float lembut'},
+   tracking:{loop:7,intensity:32,label:'Tracking / mengikuti subjek'},
+   dolly:{loop:7,intensity:28,label:'Dolly / maju mengikuti subjek'},
+   'push-in':{loop:7,intensity:30,label:'Push-in / mendekat'},
+   'pull-out':{loop:11,intensity:26,label:'Pull-out / menjauh'},
+   crane:{loop:23,intensity:28,label:'Crane / parallax vertikal'},
+   handheld:{loop:9,intensity:12,label:'Handheld / getaran halus'},
+   'zoom-in':{loop:2,intensity:22,label:'Zoom-in / penekanan fokus'},
+   'zoom-out':{loop:11,intensity:24,label:'Zoom-out / membuka ruang'},
+   'pan-left':{loop:11,intensity:34,label:'Pan kiri'},
+   'pan-right':{loop:11,intensity:34,label:'Pan kanan'},
+   static:{loop:0,intensity:0,label:'Kamera terkunci'},
+   none:{loop:0,intensity:0,label:'Kamera terkunci'}
   };
   const entranceFor={crossfade:1,slide:5,zoom:2,glitch:7,cut:0};
   const exitFor={crossfade:1,slide:6,zoom:2,glitch:7,cut:0};
@@ -2861,7 +2873,8 @@ async function importVisualScenesToNativeTracks(){
    return null;
   };
   const sceneMotion=items.map(item=>{
-   const camera=motionFor[item.camera]||motionFor.parallax;
+   const cameraKey=String(item.camera||'parallax').toLowerCase().trim().replace(/[ _]+/g,'-');
+   const camera=motionFor[cameraKey]||motionFor.parallax;
    const action=objectActionFor(item.text);
    const chosenLoop=action? action.loop : camera.loop;
    const chosenIntensity=action? action.intensity : camera.intensity;
