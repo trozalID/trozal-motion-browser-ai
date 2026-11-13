@@ -560,8 +560,57 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 .workspace-panel.workspace-dragging{opacity:.45;outline:2px dashed #64b9e8}.workspace-panel.workspace-drop-target{outline:2px solid #64b9e8;outline-offset:2px}
 @media(max-width:760px){.workspace-editor,.workspace-tools{inset:2%;max-height:96vh}.workspace-tools .workspace-tool-grid{grid-template-columns:1fr}.topright button{font-size:10px;padding:6px}}
 </style>
+<style>
+
+/* TROZAL UI MODES — main editor shell */
+.ui-layout-switcher{display:flex;align-items:center;gap:4px;padding:3px;border:1px solid #40516a;border-radius:9px;background:#111923;flex:0 0 auto}
+.ui-layout-label{padding:0 6px;color:#91a9c4;font-size:9px;font-weight:900;letter-spacing:1px}
+.ui-layout-btn{padding:6px 10px;border-radius:6px;font-size:10px;font-weight:800;white-space:nowrap}
+.ui-layout-btn[aria-pressed="true"]{background:linear-gradient(135deg,#245d78,#287b86);border-color:#62c5d1;color:#f2feff;box-shadow:0 0 0 1px #62c5d133}
+body[data-ui-layout="professional"] .topbar{background:linear-gradient(110deg,#172331,#202b3a 55%,#182d37);border-bottom-color:#3b6578}
+body[data-ui-layout="professional"] .sidebar{background:linear-gradient(180deg,#1b2733,#1b1f29 45%);border-color:#345064}
+body[data-ui-layout="professional"] .sidebar.right{background:linear-gradient(180deg,#282436,#1e202b 48%);border-left-color:#55436a}
+body[data-ui-layout="professional"] .main{background:#151c25}
+body[data-ui-layout="professional"] .panel{box-shadow:0 5px 16px #0002;border-color:#3b5264}
+body[data-ui-layout="professional"] .panel h3{color:#a9d7e9}
+body[data-ui-layout="professional"] .sidebar.right .panel{border-color:#574768}
+body[data-ui-layout="professional"] .sidebar.right .panel h3{color:#d2b5f1}
+body[data-ui-layout="professional"] .topcontrols{background:#1c2935;border-bottom-color:#3a596d}
+body[data-ui-layout="professional"] .stagewrap{background:radial-gradient(ellipse at center,#202d3b 0%,#151c25 72%)}
+body[data-ui-layout="classic"] .ui-layout-btn[aria-pressed="true"]{background:#d8a94d;border-color:#f0c76f;color:#20190c}
+@media(max-width:1050px){.ui-layout-switcher{order:4}.topright{flex-wrap:wrap}}
+@media(max-width:720px){.ui-layout-switcher{width:100%;justify-content:flex-end}.ui-layout-label{margin-right:auto}.ui-layout-btn{min-height:36px}.topbar{height:auto;min-height:42px}}
+
+</style>
 </head>
 <body>
+<script>
+/* TROZAL UI mode controller — main editor; layout-only, isolated from render/project state. */
+(function(){
+ 'use strict';
+ const storageKey="trozal-motion-ui-layout-browser-ai";
+ const normalize=value=>value==='classic'?'classic':'professional';
+ let selected='professional';
+ try{selected=normalize(localStorage.getItem(storageKey)||'professional')}catch(_){}
+ function apply(value,persist){
+  selected=normalize(value);
+  document.body.setAttribute('data-ui-layout',selected);
+  document.querySelectorAll('[data-ui-layout-choice]').forEach(button=>{
+   const active=button.getAttribute('data-ui-layout-choice')===selected;
+   button.setAttribute('aria-pressed',active?'true':'false');
+  });
+  if(persist){try{localStorage.setItem(storageKey,selected)}catch(_){}}
+ }
+ document.addEventListener('click',event=>{
+  const button=event.target.closest&&event.target.closest('[data-ui-layout-choice]');
+  if(!button)return;
+  event.preventDefault();
+  apply(button.getAttribute('data-ui-layout-choice'),true);
+ });
+ apply(selected,false);
+})();
+</script>
+
 <header class="topbar">
  <div class="brand">TROZAL <span>MOTION</span></div><div class="topnote">BROWSER AI · CLOUD + LOCAL VISION</div>
  <div class="ui-layout-switcher" role="group" aria-label="Mode layout UI">
