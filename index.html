@@ -518,6 +518,11 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 .panel-tone-metadata,.panel-tone-quality{--panel-accent:#a9b6ff;--panel-surface:#252d49;--panel-edge:#46558a}
 .panel-tone-object{--panel-accent:#83e6d0;--panel-surface:#193b3b;--panel-edge:#34766f}
 .object-motion-summary{white-space:pre-line;border:1px solid var(--panel-edge);background:rgba(8,20,27,.28);border-radius:9px;padding:10px;color:#d9f7ef;font-size:12px;line-height:1.65}
+#objectMotionDirectorPanel .scene-tempo-wrap{margin-top:8px;padding:8px 10px;background:linear-gradient(110deg,rgba(55,35,85,.38),rgba(17,45,53,.55));border:1px solid #75549d;border-radius:8px}
+#objectMotionDirectorPanel .scene-tempo-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+#objectMotionDirectorPanel .scene-tempo-head label{color:#e2ceff;font-size:9px;font-weight:800;letter-spacing:.08em}
+#objectMotionDirectorPanel .scene-tempo-head output{color:#d4b5ff;font-size:11px;font-weight:800;font-variant-numeric:tabular-nums}
+#objectMotionDirectorPanel [data-scene-tempo]{width:100%;accent-color:#b78bff}
 #objectMotionDirectorPanel .scene-choreography-label{display:block;margin:8px 0 4px;color:#d7b8ff;font-size:9px;font-weight:800;letter-spacing:.08em}
 #objectMotionDirectorPanel [data-scene-choreography]{width:100%;background:#211a34;border:1px solid #8060aa;color:#f0e5ff;border-radius:7px;padding:7px;font-size:11px}
 #objectMotionDirectorPanel .object-motion-scene{background:linear-gradient(120deg,rgba(100,65,145,.16),rgba(30,70,78,.12));border-color:#75549d}
@@ -2939,8 +2944,28 @@ function renderObjectMotionControls(items,profiles){
    applyObjectMotionSceneOverride(index,select.value,intensity.value);
   });
   const choreographyLabel=document.createElement('label');choreographyLabel.className='scene-choreography-label';choreographyLabel.textContent='CHOREOGRAPHY SCENE';
-  card.append(title,choreographyLabel,choreography,row);host.appendChild(card);
+  const tempoWrap=document.createElement('div');tempoWrap.className='scene-tempo-wrap';
+  const tempoHead=document.createElement('div');tempoHead.className='scene-tempo-head';
+  const tempoLabel=document.createElement('label');tempoLabel.textContent='SCENE TEMPO';
+  const tempoOutput=document.createElement('output');tempoOutput.textContent=(Number(profile.speed)||1).toFixed(2)+'×';
+  const tempo=document.createElement('input');tempo.type='range';tempo.min='0.25';tempo.max='3';tempo.step='0.05';tempo.value=String(Math.max(.25,Math.min(3,Number(profile.speed)||1)));tempo.dataset.sceneTempo=String(index);
+  tempo.addEventListener('input',()=>{tempoOutput.textContent=Number(tempo.value).toFixed(2)+'×';applyObjectMotionSceneSpeed(index,tempo.value);});
+  tempoHead.append(tempoLabel,tempoOutput);tempoWrap.append(tempoHead,tempo);
+  card.append(title,choreographyLabel,choreography,row,tempoWrap);host.appendChild(card);
  });
+}
+function applyObjectMotionSceneSpeed(sceneIndex,speedValue){
+ const profiles=window.trozalObjectMotionProfiles||[],profile=profiles[sceneIndex];if(!profile)return;
+ const speed=Math.max(.25,Math.min(3,Number(speedValue)||1));profile.speed=speed;
+ let changed=0;
+ svgPieces.forEach((piece,layerIndex)=>{
+  if((svgLayerSceneIndices[layerIndex]??-1)!==sceneIndex)return;
+  const speedControl=$('autoLayerSpeed'+layerIndex);
+  if(speedControl){speedControl.value=String(speed);speedControl.dispatchEvent(new Event('change',{bubbles:true}));changed++;}
+  if(svgLayerHints[layerIndex])svgLayerHints[layerIndex].speed=speed;
+ });
+ const status=$('visualMotionStatus');if(status)status.textContent='Tempo Scene '+(sceneIndex+1)+' diatur ke '+speed.toFixed(2)+'× pada '+changed+' track native.';
+ renderAt(playhead);scheduleAutosave();
 }
 function applyObjectMotionSceneOverride(sceneIndex,loopValue,intensityValue){
  const profiles=window.trozalObjectMotionProfiles||[],profile=profiles[sceneIndex];if(!profile)return;
