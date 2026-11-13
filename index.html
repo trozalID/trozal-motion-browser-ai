@@ -4452,7 +4452,10 @@ function generateStockMetadata(){
  const title=trozalMetadataTitleFromEvidence(sourceText,cleanTranslated,firstSentence);
  const categoryScores={};
  const keywords=[],seen=new Set();
- const sourceWords=(cleanTranslated.toLowerCase().match(/[a-z0-9]+/g)||[]).map(trozalMetadataWordKey);
+ // Keyword evidence may combine independent descriptive sources, while title/description retain the strict primary-source priority above.
+ const keywordEvidenceText=evidence.entries.filter(x=>x.kind!=='filename').map(x=>x.text).join('. ');
+ const keywordTranslated=trozalTranslateMetadataText(keywordEvidenceText||sourceText);
+ const sourceWords=(keywordTranslated.toLowerCase().match(/[a-z0-9]+/g)||[]).map(trozalMetadataWordKey);
  const sourceSet=new Set(sourceWords);
  const stop=new Set('a an the and or but with without from into onto over under between beside near at by on in of to is are was were be being been this that these those it its their his her they them he she as than then very more most some any all one two three four five six seven eight nine ten scene scenes featuring feature image video visual motion graphic design animation animated artwork illustration render rendered object objects style shows showing'.split(' '));
  const addKeyword=value=>{
@@ -4465,14 +4468,14 @@ function generateStockMetadata(){
  };
  const conceptHits=[];
  TROZAL_METADATA_CONCEPTS.forEach(rule=>{
-  const matches=[...cleanTranslated.toLowerCase().matchAll(rule.re)];
+  const matches=[...keywordTranslated.toLowerCase().matchAll(rule.re)];
   if(matches.length){
    categoryScores[rule.category]=(categoryScores[rule.category]||0)+matches.length*(rule.priority||1);
    conceptHits.push({category:rule.category,matchCount:matches.length});
    rule.terms.forEach(addKeyword);
   }
  });
- const meaningful=(cleanTranslated.toLowerCase().match(/[a-z0-9]+/g)||[]);
+ const meaningful=(keywordTranslated.toLowerCase().match(/[a-z0-9]+/g)||[]);
  meaningful.forEach(word=>{const normalized=trozalMetadataWordKey(word);if(word.length>2&&!stop.has(normalized))addKeyword(word)});
  // Remove duplicates and keep only evidence-backed terms; never pad with generic media labels.
  const ranked=Object.entries(categoryScores).sort((a,b)=>b[1]-a[1]);
@@ -4518,7 +4521,8 @@ function trozalMetadataKeywordAnalysis(){
  const scenes=Array.isArray(visualSceneSequence)?visualSceneSequence.map(x=>String(x.text||'').trim()).filter(Boolean):[];
  const prompt=String($('visualMotionPrompt')?.value||'').trim();
  const readable=evidence.entries.filter(x=>x.kind==='visible-text'||x.kind==='label').map(x=>x.text).filter(Boolean);
- const source=reviewed||sourceAi||aiText||scenes.join(' ')||prompt||readable.join(' ');
+ // Validate against the union of available descriptive evidence instead of discarding every source after the first one.
+ const source=[reviewed,sourceAi,aiText,scenes.join(' '),prompt,readable.join(' ')].filter(Boolean).join(' ');
  const stop=new Set('a an the and or but with without from into onto over under between beside near at by on in of to is are was were be being been this that these those it its their his her they them he she as than then very more most some any all one two three four five six seven eight nine ten'.split(' '));
  const sourceWords=(trozalTranslateMetadataText(source).toLowerCase().match(/[a-z0-9]+/g)||[]).map(trozalMetadataWordKey).filter(x=>x&&!stop.has(x));
  const sourceSet=new Set(sourceWords);
