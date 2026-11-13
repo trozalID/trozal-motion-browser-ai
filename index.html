@@ -2820,7 +2820,7 @@ async function restoreAutosave(){
   if(!raw){if(n)n.textContent='Autosave aktif · belum ada proyek tersimpan';return;}
   const p=validateProject(raw);
   if(p.sourceSvg||p.svgPieces?.length||p.assetDataUrl||p.layers?.length){
-   applyProject(p);if(n)n.textContent='Proyek dipulihkan dari autosave';
+   applyProject(p);$('sparkles').checked=false;$('shadow').checked=false;renderAt(playhead);if(n)n.textContent='Proyek dipulihkan dari autosave · partikel dan bayangan nonaktif saat mulai';
    setStatus('Pemulihan otomatis berhasil: aset, layer, keyframe, dan pengaturan proyek dimuat.');
   }else if(n)n.textContent='Autosave lama kosong · proyek baru siap digunakan';
  }catch(e){
