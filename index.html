@@ -500,6 +500,13 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 .object-motion-summary{white-space:pre-line;border:1px solid var(--panel-edge);background:rgba(8,20,27,.28);border-radius:9px;padding:10px;color:#d9f7ef;font-size:12px;line-height:1.65}
 .object-motion-scene{border:1px solid #34766f;background:#102e30;border-radius:9px;padding:10px;margin-top:8px}.object-motion-scene strong{display:block;color:#a9f5e5;margin-bottom:7px}.object-motion-scene .row{display:flex;gap:8px;align-items:center}.object-motion-scene select{min-width:0;flex:1}.object-motion-scene input[type=range]{flex:1;min-width:70px}.object-motion-scene output{color:#b8fff0;min-width:42px;text-align:right;font-variant-numeric:tabular-nums}
 @media(prefers-reduced-transparency:reduce){.panel[class*="panel-tone-"]{background:var(--panel-surface)}}
+
+.panel-tone-camera{--panel-accent:#ffd27a;--panel-surface:#3a3020;--panel-edge:#8b6b35}
+.smart-camera-list{display:grid;gap:9px;margin-top:10px}
+.smart-camera-card{border:1px solid #8b6b35;background:linear-gradient(135deg,#302819,#252333);border-radius:10px;padding:11px;display:grid;gap:8px}
+.smart-camera-card strong{color:#ffe0a1;font-size:12px;letter-spacing:.04em}
+.smart-camera-card p{margin:0;color:#d9d1c2;font-size:12px;line-height:1.45}
+.smart-camera-card select{width:100%;min-width:0;background:#171923;color:#fff;border:1px solid #8b6b35;border-radius:7px;padding:8px}
 </style>
 </head>
 <body>
@@ -595,6 +602,12 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
  <p class="help scene-object-help">Mode aktif mencoba memisahkan grup, bentuk, dan elemen SVG. Elemen yang saling bergantung (misalnya bagian tubuh/produk yang tersusun dari banyak path) dapat ikut terpisah; gunakan mode satu grup jika komposisi menjadi tidak utuh.</p>
  <div class="btnrow"><button type="button" id="clearVisualSequenceBtn">Kosongkan Timeline</button></div>
  <p class="notice">Pengaturan pada timeline ini akan dipakai saat membuat HTML visual. Total durasi hasil mengikuti jumlah durasi seluruh adegan, bukan lagi durasi default generator.</p>
+</section>
+<section class="panel ai-tools panel-tone-camera" id="smartCameraDirectorPanel">
+ <h3>◉ SMART CAMERA DIRECTOR</h3>
+ <p class="help">Analisis framing dari deskripsi tiap scene. Terapkan rekomendasi sebelum scene diimpor ke Multi-Track.</p>
+ <div id="smartCameraDirectorList" class="smart-camera-list"><p class="help">Susun scene untuk mendapatkan rekomendasi framing.</p></div>
+ <div class="status" id="smartCameraDirectorStatus">Periksa hasil preview sebelum render.</div>
 </section>
 <section class="panel ai-tools panel-tone-object" id="objectMotionDirectorPanel">
  <h3><b>✦</b> AI OBJECT MOTION DIRECTOR</h3>
@@ -2644,8 +2657,34 @@ function renderVisualSceneSequence(){
   host.appendChild(card);
  });
  updateVisualSceneSequenceSummary();
+ renderSmartCameraDirector();
  if(typeof scheduleAutosave==='function')scheduleAutosave();
 }
+
+function renderSmartCameraDirector(){
+ const host=$('smartCameraDirectorList');if(!host)return;
+ host.replaceChildren();
+ if(!visualSceneSequence.length){const empty=document.createElement('p');empty.className='help';empty.textContent='Susun scene untuk mendapatkan rekomendasi framing.';host.appendChild(empty);return;}
+ const options=[['parallax','Parallax'],['pan','Pan'],['orbit','Orbit'],['follow','Follow'],['locked','Static']];
+ visualSceneSequence.forEach((item,index)=>{
+  const t=String(item.text||'').toLowerCase();let framing='Medium shot',reason='Seimbangkan objek utama dan lingkungan.',suggested='parallax';
+  if(/landscape|pemandangan|kota|gedung|gunung|hutan|pantai|panorama|wide|luas/.test(t)){framing='Wide shot';reason='Tampilkan konteks ruang dan kedalaman lingkungan.';suggested='pan';}
+  else if(/wajah|mata|detail|close.?up|makro|macro|tekstur|produk|logo|perhiasan/.test(t)){framing='Close-up';reason='Prioritaskan detail objek utama.';suggested='follow';}
+  else if(/berlari|mengejar|terbang|pesawat|mobil|kendaraan|berjalan|aksi|melompat|bergerak cepat/.test(t)){framing='Tracking shot';reason='Ikuti arah gerak subjek agar tetap menjadi fokus.';suggested='follow';}
+  else if(/mengitari|orbit|mengelilingi|360|berputar/.test(t)){framing='Orbit / 3D';reason='Gerak melingkar memberi kesan volume.';suggested='orbit';}
+  const card=document.createElement('div');card.className='smart-camera-card';
+  const title=document.createElement('strong');title.textContent='SCENE '+String(index+1).padStart(2,'0')+' · '+framing;
+  const desc=document.createElement('p');desc.textContent=reason;
+  const select=document.createElement('select');select.setAttribute('aria-label','Gerakan kamera scene '+(index+1));
+  options.forEach(([value,label])=>{const option=document.createElement('option');option.value=value;option.textContent=label;select.appendChild(option);});
+  select.value=item.camera||suggested;
+  const apply=document.createElement('button');apply.type='button';apply.textContent='Gunakan rekomendasi: '+options.find(x=>x[0]===suggested)[1];
+  apply.addEventListener('click',()=>{item.camera=suggested;renderVisualSceneSequence();const status=$('smartCameraDirectorStatus');if(status)status.textContent='Rekomendasi scene '+(index+1)+' diterapkan. Impor ulang scene ke Multi-Track untuk memperbarui track.';});
+  select.addEventListener('change',()=>{item.camera=select.value;renderVisualSceneSequence();const status=$('smartCameraDirectorStatus');if(status)status.textContent='Kamera scene '+(index+1)+' diubah. Impor ulang scene ke Multi-Track untuk memperbarui track.';});
+  card.append(title,desc,select,apply);host.appendChild(card);
+ });
+}
+
 function moveVisualScene(from,to){
  if(from<0||to<0||from>=visualSceneSequence.length||to>=visualSceneSequence.length||from===to)return;
  const moved=visualSceneSequence.splice(from,1)[0];visualSceneSequence.splice(to,0,moved);renderVisualSceneSequence();
