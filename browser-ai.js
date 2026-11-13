@@ -436,7 +436,7 @@ async function composeMetadataFromCaptions(captions, groundedEvidence = "") {
       "Return one compact valid JSON object only. No markdown or explanation.",
       "Use ONLY these image-caption and object-detection observations. Do not invent details.",
       'Keys: title, description, category, keywords, visual_summary, confidence_notes.',
-      "title: English, max 100 characters. description: one factual sentence. keywords: array, up to 47 specific keywords, ranked by relevance.",
+      "title: English, max 100 characters. description: one factual sentence. keywords: return 47 distinct, useful English stock-search keywords when the combined evidence supports them. Aim for 40-47; do not stop at 10-20. Include grounded subject synonyms, object types, visible actions, visual style, composition, setting, colors, camera/viewpoint, and plausible stock-use concepts only when directly supported. Prefer concise 1-3 word phrases. Never invent unseen objects or events.",
       "category must exactly match one of: " + categories.join(" | "),
       "Evidence: " + evidence,
       "Structured visual evidence: " + groundedEvidence,
@@ -447,7 +447,7 @@ async function composeMetadataFromCaptions(captions, groundedEvidence = "") {
         { role: "user", content: prompt },
       ],
       temperature: 0,
-      max_tokens: 900,
+      max_tokens: 1800,
     });
     const raw = result?.choices?.[0]?.message?.content || "";
     try {
@@ -482,7 +482,8 @@ function applyBrowserMetadata(parsed, captions, evidenceLabel, visualEvidence = 
     .map(cleanKeyword)
     .filter(item => {
       const words = item.match(/[a-z0-9]+/g) || [];
-      return words.length > 0 && words.length <= 5 && words.every(word => evidenceTokens.has(word) || stopWords.has(word));
+      const grounded = words.filter(word => evidenceTokens.has(word) || stopWords.has(word)).length;
+      return words.length > 0 && words.length <= 5 && (words.length === 1 ? grounded === 1 : grounded >= Math.max(1, Math.ceil(words.length * 0.5)));
     });
   const evidenceWords = (visualText.match(/[a-z][a-z-]{2,}/g) || []).filter(word => !stopWords.has(word));
   const phraseKeywords = [];
@@ -658,7 +659,7 @@ async function analyzeWithGeminiCloud() {
       "Return ONLY valid JSON with keys title, description, category, keywords, visual_summary, visible_objects, motion_evidence, confidence_notes.",
       "title: specific natural English title, maximum 100 characters. description: accurate English stock description in 1-2 sentences, maximum 350 characters.",
       "category must exactly equal one of: " + categories.join(" | "),
-      "keywords: Up to 47 distinct, specific English search terms or short phrases. Return as many as the visible evidence genuinely supports, without filler. Put the most important subject and action first. Avoid duplicates, unsupported concepts, and generic filler. Include relevant subject, action, style, composition, background, and use-case terms only when visibly supported.",
+      "keywords: Aim for 40-47 distinct, specific English stock-search terms or short phrases when supported by the frames. Do not stop at 10-20 if the images contain enough detail. Include grounded synonyms, subject/object types, visible actions, style, composition, colors, background, viewpoint, and relevant stock-use concepts. Use concise 1-3 word phrases. Never invent unseen objects, actions, brands, identities, or locations; omit unsupported terms rather than padding.",
       "visible_objects: array of clearly visible objects. motion_evidence: short description of changes that can actually be observed between the supplied frames. confidence_notes: uncertainties, or empty string."
     ].join("\n");
     setCloudStatus("Mengirim " + images.length + " frame ke Gemini Cloud Accurate…");
@@ -728,7 +729,7 @@ async function analyzeWithGeminiCloud() {
     const evidenceTokens = new Set(evidenceText.match(/[a-z0-9]+/g) || []);
     const stop = new Set(["the","a","an","and","or","with","on","in","at","of","to","is","are","this","that","from","its","for","video","motion","graphic"]);
     const modelKeywords = (Array.isArray(parsed.keywords) ? parsed.keywords : []).map(x => String(x).trim().toLowerCase().replace(/\s+/g, " "))
-      .filter(x => { const words = x.match(/[a-z0-9]+/g) || []; return words.length > 0 && words.length <= 5 && words.some(word => evidenceTokens.has(word)); });
+      .filter(x => { const words = x.match(/[a-z0-9]+/g) || []; const grounded = words.filter(word => evidenceTokens.has(word) || stop.has(word)).length; return words.length > 0 && words.length <= 5 && (words.length === 1 ? grounded === 1 : grounded >= Math.max(1, Math.ceil(words.length * 0.5))); });
     const fallbackWords = evidenceText.match(/[a-z][a-z-]{2,}/g) || [];
     const keywords = [...new Set([...modelKeywords, ...fallbackWords.filter(word => !stop.has(word))])].slice(0, 47);
     const categoryOptions = [...($("metadataCategory")?.options || [])].map(option => option.text);
