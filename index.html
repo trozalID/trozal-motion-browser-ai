@@ -69,6 +69,8 @@ small,.muted{color:var(--muted)}.row{display:flex;gap:8px;align-items:center}.ro
 .visual-scene-card{border:1px solid #287d76;border-radius:9px;padding:8px;background:linear-gradient(145deg,#103a3b,#0b292e);box-shadow:inset 0 1px #c7fff20c}
 .visual-scene-card.dragging{opacity:.42;border-style:dashed}
 .visual-scene-card.drag-over{border-color:#b1fff1;box-shadow:0 0 0 2px #52d6c455}
+.visual-scene-card:focus-visible{outline:2px solid #a5f3e4;outline-offset:3px}
+.visual-scene-card button:focus-visible,.visual-scene-card input:focus-visible,.visual-scene-card select:focus-visible,.visual-scene-card textarea:focus-visible{outline:2px solid #a5f3e4;outline-offset:2px}
 .visual-scene-head{display:flex;align-items:center;gap:7px;margin-bottom:7px}
 .visual-scene-grip{cursor:grab;color:#9ef5e5;font-size:17px;user-select:none}
 .visual-scene-number{font-size:10px;font-weight:800;color:#b9fff0;letter-spacing:.08em}
@@ -768,8 +770,8 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
   </section>
 
 
-<section class="panel ai-tools panel-tone-story" id="visualSceneSequencer">
- <h3>▰ VISUAL SCENE SEQUENCER · TIMELINE</h3>
+<section class="panel ai-tools panel-tone-story" id="visualSceneSequencer" aria-labelledby="visualSceneSequencerTitle">
+ <h3 id="visualSceneSequencerTitle" tabindex="-1">▰ VISUAL SCENE SEQUENCER · TIMELINE</h3>
  <p class="help">Atur setiap adegan visual secara terpisah. Urutan dapat diubah dengan drag-and-drop, durasi dapat berbeda, dan setiap adegan memiliki transisi, gerakan kamera, serta gaya visual sendiri.</p>
  <div class="btnrow"><button type="button" class="primary" id="buildVisualSequenceBtn">✦ SUSUN ADEGAN DARI PROMPT</button><button type="button" id="addVisualSceneBtn">＋ TAMBAH ADEGAN</button></div>
  <div class="visual-sequence-summary" id="visualSceneTimelineSummary">Belum ada adegan. Masukkan prompt pada panel ungu lalu susun adegan di sini.</div>
@@ -2885,17 +2887,17 @@ function visualSceneField(label,type,value,options){
 function renderVisualSceneSequence(){
  const host=$('visualSceneList');if(!host)return;host.replaceChildren();
  visualSceneSequence.forEach((item,index)=>{
-  const card=document.createElement('article');card.className='visual-scene-card';card.draggable=true;card.dataset.index=String(index);
+  const card=document.createElement('article');card.className='visual-scene-card';card.draggable=true;card.tabIndex=0;card.setAttribute('role','group');card.setAttribute('aria-label','Adegan '+(index+1)+' dari '+visualSceneSequence.length);card.dataset.index=String(index);card.dataset.sceneId=item.id||('scene-index-'+index);
   const head=document.createElement('div');head.className='visual-scene-head';
-  const grip=document.createElement('span');grip.className='visual-scene-grip';grip.textContent='⠿';grip.title='Seret untuk mengubah urutan';
+  const grip=document.createElement('span');grip.className='visual-scene-grip';grip.textContent='⠿';grip.title='Seret untuk mengubah urutan';grip.setAttribute('aria-hidden','true');
   const num=document.createElement('span');num.className='visual-scene-number';num.textContent='ADEGAN '+String(index+1).padStart(2,'0');
   const spacer=document.createElement('span');spacer.className='visual-scene-spacer';
   const actions=document.createElement('div');actions.className='scene-actions';
-  const up=document.createElement('button');up.type='button';up.textContent='↑';up.title='Pindah ke atas';up.disabled=index===0;
+  const up=document.createElement('button');up.type='button';up.textContent='↑';up.title='Pindah ke atas';up.setAttribute('aria-label','Pindahkan adegan '+(index+1)+' ke atas');up.className='scene-move-up';up.disabled=index===0;
   up.addEventListener('click',()=>moveVisualScene(index,index-1));
-  const down=document.createElement('button');down.type='button';down.textContent='↓';down.title='Pindah ke bawah';down.disabled=index===visualSceneSequence.length-1;
+  const down=document.createElement('button');down.type='button';down.textContent='↓';down.title='Pindahkan adegan '+(index+1)+' ke bawah';down.setAttribute('aria-label','Pindahkan adegan '+(index+1)+' ke bawah');down.className='scene-move-down';down.disabled=index===visualSceneSequence.length-1;
   down.addEventListener('click',()=>moveVisualScene(index,index+1));
-  const del=document.createElement('button');del.type='button';del.textContent='✕';del.title='Hapus adegan';
+  const del=document.createElement('button');del.type='button';del.textContent='✕';del.title='Hapus adegan';del.setAttribute('aria-label','Hapus adegan '+(index+1));
   del.addEventListener('click',()=>{visualSceneSequence.splice(index,1);renderVisualSceneSequence();});
   actions.append(up,down,del);head.append(grip,num,spacer,actions);card.appendChild(head);
   const description=visualSceneField('DESKRIPSI VISUAL','textarea',item.text);
@@ -2912,6 +2914,7 @@ function renderVisualSceneSequence(){
   const style=visualSceneField('GAYA VISUAL','select',item.style,[['cinematic','Cinematic'],['illustration','2D Illustration'],['neon','Neon / Sci-Fi'],['papercut','Paper Cut']]);
   style.field.addEventListener('change',()=>item.style=style.field.value);
   fields.append(duration.wrap,transition.wrap,camera.wrap,style.wrap);card.appendChild(fields);
+  card.addEventListener('keydown',e=>{if(e.target!==card||!e.altKey||!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();moveVisualScene(index,index+(e.key==='ArrowUp'?-1:1),item.id);});
   card.addEventListener('dragstart',e=>{visualSceneDragIndex=index;card.classList.add('dragging');if(e.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(index));}});
   card.addEventListener('dragend',()=>{visualSceneDragIndex=-1;host.querySelectorAll('.visual-scene-card').forEach(x=>x.classList.remove('dragging','drag-over'));});
   card.addEventListener('dragover',e=>{e.preventDefault();card.classList.add('drag-over');if(e.dataTransfer)e.dataTransfer.dropEffect='move';});
@@ -2948,9 +2951,11 @@ function renderSmartCameraDirector(){
  });
 }
 
-function moveVisualScene(from,to){
+function moveVisualScene(from,to,focusSceneId){
  if(from<0||to<0||from>=visualSceneSequence.length||to>=visualSceneSequence.length||from===to)return;
  const moved=visualSceneSequence.splice(from,1)[0];visualSceneSequence.splice(to,0,moved);renderVisualSceneSequence();
+ const targetId=focusSceneId||moved.id;
+ if(targetId){const card=[...$('visualSceneList').querySelectorAll('.visual-scene-card')].find(node=>node.dataset.sceneId===targetId);if(card){card.focus();card.scrollIntoView({block:'nearest',behavior:'smooth'});}}
 }
 async function buildVisualSceneSequenceFromPrompt(){
  const lines=visualMotionPromptLines();
