@@ -567,7 +567,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 
   <section class="panel ai-tools panel-tone-ai" id="svgMotionModePanel"><h3><b>✦</b> MODE HTML MOTION · GENERATE AI</h3>
    <p class="help">Buat konsep motion graphic HTML + CSS yang siap diimpor. Cari tema, pilih resolusi dan rasio, lalu tempel dokumen HTML lengkap ke terminal trozal_MOTION.</p>
-   <label>Search tema AI</label><input id="svgAiThemeSearch" type="text" list="svgAiThemeSuggestions" autocomplete="off" placeholder="Cari tema: Cybersecurity, Ramadan, Space, Coffee..."><datalist id="svgAiThemeSuggestions"></datalist><p class="theme-search-hint" id="svgAiThemeSearchHint">Cari tema atau ketik tema khusus. Kategori visual dan subtema akan disesuaikan otomatis.</p>
+   <label>Search tema AI</label><input id="svgAiThemeSearch" type="text" list="svgAiThemeSuggestions" autocomplete="off" placeholder="Cari tema: Cybersecurity, Ramadan, Space, Coffee..."><datalist id="svgAiThemeSuggestions"></datalist><div class="row" style="display:flex;gap:7px;margin:6px 0 10px"><button type="button" id="svgAiRandomThemeBtn" class="secondary">✦ Tema inspirasi acak</button><span class="help" id="svgAiCatalogCount">155 tema tersedia</span></div><p class="theme-search-hint" id="svgAiThemeSearchHint">Cari tema atau ketik tema khusus. Kategori visual dan subtema akan disesuaikan otomatis.</p>
    <label>Tema utama</label><select id="svgAiTheme"><option>Brand Identity & Logo</option></select>
    <label>Kategori visual (otomatis mengikuti tema)</label><select id="svgAiCategory"><option>Minimal Swiss Design</option><option>Modern Editorial</option><option>Clean Corporate</option><option>Premium Luxury</option><option>Futuristic Sci-Fi</option><option>Cyberpunk Neon</option><option>Glassmorphism</option><option>Liquid / Fluid Design</option><option>3D Layered Composition</option><option>Isometric Illustration</option><option>Flat Vector Illustration</option><option>2D Cartoon</option><option>Claymorphism</option><option>Soft Gradient</option><option>Bold Brutalist</option><option>Retro / Vintage</option><option>Y2K Digital</option><option>Memphis Geometry</option><option>Bauhaus Geometric</option><option>Monochrome</option><option>Duotone</option><option>Pastel Soft</option><option>High Contrast</option><option>Photorealistic Product</option><option>Cinematic Lighting</option><option>Paper Cutout</option><option>Hand-drawn Sketch</option><option>Line Art / Monoline</option><option>Typography-led</option><option>Data Visualization</option><option>UI Prototype</option><option>Organic Nature</option><option>Surreal Abstract</option><option>Pixel Art</option><option>Minimal Iconography</option><option>Mixed Media</option><option>Dark Interface</option><option>Bright Playful</option><option>Editorial Infographic</option></select>
    <label>Kategori spesifik / subtema (relevan dengan tema)</label><select id="svgAiSpecific"><option>Logo reveal with custom emblem</option><option>Logo build from geometric pieces</option><option>Wordmark kinetic reveal</option><option>Brand guideline opener</option><option>Product hero on floating podium</option><option>Product 360 showcase</option><option>Cosmetic bottle luxury reveal</option><option>Food hero with ingredient orbit</option><option>Sneaker / fashion product launch</option><option>Smartphone device showcase</option><option>App onboarding sequence</option><option>Website landing page hero</option><option>SaaS feature explainer</option><option>Animated dashboard KPI</option><option>Data chart growth story</option><option>Financial market overview</option><option>AI neural network visualization</option><option>Robotics and automation</option><option>Cloud computing ecosystem</option><option>Cybersecurity shield sequence</option><option>Medical awareness explainer</option><option>Anatomy / science visualization</option><option>Learning process step-by-step</option><option>Timeline and roadmap</option><option>Before-after transformation</option><option>Process flow diagram</option><option>Comparison infographic</option><option>Statistics counter sequence</option><option>World map data routes</option><option>Travel destination opener</option><option>City / architecture flythrough</option><option>Nature landscape layers</option><option>Ocean and underwater scene</option><option>Wildlife conservation story</option><option>Renewable energy system</option><option>Solar / wind energy explainer</option><option>Sports event opener</option><option>Fitness training sequence</option><option>Esports tournament package</option><option>Music visualizer interface</option><option>Character mascot introduction</option><option>Animated storytelling scene</option><option>Event countdown</option><option>New year celebration</option><option>Ramadan lantern and crescent</option><option>Eid greeting composition</option><option>Wedding invitation motion</option><option>Sale campaign and discount</option><option>App interface micro-interaction</option><option>Notification and UX flow</option><option>Loading / progress animation</option><option>Abstract liquid transition</option><option>Particle field and energy</option><option>Typography quote animation</option><option>News headline package</option><option>Real estate property showcase</option><option>Automotive feature presentation</option><option>Custom specific concept</option></select>
@@ -3341,7 +3341,104 @@ const TROZAL_AI_THEMES=[
 "Sports Broadcast & Score Graphics",
 "Book Cover & Audiobook Promo",
 "Museum & Exhibition"
-];
+,
+"Abstract Art & Visual Experiments",
+"Abstract Motion Graphics",
+"Sound Wave & Audio Visualizer",
+"Generative Geometry",
+"Liquid & Fluid Simulation",
+"Particle Systems & Motion",
+"Neon Light & Energy",
+"Fractal & Mathematical Art",
+"Optical Illusion & Op Art",
+"Surrealism & Dream Worlds",
+"Minimalist Art & Composition",
+"3D Abstract Sculpture",
+"Kinetic Art & Typography",
+"Gradient Mesh & Color Fields",
+"Data Art & Generative Data",
+"Ambient Background Loops",
+"Seamless Motion Loops",
+"Visual Identity Systems",
+"Creative Agency Showreel",
+"Motion Design Portfolio",
+"Graphic Design Showcase",
+"Poster & Key Visual Design",
+"Album Cover & Music Artwork",
+"Music Festival Visual Identity",
+"Concert Visuals & VJ Loops",
+"Sound Design & Audio Branding",
+"Podcast Audiograms",
+"Social Media Reels & Shorts",
+"YouTube Thumbnail & Channel Branding",
+"Streaming Overlay & Broadcast Package",
+"Presentation & Pitch Deck Motion",
+"Scientific Data Animation",
+"Environmental Campaign Design",
+"Ocean Conservation Campaign",
+"Wildlife Documentary Graphics",
+"Travel Map & Route Animation",
+"Food Recipe & Cooking Tutorial",
+"Coffee Shop Branding",
+"Fashion Runway & Lookbook",
+"Beauty Brand Campaign",
+"Luxury Watch & Jewelry Campaign",
+"Interior Design Moodboard",
+"Electric Vehicle & Mobility",
+"Smart Factory & Industry 4.0",
+"Renewable Technology Explainer",
+"Water Conservation Campaign",
+"Agriculture Technology",
+"Financial Education & Investment",
+"Startup Pitch & Investor Deck",
+"E-commerce Product Launch",
+"Mobile App Promo",
+"Website UI Motion",
+"SaaS Product Launch",
+"AI Product Explainer",
+"Robotics Product Showcase",
+"Learning Course Promo",
+"Children's Learning Animation",
+"Mental Health Awareness",
+"Fitness App & Workout Graphics",
+"Yoga & Meditation Visuals",
+"Sports Team Branding",
+"Esports Stream Package",
+"Wedding Save-the-Date Motion",
+"Corporate Annual Report",
+"Company Values & Culture",
+"Recruitment Campaign",
+"Public Information Graphics",
+"Cultural Heritage Documentary",
+"Indonesian Tourism Campaign",
+"Batik & Textile Pattern Motion",
+"Architecture Blueprint Animation",
+"Product Exploded View",
+"Packaging Unboxing Animation",
+"Typography Specimen & Font Promo",
+"Logo Animation Collection",
+"UI Icon Animation",
+"Retro Computer & Pixel Aesthetic",
+"Vaporwave & Synthwave",
+"Y2K Futurism",
+"Cybernetic Interface & HUD",
+"Holographic Interface Design",
+"Glass & Chrome 3D Art",
+"Liquid Chrome & Metallic Forms",
+"Organic Biomorphic Shapes",
+"Botanical Abstract Art",
+"Underwater Abstract Motion",
+"Celestial & Cosmic Abstract",
+"Geometric Pattern Animation",
+"Sacred Geometry Motion",
+"Mandala & Symmetry Animation",
+"Paper Craft & Cutout Motion",
+"Stop Motion & Clay Animation",
+"Hand-drawn Frame Animation",
+"Isometric World & Diorama",
+"Low Poly 3D Worlds",
+"Voxel Art & 3D Pixel",
+"Typography Kinetic Experiments"];
 const TROZAL_THEME_RULES=[
  {re:/chinese|lunar/i,styles:['Premium Luxury','Paper Cutout','Flat Vector Illustration','3D Layered Composition'],specific:['Chinese New Year zodiac animal reveal','Red and gold lantern festival greeting','Lunar New Year couplet and ornament animation','Zodiac wheel and lucky symbol rotation','Firecracker and celebratory light sequence','Traditional blossom and gold pattern reveal']},
  {re:/diwali/i,styles:['Premium Luxury','Bright Playful','Flat Vector Illustration','Paper Cutout'],specific:['Diwali diya lamps lighting sequence','Festival of lights rangoli pattern reveal','Gold ornament and festive greeting','Decorative mandala and candle glow','Diwali celebration card with light trails']},
@@ -3429,6 +3526,7 @@ const TROZAL_THEME_RULES_EXTRA=[
  {re:new RegExp("mobile payments|digital wallet|e-wallet|payment technology","i"),styles:["Futuristic Sci-Fi","Glassmorphism","Clean Corporate","UI Prototype","Data Visualization"],specific:["Digital wallet payment flow","Contactless payment interaction","Secure transaction and authentication","QR payment checkout journey","Mobile banking feature showcase","Payment analytics dashboard"]},
  {re:new RegExp("sports broadcast|score graphics|live score","i"),styles:["Broadcast Graphics","Cinematic Sports","High Contrast","Data Visualization","Kinetic Typography"],specific:["Live sports score package","Player statistics lower-third","Match timer and scoreboard layout","Tournament bracket broadcast graphic","Team lineup and formation reveal","Sports results and highlight opener"]},
  {re:new RegExp("museum|exhibition|gallery|art collection","i"),styles:["Museum Editorial","Cinematic Lighting","Paper Texture / Analog","Modern Editorial","Minimal Swiss Design"],specific:["Museum exhibition title sequence","Artwork collection gallery reveal","Artifact information and date graphics","Exhibition wayfinding and visitor guide","Curatorial story and artist introduction","Interactive-looking museum display animation"]},
+ {re:/abstract|sound wave|audio visualizer|generative geometry|liquid & fluid|particle systems|neon light|fractal|optical illusion|surrealism|kinetic art|gradient mesh|data art|ambient background|seamless motion|vj loop|sound design|music festival visuals|vaporwave|synthwave|biomorphic|celestial|geometric pattern|sacred geometry|mandala/i,styles:['Surreal Abstract','Generative Geometry','Liquid / Fluid Design','Waveform Visualization','Particle Systems','Neon Light Art','3D Layered Composition','Glassmorphism','Liquid Chrome','Gradient Mesh','Optical Illusion / Op Art','Fractal Geometry','Kinetic Typography','Holographic Interface','Organic Biomorphic','Cinematic Lighting','Minimal Swiss Design','Dark Interface','Duotone','Ambient Motion Loop'],specific:['Abstract hero title sequence','Sonic waveform and frequency pulse','Audio spectrum equalizer visualization','Liquid gradient morphing transition','Generative geometric shapes in motion','Neon energy rings and light trails','Particle field forming a central symbol','3D chrome sculpture rotating reveal','Glass and translucent shape composition','Fractal tunnel and infinite zoom','Optical illusion and moire pattern animation','Surreal floating objects and impossible space','Organic biomorphic forms breathing and morphing','Gradient mesh color field transition','Radial pulse and concentric orbit sequence','Kinetic typography with abstract forms','Holographic prism and spectral refraction','Seamless ambient abstract background loop','Symmetrical mandala and sacred geometry build','Data-driven abstract waveform landscape','Underwater fluid refraction and caustics','Celestial cosmic dust and nebula flow','Paper-cut geometric collage animation','Minimal monochrome shape choreography','Liquid chrome typography reveal','Abstract sound-inspired visual sequence']},
 ];
 function trozalThemeProfile(theme){
  const t=String(theme||'');const rule=TROZAL_THEME_RULES_EXTRA.find(r=>r.re.test(t))||TROZAL_THEME_RULES.find(r=>r.re.test(t));
@@ -3449,6 +3547,8 @@ function trozalInitThemeCatalog(){
  trozalSetSelectOptions(select,TROZAL_AI_THEMES,current);
  list.replaceChildren();TROZAL_AI_THEMES.forEach(t=>{const o=document.createElement('option');o.value=t;list.appendChild(o);});
  $('svgAiThemeSearch').value=current;trozalApplyTheme(current,true);
+ const randomBtn=$('svgAiRandomThemeBtn');if(randomBtn)randomBtn.addEventListener('click',()=>{const pool=TROZAL_AI_THEMES.filter(t=>t!==$('svgAiTheme').value);const pick=pool[Math.floor(Math.random()*pool.length)];trozalApplyTheme(pick);});
+ const catalogCount=$('svgAiCatalogCount');if(catalogCount)catalogCount.textContent=TROZAL_AI_THEMES.length+' tema tersedia';
  select.addEventListener('change',()=>trozalApplyTheme(select.value));
  const resolve=()=>{const q=$('svgAiThemeSearch').value.trim();if(!q)return;const exact=TROZAL_AI_THEMES.find(t=>t.toLowerCase()===q.toLowerCase());trozalApplyTheme(exact||q,true);};
  $('svgAiThemeSearch').addEventListener('change',resolve);
