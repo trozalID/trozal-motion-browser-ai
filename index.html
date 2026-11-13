@@ -564,6 +564,11 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 <body>
 <header class="topbar">
  <div class="brand">TROZAL <span>MOTION</span></div><div class="topnote">BROWSER AI · CLOUD + LOCAL VISION</div>
+ <div class="ui-layout-switcher" role="group" aria-label="Mode layout UI">
+  <span class="ui-layout-label">LAYOUT</span>
+  <button type="button" class="ui-layout-btn" data-ui-layout-choice="professional" aria-pressed="true">Professional</button>
+  <button type="button" class="ui-layout-btn" data-ui-layout-choice="classic" aria-pressed="false">Classic</button>
+ </div>
  <div class="render-progress topbar-render-progress is-idle" id="renderProgress" role="status" aria-live="polite"><span class="render-progress-label" id="renderProgressLabel">Siap · 0%</span><div class="render-progress-track"><div class="render-progress-fill" id="renderProgressFill"></div></div></div>
  <div class="topright"><button id="helpBtn">Pusat Utilitas</button><button id="resetLayoutBtn" title="Atur posisi dan ukuran panel">Tata Letak</button><button id="resetBtn" title="Pulihkan workspace tanpa menghapus proyek">Reset Workspace</button></div>
 </header>
@@ -3253,7 +3258,35 @@ function buildVisualMotionHtml(){
  '*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080913;display:grid;place-items:center}.stage{position:relative;width:min(100vw,calc(100vh * '+aspect+'));height:min(100vh,calc(100vw / '+aspect+'));aspect-ratio:'+parts[0]+'/'+parts[1]+';overflow:hidden;isolation:isolate;background:#10192b}.scene{position:absolute;inset:0;opacity:0;animation-duration:'+total.toFixed(2)+'s;animation-timing-function:linear;animation-iteration-count:infinite}.art{position:absolute;inset:-5%;width:110%;height:110%;transform-origin:center}.art svg{width:100%;height:100%;display:block}.paper{filter:saturate(.82) contrast(1.05)}.hero{transform-box:fill-box;transform-origin:center;animation:heroFloat 3.8s ease-in-out infinite alternate}.cloud{animation:cloudDrift 17s linear infinite}.star{animation:twinkle 2.8s ease-in-out infinite alternate}.wave{animation:waveDrift 5s ease-in-out infinite alternate;transform-box:fill-box}.wheel{transform-box:fill-box;transform-origin:center;animation:wheelSpin 1.2s linear infinite}.snow{animation:snowFall 5s linear infinite}.ambient{position:absolute;left:var(--x);top:var(--y);width:var(--d);height:var(--d);border-radius:50%;background:'+accent+';box-shadow:0 0 12px '+accent+';opacity:0;animation:floatParticle 5s ease-in-out var(--delay) infinite}.scene:nth-child(even) .ambient{animation-direction:alternate}.stage:after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,#05071388 100%);z-index:5}'+
  '@keyframes heroFloat{0%{transform:translate3d(-1.2%,1.2%,0) rotate(-1deg)}100%{transform:translate3d(1.8%,-2%,0) rotate(1.5deg)}}@keyframes cloudDrift{from{translate:-3% 0}to{translate:5% 0}}@keyframes twinkle{from{opacity:.18}to{opacity:1}}@keyframes waveDrift{from{transform:translateY(9px)}to{transform:translateY(-12px)}}@keyframes wheelSpin{to{transform:rotate(360deg)}}@keyframes snowFall{from{transform:translateY(-30px)}to{transform:translateY(40px)}}@keyframes floatParticle{0%{opacity:0;transform:translateY(24px)}45%{opacity:.8}100%{opacity:0;transform:translateY(-34px)}}'+camCss+
  kfBlocks+'@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-delay:0ms!important}}'+
- '</style></head><body><main class="stage">'+sceneMarkup+'</main></body></html>';
+ '</style></head><body><main class="stage">'+sceneMarkup+'</main>
+<script>
+/* TROZAL UI mode controller: independent preference per edition; does not touch project/render state. */
+(function(){
+ 'use strict';
+ const key='trozal-motion-ui-layout-browser-ai';
+ const valid=v=>v==='classic'?'classic':'professional';
+ let mode='professional';
+ try{mode=valid(localStorage.getItem(key)||'professional')}catch(_){}
+ function apply(next,save){
+  mode=valid(next);
+  document.body.setAttribute('data-ui-layout',mode);
+  document.querySelectorAll('[data-ui-layout-choice]').forEach(btn=>{
+   const active=btn.getAttribute('data-ui-layout-choice')===mode;
+   btn.setAttribute('aria-pressed',active?'true':'false');
+  });
+  if(save){try{localStorage.setItem(key,mode)}catch(_){}}
+ }
+ document.addEventListener('click',event=>{
+  const btn=event.target.closest('[data-ui-layout-choice]');
+  if(!btn)return;
+  event.preventDefault();
+  apply(btn.getAttribute('data-ui-layout-choice'),true);
+ });
+ apply(mode,false);
+})();
+</script>
+
+</body></html>';
  return {html,scenes:items.length,duration:total,ratio};
 }
 $('generateVisualMotionBtn').addEventListener('click',()=>{
@@ -4020,7 +4053,27 @@ function buildSafeHtmlDocument(raw){
  // Do not force a transparent body background: it can erase an imported background.
  // Capture doc.body below so body backgrounds and pseudo-elements remain visible.
  const layoutCss='html,body{box-sizing:border-box;margin:0!important;padding:0!important;width:'+htmlMotionWidth+'px!important;height:'+htmlMotionHeight+'px!important;min-width:'+htmlMotionWidth+'px!important;min-height:'+htmlMotionHeight+'px!important;overflow:hidden!important}#animove-scene{box-sizing:border-box}';
- return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+'\n</style></head><body'+cleanBodyAttrs+'>'+safeRoot.outerHTML+'</body></html>';
+ return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+'\n
+/* TROZAL UI MODES · Professional is the default; Classic preserves the legacy presentation. */
+.ui-layout-switcher{display:flex;align-items:center;gap:4px;padding:3px;border:1px solid #40516a;border-radius:9px;background:#111923;flex:0 0 auto}
+.ui-layout-label{padding:0 6px;color:#91a9c4;font-size:9px;font-weight:900;letter-spacing:1px}
+.ui-layout-btn{padding:6px 10px;border-radius:6px;font-size:10px;font-weight:800;white-space:nowrap}
+.ui-layout-btn[aria-pressed="true"]{background:linear-gradient(135deg,#245d78,#287b86);border-color:#62c5d1;color:#f2feff;box-shadow:0 0 0 1px #62c5d133}
+body[data-ui-layout="professional"] .topbar{background:linear-gradient(110deg,#172331,#202b3a 55%,#182d37);border-bottom-color:#3b6578}
+body[data-ui-layout="professional"] .app{grid-template-columns:minmax(250px,22vw) minmax(380px,1fr) minmax(250px,22vw)}
+body[data-ui-layout="professional"] .sidebar{background:linear-gradient(180deg,#1b2733,#1b1f29 45%);border-color:#345064}
+body[data-ui-layout="professional"] .sidebar.right{background:linear-gradient(180deg,#282436,#1e202b 48%);border-left-color:#55436a}
+body[data-ui-layout="professional"] .main{background:#151c25}
+body[data-ui-layout="professional"] .panel{box-shadow:0 5px 16px #0002;border-color:#3b5264}
+body[data-ui-layout="professional"] .panel h3{color:#a9d7e9}
+body[data-ui-layout="professional"] .sidebar.right .panel{border-color:#574768}
+body[data-ui-layout="professional"] .sidebar.right .panel h3{color:#d2b5f1}
+body[data-ui-layout="professional"] .topcontrols{background:#1c2935;border-bottom-color:#3a596d}
+body[data-ui-layout="professional"] .stagewrap{background:radial-gradient(ellipse at center,#202d3b 0%,#151c25 72%)}
+body[data-ui-layout="classic"] .ui-layout-btn[aria-pressed="true"]{background:#d8a94d;border-color:#f0c76f;color:#20190c}
+@media(max-width:1050px){.ui-layout-switcher{order:4}.topright{flex-wrap:wrap}}
+@media(max-width:720px){.ui-layout-switcher{width:100%;justify-content:flex-end}.ui-layout-label{margin-right:auto}.ui-layout-btn{min-height:36px}.topbar{height:auto;min-height:42px}.app{height:auto;min-height:0}}
+</style></head><body'+cleanBodyAttrs+'>'+safeRoot.outerHTML+'</body></html>';
 }
 function installHtmlCaptureFallbacks(doc,scene){
  // Intentionally preserve the original composition. Earlier fallback code replaced
