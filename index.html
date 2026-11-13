@@ -512,6 +512,8 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 .smart-camera-card p{margin:0;color:#d9d1c2;font-size:12px;line-height:1.45}
 .smart-camera-card select{width:100%;min-width:0;background:#171923;color:#fff;border:1px solid #8b6b35;border-radius:7px;padding:8px}
 
+/* Render preflight panel · amber technical theme */
+#renderPreflightPanel{background:linear-gradient(145deg,#49351a,#2a2117 62%,#382718);border:1px solid #c28c3c;box-shadow:0 8px 22px #140d05aa}#renderPreflightPanel h3{color:#ffe0a5}#renderPreflightPanel .help{color:#f1d9b4}#renderPreflightPanel button.primary{background:linear-gradient(135deg,#ffe0a0,#d49a42);color:#291a07}.render-preflight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}.render-preflight-grid>div{padding:7px;border:1px solid #8f682e;border-radius:7px;background:#241a10}.render-preflight-grid b{display:block;color:#f6c976;font-size:9px;text-transform:uppercase}.render-preflight-grid span{display:block;color:#fff0d3;font-size:11px;margin-top:3px}
 /* Freeze visible preview while export frames are rendered off-screen */
 .stage.rendering-preview-paused{position:relative}.stage.rendering-preview-paused::after{content:'PREVIEW DIJEDA · RENDER BERJALAN';position:absolute;z-index:50;left:50%;top:12px;transform:translateX(-50%);padding:7px 12px;border:1px solid #f2c36d;border-radius:7px;background:#241b0ee8;color:#ffe2a3;font-size:10px;font-weight:900;letter-spacing:.06em;pointer-events:none;white-space:nowrap;box-shadow:0 3px 14px #0008}
 /* Browser AI workspace editor — matching Ollama workspace tools */
@@ -860,6 +862,13 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
    <button id="downloadVideo" style="width:100%">Unduh render terakhir</button>
    <button id="convertPngToMov" type="button" style="display:none;width:100%;margin-top:8px">Convert PNG ke MOV ProRes 4444</button>
    <div id="exportStatus" class="status"></div>
+  </section>
+  <section class="panel" id="renderPreflightPanel">
+   <h3>◈ RENDER PREFLIGHT & PERFORMANCE ADVISOR</h3>
+   <p class="help">Pemeriksaan sebelum ekspor: total frame, beban piksel, dan perkiraan buffer frame. Ini estimasi teknis, bukan jaminan waktu render.</p>
+   <div class="render-preflight-grid" id="renderPreflightGrid"><div><b>Frame</b><span>—</span></div><div><b>Pixel-frame</b><span>—</span></div><div><b>Buffer / frame</b><span>—</span></div><div><b>Profil</b><span>—</span></div></div>
+   <button type="button" id="renderPreflightCheck" class="primary" style="width:100%">Periksa kesiapan render</button>
+   <div class="status" id="renderPreflightStatus">Atur durasi, FPS, dan resolusi lalu jalankan pemeriksaan.</div>
   </section>
   <section class="panel panel-tone-metadata" id="stockMetadataPanel">
    <h3><b>✦</b> 8. METADATA VIDEO MICROSTOCK</h3>
@@ -2485,6 +2494,15 @@ async function draw(){
  }
 }
 if(rec)rec.start(250);draw()};
+function trozalRunRenderPreflight(){
+ const [width,height]=String($('resolution')?.value||'1920x1080').split('x').map(Number),duration=Math.max(0,Number($('duration')?.value)||0),fps=Math.max(1,Number($('fps')?.value)||30),frames=Math.max(1,Math.round(duration*fps)),pixels=width*height*frames,buffer=width*height*4/1048576,ram=Number(navigator.deviceMemory||0);
+ const profile=pixels>900000000?'Sangat berat':pixels>350000000?'Berat':pixels>120000000?'Menengah':'Ringan';
+ const grid=$('renderPreflightGrid');if(grid){const values=[['Frame',frames.toLocaleString('id-ID')],['Pixel-frame',(pixels/1e6).toFixed(1)+' MP'],['Buffer / frame',buffer.toFixed(1)+' MB'],['Profil',profile]];grid.replaceChildren();values.forEach(([label,value])=>{const cell=document.createElement('div'),b=document.createElement('b'),span=document.createElement('span');b.textContent=label;span.textContent=value;cell.append(b,span);grid.append(cell)})}
+ const notes=[];if(width>3840||height>2160)notes.push('Resolusi di atas 4K: pertimbangkan uji render pendek terlebih dahulu.');if(pixels>900000000)notes.push('Beban pixel-frame sangat tinggi; turunkan resolusi, durasi, atau FPS bila memori terbatas.');if(ram&&buffer>ram*1024*.18)notes.push('Satu buffer frame diperkirakan besar dibanding RAM perangkat.');if(fps>30)notes.push('FPS di atas 30 meningkatkan jumlah frame dan waktu ekspor.');if(!notes.length)notes.push('Pengaturan berada dalam rentang beban moderat. Tetap lakukan uji render singkat.');
+ $('renderPreflightStatus').textContent='Pemeriksaan selesai · '+width+'×'+height+' · '+duration.toFixed(1)+' detik · '+fps+' FPS.\\n'+notes.join('\\n');return{width,height,duration,fps,frames,pixels,buffer,profile};
+}
+$('renderPreflightCheck')?.addEventListener('click',trozalRunRenderPreflight);
+['resolution','duration','fps'].forEach(id=>$(id)?.addEventListener('change',()=>{if($('renderPreflightGrid'))trozalRunRenderPreflight()}));
 $('motionBlurAmount')?.addEventListener('input',()=>{const out=$('motionBlurAmountValue');if(out)out.textContent=$('motionBlurAmount').value+' px';});
 $('motionBlurEnabled')?.addEventListener('change',()=>{const out=$('motionBlurReadout');if(out)out.textContent=$('motionBlurEnabled').checked?'Mode: aktif · Blur adaptif mengikuti kecepatan gerak objek.':'Mode: nonaktif · Tidak mengubah durasi atau FPS ekspor.';});
 $('cancelRenderBtn')?.addEventListener('click',()=>{if(typeof trozalRenderCancelHandler==='function')trozalRenderCancelHandler();});
