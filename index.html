@@ -518,6 +518,9 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 .panel-tone-metadata,.panel-tone-quality{--panel-accent:#a9b6ff;--panel-surface:#252d49;--panel-edge:#46558a}
 .panel-tone-object{--panel-accent:#83e6d0;--panel-surface:#193b3b;--panel-edge:#34766f}
 .object-motion-summary{white-space:pre-line;border:1px solid var(--panel-edge);background:rgba(8,20,27,.28);border-radius:9px;padding:10px;color:#d9f7ef;font-size:12px;line-height:1.65}
+#objectMotionDirectorPanel .scene-choreography-label{display:block;margin:8px 0 4px;color:#d7b8ff;font-size:9px;font-weight:800;letter-spacing:.08em}
+#objectMotionDirectorPanel [data-scene-choreography]{width:100%;background:#211a34;border:1px solid #8060aa;color:#f0e5ff;border-radius:7px;padding:7px;font-size:11px}
+#objectMotionDirectorPanel .object-motion-scene{background:linear-gradient(120deg,rgba(100,65,145,.16),rgba(30,70,78,.12));border-color:#75549d}
 .object-motion-scene{border:1px solid #34766f;background:#102e30;border-radius:9px;padding:10px;margin-top:8px}.object-motion-scene strong{display:block;color:#a9f5e5;margin-bottom:7px}.object-motion-scene .row{display:flex;gap:8px;align-items:center}.object-motion-scene select{min-width:0;flex:1}.object-motion-scene input[type=range]{flex:1;min-width:70px}.object-motion-scene output{color:#b8fff0;min-width:42px;text-align:right;font-variant-numeric:tabular-nums}
 @media(prefers-reduced-transparency:reduce){.panel[class*="panel-tone-"]{background:var(--panel-surface)}}
 
@@ -2905,6 +2908,20 @@ function renderObjectMotionControls(items,profiles){
   card.className='object-motion-scene';card.dataset.scene=String(index);
   const title=document.createElement('strong');
   title.textContent='SCENE '+String(index+1).padStart(2,'0')+' · '+String(item.text||'').replace(/\\s+/g,' ').trim().slice(0,90);
+  const choreography=document.createElement('select');choreography.dataset.sceneChoreography=String(index);
+  const choreographyOptions=[
+   ['auto','Ikuti analisis AI'],
+   ['cinematic','Cinematic Drift · gerak kamera halus',11,34],
+   ['orbit','Product Orbit · putaran objek',17,32],
+   ['pulse','Waveform Pulse · denyut ritmis',2,28],
+   ['organic','Organic Wave · gerak organik',12,32],
+   ['float','Soft Float · melayang elegan',7,26],
+   ['reveal','Kinetic Reveal · tumbuh / terbentuk',19,38],
+   ['bounce','Dynamic Bounce · aksen energik',18,48],
+   ['static','Static Hold · objek terkunci',0,0]
+  ];
+  choreographyOptions.forEach(([value,label])=>{const option=document.createElement('option');option.value=value;option.textContent=label;choreography.appendChild(option);});
+  choreography.value='auto';
   const row=document.createElement('div');row.className='row';
   const select=document.createElement('select');select.dataset.objectMotionLoop=String(index);
   const automatic=document.createElement('option');automatic.value='auto';automatic.textContent='Otomatis · '+(profile.actionLabel||'AI');select.appendChild(automatic);
@@ -2914,7 +2931,15 @@ function renderObjectMotionControls(items,profiles){
   const output=document.createElement('output');output.textContent=intensity.value+'%';
   intensity.addEventListener('input',()=>{output.textContent=intensity.value+'%';applyObjectMotionSceneOverride(index,select.value,intensity.value);});
   select.addEventListener('change',()=>{if(select.value==='auto'){intensity.value=String(profile.autoIntensity??profile.intensity??30);output.textContent=intensity.value+'%';}applyObjectMotionSceneOverride(index,select.value,intensity.value);});
-  row.append(select,intensity,output);card.append(title,row);host.appendChild(card);
+  choreography.addEventListener('change',()=>{
+   const chosen=choreographyOptions.find(entry=>entry[0]===choreography.value);
+   if(!chosen||chosen[0]==='auto'){profile.choreography='auto';select.value='auto';intensity.value=String(profile.autoIntensity??profile.intensity??30);}
+   else{profile.choreography=chosen[0];select.value=String(chosen[2]);intensity.value=String(chosen[3]);}
+   output.textContent=intensity.value+'%';
+   applyObjectMotionSceneOverride(index,select.value,intensity.value);
+  });
+  const choreographyLabel=document.createElement('label');choreographyLabel.className='scene-choreography-label';choreographyLabel.textContent='CHOREOGRAPHY SCENE';
+  card.append(title,choreographyLabel,choreography,row);host.appendChild(card);
  });
 }
 function applyObjectMotionSceneOverride(sceneIndex,loopValue,intensityValue){
