@@ -2637,7 +2637,7 @@ function renderVisualSceneSequence(){
   actions.append(up,down,del);head.append(grip,num,spacer,actions);card.appendChild(head);
   const description=visualSceneField('DESKRIPSI VISUAL','textarea',item.text);
   description.field.placeholder='Deskripsikan gambar, objek, karakter, suasana, atau sudut pandang kamera…';
-  description.field.addEventListener('input',()=>{item.text=description.field.value;});
+  description.field.addEventListener('input',()=>{item.text=description.field.value;renderSmartCameraDirector();});
   card.appendChild(description.wrap);
   const fields=document.createElement('div');fields.className='visual-scene-fields';
   const duration=visualSceneField('DURASI ADEGAN (DETIK)','number',item.duration);
