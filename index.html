@@ -2205,7 +2205,7 @@ async function encodeMovWithWasm(pngZip,totalFrames,fps,width,height,outputForma
     code=await ffmpeg.exec([
      '-hide_banner','-y','-filter_threads','1','-filter_complex_threads','1',
      '-framerate',String(fps),'-start_number','0','-i','frame_%06d.png',
-     '-frames:v',String(totalFrames),'-an',
+     '-frames:v',String(totalFrames),'-r',String(fps),'-an',
      '-c:v','prores_ks','-profile:v','4','-pix_fmt','yuva444p10le',
      '-alpha_bits','16','-vendor','apl0','-threads','1',output
     ]);
@@ -2217,7 +2217,7 @@ async function encodeMovWithWasm(pngZip,totalFrames,fps,width,height,outputForma
     code=await ffmpeg.exec([
      '-hide_banner','-y','-filter_threads','1','-filter_complex_threads','1',
      '-framerate',String(fps),'-start_number','0','-i','frame_%06d.png',
-     '-frames:v',String(totalFrames),'-an',
+     '-frames:v',String(totalFrames),'-r',String(fps),'-an',
      '-c:v','libx264','-preset',($('renderSpeedMode')?.value==='turbo'?'veryfast':'medium'),
      '-profile:v','high','-pix_fmt','yuv420p','-crf',String(crf),
      '-maxrate',String(maxRate),'-bufsize',String(maxRate*2),
