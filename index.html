@@ -907,11 +907,19 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
     <option value="microBounce">20. Pantulan Kecil (Micro Bounce)</option>
     <option value="gentleDrift">21. Mengambang Halus (Gentle Drift)</option>
     <option value="subtleTilt">22. Miring Tipis (Subtle Tilt)</option>
+     <option value="smoothGlide">23. Meluncur Halus (Smooth Glide)</option>
+     <option value="softSway">24. Ayunan Lembut (Soft Sway)</option>
+     <option value="waveFloat">25. Mengambang Bergelombang (Wave Float)</option>
+     <option value="breathe">26. Napas Sinematik (Cinematic Breathing)</option>
+     <option value="spiralOrbit">27. Orbit Spiral Halus (Spiral Orbit)</option>
+     <option value="figureEight">28. Gerak Angka Delapan (Figure Eight)</option>
+     <option value="zoomDrift">29. Zoom dan Drift (Zoom Drift)</option>
+     <option value="waveRoll">30. Gelombang dan Roll (Wave Roll)</option>
    </select>
    <label>Kecepatan <span class="value" id="speedVal">1.00×</span></label><input id="speed" type="range" min=".25" max="3" step=".05" value="1">
    <label>Intensitas <span class="value" id="intensityVal">100%</span></label><input id="intensity" type="range" min="10" max="200" value="100">
-   <label><input type="checkbox" id="sparkles" checked> Efek partikel / bintang</label>
-   <label><input type="checkbox" id="shadow" checked> Bayangan objek</label>
+   <label><input type="checkbox" id="sparkles"> Efek partikel / bintang</label>
+   <label><input type="checkbox" id="shadow"> Bayangan objek</label>
    <label><input type="checkbox" id="loop" checked> Loop animasi</label>
   </section>
    <div class="shape-mask-tools" id="shapeMaskTools">
@@ -1928,6 +1936,14 @@ function getMotionState(t){
   else if(anim==='microBounce')y=-Math.abs(Math.sin(phase*2))*9*intensity
   else if(anim==='gentleDrift'){x=Math.cos(phase*.45)*12*intensity;y=Math.sin(phase*.7)*10*intensity;rotate=Math.sin(phase*.5)*2*intensity}
   else if(anim==='subtleTilt')rotate=Math.sin(phase*.8)*4*intensity
+  else if(anim==='smoothGlide'){x=Math.cos(phase*.32)*18*intensity;y=Math.sin(phase*.5)*12*intensity;rotate=Math.sin(phase*.3)*1.2*intensity}
+  else if(anim==='softSway'){x=Math.sin(phase*.8)*10*intensity;rotate=Math.sin(phase*.8)*5*intensity}
+  else if(anim==='waveFloat'){x=Math.sin(phase*.65)*9*intensity;y=(Math.sin(phase*1.3)*14+Math.sin(phase*.65)*4)*intensity;rotate=Math.sin(phase*.65)*2*intensity}
+  else if(anim==='breathe'){const pulse=(.5+.5*Math.sin(phase))*0.035*intensity;scaleX=1+pulse;scaleY=1+pulse}
+  else if(anim==='spiralOrbit'){x=Math.cos(phase)*16*intensity;y=Math.sin(phase)*12*intensity;const pulse=1+Math.sin(phase)*.025*intensity;scaleX=pulse;scaleY=pulse}
+  else if(anim==='figureEight'){x=Math.sin(phase)*18*intensity;y=Math.sin(phase*2)*9*intensity;rotate=Math.cos(phase*2)*2*intensity}
+  else if(anim==='zoomDrift'){const zoom=1+Math.sin(phase*.55)*.045*intensity;scaleX=zoom;scaleY=zoom;x=Math.cos(phase*.4)*8*intensity}
+  else if(anim==='waveRoll'){y=Math.sin(phase*1.1)*14*intensity;rotate=Math.sin(phase*1.1)*3*intensity;skew=Math.cos(phase*.7)*2.5*intensity}
  }
  const pm=partMotion(t);x+=pm.x;y+=pm.y;rotate+=pm.rotate;scaleX*=pm.scale*pm.scaleX;scaleY*=pm.scale*pm.scaleY;alpha*=pm.alpha;skew+=pm.skew;revealX=Math.min(revealX,pm.revealX);revealY=Math.min(revealY,pm.revealY);
  if(!loopOn&&p>.85&&anim==='none')alpha*=Math.max(0,(1-p)/.15);
