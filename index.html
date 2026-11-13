@@ -1383,6 +1383,16 @@ function getLayerMotion(i,t){
  const kf=getLayerKeyframeMotion(i,t);if(kf){x+=kf.x;y+=kf.y;rot+=kf.rot;scale*=kf.scale;alpha*=kf.alpha}
  return {x,y,rot,scale,alpha};
 }
+function trozalSceneOpacity(t,range){
+ if(!range)return 1;
+ const fadeIn=Math.max(0,Number(range.fadeIn)||0),fadeOut=Math.max(0,Number(range.fadeOut)||0),start=Number(range.start)||0,end=Number(range.end)||0;
+ // Strict scene isolation: fades stay INSIDE each scene's own time range.
+ if(t<start||t>=end)return 0;
+ let alpha=1;
+ if(fadeIn>0&&t<start+fadeIn){const p=Math.max(0,Math.min(1,(t-start)/fadeIn));alpha*=p*p*(3-2*p);}
+ if(fadeOut>0&&t>end-fadeOut){const p=Math.max(0,Math.min(1,(end-t)/fadeOut));alpha*=p*p*(3-2*p);}
+ return alpha;
+}
 function renderSplitPieces(t){
  const obj=$('object');if(!svgWasSplit||!svgPieces.length)return;
  if(obj.querySelectorAll('.svg-piece').length!==svgPieces.length)obj.innerHTML=svgPieces.map((svg,i)=>`<div class="svg-piece" data-piece="${i}">${svg}</div>`).join('');
@@ -1390,12 +1400,7 @@ function renderSplitPieces(t){
   const m=getLayerMotion(i,t),visible=document.getElementById('autoLayerVisible'+i)?.checked!==false,solo=soloLayerIndex<0||soloLayerIndex===i;
   const sceneIndex=svgLayerSceneIndices[i]??-1,ranges=window.trozalScenePlaybackRanges;
   const range=sceneIndex>=0&&Array.isArray(ranges)?ranges[sceneIndex]:null;
-  let sceneAlpha=1;
-  if(range){
-   if(t<range.start-range.fadeIn||t>range.end+range.fadeOut)sceneAlpha=0;
-   else if(range.fadeIn>0&&t<range.start)sceneAlpha=Math.max(0,Math.min(1,(t-(range.start-range.fadeIn))/range.fadeIn));
-   else if(range.fadeOut>0&&t>range.end)sceneAlpha=Math.max(0,Math.min(1,1-(t-range.end)/range.fadeOut));
-  }
+  const sceneAlpha=trozalSceneOpacity(t,range);
   el.style.transform=`translate(${m.x}%,${m.y}%) rotate(${m.rot}deg) scale(${m.scale})`;
   el.style.opacity=m.alpha*sceneAlpha;el.style.display=visible&&solo&&sceneAlpha>0?'flex':'none';
  });
@@ -2408,12 +2413,7 @@ try{
  else if(svgPieceImgs.length){svgPieceImgs.forEach((pi,i)=>{
   const visible=document.getElementById('autoLayerVisible'+i)?.checked!==false,solo=soloLayerIndex<0||soloLayerIndex===i;if(!visible||!solo)return;
   const sceneIndex=svgLayerSceneIndices[i]??-1,ranges=window.trozalScenePlaybackRanges,range=sceneIndex>=0&&Array.isArray(ranges)?ranges[sceneIndex]:null;
-  let sceneAlpha=1;
-  if(range){
-   if(elapsed<range.start-range.fadeIn||elapsed>range.end+range.fadeOut)sceneAlpha=0;
-   else if(range.fadeIn>0&&elapsed<range.start)sceneAlpha=Math.max(0,Math.min(1,(elapsed-(range.start-range.fadeIn))/range.fadeIn));
-   else if(range.fadeOut>0&&elapsed>range.end)sceneAlpha=Math.max(0,Math.min(1,1-(elapsed-range.end)/range.fadeOut));
-  }
+  const sceneAlpha=trozalSceneOpacity(elapsed,range);
   if(sceneAlpha<=0)return;
   const lm=getLayerMotion(i,elapsed);ctx.save();ctx.globalAlpha=lm.alpha*sceneAlpha;drawContained(pi,lm.x*w/100,lm.y*h/100,lm.rot,lm.scale);ctx.restore();
  })}
