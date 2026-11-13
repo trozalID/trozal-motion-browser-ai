@@ -990,7 +990,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
   </section>
   <section class="panel panel-tone-effects" id="effectsPanel"><h3><b>●</b> 5. EFEK VISUAL</h3>
    <label>Preset efek</label><select id="effectPreset">
-    <option value="none">Tanpa efek tambahan</option><option value="glow" selected>Glow / cahaya lembut</option><option value="outline">Outline / garis tepi</option><option value="particles">Partikel melayang</option><option value="confetti">Confetti / serpihan warna</option><option value="speedlines">Speed lines / garis gerak</option><option value="flash">Flash / kilatan cahaya</option><option value="glitch">Glitch / distorsi warna</option><option value="blur">Motion blur sederhana</option><option value="vignette">Vignette / sudut gelap</option><option value="snow">Salju turun</option><option value="rain">Hujan</option><option value="bubbles">Gelembung</option><option value="fireflies">Kunang-kunang</option><option value="dust">Debu atmosfer</option><option value="bokeh">Bokeh sinematik</option><option value="rays">Sinar cahaya</option><option value="scanlines">Scanline digital</option><option value="starfield">Starfield / bintang</option><option value="embers">Bara api</option><option value="smoke">Asap atmosfer</option><option value="aurora">Aurora bergerak</option>
+    <option value="none">Tanpa efek tambahan</option><option value="glow" selected>Glow / cahaya lembut</option><option value="outline">Outline / garis tepi</option><option value="particles">Partikel melayang</option><option value="confetti">Confetti / serpihan warna</option><option value="speedlines">Speed lines / garis gerak</option><option value="flash">Flash / kilatan cahaya</option><option value="glitch">Glitch / distorsi warna</option><option value="blur">Motion blur sederhana</option><option value="vignette">Vignette / sudut gelap</option><option value="snow">Salju turun</option><option value="rain">Hujan</option><option value="bubbles">Gelembung</option><option value="fireflies">Kunang-kunang</option><option value="dust">Debu atmosfer</option><option value="bokeh">Bokeh sinematik</option><option value="rays">Sinar cahaya</option><option value="scanlines">Scanline digital</option><option value="starfield">Starfield / bintang</option><option value="embers">Bara api</option><option value="smoke">Asap atmosfer</option><option value="aurora">Aurora bergerak</option><option value="lensflare">Lens Flare · suar lensa sinematik</option><option value="hologram">Hologram · scan digital futuristik</option><option value="prism">Prism Spectrum · spektrum prisma</option><option value="electric">Electric Arc · busur listrik</option><option value="cinematicBloom">Cinematic Bloom · pancaran sinematik</option>
    </select>
    <label>Mode pemrosesan efek</label>
    <select id="effectRenderMode"><option value="normal" selected>Normal · efek visual penuh</option><option value="turbo">⚡ TURBO · efek lebih ringan</option></select>
@@ -999,11 +999,11 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
    <label>Kecepatan partikel <span class="value" id="particleSpeedVal">100%</span></label><input id="particleSpeed" type="range" min="10" max="250" value="100">
    <label>Intensitas efek <span class="value" id="effectIntensityVal">60%</span></label><input id="effectIntensity" type="range" min="0" max="100" value="60">
    <label>Warna efek</label><input id="effectColor" type="color" value="#ffbd45" style="width:100%;height:32px;padding:2px">
-   <label><input type="checkbox" id="effectOn" checked> Aktifkan efek pada preview dan render</label>
+   <label><input type="checkbox" id="effectOn"> Aktifkan efek pada preview dan render</label>
    <p class="help">Pilih preset untuk melihat efek langsung. Efek atmosfer, partikel, kilau, dan overlay diproses ulang pada setiap frame ekspor.</p>
   </section>
   <section class="panel panel-tone-transform"><h3><b>●</b> 6. UKURAN & POSISI</h3>
-   <label>Skala objek <span class="value" id="scaleVal">35%</span></label><input id="scale" type="range" min="10" max="90" value="35">
+   <label>Skala objek <span class="value" id="scaleVal">35%</span></label><input id="scale" type="range" min="10" max="200" value="35">
    <div class="row"><div><label>Kiri / Kanan <span class="value" id="xVal">0</span></label><input id="posX" type="range" min="-45" max="45" value="0"></div><div><label>Atas / Bawah <span class="value" id="yVal">0</span></label><input id="posY" type="range" min="-40" max="40" value="0"></div></div>
    <label>Rotasi dasar <span class="value" id="rotVal">0°</span></label><input id="rotation" type="range" min="-180" max="180" value="0">
    <label>Opacity <span class="value" id="opacityVal">100%</span></label><input id="opacity" type="range" min="10" max="100" value="100">
@@ -1987,6 +1987,35 @@ function drawPreviewEffects(elapsed,motion){
  else if(ep==='vignette'){let vg=c.createRadialGradient(w/2,h/2,Math.min(w,h)*.18,w/2,h/2,Math.min(w,h)*.72);vg.addColorStop(0,'transparent');vg.addColorStop(1,`rgba(0,0,0,${.7*ei})`);c.fillStyle=vg;c.fillRect(0,0,w,h)}
  else if(ep==='outline'){c.globalAlpha=.3+.6*ei;c.strokeStyle=ec;c.lineWidth=Math.max(1,w/250)*ei;c.strokeRect(cx-baseW/2,cy-baseH/2,baseW,baseH)}
  else if(ep==='glitch'&&Math.sin(elapsed*25)>0.8){c.globalAlpha=.2*ei;c.fillStyle=ec;c.fillRect(w*.1,h*.2,w*.8,h*.03);c.fillRect(w*.18,h*.72,w*.6,h*.02)}
+ else if(ep==='lensflare'){
+  c.globalCompositeOperation='screen';c.globalAlpha=.22+.38*ei;
+  const flare=c.createRadialGradient(cx,cy,1,cx,cy,Math.min(w,h)*.34);flare.addColorStop(0,'rgba(255,255,235,.95)');flare.addColorStop(.12,ec);flare.addColorStop(1,'transparent');c.fillStyle=flare;c.fillRect(0,0,w,h);
+  c.globalAlpha=.18*ei;c.fillStyle=ec;c.fillRect(0,cy-h*.004,w,h*.008);
+  for(let i=0;i<5;i++){const fx=cx+(i-2)*w*.13,fy=cy+Math.sin(elapsed*1.2+i)*h*.025;c.globalAlpha=.12*ei;c.beginPath();c.arc(fx,fy,Math.max(2,w*(.008+i*.002)),0,Math.PI*2);c.fill()}
+ }
+ else if(ep==='hologram'){
+  c.globalAlpha=.18+.28*ei;c.strokeStyle=ec;c.lineWidth=Math.max(1,w/900);
+  for(let y=(elapsed*24)%9;y<h;y+=9){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}
+  c.globalAlpha=.12*ei;c.fillStyle='#55eaff';const band=(elapsed*95)%(h+80)-40;c.fillRect(0,band,w,Math.max(8,h*.035));
+  c.globalAlpha=.5*ei;c.strokeStyle=ec;c.lineWidth=Math.max(1,w/220);c.strokeRect(cx-baseW*.52,cy-baseH*.52,baseW*1.04,baseH*1.04)
+ }
+ else if(ep==='prism'){
+  c.globalCompositeOperation='screen';c.globalAlpha=.18+.32*ei;
+  const shift=(Math.sin(elapsed*.7)+1)*.5*w;
+  const pg=c.createLinearGradient(shift-w*.55,0,shift+w*.55,h);
+  pg.addColorStop(0,'rgba(255,70,120,0)');pg.addColorStop(.22,'rgba(255,70,120,.65)');pg.addColorStop(.42,'rgba(255,220,80,.55)');pg.addColorStop(.6,'rgba(70,245,190,.55)');pg.addColorStop(.78,'rgba(80,150,255,.6)');pg.addColorStop(1,'rgba(150,80,255,0)');
+  c.fillStyle=pg;c.fillRect(0,0,w,h)
+ }
+ else if(ep==='electric'){
+  c.globalCompositeOperation='screen';c.globalAlpha=.3+.55*ei;c.strokeStyle=ec;c.shadowColor=ec;c.shadowBlur=Math.max(4,w*.018);c.lineWidth=Math.max(1,w/500);
+  for(let bolt=0;bolt<4;bolt++){let x0=cx+(bolt-1.5)*baseW*.24,y0=cy-baseH*.5;c.beginPath();c.moveTo(x0,y0);for(let j=1;j<=7;j++){const yy=y0+baseH*j/7,xx=x0+Math.sin(elapsed*8+bolt*3+j*4)*baseW*.075;c.lineTo(xx,yy)}c.stroke()}
+  c.shadowBlur=0
+ }
+ else if(ep==='cinematicBloom'){
+  c.globalCompositeOperation='screen';c.globalAlpha=.16+.42*ei;
+  const bloom=c.createRadialGradient(cx,cy,Math.min(w,h)*.015,cx,cy,Math.min(w,h)*.58);bloom.addColorStop(0,'rgba(255,245,220,.85)');bloom.addColorStop(.28,ec);bloom.addColorStop(1,'transparent');c.fillStyle=bloom;c.fillRect(0,0,w,h);
+  c.globalAlpha=.08*ei;c.fillStyle='#fff';c.fillRect(0,h*.08,w,h*.018);c.fillRect(0,h*.9,w,h*.012)
+ }
  else if(ep==='blur'){c.globalAlpha=.12*ei;c.fillStyle=ec;c.fillRect(cx-baseW/2,cy-baseH/2,baseW,baseH)}
  c.restore();
 }
@@ -2820,7 +2849,7 @@ async function restoreAutosave(){
   if(!raw){if(n)n.textContent='Autosave aktif · belum ada proyek tersimpan';return;}
   const p=validateProject(raw);
   if(p.sourceSvg||p.svgPieces?.length||p.assetDataUrl||p.layers?.length){
-   applyProject(p);$('sparkles').checked=false;$('shadow').checked=false;renderAt(playhead);if(n)n.textContent='Proyek dipulihkan dari autosave · partikel dan bayangan nonaktif saat mulai';
+   applyProject(p);$('sparkles').checked=false;$('shadow').checked=false;$('effectOn').checked=false;renderAt(playhead);if(n)n.textContent='Proyek dipulihkan dari autosave · partikel dan bayangan nonaktif saat mulai';
    setStatus('Pemulihan otomatis berhasil: aset, layer, keyframe, dan pengaturan proyek dimuat.');
   }else if(n)n.textContent='Autosave lama kosong · proyek baru siap digunakan';
  }catch(e){
