@@ -2903,11 +2903,16 @@ async function importVisualScenesToNativeTracks(){
   buildAutoLayerControls();
   svgPieces.forEach((piece,index)=>{
    const si=svgLayerSceneIndices[index]??index,item=items[si]||items[0];
-   const start=sceneStarts[si>=0?si:0]??0,end=sceneEnds[si>=0?si:0]??total,d=Math.max(.5,end-start);
+   const sceneIndex=si>=0?si:0,start=sceneStarts[sceneIndex]??0,end=sceneEnds[sceneIndex]??total,d=Math.max(.5,end-start);
    const set=(id,value)=>{const el=$(id+index);if(!el)return;if(el.type==='checkbox')el.checked=!!value;else el.value=String(value)};
-   set('Delay',0);set('Start',start.toFixed(2));set('End',end.toFixed(2));
-   const profile=sceneMotion[si>=0?si:0]||sceneMotion[0];
-   set('In',profile.entrance);set('Out',profile.exit);set('Duration',Math.min(.75,Math.max(.18,d*.2)).toFixed(2));
+   // Adjacent scenes overlap only during a short, controlled transition.
+   const transitionSeconds=(transition,sceneDuration)=>transition==='cut'?0:transition==='glitch'?.18:Math.min(.8,Math.max(.45,sceneDuration*.14));
+   const fadeIn=sceneIndex===0?0:transitionSeconds(item.transition,d);
+   const nextItem=items[sceneIndex+1],fadeOut=sceneIndex===items.length-1?0:transitionSeconds(nextItem?.transition||'crossfade',d);
+   const clipStart=Math.max(0,start-fadeIn),clipEnd=Math.min(total,end+fadeOut);
+   set('Delay',0);set('Start',clipStart.toFixed(2));set('End',clipEnd.toFixed(2));
+   const profile=sceneMotion[sceneIndex]||sceneMotion[0];
+   set('In',profile.entrance);set('Out',profile.exit);set('Duration',Math.min(.8,Math.max(.18,Math.min(d*.2,.8))).toFixed(2));
    set('Loop',profile.loop);set('Intensity',profile.intensity);set('Scale',100);set('Rotation',0);
    set('On',true);set('Visible',true);set('Direction','normal');
   });
