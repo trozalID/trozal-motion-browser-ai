@@ -4074,8 +4074,7 @@ function buildSafeHtmlDocument(raw){
  // Do not force a transparent body background: it can erase an imported background.
  // Capture doc.body below so body backgrounds and pseudo-elements remain visible.
  const layoutCss='html,body{box-sizing:border-box;margin:0!important;padding:0!important;width:'+htmlMotionWidth+'px!important;height:'+htmlMotionHeight+'px!important;min-width:'+htmlMotionWidth+'px!important;min-height:'+htmlMotionHeight+'px!important;overflow:hidden!important}#animove-scene{box-sizing:border-box}';
- return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+'\n
-/* TROZAL UI MODES · Professional is the default; Classic preserves the legacy presentation. */
+ return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+'\n/* TROZAL UI MODES · Professional is the default; Classic preserves the legacy presentation. */
 .ui-layout-switcher{display:flex;align-items:center;gap:4px;padding:3px;border:1px solid #40516a;border-radius:9px;background:#111923;flex:0 0 auto}
 .ui-layout-label{padding:0 6px;color:#91a9c4;font-size:9px;font-weight:900;letter-spacing:1px}
 .ui-layout-btn{padding:6px 10px;border-radius:6px;font-size:10px;font-weight:800;white-space:nowrap}
