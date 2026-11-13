@@ -401,7 +401,7 @@ function buildMetadataFallback(captions, categories) {
   const title = first.charAt(0).toUpperCase() + first.slice(1);
   const stop = new Set(["the","a","an","and","or","with","on","in","at","of","to","is","are","there","this","that","it","image","picture","photo","frame","showing","shows"]);
   const words = (combined.toLowerCase().match(/[a-z][a-z-]{2,}/g) || []);
-  const keywords = [...new Set(words.filter((word) => !stop.has(word)))].slice(0, 20);
+  const keywords = [...new Set(words.filter((word) => !stop.has(word)))].slice(0, 47);
   const lower = combined.toLowerCase();
   const categoryHints = [
     [/person|people|man |woman |child|human|face/, "People"],
@@ -436,7 +436,7 @@ async function composeMetadataFromCaptions(captions, groundedEvidence = "") {
       "Return one compact valid JSON object only. No markdown or explanation.",
       "Use ONLY these image-caption and object-detection observations. Do not invent details.",
       'Keys: title, description, category, keywords, visual_summary, confidence_notes.',
-      "title: English, max 100 characters. description: one factual sentence. keywords: array, max 15.",
+      "title: English, max 100 characters. description: one factual sentence. keywords: array, up to 47 specific keywords, ranked by relevance.",
       "category must exactly match one of: " + categories.join(" | "),
       "Evidence: " + evidence,
       "Structured visual evidence: " + groundedEvidence,
@@ -447,7 +447,7 @@ async function composeMetadataFromCaptions(captions, groundedEvidence = "") {
         { role: "user", content: prompt },
       ],
       temperature: 0,
-      max_tokens: 420,
+      max_tokens: 900,
     });
     const raw = result?.choices?.[0]?.message?.content || "";
     try {
@@ -493,7 +493,7 @@ function applyBrowserMetadata(parsed, captions, evidenceLabel, visualEvidence = 
     }
   }
   const fallbackKeywords = [...phraseKeywords, ...evidenceWords];
-  const keywords = [...new Set([...modelKeywords, ...fallbackKeywords])].slice(0, 25);
+  const keywords = [...new Set([...modelKeywords, ...fallbackKeywords])].slice(0, 47);
   $("metadataTitle").value = title;
   $("metadataTitle").dataset.baseTitle = title;
   $("metadataDescription").value = description;
@@ -658,14 +658,14 @@ async function analyzeWithGeminiCloud() {
       "Return ONLY valid JSON with keys title, description, category, keywords, visual_summary, visible_objects, motion_evidence, confidence_notes.",
       "title: specific natural English title, maximum 100 characters. description: accurate English stock description in 1-2 sentences, maximum 350 characters.",
       "category must exactly equal one of: " + categories.join(" | "),
-      "keywords: 15 to 25 distinct, specific English search terms or short phrases. Put the most important subject and action first. Avoid duplicates, unsupported concepts, and generic filler. Include relevant subject, action, style, composition, background, and use-case terms only when visibly supported.",
+      "keywords: Up to 47 distinct, specific English search terms or short phrases. Return as many as the visible evidence genuinely supports, without filler. Put the most important subject and action first. Avoid duplicates, unsupported concepts, and generic filler. Include relevant subject, action, style, composition, background, and use-case terms only when visibly supported.",
       "visible_objects: array of clearly visible objects. motion_evidence: short description of changes that can actually be observed between the supplied frames. confidence_notes: uncertainties, or empty string."
     ].join("\n");
     setCloudStatus("Mengirim " + images.length + " frame ke Gemini Cloud Accurate…");
     const parts = [{ text: prompt }, ...images.map(data => ({ inlineData: { mimeType: "image/jpeg", data } }))];
     const requestBody = JSON.stringify({
       contents: [{ role: "user", parts }],
-      generationConfig: { temperature: 0.15, maxOutputTokens: 2200, responseMimeType: "application/json" }
+      generationConfig: { temperature: 0.15, maxOutputTokens: 3200, responseMimeType: "application/json" }
     });
     // Stable multimodal model fallbacks: keys/projects can expose different model availability.
     const models = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash"];
@@ -730,7 +730,7 @@ async function analyzeWithGeminiCloud() {
     const modelKeywords = (Array.isArray(parsed.keywords) ? parsed.keywords : []).map(x => String(x).trim().toLowerCase().replace(/\s+/g, " "))
       .filter(x => { const words = x.match(/[a-z0-9]+/g) || []; return words.length > 0 && words.length <= 5 && words.some(word => evidenceTokens.has(word)); });
     const fallbackWords = evidenceText.match(/[a-z][a-z-]{2,}/g) || [];
-    const keywords = [...new Set([...modelKeywords, ...fallbackWords.filter(word => !stop.has(word))])].slice(0, 25);
+    const keywords = [...new Set([...modelKeywords, ...fallbackWords.filter(word => !stop.has(word))])].slice(0, 47);
     const categoryOptions = [...($("metadataCategory")?.options || [])].map(option => option.text);
     const category = categoryOptions.find(value => value.toLowerCase() === String(parsed.category || "").trim().toLowerCase()) || "Graphic Resources";
     const applied = applyBrowserMetadata({ ...parsed, title, description, category, keywords }, [String(parsed.visual_summary || ""), ...(Array.isArray(parsed.visible_objects) ? parsed.visible_objects : [])].filter(Boolean), "Gemini Cloud Accurate", { objects: (Array.isArray(parsed.visible_objects) ? parsed.visible_objects : []).map(label => ({ label: String(label) })), averageChange: null });
