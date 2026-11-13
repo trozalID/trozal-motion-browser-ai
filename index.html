@@ -582,6 +582,49 @@ body[data-ui-layout="classic"] .ui-layout-btn[aria-pressed="true"]{background:#d
 @media(max-width:720px){.ui-layout-switcher{width:100%;justify-content:flex-end}.ui-layout-label{margin-right:auto}.ui-layout-btn{min-height:36px}.topbar{height:auto;min-height:42px}}
 
 </style>
+
+<style>
+/* TROZAL Browser AI — Professional Mode visual hierarchy; presentation only. */
+body[data-ui-layout="professional"] .panel{
+  border-radius:12px;
+  background-image:linear-gradient(145deg,#ffffff05,transparent 48%);
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+body[data-ui-layout="professional"] .panel:hover{
+  box-shadow:0 8px 22px #0003;
+}
+body[data-ui-layout="professional"] .panel[class*="panel-tone-"]{
+  border-left-color:var(--panel-accent);
+}
+body[data-ui-layout="professional"] .panel h3{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding-bottom:7px;
+  border-bottom:1px solid #ffffff12;
+  letter-spacing:.075em;
+}
+body[data-ui-layout="professional"] .visual-scene-card{
+  border-radius:11px;
+  box-shadow:0 5px 15px #0003,inset 0 1px #ffffff0b;
+}
+body[data-ui-layout="professional"] .visual-scene-card:focus-within{
+  border-color:#83e6d0;
+  box-shadow:0 0 0 2px #83e6d022,0 7px 18px #0003;
+}
+body[data-ui-layout="professional"] .ui-layout-btn:focus-visible,
+body[data-ui-layout="professional"] .panel button:focus-visible,
+body[data-ui-layout="professional"] .panel input:focus-visible,
+body[data-ui-layout="professional"] .panel select:focus-visible,
+body[data-ui-layout="professional"] .panel textarea:focus-visible{
+  outline:2px solid #7dd3fc;
+  outline-offset:2px;
+}
+@media(prefers-reduced-motion:reduce){
+  body[data-ui-layout="professional"] .panel{transition:none}
+}
+</style>
+
 </head>
 <body>
 <script>
