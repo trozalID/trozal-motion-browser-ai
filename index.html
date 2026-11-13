@@ -1390,9 +1390,14 @@ function renderSplitPieces(t){
   const m=getLayerMotion(i,t),visible=document.getElementById('autoLayerVisible'+i)?.checked!==false,solo=soloLayerIndex<0||soloLayerIndex===i;
   const sceneIndex=svgLayerSceneIndices[i]??-1,ranges=window.trozalScenePlaybackRanges;
   const range=sceneIndex>=0&&Array.isArray(ranges)?ranges[sceneIndex]:null;
-  const inSceneWindow=!range||(t>=range.start-range.fadeIn-.001&&t<=range.end+range.fadeOut+.001);
+  let sceneAlpha=1;
+  if(range){
+   if(t<range.start-range.fadeIn||t>range.end+range.fadeOut)sceneAlpha=0;
+   else if(range.fadeIn>0&&t<range.start)sceneAlpha=Math.max(0,Math.min(1,(t-(range.start-range.fadeIn))/range.fadeIn));
+   else if(range.fadeOut>0&&t>range.end)sceneAlpha=Math.max(0,Math.min(1,1-(t-range.end)/range.fadeOut));
+  }
   el.style.transform=`translate(${m.x}%,${m.y}%) rotate(${m.rot}deg) scale(${m.scale})`;
-  el.style.opacity=m.alpha;el.style.display=visible&&solo&&inSceneWindow?'flex':'none';
+  el.style.opacity=m.alpha*sceneAlpha;el.style.display=visible&&solo&&sceneAlpha>0?'flex':'none';
  });
 }
 function assembleSvg(){svgWasSplit=false;svgPieces=[];svgLayerHints=[];if(sourceSvg)setObjectMarkup(sourceSvg);renderAt(playhead);setStatus('Layer SVG disatukan kembali menjadi objek utuh.')}
@@ -2400,7 +2405,18 @@ try{
  const p=Math.max(0,Math.min(1,elapsed/Math.max(.001,d))),ph=elapsed*2*Math.PI*+$('speed').value;
  const drawContained=(source,dx=0,dy=0,rot=0,layerScale=1)=>{const sw=source.naturalWidth||source.width||1,sh=source.naturalHeight||source.height||1,fit=Math.min(ow/sw,oh/sh)*layerScale,dw=sw*fit,dh=sh*fit;ctx.save();ctx.translate(dx,dy);ctx.rotate(rot*Math.PI/180);if($('shadow').checked){ctx.shadowColor='rgba(0,0,0,.22)';ctx.shadowBlur=Math.max(1,w/(turboMode?360:180));ctx.shadowOffsetY=Math.max(1,h/180)}ctx.drawImage(source,-dw/2,-dh/2,dw,dh);ctx.restore()};
  if(htmlMotionSource){const htmlCanvas=await captureHtmlMotionAt(elapsed);drawContained(htmlCanvas)}
- else if(svgPieceImgs.length){svgPieceImgs.forEach((pi,i)=>{const visible=document.getElementById('autoLayerVisible'+i)?.checked!==false,solo=soloLayerIndex<0||soloLayerIndex===i;if(!visible||!solo)return;const lm=getLayerMotion(i,elapsed);ctx.save();ctx.globalAlpha=lm.alpha;drawContained(pi,lm.x*w/100,lm.y*h/100,lm.rot,lm.scale);ctx.restore()})}
+ else if(svgPieceImgs.length){svgPieceImgs.forEach((pi,i)=>{
+  const visible=document.getElementById('autoLayerVisible'+i)?.checked!==false,solo=soloLayerIndex<0||soloLayerIndex===i;if(!visible||!solo)return;
+  const sceneIndex=svgLayerSceneIndices[i]??-1,ranges=window.trozalScenePlaybackRanges,range=sceneIndex>=0&&Array.isArray(ranges)?ranges[sceneIndex]:null;
+  let sceneAlpha=1;
+  if(range){
+   if(elapsed<range.start-range.fadeIn||elapsed>range.end+range.fadeOut)sceneAlpha=0;
+   else if(range.fadeIn>0&&elapsed<range.start)sceneAlpha=Math.max(0,Math.min(1,(elapsed-(range.start-range.fadeIn))/range.fadeIn));
+   else if(range.fadeOut>0&&elapsed>range.end)sceneAlpha=Math.max(0,Math.min(1,1-(elapsed-range.end)/range.fadeOut));
+  }
+  if(sceneAlpha<=0)return;
+  const lm=getLayerMotion(i,elapsed);ctx.save();ctx.globalAlpha=lm.alpha*sceneAlpha;drawContained(pi,lm.x*w/100,lm.y*h/100,lm.rot,lm.scale);ctx.restore();
+ })}
  else if(svgImg)drawContained(svgImg);else if(img)drawContained(img);else{ctx.fillStyle=currentColor;ctx.beginPath();ctx.arc(0,0,Math.min(ow,oh)/3,0,Math.PI*2);ctx.fill()}
  applyShapeMaskToCanvas(ctx,baseW,baseH,shapeState,elapsed);
  drawShapePathOnCanvas(ctx,baseW,baseH,evaluateMaskLayer(shapeMaskLayers[activeShapeMask]||shapeState,elapsed));
