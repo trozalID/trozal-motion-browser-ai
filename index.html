@@ -501,6 +501,8 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 .object-motion-scene{border:1px solid #34766f;background:#102e30;border-radius:9px;padding:10px;margin-top:8px}.object-motion-scene strong{display:block;color:#a9f5e5;margin-bottom:7px}.object-motion-scene .row{display:flex;gap:8px;align-items:center}.object-motion-scene select{min-width:0;flex:1}.object-motion-scene input[type=range]{flex:1;min-width:70px}.object-motion-scene output{color:#b8fff0;min-width:42px;text-align:right;font-variant-numeric:tabular-nums}
 @media(prefers-reduced-transparency:reduce){.panel[class*="panel-tone-"]{background:var(--panel-surface)}}
 
+#motionBlurControlPanel{--panel-accent:#f4b6e8;--panel-surface:#3b2440;--panel-edge:#945d91;background:linear-gradient(145deg,#3b2440,#24192f);border:1px solid var(--panel-edge);box-shadow:0 8px 22px #120818aa}
+#motionBlurControlPanel h3{color:#ffd4f3;letter-spacing:.05em}#motionBlurControlPanel .help{color:#e6cde3}#motionBlurControlPanel input[type=range]{accent-color:#f4b6e8;flex:1;min-width:80px}#motionBlurControlPanel .motion-quality-readout{border-color:#945d91;background:#261a30;color:#f7dff2}
 #motionQualityDirectorPanel{--panel-accent:#9bd8ff;--panel-surface:#18364a;--panel-edge:#39769a;background:linear-gradient(145deg,#17384c,#102633);border:1px solid var(--panel-edge);box-shadow:0 8px 22px #020f18aa}
 #motionQualityDirectorPanel h3{color:#c5eaff;letter-spacing:.05em}#motionQualityDirectorPanel .help{color:#c5ddec}.motion-quality-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:9px 0}.motion-quality-grid button{border:1px solid #4a8db4;background:#21465b;color:#e4f5ff;border-radius:8px;padding:9px 6px;font-size:11px;font-weight:700}.motion-quality-grid button:hover,.motion-quality-grid button.active{background:linear-gradient(135deg,#c9edff,#72bce8);color:#102838;border-color:#d8f2ff}.motion-quality-readout{padding:8px;border:1px solid #39769a;border-radius:7px;background:#0c2636;color:#c9ecff;font-size:11px;line-height:1.5;font-variant-numeric:tabular-nums}
 .panel-tone-camera{--panel-accent:#ffd27a;--panel-surface:#3a3020;--panel-edge:#8b6b35}
@@ -610,6 +612,13 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
  <p class="help">Analisis framing dari deskripsi tiap scene. Terapkan rekomendasi sebelum scene diimpor ke Multi-Track.</p>
  <div id="smartCameraDirectorList" class="smart-camera-list"><p class="help">Susun scene untuk mendapatkan rekomendasi framing.</p></div>
  <div class="status" id="smartCameraDirectorStatus">Periksa hasil preview sebelum render.</div>
+</section>
+<section class="panel ai-tools" id="motionBlurControlPanel">
+ <h3>✧ SOFT MOTION BLUR</h3>
+ <p class="help">Blur halus berbasis perubahan posisi antar-frame untuk memberi kesan gerakan lebih natural. Efek diterapkan pada objek saat ekspor; nonaktif secara default.</p>
+ <label class="row" style="align-items:center;gap:9px"><input type="checkbox" id="motionBlurEnabled"> Aktifkan Motion Blur</label>
+ <div class="row"><label for="motionBlurAmount">Kekuatan blur</label><input id="motionBlurAmount" type="range" min="0" max="12" step="0.5" value="4"><output id="motionBlurAmountValue">4 px</output></div>
+ <div class="motion-quality-readout" id="motionBlurReadout">Mode: nonaktif · Tidak mengubah durasi atau FPS ekspor.</div>
 </section>
 <section class="panel ai-tools" id="motionQualityDirectorPanel">
  <h3>✦ MOTION QUALITY DIRECTOR</h3>
@@ -2409,6 +2418,14 @@ if(wanted==='pngseq'){
  return;
 }
 throw new Error('Format ekspor frame tidak dikenali.');}}
+function trozalMotionBlurPixels(time,baseW,baseH){
+ if(!$('motionBlurEnabled')?.checked)return 0;
+ const amount=Math.max(0,Math.min(12,Number($('motionBlurAmount')?.value)||0));if(!amount)return 0;
+ const fps=Math.max(1,Number($('fps')?.value)||30),dt=1/fps,now=getMotionState(time),before=getMotionState(Math.max(0,time-dt));
+ const dx=(now.x-before.x)*baseW/100,dy=(now.y-before.y)*baseH/100,rotation=Math.abs(now.rotate-before.rotate)*Math.PI/180*Math.min(baseW,baseH)*.12;
+ const velocity=Math.hypot(dx,dy)+rotation;
+ return Math.min(amount,velocity*.22*amount/4);
+}
 async function drawUnsafe(){if(frame>=totalFrames){await finishRender();return}let elapsed=frame/fps;renderAt(elapsed,false);let bg=$('bgMode').value;if(bg==='transparent'&&$('transparentBg').checked){ctx.clearRect(0,0,w,h)}else{ctx.fillStyle=bg==='black'?'#08090c':bg==='dark'?'#141820':bg==='greenbg'?'#075b3b':bg==='bluebg'?'#1264b0':bg==='custom'?$('customBg').value:'#ffffff';ctx.fillRect(0,0,w,h)}
 let obj=$('object'),motion=getMotionState(elapsed);
 // Match CSS preview geometry: width relative to stage width, height relative to stage height.
@@ -2417,17 +2434,17 @@ const cx=w/2+((+$('posX').value+motion.x)/100*baseW),cy=h/2+((+$('posY').value+m
 const ow=baseW*motion.scaleX,oh=baseH*motion.scaleY;
 ctx.save();ctx.translate(cx,cy);ctx.rotate((+$('rotation').value+motion.rotate)*Math.PI/180);ctx.transform(1,Math.tan(motion.skew*Math.PI/180),0,1,0,0);ctx.globalAlpha=(+$('opacity').value/100)*motion.alpha;
 ctx.beginPath();ctx.rect(-baseW/2,-baseH/2,baseW*motion.revealX,baseH*motion.revealY);ctx.clip();
-const shapeState=shapeMaskState();
+const shapeState=shapeMaskState(),motionBlurPx=trozalMotionBlurPixels(elapsed,baseW,baseH);
 try{
  const p=Math.max(0,Math.min(1,elapsed/Math.max(.001,d))),ph=elapsed*2*Math.PI*+$('speed').value;
- const drawContained=(source,dx=0,dy=0,rot=0,layerScale=1)=>{const sw=source.naturalWidth||source.width||1,sh=source.naturalHeight||source.height||1,fit=Math.min(ow/sw,oh/sh)*layerScale,dw=sw*fit,dh=sh*fit;ctx.save();ctx.translate(dx,dy);ctx.rotate(rot*Math.PI/180);if($('shadow').checked){ctx.shadowColor='rgba(0,0,0,.22)';ctx.shadowBlur=Math.max(1,w/(turboMode?360:180));ctx.shadowOffsetY=Math.max(1,h/180)}ctx.drawImage(source,-dw/2,-dh/2,dw,dh);ctx.restore()};
+ const drawContained=(source,dx=0,dy=0,rot=0,layerScale=1)=>{const sw=source.naturalWidth||source.width||1,sh=source.naturalHeight||source.height||1,fit=Math.min(ow/sw,oh/sh)*layerScale,dw=sw*fit,dh=sh*fit;ctx.save();if(motionBlurPx>0)ctx.filter='blur('+motionBlurPx.toFixed(2)+'px)';ctx.translate(dx,dy);ctx.rotate(rot*Math.PI/180);if($('shadow').checked){ctx.shadowColor='rgba(0,0,0,.22)';ctx.shadowBlur=Math.max(1,w/(turboMode?360:180));ctx.shadowOffsetY=Math.max(1,h/180)}ctx.drawImage(source,-dw/2,-dh/2,dw,dh);ctx.restore()};
  if(htmlMotionSource){const htmlCanvas=await captureHtmlMotionAt(elapsed);drawContained(htmlCanvas)}
  else if(svgPieceImgs.length){svgPieceImgs.forEach((pi,i)=>{
   const visible=document.getElementById('autoLayerVisible'+i)?.checked!==false,solo=soloLayerIndex<0||soloLayerIndex===i;if(!visible||!solo)return;
   const sceneIndex=svgLayerSceneIndices[i]??-1,ranges=window.trozalScenePlaybackRanges,range=sceneIndex>=0&&Array.isArray(ranges)?ranges[sceneIndex]:null;
   const sceneAlpha=trozalSceneOpacity(elapsed,range);
   if(sceneAlpha<=0)return;
-  const lm=getLayerMotion(i,elapsed);ctx.save();ctx.globalAlpha=lm.alpha*sceneAlpha;drawContained(pi,lm.x*w/100,lm.y*h/100,lm.rot,lm.scale);ctx.restore();
+  const lm=getLayerMotion(i,elapsed);ctx.save();if(motionBlurPx>0)ctx.filter='blur('+motionBlurPx.toFixed(2)+'px)';ctx.globalAlpha=lm.alpha*sceneAlpha;drawContained(pi,lm.x*w/100,lm.y*h/100,lm.rot,lm.scale);ctx.restore();
  })}
  else if(svgImg)drawContained(svgImg);else if(img)drawContained(img);else{ctx.fillStyle=currentColor;ctx.beginPath();ctx.arc(0,0,Math.min(ow,oh)/3,0,Math.PI*2);ctx.fill()}
  applyShapeMaskToCanvas(ctx,baseW,baseH,shapeState,elapsed);
@@ -2447,6 +2464,8 @@ async function draw(){
  }
 }
 if(rec)rec.start(250);draw()};
+$('motionBlurAmount')?.addEventListener('input',()=>{const out=$('motionBlurAmountValue');if(out)out.textContent=$('motionBlurAmount').value+' px';});
+$('motionBlurEnabled')?.addEventListener('change',()=>{const out=$('motionBlurReadout');if(out)out.textContent=$('motionBlurEnabled').checked?'Mode: aktif · Blur adaptif mengikuti kecepatan gerak objek.':'Mode: nonaktif · Tidak mengubah durasi atau FPS ekspor.';});
 $('cancelRenderBtn')?.addEventListener('click',()=>{if(typeof trozalRenderCancelHandler==='function')trozalRenderCancelHandler();});
 
 // Web Free: desktop ProRes converter intentionally disabled.
@@ -2493,7 +2512,7 @@ $('exportFrames').onclick=exportCurrentFramePng;
  }
 })();
 function getProject(){
- const ids=['shapeMaskType','shapeMaskMode','shapeMaskSize','shapeMaskRotation','shapeMaskX','shapeMaskY','shapePathColor','shapePathWidth','shapePathData','objectName','duration','fps','resolution','proresMode','animation','speed','intensity','scale','posX','posY','rotation','opacity','bgMode','customBg','effectPreset','effectIntensity','effectColor','particleCount','particleSpeed','format','quality','mp4Crf','renderSpeedMode','textLayerContent','textLayerFont','textLayerWeight','textLayerSize','textLayerColor','textLayerAlign','textLayerTracking','textLayerX','textLayerY','textLayerStart','textLayerDuration','textLayerAnimation','visualMotionPrompt','visualMotionRatio','visualMotionDuration','visualMotionStyle','visualMotionCamera','visualMotionTransition','visualMotionAccent','metadataPlatform','metadataSubject','metadataTitle','metadataDescription','metadataCategory','metadataKeywords'];
+ const ids=['shapeMaskType','shapeMaskMode','shapeMaskSize','shapeMaskRotation','shapeMaskX','shapeMaskY','shapePathColor','shapePathWidth','shapePathData','objectName','duration','fps','resolution','proresMode','animation','speed','intensity','scale','posX','posY','rotation','opacity','bgMode','customBg','effectPreset','effectIntensity','effectColor','particleCount','particleSpeed','format','quality','mp4Crf','renderSpeedMode','motionBlurEnabled','motionBlurAmount','textLayerContent','textLayerFont','textLayerWeight','textLayerSize','textLayerColor','textLayerAlign','textLayerTracking','textLayerX','textLayerY','textLayerStart','textLayerDuration','textLayerAnimation','visualMotionPrompt','visualMotionRatio','visualMotionDuration','visualMotionStyle','visualMotionCamera','visualMotionTransition','visualMotionAccent','metadataPlatform','metadataSubject','metadataTitle','metadataDescription','metadataCategory','metadataKeywords'];
  const checks=['shapeMaskEnabled','shapePathReveal','transparentBg','sparkles','shadow','loop','effectOn','textLayerEnabled','visualMotionParticles','visualMotionDepth'];
  const controls={};ids.forEach(k=>{if($(k))controls[k]=$(k).value});
  checks.forEach(k=>{if($(k))controls[k]=$(k).checked});
