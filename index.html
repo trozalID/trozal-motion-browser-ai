@@ -3549,76 +3549,7 @@ function buildVisualMotionHtml(){
  '@keyframes heroFloat{0%{transform:translate3d(-1.2%,1.2%,0) rotate(-1deg)}100%{transform:translate3d(1.8%,-2%,0) rotate(1.5deg)}}@keyframes cloudDrift{from{translate:-3% 0}to{translate:5% 0}}@keyframes twinkle{from{opacity:.18}to{opacity:1}}@keyframes waveDrift{from{transform:translateY(9px)}to{transform:translateY(-12px)}}@keyframes wheelSpin{to{transform:rotate(360deg)}}@keyframes snowFall{from{transform:translateY(-30px)}to{transform:translateY(40px)}}@keyframes floatParticle{0%{opacity:0;transform:translateY(24px)}45%{opacity:.8}100%{opacity:0;transform:translateY(-34px)}}'+camCss+
  kfBlocks+'@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-delay:0ms!important}}'+
  '</style></head><body><main class="stage">'+sceneMarkup+'</main>\n
-<script>
-/* TROZAL MOBILE DEBUG CONSOLE — temporary in-app diagnostics for Android */
-(function(){
- 'use strict';
- if(window.__trozalMobileDebugInstalled)return;
- window.__trozalMobileDebugInstalled=true;
- const entries=[];const maxEntries=120;let panel,logNode,countNode;
- const stamp=()=>new Date().toLocaleTimeString();
- function render(){
-  if(!logNode)return;
-  logNode.replaceChildren();
-  entries.forEach(item=>{const line=document.createElement('div');line.className=item.type;line.textContent='['+item.time+'] '+item.message;logNode.appendChild(line);});
-  logNode.scrollTop=logNode.scrollHeight;
-  if(countNode)countNode.textContent=String(entries.length);
- }
- function add(type,message){
-  const text=String(message==null?'':message);
-  entries.push({time:stamp(),type,message:text.slice(0,1800)});
-  if(entries.length>maxEntries)entries.shift();
-  render();
- }
- function setup(){
-  if(document.getElementById('trozalDebugFab'))return;
-  const fab=document.createElement('button');fab.id='trozalDebugFab';fab.type='button';fab.textContent='⚠ DEBUG ';
-  countNode=document.createElement('span');countNode.className='count';countNode.textContent='0';fab.appendChild(countNode);
-  panel=document.createElement('section');panel.id='trozalDebugPanel';panel.setAttribute('aria-label','TROZAL runtime diagnostics');
-  const head=document.createElement('div');head.className='debug-head';
-  const title=document.createElement('strong');title.textContent='RUNTIME CONSOLE · Browser AI';
-  const copy=document.createElement('button');copy.type='button';copy.textContent='Salin log';
-  const clear=document.createElement('button');clear.type='button';clear.textContent='Bersihkan';
-  const close=document.createElement('button');close.type='button';close.textContent='Tutup';
-  logNode=document.createElement('pre');logNode.id='trozalDebugLog';
-  head.append(title,copy,clear,close);panel.append(head,logNode);document.body.append(fab,panel);
-  fab.addEventListener('click',()=>panel.classList.toggle('open'));
-  close.addEventListener('click',()=>panel.classList.remove('open'));
-  clear.addEventListener('click',()=>{entries.length=0;add('info','Log dibersihkan. Klik Tema Inspirasi Acak untuk merekam ulang.');});
-  copy.addEventListener('click',()=>{
-   const content=entries.map(x=>'['+x.time+'] '+x.message).join('\n')||'Tidak ada log.';
-   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(content).then(()=>add('info','Log berhasil disalin.')).catch(()=>fallbackCopy(content));}
-   else fallbackCopy(content);
-  });
-  function fallbackCopy(content){
-   const area=document.createElement('textarea');area.value=content;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();
-   try{document.execCommand('copy');add('info','Perintah salin dijalankan.');}catch(e){add('err','Gagal menyalin log: '+e.message);}
-   area.remove();
-  }
-  add('info','Debug aktif. Buka panel ini, bersihkan log, lalu tekan Tema Inspirasi Acak.');
- }
- function boot(){setup();if(!document.getElementById('trozalDebugFab'))setTimeout(boot,250);}
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
- window.addEventListener('error',e=>add('err','WINDOW ERROR: '+(e.message||'unknown')+' | '+(e.filename||'')+':'+(e.lineno||0)+':'+(e.colno||0)+(e.error&&e.error.stack?'\n'+e.error.stack:'')));
- window.addEventListener('unhandledrejection',e=>{const r=e.reason;add('err','UNHANDLED PROMISE: '+(r&&r.stack?r.stack:(r&&r.message)||r));});
- const originalError=console.error.bind(console);
- console.error=function(){try{add('err','console.error: '+Array.from(arguments).map(x=>x&&x.stack?x.stack:(typeof x==='object'?JSON.stringify(x):String(x))).join(' '));}catch(e){add('err','console.error called (format failed)');}return originalError.apply(console,arguments);};
- document.addEventListener('click',e=>{
-  const target=e.target&&e.target.closest?e.target.closest('#svgAiRandomThemeBtn'):null;
-  if(!target)return;
-  const theme=document.getElementById('svgAiTheme');
-  add('info','CLICK Tema Inspirasi Acak terdeteksi. Tema sebelum klik: '+(theme?theme.value:'select tidak ditemukan'));
-  setTimeout(()=>{
-   const t=document.getElementById('svgAiTheme'),c=document.getElementById('svgAiCategory'),sp=document.getElementById('svgAiSpecific');
-   add('info','HASIL klik: tema='+(t?t.value:'N/A')+' | kategori='+(c?c.value:'N/A')+' | subtema='+(sp?sp.value:'N/A'));
-  },120);
- },true);
- document.addEventListener('change',e=>{
-  if(!e.target||!['svgAiTheme','svgAiCategory','svgAiSpecific'].includes(e.target.id))return;
-  add('info','CHANGE '+e.target.id+' = '+e.target.value);
- },true);
-})();
-</script>
+
 
 </body></html>';
  return {html,scenes:items.length,duration:total,ratio};
@@ -5281,4 +5212,74 @@ window.setMetadataSourceStatus=trozalMetadataSourceStatus;
 </script>
 
 <script type="module" src="./browser-ai.js"></script>
+<script>
+/* TROZAL MOBILE DEBUG CONSOLE — temporary in-app diagnostics for Android */
+(function(){
+ 'use strict';
+ if(window.__trozalMobileDebugInstalled)return;
+ window.__trozalMobileDebugInstalled=true;
+ const entries=[];const maxEntries=120;let panel,logNode,countNode;
+ const stamp=()=>new Date().toLocaleTimeString();
+ function render(){
+  if(!logNode)return;
+  logNode.replaceChildren();
+  entries.forEach(item=>{const line=document.createElement('div');line.className=item.type;line.textContent='['+item.time+'] '+item.message;logNode.appendChild(line);});
+  logNode.scrollTop=logNode.scrollHeight;
+  if(countNode)countNode.textContent=String(entries.length);
+ }
+ function add(type,message){
+  const text=String(message==null?'':message);
+  entries.push({time:stamp(),type,message:text.slice(0,1800)});
+  if(entries.length>maxEntries)entries.shift();
+  render();
+ }
+ function setup(){
+  if(document.getElementById('trozalDebugFab'))return;
+  const fab=document.createElement('button');fab.id='trozalDebugFab';fab.type='button';fab.textContent='⚠ DEBUG ';
+  countNode=document.createElement('span');countNode.className='count';countNode.textContent='0';fab.appendChild(countNode);
+  panel=document.createElement('section');panel.id='trozalDebugPanel';panel.setAttribute('aria-label','TROZAL runtime diagnostics');
+  const head=document.createElement('div');head.className='debug-head';
+  const title=document.createElement('strong');title.textContent='RUNTIME CONSOLE · Browser AI';
+  const copy=document.createElement('button');copy.type='button';copy.textContent='Salin log';
+  const clear=document.createElement('button');clear.type='button';clear.textContent='Bersihkan';
+  const close=document.createElement('button');close.type='button';close.textContent='Tutup';
+  logNode=document.createElement('pre');logNode.id='trozalDebugLog';
+  head.append(title,copy,clear,close);panel.append(head,logNode);document.body.append(fab,panel);
+  fab.addEventListener('click',()=>panel.classList.toggle('open'));
+  close.addEventListener('click',()=>panel.classList.remove('open'));
+  clear.addEventListener('click',()=>{entries.length=0;add('info','Log dibersihkan. Klik Tema Inspirasi Acak untuk merekam ulang.');});
+  copy.addEventListener('click',()=>{
+   const content=entries.map(x=>'['+x.time+'] '+x.message).join('\n')||'Tidak ada log.';
+   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(content).then(()=>add('info','Log berhasil disalin.')).catch(()=>fallbackCopy(content));}
+   else fallbackCopy(content);
+  });
+  function fallbackCopy(content){
+   const area=document.createElement('textarea');area.value=content;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();
+   try{document.execCommand('copy');add('info','Perintah salin dijalankan.');}catch(e){add('err','Gagal menyalin log: '+e.message);}
+   area.remove();
+  }
+  add('info','Debug aktif. Buka panel ini, bersihkan log, lalu tekan Tema Inspirasi Acak.');
+ }
+ function boot(){setup();if(!document.getElementById('trozalDebugFab'))setTimeout(boot,250);}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+ window.addEventListener('error',e=>add('err','WINDOW ERROR: '+(e.message||'unknown')+' | '+(e.filename||'')+':'+(e.lineno||0)+':'+(e.colno||0)+(e.error&&e.error.stack?'\n'+e.error.stack:'')));
+ window.addEventListener('unhandledrejection',e=>{const r=e.reason;add('err','UNHANDLED PROMISE: '+(r&&r.stack?r.stack:(r&&r.message)||r));});
+ const originalError=console.error.bind(console);
+ console.error=function(){try{add('err','console.error: '+Array.from(arguments).map(x=>x&&x.stack?x.stack:(typeof x==='object'?JSON.stringify(x):String(x))).join(' '));}catch(e){add('err','console.error called (format failed)');}return originalError.apply(console,arguments);};
+ document.addEventListener('click',e=>{
+  const target=e.target&&e.target.closest?e.target.closest('#svgAiRandomThemeBtn'):null;
+  if(!target)return;
+  const theme=document.getElementById('svgAiTheme');
+  add('info','CLICK Tema Inspirasi Acak terdeteksi. Tema sebelum klik: '+(theme?theme.value:'select tidak ditemukan'));
+  setTimeout(()=>{
+   const t=document.getElementById('svgAiTheme'),c=document.getElementById('svgAiCategory'),sp=document.getElementById('svgAiSpecific');
+   add('info','HASIL klik: tema='+(t?t.value:'N/A')+' | kategori='+(c?c.value:'N/A')+' | subtema='+(sp?sp.value:'N/A'));
+  },120);
+ },true);
+ document.addEventListener('change',e=>{
+  if(!e.target||!['svgAiTheme','svgAiCategory','svgAiSpecific'].includes(e.target.id))return;
+  add('info','CHANGE '+e.target.id+' = '+e.target.value);
+ },true);
+})();
+</script>
 </body></html>
