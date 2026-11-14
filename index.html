@@ -1837,7 +1837,9 @@ function wireMultiTrackEditor(){
  $('mtCreateGroup').onclick=()=>{
   const chosen=Object.keys(timelineGroupSelected).filter(k=>timelineGroupSelected[k]&&Number(k)<svgPieces.length).map(Number);
   if(chosen.length<2){setStatus('Pilih minimal dua layer untuk membuat grup.');return;}
-  const name=String($('mtGroupName').value||'').trim()||('Grup '+(new Set(Object.values(timelineLayerGroups)).size+1));
+  const name=String($('mtGroupName').value||'').trim().replace(/\\s+/g,' ')||('Grup '+(new Set(Object.values(timelineLayerGroups)).size+1));
+  if(name.length>28){setStatus('Nama grup maksimal 28 karakter.');return;}
+  if(new Set(Object.values(timelineLayerGroups).filter(Boolean)).has(name)){setStatus('Nama grup "'+name+'" sudah digunakan. Masukkan nama baru agar grup tidak tergabung tanpa sengaja.');$('mtGroupName').focus();return;}
   trozalHistoryBegin();
   chosen.forEach(i=>{timelineLayerGroups[i]=name;delete timelineGroupSelected[i];});
   refreshTimelineEditor();scheduleAutosave();setStatus('Grup "'+name+'" dibuat dari '+chosen.length+' layer. Anggota grup kini dapat digeser bersama.');trozalHistoryCommit('Buat grup '+name);
@@ -1926,9 +1928,16 @@ function wireMultiTrackEditor(){
  $('mtDissolveGroup').onclick=()=>{
   const group=timelineLayerGroups[selectedLayerIndex];
   if(!group){setStatus('Pilih salah satu layer dalam grup yang akan dilepas.');return;}
+  const directMembers=svgPieces.filter((_,i)=>timelineLayerGroups[i]===group).length;
+  const parent=timelineGroupParents[group]||'';
+  const childGroups=Object.keys(timelineGroupParents).filter(child=>timelineGroupParents[child]===group);
   trozalHistoryBegin();
   svgPieces.forEach((_,i)=>{if(timelineLayerGroups[i]===group)delete timelineLayerGroups[i];});
-  refreshTimelineEditor();scheduleAutosave();setStatus('Grup "'+group+'" dilepas; layer tetap tersedia secara terpisah.');trozalHistoryCommit('Lepas grup '+group);
+  delete timelineGroupParents[group];
+  childGroups.forEach(child=>{if(parent)timelineGroupParents[child]=parent;else delete timelineGroupParents[child];});
+  refreshTimelineEditor();scheduleAutosave();
+  trozalHistoryCommit('Lepas grup '+group);
+  setStatus('Grup "'+group+'" dilepas: '+directMembers+' layer menjadi mandiri. '+childGroups.length+' grup anak '+(parent?'dipindahkan ke parent "'+parent+'"':'dinaikkan menjadi root')+' agar hierarki tidak yatim.');
  };
  $('mtClearMarkers').onclick=()=>{
   if(!timelineMarkers.length){setStatus('Belum ada marker untuk dihapus.');return;}
