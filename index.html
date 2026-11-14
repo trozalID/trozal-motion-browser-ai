@@ -882,7 +882,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
   <section class="multi-track-editor" id="multiTrackEditor" aria-label="Multi-track timeline editor">
    <div class="mt-toolbar">
     <div><strong>Multi-Track Timeline</strong><small id="mtTrackSummary">Komposisi utama · 1 track</small></div>
-    <div class="mt-toolbar-actions"><button type="button" id="mtUndo" title="Undo · Ctrl+Z" disabled>↶ Undo</button><button type="button" id="mtRedo" title="Redo · Ctrl+Y" disabled>↷ Redo</button><button type="button" id="mtSnapToggle" aria-pressed="true" title="Snap ke frame, keyframe, marker, dan tepi klip">🧲 Snap ON</button><input id="mtGroupName" type="text" maxlength="28" placeholder="Nama grup" aria-label="Nama grup layer" style="width:112px;min-width:90px"><button type="button" id="mtCreateGroup" title="Gabungkan layer yang dicentang">⊞ Buat Grup</button><button type="button" id="mtToggleGroupVisibility" title="Tampilkan atau sembunyikan grup terpilih">◉ Grup</button><button type="button" id="mtDissolveGroup" title="Lepaskan layer dari grup">Lepas Grup</button><button type="button" id="mtBuildTracks" title="Pisahkan elemen SVG menjadi track yang dapat diedit">＋ Pecah SVG</button><button type="button" class="primary" id="mtAddMarker">＋ Marker</button><button type="button" id="mtClearMarkers">Hapus Marker</button></div>
+    <div class="mt-toolbar-actions"><button type="button" id="mtUndo" title="Undo · Ctrl+Z" disabled>↶ Undo</button><button type="button" id="mtRedo" title="Redo · Ctrl+Y" disabled>↷ Redo</button><button type="button" id="mtSnapToggle" aria-pressed="true" title="Snap ke frame, keyframe, marker, dan tepi klip">🧲 Snap ON</button><input id="mtGroupName" type="text" maxlength="28" placeholder="Nama grup" aria-label="Nama grup layer" style="width:112px;min-width:90px"><button type="button" id="mtCreateGroup" title="Gabungkan layer yang dicentang">⊞ Buat Grup</button><button type="button" id="mtGroupKeyframe" title="Tambahkan keyframe serentak ke semua anggota grup">◆ Keyframe Grup</button><button type="button" id="mtToggleGroupVisibility" title="Tampilkan atau sembunyikan grup terpilih">◉ Grup</button><button type="button" id="mtDissolveGroup" title="Lepaskan layer dari grup">Lepas Grup</button><button type="button" id="mtBuildTracks" title="Pisahkan elemen SVG menjadi track yang dapat diedit">＋ Pecah SVG</button><button type="button" class="primary" id="mtAddMarker">＋ Marker</button><button type="button" id="mtClearMarkers">Hapus Marker</button></div>
    </div>
    <div class="mt-ruler-row"><div class="mt-track-name-head">TRACK / LAYER</div><div class="mt-ruler" id="mtRuler"></div></div>
    <div class="mt-track-list" id="mtTrackList"><div class="mt-empty">Muat aset untuk membuat track timeline.</div></div>
@@ -1561,6 +1561,31 @@ function addOrUpdateLayerKeyframe(i,options={}){
  paintLayerKeyframes(i);renderAt(playhead);scheduleAutosave();
  setStatus('Keyframe layer '+(i+1)+' tersimpan pada '+t.toFixed(2)+' detik · '+ease+'.');trozalHistoryCommit('Keyframe layer '+(i+1));
 }
+function addGroupKeyframe(){
+ const i=selectedLayerIndex,group=timelineLayerGroups[i];
+ if(!group){setStatus('Pilih salah satu layer anggota grup terlebih dahulu.');return;}
+ const members=svgPieces.map((_,n)=>n).filter(n=>timelineLayerGroups[n]===group);
+ if(members.length<2){setStatus('Grup harus memiliki minimal dua layer.');return;}
+ if(members.some(n=>timelineTrackLocks[n])){setStatus('Ada anggota grup yang terkunci. Buka kunci semua anggota sebelum membuat keyframe grup.');return;}
+ const read=(id,d)=>{const el=$(id+i),v=el&&el.value!==''?Number(el.value):d;return Number.isFinite(v)?v:d};
+ const atPlayhead=!!$('kfAuto'+i)?.checked;
+ const t=trozalSnapTime(atPlayhead?playhead:read('kfTime',playhead),{layer:i});
+ const ease=$('kfEase'+i)?.value||'easeInOut';
+ const bezier={x1:Math.max(0,Math.min(1,read('kfBx1',.25))),y1:Math.max(-2,Math.min(2,read('kfBy1',.1))),x2:Math.max(0,Math.min(1,read('kfBx2',.25))),y2:Math.max(-2,Math.min(2,read('kfBy2',1)))};
+ const frame={t,x:read('kfX',0),y:read('kfY',0),rot:read('kfRot',0),scale:Math.max(.01,Math.min(5,read('kfScale',100)/100)),alpha:Math.max(0,Math.min(1,read('kfAlpha',100)/100)),ease,bezier};
+ trozalHistoryBegin();
+ members.forEach(n=>{
+  layerKeyframes[n]=layerKeyframes[n]||[];
+  const copy={...frame,bezier:{...bezier}};
+  const at=layerKeyframes[n].findIndex(k=>Math.abs(k.t-t)<.001);
+  if(at>=0)layerKeyframes[n][at]=copy;else layerKeyframes[n].push(copy);
+  layerKeyframes[n].sort((a,b)=>a.t-b.t);
+  const time=$('kfTime'+n);if(time)time.value=t.toFixed(2);
+  paintLayerKeyframes(n);
+ });
+ renderAt(playhead);scheduleAutosave();trozalHistoryCommit('Keyframe grup '+group);
+ setStatus('Keyframe grup "'+group+'" disimpan pada '+t.toFixed(2)+' detik untuk '+members.length+' layer.');
+}
 function removeLastLayerKeyframe(i){
  if(!layerKeyframes[i]?.length)return;trozalHistoryBegin();
  layerKeyframes[i].pop();paintLayerKeyframes(i);renderAt(playhead);scheduleAutosave();trozalHistoryCommit("Hapus keyframe layer "+(i+1));
@@ -1775,6 +1800,7 @@ function wireMultiTrackEditor(){
   chosen.forEach(i=>{timelineLayerGroups[i]=name;delete timelineGroupSelected[i];});
   refreshTimelineEditor();scheduleAutosave();setStatus('Grup "'+name+'" dibuat dari '+chosen.length+' layer. Anggota grup kini dapat digeser bersama.');trozalHistoryCommit('Buat grup '+name);
  };
+ $('mtGroupKeyframe').onclick=addGroupKeyframe;
  $('mtToggleGroupVisibility').onclick=()=>{
   const group=timelineLayerGroups[selectedLayerIndex];
   if(!group){setStatus('Pilih layer yang sudah menjadi anggota grup terlebih dahulu.');return;}
