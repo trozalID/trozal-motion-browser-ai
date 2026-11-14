@@ -4224,9 +4224,9 @@ function trozalInitThemeCatalog(){
  const choose=theme=>{trozalApplyTheme(theme);results.hidden=true;};
  select.addEventListener('change',()=>choose(select.value));
  document.querySelectorAll('[data-theme-pick]').forEach(btn=>btn.addEventListener('click',()=>choose(btn.dataset.themePick)));
-  const normalizeThemeText=value=>String(value||'').toLocaleLowerCase('id').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+  const normalizeThemeText=value=>String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   const rankSuggestions=query=>{
-   const q=normalizeThemeText(query),tokens=q.split(/\\s+/).filter(t=>t.length>1);
+   const q=normalizeThemeText(query),tokens=q.split(' ').filter(t=>t.length>1);
    if(!tokens.length)return catalogue.slice(0,8);
    return catalogue.map((theme,index)=>{
     const name=normalizeThemeText(theme),words=name.split(' ');
