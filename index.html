@@ -309,7 +309,8 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 .mt-track-list{max-height:205px;overflow:auto;overscroll-behavior:contain;scrollbar-color:#8d6d32 #211e18}
 .mt-track-row{min-height:34px;border-bottom:1px solid rgba(202,171,112,.11)}
 .mt-track-row.selected .mt-track-label{background:rgba(212,170,75,.12);border-color:#a88035}
-.mt-group-pick{width:14px;height:14px;accent-color:#70d9b2;flex:0 0 auto}.mt-group-tag{font-size:9px;line-height:1.2;padding:2px 4px;border-radius:4px;background:#21483d;color:#a8f0d1;max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mt-toolbar-actions #mtGroupName{background:#0b1e19;color:#eaf5ef;border:1px solid #315b4d;border-radius:6px;padding:6px;font-size:11px;max-width:112px}
+.mt-group-pick{width:14px;height:14px;accent-color:#70d9b2;flex:0 0 auto}.mt-group-tag{font-size:9px;line-height:1.2;padding:2px 4px;border-radius:4px;background:#21483d;color:#a8f0d1;max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mt-hierarchy-tag{display:inline-flex;align-items:center;max-width:108px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 5px;border:1px solid #456b83;border-radius:5px;background:#142a38;color:#9ed9f2;font-size:9px;line-height:1.3}.mt-toolbar-actions #mtGroupName{background:#0b1e19;color:#eaf5ef;border:1px solid #315b4d;border-radius:6px;padding:6px;font-size:11px;max-width:112px}
 .mt-track-label{height:28px;min-width:0;display:flex;align-items:center;gap:3px;padding:2px 4px;border:1px solid transparent;border-radius:5px}
 .mt-track-label button{flex:0 0 auto;border:0;background:transparent;padding:3px 4px;font-size:10px;color:#cbb989}
 .mt-track-label .mt-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;flex:1;font-size:9px;color:#eee0ba}
@@ -1786,7 +1787,7 @@ function refreshTimelineEditor(){
    return '<div class="mt-track-row '+(selectedLayerIndex===i?'selected':'')+'" data-mt-row="'+i+'">'+
     '<div class="mt-track-label">'+
      '<input type="checkbox" class="mt-group-pick" data-mt-group-pick="'+i+'" aria-label="Pilih layer untuk grup" '+(timelineGroupSelected[i]?'checked':'')+'>'+
-     (timelineLayerGroups[i]?'<span class="mt-group-tag" title="Grup '+escapeLayerName(timelineLayerGroups[i])+'">▦ '+escapeLayerName(timelineLayerGroups[i])+'</span>':'')+
+     (timelineLayerGroups[i]?'<span class="mt-group-tag" title="Grup '+escapeLayerName(timelineLayerGroups[i])+'">▦ '+escapeLayerName(timelineLayerGroups[i])+'</span>'+(timelineGroupParents[timelineLayerGroups[i]]?'<span class="mt-hierarchy-tag" title="Anak dari grup '+escapeLayerName(timelineGroupParents[timelineLayerGroups[i]])+'">↳ '+escapeLayerName(timelineGroupParents[timelineLayerGroups[i]])+'</span>':''):'')+
      '<button type="button" class="mt-eye" data-mt-eye="'+i+'" title="Tampilkan/sembunyikan layer">'+(visible?'◉':'○')+'</button>'+
      '<button type="button" class="mt-lock '+(locked?'locked':'')+'" data-mt-lock="'+i+'" aria-pressed="'+locked+'" title="Kunci klip di timeline">'+(locked?'🔒':'↔')+'</button>'+
      '<button type="button" class="mt-name" data-mt-select="'+i+'" title="'+name+'">'+name+'</button>'+
