@@ -1771,8 +1771,9 @@ function wireMultiTrackEditor(){
   const chosen=Object.keys(timelineGroupSelected).filter(k=>timelineGroupSelected[k]&&Number(k)<svgPieces.length).map(Number);
   if(chosen.length<2){setStatus('Pilih minimal dua layer untuk membuat grup.');return;}
   const name=String($('mtGroupName').value||'').trim()||('Grup '+(new Set(Object.values(timelineLayerGroups)).size+1));
+  trozalHistoryBegin();
   chosen.forEach(i=>{timelineLayerGroups[i]=name;delete timelineGroupSelected[i];});
-  refreshTimelineEditor();scheduleAutosave();setStatus('Grup "'+name+'" dibuat dari '+chosen.length+' layer. Visibilitas grup dapat diatur bersama.');
+  refreshTimelineEditor();scheduleAutosave();setStatus('Grup "'+name+'" dibuat dari '+chosen.length+' layer. Anggota grup kini dapat digeser bersama.');trozalHistoryCommit('Buat grup '+name);
  };
  $('mtToggleGroupVisibility').onclick=()=>{
   const group=timelineLayerGroups[selectedLayerIndex];
@@ -1786,8 +1787,9 @@ function wireMultiTrackEditor(){
  $('mtDissolveGroup').onclick=()=>{
   const group=timelineLayerGroups[selectedLayerIndex];
   if(!group){setStatus('Pilih salah satu layer dalam grup yang akan dilepas.');return;}
+  trozalHistoryBegin();
   svgPieces.forEach((_,i)=>{if(timelineLayerGroups[i]===group)delete timelineLayerGroups[i];});
-  refreshTimelineEditor();scheduleAutosave();setStatus('Grup "'+group+'" dilepas; layer tetap tersedia secara terpisah.');
+  refreshTimelineEditor();scheduleAutosave();setStatus('Grup "'+group+'" dilepas; layer tetap tersedia secara terpisah.');trozalHistoryCommit('Lepas grup '+group);
  };
  $('mtClearMarkers').onclick=()=>{
   if(!timelineMarkers.length){setStatus('Belum ada marker untuk dihapus.');return;}
@@ -1829,8 +1831,11 @@ function wireMultiTrackEditor(){
   const i=Number(clip.dataset.mtClip);mtSelectLayer(i);
   if(timelineTrackLocks[i]){setStatus('Track terkunci. Buka kunci sebelum memindahkan atau trim klip.');e.preventDefault();return;}
   const time=mtLayerTimes(i),edge=e.target.closest('[data-mt-edge]')?.dataset.mtEdge||'move';
+  const groupName=timelineLayerGroups[i]||'',groupMembers=groupName?svgPieces.map((_,j)=>j).filter(j=>timelineLayerGroups[j]===groupName):[i];
+  if(groupMembers.some(j=>timelineTrackLocks[j])){setStatus('Ada anggota grup yang terkunci. Buka kunci semua anggota sebelum menggeser grup.');e.preventDefault();return;}
   const lane=clip.parentElement,rect=lane.getBoundingClientRect();
-  trozalHistoryBegin();timelineDragState={index:i,edge,pointerX:e.clientX,laneWidth:Math.max(1,rect.width),duration:time.duration,start:time.start,end:time.end,delay:time.delay};
+  const memberTimes=groupMembers.map(j=>({index:j,...mtLayerTimes(j)}));
+  trozalHistoryBegin();timelineDragState={index:i,groupName,groupMembers,memberTimes,edge,pointerX:e.clientX,laneWidth:Math.max(1,rect.width),duration:time.duration,start:time.start,end:time.end,delay:time.delay};
   e.preventDefault();
  });
  window.addEventListener('pointermove',e=>{
@@ -1844,11 +1849,21 @@ function wireMultiTrackEditor(){
    start=trozalClamp(trozalSnapTime(Math.max(drag.delay,Math.min(drag.duration-length,drag.start+delta)),{layer:drag.index}),drag.delay,Math.max(drag.delay,drag.duration-length));
    end=start+length;
   }
-  const startInput=$('autoLayerStart'+drag.index),endInput=$('autoLayerEnd'+drag.index);
-  if(startInput)startInput.value=Math.max(0,start-drag.delay).toFixed(2);
-  if(endInput)endInput.value=end.toFixed(2);
-  const clip=document.querySelector('[data-mt-clip="'+drag.index+'"]');
-  if(clip){clip.style.left=(start/drag.duration*100)+'%';clip.style.width=(Math.max(.6,(end-start)/drag.duration*100))+'%';}
+  const targets=drag.edge==='move'&&drag.groupMembers?.length>1?drag.memberTimes:[{index:drag.index,duration:drag.duration,delay:drag.delay,start:drag.start,end:drag.end}];
+  targets.forEach(member=>{
+   let memberStart=start,memberEnd=end;
+   if(drag.edge==='move'&&drag.groupMembers?.length>1){
+    const length=member.end-member.start;
+    memberStart=trozalClamp(member.start+(start-drag.start),member.delay,Math.max(member.delay,member.duration-length));
+    memberStart=trozalClamp(trozalSnapTime(memberStart,{layer:member.index}),member.delay,Math.max(member.delay,member.duration-length));
+    memberEnd=memberStart+length;
+   }
+   const startInput=$('autoLayerStart'+member.index),endInput=$('autoLayerEnd'+member.index);
+   if(startInput)startInput.value=Math.max(0,memberStart-member.delay).toFixed(2);
+   if(endInput)endInput.value=memberEnd.toFixed(2);
+   const memberClip=document.querySelector('[data-mt-clip="'+member.index+'"]');
+   if(memberClip){memberClip.style.left=(memberStart/member.duration*100)+'%';memberClip.style.width=(Math.max(.6,(memberEnd-memberStart)/member.duration*100))+'%';}
+  });
   renderAt(playhead);
  });
  window.addEventListener('pointerup',()=>{
@@ -1877,7 +1892,7 @@ function trozalSnapTime(value,opts={}){
 function updateSnapButton(){const b=$('mtSnapToggle');if(!b)return;b.textContent=timelineSnapEnabled?'🧲 Snap ON':'🧲 Snap OFF';b.setAttribute('aria-pressed',String(timelineSnapEnabled));b.title=timelineSnapEnabled?'Snap aktif: frame, keyframe, marker, dan tepi klip':'Snap nonaktif'}
 function trozalHistorySnapshot(){
  const controls={};document.querySelectorAll('#autoLayerControls input, #autoLayerControls select').forEach(el=>{if(!el.id)return;controls[el.id]=el.type==='checkbox'?{checked:el.checked}:{value:el.value}});
- return JSON.stringify({layerKeyframes,timelineMarkers,timelineTrackLocks,controls,playhead});
+ return JSON.stringify({layerKeyframes,timelineMarkers,timelineTrackLocks,timelineLayerGroups,controls,playhead});
 }
 function trozalHistoryPush(label){
  if(trozalHistoryBusy)return;const state=trozalHistorySnapshot();if(trozalUndoIndex>=0&&trozalUndoStack[trozalUndoIndex]?.state===state)return;
@@ -1889,7 +1904,7 @@ function trozalHistoryCommit(label){trozalHistoryPush(label||'Perubahan')}
 function updateHistoryButtons(){const u=$('mtUndo'),r=$('mtRedo');if(u)u.disabled=trozalUndoIndex<=0;if(r)r.disabled=trozalUndoIndex<0||trozalUndoIndex>=trozalUndoStack.length-1}
 function trozalRestoreHistory(index){
  if(index<0||index>=trozalUndoStack.length)return;trozalHistoryBusy=true;
- try{const snap=JSON.parse(trozalUndoStack[index].state);layerKeyframes=Array.isArray(snap.layerKeyframes)?snap.layerKeyframes:[];timelineMarkers=Array.isArray(snap.timelineMarkers)?snap.timelineMarkers:[];timelineTrackLocks=snap.timelineTrackLocks||{};
+ try{const snap=JSON.parse(trozalUndoStack[index].state);layerKeyframes=Array.isArray(snap.layerKeyframes)?snap.layerKeyframes:[];timelineMarkers=Array.isArray(snap.timelineMarkers)?snap.timelineMarkers:[];timelineTrackLocks=snap.timelineTrackLocks||{};timelineLayerGroups=snap.timelineLayerGroups||{};
   Object.entries(snap.controls||{}).forEach(([id,v])=>{const el=$(id);if(!el)return;if('checked'in v)el.checked=!!v.checked;else if('value'in v)el.value=v.value});
   playhead=trozalClamp(Number(snap.playhead)||0,0,+$('duration').value||10);for(let i=0;i<svgPieces.length;i++)paintLayerKeyframes(i);
   renderAt(playhead);refreshTimelineEditor();scheduleAutosave();trozalUndoIndex=index;updateHistoryButtons();setStatus('Undo/Redo: '+(trozalUndoStack[index].label||'perubahan')+' dipulihkan.');
