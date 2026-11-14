@@ -1578,12 +1578,19 @@ function trozalGroupDescendants(root){
  const out=new Set([root]);let changed=true;while(changed){changed=false;Object.entries(timelineGroupParents).forEach(([child,parent])=>{if(out.has(parent)&&!out.has(child)){out.add(child);changed=true;}});}return out;
 }
 function trozalGroupMembers(root){const names=trozalGroupDescendants(root);return svgPieces.map((_,i)=>i).filter(i=>names.has(timelineLayerGroups[i]));}
+function trozalGroupDirectMembers(group){return svgPieces.map((_,i)=>i).filter(i=>timelineLayerGroups[i]===group);}
+function trozalLayerHierarchyTransform(index,t,local){
+ const group=timelineLayerGroups[index];if(!group)return `translate(${local.x}%,${local.y}%) rotate(${local.rot}deg) scale(${local.scale})`;
+ const chain=[];let parent=timelineGroupParents[group],seen=new Set();while(parent&&!seen.has(parent)){seen.add(parent);chain.unshift(parent);parent=timelineGroupParents[parent];}
+ const parts=[];chain.forEach(name=>{const driver=trozalGroupDirectMembers(name)[0];if(driver===undefined)return;const m=getLayerMotion(driver,t);parts.push(`translate(${m.x}%,${m.y}%) rotate(${m.rot}deg) scale(${m.scale})`);});
+ parts.push(`translate(${local.x}%,${local.y}%) rotate(${local.rot}deg) scale(${local.scale})`);return parts.join(' ');
+}
 function trozalGroupDepth(name){let depth=0,seen=new Set(),p=timelineGroupParents[name];while(p&&!seen.has(p)){seen.add(p);depth++;p=timelineGroupParents[p];}return depth;}
 function trozalRefreshHierarchySelect(){const el=$('mtHierarchyParent');if(!el)return;const current=el.value;const groups=[...new Set(Object.values(timelineLayerGroups))].sort((a,b)=>a.localeCompare(b));el.innerHTML='<option value="">— Parent —</option>'+groups.map(g=>'<option value="'+escapeLayerName(g)+'">'+('　'.repeat(Math.min(5,trozalGroupDepth(g)))+'▦ '+escapeLayerName(g))+'</option>').join('');if(groups.includes(current))el.value=current;}
 function addGroupKeyframe(){
  const i=selectedLayerIndex,group=timelineLayerGroups[i];
  if(!group){setStatus('Pilih salah satu layer anggota grup terlebih dahulu.');return;}
- const members=trozalGroupMembers(group);
+ const members=trozalGroupDirectMembers(group);
  if(members.length<2){setStatus('Grup harus memiliki minimal dua layer.');return;}
  if(members.some(n=>timelineTrackLocks[n])){setStatus('Ada anggota grup yang terkunci. Buka kunci semua anggota sebelum membuat keyframe grup.');return;}
  const read=(id,d)=>{const el=$(id+i),v=el&&el.value!==''?Number(el.value):d;return Number.isFinite(v)?v:d};
@@ -1662,7 +1669,7 @@ function renderSplitPieces(t){
   const sceneIndex=svgLayerSceneIndices[i]??-1,ranges=window.trozalScenePlaybackRanges;
   const range=sceneIndex>=0&&Array.isArray(ranges)?ranges[sceneIndex]:null;
   const sceneAlpha=trozalSceneOpacity(t,range);
-  el.style.transform=`translate(${m.x}%,${m.y}%) rotate(${m.rot}deg) scale(${m.scale})`;
+  el.style.transform=trozalLayerHierarchyTransform(i,t,m);
   el.style.opacity=m.alpha*sceneAlpha;el.style.display=visible&&solo&&sceneAlpha>0?'flex':'none';
  });
 }
