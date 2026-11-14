@@ -896,7 +896,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
   <section class="multi-track-editor" id="multiTrackEditor" aria-label="Multi-track timeline editor">
    <div class="mt-toolbar">
     <div><strong>Multi-Track Timeline</strong><small id="mtTrackSummary">Komposisi utama · 1 track</small></div>
-    <div class="mt-toolbar-actions"><button type="button" id="mtUndo" title="Undo · Ctrl+Z" disabled>↶ Undo</button><button type="button" id="mtRedo" title="Redo · Ctrl+Y" disabled>↷ Redo</button><button type="button" id="mtSnapToggle" aria-pressed="true" title="Snap ke frame, keyframe, marker, dan tepi klip">🧲 Snap ON</button><input id="mtGroupName" type="text" maxlength="28" placeholder="Nama grup" aria-label="Nama grup layer" style="width:112px;min-width:90px"><button type="button" id="mtCreateGroup" title="Gabungkan layer yang dicentang">⊞ Buat Grup</button><select id="mtHierarchyParent" aria-label="Pilih parent grup" title="Pilih parent untuk grup terpilih" style="max-width:125px;background:#0b1e19;color:#eaf5ef;border:1px solid #315b4d;border-radius:6px;padding:6px;font-size:10px"><option value="">— Parent —</option></select><button type="button" id="mtSetGroupParent" title="Jadikan grup terpilih sebagai anak dari parent">↳ Jadikan Anak</button><button type="button" id="mtClearGroupParent" title="Lepaskan grup dari parent">↰ Naikkan</button><button type="button" id="mtGroupKeyframe" title="Keyframe grup dan semua turunannya">◆ Keyframe Grup</button><button type="button" id="mtToggleGroupVisibility" title="Tampilkan atau sembunyikan grup terpilih">◉ Grup</button><button type="button" id="mtSelectGroupMembers" title="Pilih atau batalkan pilihan semua layer dalam grup dan turunannya">☑ Isi Grup</button><button type="button" id="mtDissolveGroup" title="Lepaskan layer dari grup">Lepas Grup</button><button type="button" id="mtBuildTracks" title="Pisahkan elemen SVG menjadi track yang dapat diedit">＋ Pecah SVG</button><button type="button" class="primary" id="mtAddMarker">＋ Marker</button><button type="button" id="mtClearMarkers">Hapus Marker</button></div>
+    <div class="mt-toolbar-actions"><button type="button" id="mtUndo" title="Undo · Ctrl+Z" disabled>↶ Undo</button><button type="button" id="mtRedo" title="Redo · Ctrl+Y" disabled>↷ Redo</button><button type="button" id="mtSnapToggle" aria-pressed="true" title="Snap ke frame, keyframe, marker, dan tepi klip">🧲 Snap ON</button><input id="mtGroupName" type="text" maxlength="28" placeholder="Nama grup" aria-label="Nama grup layer" style="width:112px;min-width:90px"><button type="button" id="mtCreateGroup" title="Gabungkan layer yang dicentang">⊞ Buat Grup</button><select id="mtHierarchyParent" aria-label="Pilih parent grup" title="Pilih parent untuk grup terpilih" style="max-width:125px;background:#0b1e19;color:#eaf5ef;border:1px solid #315b4d;border-radius:6px;padding:6px;font-size:10px"><option value="">— Parent —</option></select><button type="button" id="mtSetGroupParent" title="Jadikan grup terpilih sebagai anak dari parent">↳ Jadikan Anak</button><button type="button" id="mtClearGroupParent" title="Lepaskan grup dari parent">↰ Naikkan</button><button type="button" id="mtGroupKeyframe" title="Keyframe grup dan semua turunannya">◆ Keyframe Grup</button><button type="button" id="mtToggleGroupVisibility" title="Tampilkan atau sembunyikan grup terpilih">◉ Grup</button><button type="button" id="mtSelectGroupMembers" title="Pilih atau batalkan pilihan semua layer dalam grup dan turunannya">☑ Isi Grup</button><button type="button" id="mtToggleGroupLock" title="Kunci atau buka kunci semua layer dalam grup dan turunannya">🔒 Kunci Isi</button><button type="button" id="mtSoloGroup" title="Fokus sementara pada grup terpilih; klik lagi untuk pulihkan visibilitas">◎ Solo Grup</button><button type="button" id="mtDissolveGroup" title="Lepaskan layer dari grup">Lepas Grup</button><button type="button" id="mtBuildTracks" title="Pisahkan elemen SVG menjadi track yang dapat diedit">＋ Pecah SVG</button><button type="button" class="primary" id="mtAddMarker">＋ Marker</button><button type="button" id="mtClearMarkers">Hapus Marker</button></div>
    </div>
    <div class="mt-ruler-row"><div class="mt-track-name-head">TRACK / LAYER</div><div class="mt-ruler" id="mtRuler"></div></div>
    <div class="mt-track-list" id="mtTrackList"><div class="mt-empty">Muat aset untuk membuat track timeline.</div></div>
@@ -1160,6 +1160,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
 const $=id=>document.getElementById(id);
 let sourceSvg='', sourceUrl='', sourceType='', files=[], playing=false, raf=0, startAt=0, playhead=0, lastBlob=null, lastDownloadName='animove-render.webm', currentColor='#ffbd45', currentMode='single', svgPieces=[], svgWasSplit=false, svgLayerNames=[], svgLayerHints=[], svgLayerSceneIndices=[], trozalSceneObjectSplitMode=false, preserveSvgColors=false, soloLayerIndex=-1, selectedLayerIndex=-1, layerKeyframes=[];
 let timelineMarkers=[], timelineTrackLocks={}, timelineLayerGroups={}, timelineGroupParents={}, timelineGroupSelected={}, timelineDragState=null, keyframeGraphDragState=null;
+let timelineGroupSoloSnapshot=null; // Temporary visibility snapshot; intentionally excluded from project serialization.
 let timelineSnapEnabled=true, motionPathDragState=null, trozalUndoStack=[], trozalUndoIndex=-1, trozalHistoryBusy=false;
 // HTML-to-Motion uses an isolated same-origin document and DOM capture; it is not rasterized through SVG foreignObject.
 let trozalMetadataActiveSource=null;
@@ -1867,6 +1868,38 @@ function wireMultiTrackEditor(){
   }
   refreshTimelineEditor();
   setStatus((allSelected?'Pilihan isi grup dibatalkan. ':'Isi grup dipilih: ')+group+' · '+members.length+' layer termasuk turunannya.');
+ };
+ $('mtToggleGroupLock').onclick=()=>{
+  const group=timelineLayerGroups[selectedLayerIndex];
+  if(!group){setStatus('Pilih salah satu layer anggota grup terlebih dahulu.');return;}
+  const members=trozalGroupMembers(group);
+  if(!members.length){setStatus('Grup ini belum memiliki layer anggota.');return;}
+  const shouldLock=members.some(i=>!timelineTrackLocks[i]);
+  trozalHistoryBegin();
+  members.forEach(i=>{timelineTrackLocks[i]=shouldLock;});
+  refreshTimelineEditor();scheduleAutosave();trozalHistoryCommit((shouldLock?'Kunci':'Buka kunci')+' isi grup '+group);
+  setStatus('Semua '+members.length+' layer dalam grup "'+group+'" '+(shouldLock?'dikunci':'dibuka kuncinya')+'.');
+ };
+ $('mtSoloGroup').onclick=()=>{
+  if(timelineGroupSoloSnapshot){
+   svgPieces.forEach((_,i)=>{const el=$('autoLayerVisible'+i);if(el&&Object.prototype.hasOwnProperty.call(timelineGroupSoloSnapshot,i))el.checked=timelineGroupSoloSnapshot[i];});
+   timelineGroupSoloSnapshot=null;
+   renderAt(playhead);refreshTimelineEditor();
+   $('mtSoloGroup').textContent='◎ Solo Grup';
+   setStatus('Mode Solo Grup dimatikan. Visibilitas semua layer dipulihkan.');
+   return;
+  }
+  const group=timelineLayerGroups[selectedLayerIndex];
+  if(!group){setStatus('Pilih salah satu layer anggota grup terlebih dahulu.');return;}
+  const members=trozalGroupMembers(group),memberSet=new Set(members);
+  if(!members.length){setStatus('Grup ini belum memiliki layer anggota.');return;}
+  const snapshot={};
+  svgPieces.forEach((_,i)=>{const el=$('autoLayerVisible'+i);snapshot[i]=el?el.checked:true;});
+  timelineGroupSoloSnapshot=snapshot;
+  svgPieces.forEach((_,i)=>{const el=$('autoLayerVisible'+i);if(el&&!memberSet.has(i))el.checked=false;});
+  renderAt(playhead);refreshTimelineEditor();
+  $('mtSoloGroup').textContent='↩ Pulihkan Solo';
+  setStatus('Fokus sementara pada grup "'+group+'" · '+members.length+' layer. Klik Pulihkan Solo untuk mengembalikan visibilitas sebelumnya.');
  };
  $('mtDissolveGroup').onclick=()=>{
   const group=timelineLayerGroups[selectedLayerIndex];
