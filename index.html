@@ -2910,23 +2910,43 @@ try{
  drawShapePathOnCanvas(ctx,baseW,baseH,evaluateMaskLayer(shapeMaskLayers[activeShapeMask]||shapeState,elapsed));
 }catch(e){ctx.restore();throw new Error('Gagal menggambar aset pada frame '+frame+' ('+elapsed.toFixed(3)+'s): '+(e?.message||e))}ctx.restore();drawTextLayerToCanvas(ctx,w,h,elapsed);drawExportVisualEffects(ctx,w,h,elapsed,motion,baseW,baseH,cx,cy,turboMode);const renderPercent=Math.max(1,Math.min(100,Math.round(((frame+1)/totalFrames)*100)));const progressNow=performance.now(),shouldPaintProgress=frame===0||frame+1>=totalFrames||progressNow-lastProgressPaintAt>=120;if(shouldPaintProgress){lastProgressPaintAt=progressNow;setExportStatus('Rendering… '+renderPercent+'%');setRenderProgress(renderPercent,'Merender frame '+(frame+1)+'/'+totalFrames,'running')}if(frameSequenceMode){let png;try{png=await new Promise((resolve,reject)=>{try{canvas.toBlob(resolve,'image/png')}catch(e){reject(e)}})}catch(blobError){throw new Error('Canvas tidak dapat diekspor pada frame '+frame+' ('+elapsed.toFixed(3)+'s). Penyebab belum dapat dipastikan (misalnya SVG/foreignObject atau aset eksternal yang tidak mengizinkan CORS): '+(blobError?.message||blobError))}if(!png)throw new Error('Browser mengembalikan PNG kosong pada frame '+frame+' ('+elapsed.toFixed(3)+'s).');pngZip.file('frame_'+String(frame).padStart(6,'0')+'.png',png,{compression:'STORE'});frame++;trozalScheduleRenderTask(draw)}else{frame++;setTimeout(()=>trozalScheduleRenderTask(draw),step)}}
 
-/* RENDER SCHEDULER: both real-time video and PNG frame rendering dispatch through
-   one MessageChannel queue. The video timer only controls the requested FPS cadence;
-   cursor position, hover state and progress-bar painting never schedule render work. */
+/* RENDER SCHEDULER: real-time video and PNG frame rendering share one FIFO queue.
+   Only one async frame task runs at a time. The FPS timer controls cadence; mouse
+   position and progress-bar painting do not schedule or unlock render work. */
 const trozalRenderTaskQueue=[];
-let trozalRenderTaskChannel=null;
-function trozalScheduleRenderTask(task){
- if(typeof MessageChannel!=='function'){setTimeout(task,0);return;}
- if(!trozalRenderTaskChannel){
-  trozalRenderTaskChannel=new MessageChannel();
-  trozalRenderTaskChannel.port1.onmessage=()=>{
-   const next=trozalRenderTaskQueue.shift();
-   if(next)next();
-   if(trozalRenderTaskQueue.length)trozalRenderTaskChannel.port2.postMessage(0);
-  };
+let trozalRenderTaskChannel=null,trozalRenderTaskRunning=false;
+async function trozalDrainRenderTaskQueue(){
+ if(trozalRenderTaskRunning)return;
+ const next=trozalRenderTaskQueue.shift();
+ if(!next)return;
+ trozalRenderTaskRunning=true;
+ try{await next()}
+ finally{
+  trozalRenderTaskRunning=false;
+  if(trozalRenderTaskQueue.length){
+   if(trozalRenderTaskChannel)trozalRenderTaskChannel.port2.postMessage(0);
+   else setTimeout(trozalDrainRenderTaskQueue,0);
+  }
  }
+}
+function trozalScheduleRenderTask(task){
+ if(typeof task!=='function')throw new TypeError('Render task must be a function');
  trozalRenderTaskQueue.push(task);
- if(trozalRenderTaskQueue.length===1)trozalRenderTaskChannel.port2.postMessage(0);
+ if(trozalRenderTaskRunning||trozalRenderTaskQueue.length>1)return;
+ if(typeof MessageChannel==='function'){
+  try{
+   if(!trozalRenderTaskChannel){
+    trozalRenderTaskChannel=new MessageChannel();
+    trozalRenderTaskChannel.port1.onmessage=()=>{trozalDrainRenderTaskQueue().catch(error=>console.error('Render scheduler task failed:',error))};
+   }
+   trozalRenderTaskChannel.port2.postMessage(0);
+   return;
+  }catch(channelError){
+   trozalRenderTaskChannel=null;
+   console.warn('MessageChannel unavailable; using timer render queue fallback.',channelError);
+  }
+ }
+ setTimeout(()=>{trozalDrainRenderTaskQueue().catch(error=>console.error('Render scheduler task failed:',error))},0);
 }
 async function draw(){
  if(trozalRenderCancelRequested)return;
