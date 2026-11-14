@@ -781,6 +781,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
  <h3 id="visualSceneSequencerTitle" tabindex="-1">▰ VISUAL SCENE SEQUENCER · TIMELINE</h3>
  <p class="help">Atur setiap adegan visual secara terpisah. Urutan dapat diubah dengan drag-and-drop, durasi dapat berbeda, dan setiap adegan memiliki transisi, gerakan kamera, serta gaya visual sendiri.</p>
  <div class="btnrow"><button type="button" class="primary" id="buildVisualSequenceBtn">✦ SUSUN ADEGAN DARI PROMPT</button><button type="button" id="addVisualSceneBtn">＋ TAMBAH ADEGAN</button></div>
+ <div class="btnrow"><button type="button" id="balanceVisualSceneDurationsBtn">⏱ RATakan DURASI ADEGAN</button><span class="help" id="visualSceneDurationBalanceStatus">Atur semua adegan agar durasinya sama dan total mengikuti durasi proyek.</span></div>
  <div class="visual-sequence-summary" id="visualSceneTimelineSummary">Belum ada adegan. Masukkan prompt pada panel ungu lalu susun adegan di sini.</div>
  <div id="visualSceneList" class="visual-scene-list"></div>
  <div class="btnrow"><button type="button" class="primary" id="generateVisualSequenceBtn">▶ GENERATE DARI TIMELINE</button><button type="button" id="importVisualScenesBtn">▣ IMPOR SCENE KE MULTI-TRACK</button></div>
@@ -3092,6 +3093,17 @@ async function buildVisualSceneSequenceFromPrompt(){
   if(button){button.disabled=false;button.textContent='✦ SUSUN ADEGAN DARI PROMPT';}
  }
 }
+function balanceVisualSceneDurations(){
+ if(!visualSceneSequence.length){const status=$('visualSceneDurationBalanceStatus');if(status)status.textContent='Susun atau tambahkan adegan terlebih dahulu.';return;}
+ const target=Math.max(5,Math.min(60,Number($('visualMotionDuration')?.value)||15));
+ const totalTicks=Math.round(target*100),base=Math.floor(totalTicks/visualSceneSequence.length),remainder=totalTicks-base*visualSceneSequence.length;
+ if(base<10){const status=$('visualSceneDurationBalanceStatus');if(status)status.textContent='Terlalu banyak adegan untuk durasi proyek ini. Kurangi jumlah adegan atau tambah durasi proyek.';return;}
+ visualSceneSequence.forEach((scene,index)=>{scene.duration=(base+(index<remainder?1:0))/100;});
+ renderVisualSceneSequence();
+ const status=$('visualSceneDurationBalanceStatus');if(status)status.textContent=visualSceneSequence.length+' adegan diratakan · total tepat '+(totalTicks/100).toFixed(2)+' detik.';
+ updateVisualScenePlayheadIndicator();
+}
+$('balanceVisualSceneDurationsBtn').addEventListener('click',balanceVisualSceneDurations);
 $('buildVisualSequenceBtn').addEventListener('click',buildVisualSceneSequenceFromPrompt);
 $('addVisualSceneBtn').addEventListener('click',()=>{
  if(visualSceneSequence.length>=12){$('visualMotionStatus').textContent='Maksimal 12 adegan untuk satu timeline.';return;}
