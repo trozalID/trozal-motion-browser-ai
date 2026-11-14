@@ -81,7 +81,7 @@ async function testTimerFallbackHandlesRejectedTask() {
     setTimeout: fn => { timers.push(fn); return timers.length; },
     console: { error: (...args) => errors.push(args) }
   });
-  vm.runInContext(schedulerSource + '\\nglobalThis.schedule = trozalScheduleRenderTask;', context);
+  vm.runInContext(schedulerSource + '\nglobalThis.schedule = trozalScheduleRenderTask;', context);
   const order = [];
   context.schedule(async () => { throw new Error('expected test rejection'); });
   context.schedule(async () => { order.push('continued'); });
