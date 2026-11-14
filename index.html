@@ -309,6 +309,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 .mt-track-list{max-height:205px;overflow:auto;overscroll-behavior:contain;scrollbar-color:#8d6d32 #211e18}
 .mt-track-row{min-height:34px;border-bottom:1px solid rgba(202,171,112,.11)}
 .mt-track-row.selected .mt-track-label{background:rgba(212,170,75,.12);border-color:#a88035}
+.mt-group-pick{width:14px;height:14px;accent-color:#70d9b2;flex:0 0 auto}.mt-group-tag{font-size:9px;line-height:1.2;padding:2px 4px;border-radius:4px;background:#21483d;color:#a8f0d1;max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mt-toolbar-actions #mtGroupName{background:#0b1e19;color:#eaf5ef;border:1px solid #315b4d;border-radius:6px;padding:6px;font-size:11px;max-width:112px}
 .mt-track-label{height:28px;min-width:0;display:flex;align-items:center;gap:3px;padding:2px 4px;border:1px solid transparent;border-radius:5px}
 .mt-track-label button{flex:0 0 auto;border:0;background:transparent;padding:3px 4px;font-size:10px;color:#cbb989}
 .mt-track-label .mt-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;flex:1;font-size:9px;color:#eee0ba}
@@ -881,7 +882,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
   <section class="multi-track-editor" id="multiTrackEditor" aria-label="Multi-track timeline editor">
    <div class="mt-toolbar">
     <div><strong>Multi-Track Timeline</strong><small id="mtTrackSummary">Komposisi utama · 1 track</small></div>
-    <div class="mt-toolbar-actions"><button type="button" id="mtUndo" title="Undo · Ctrl+Z" disabled>↶ Undo</button><button type="button" id="mtRedo" title="Redo · Ctrl+Y" disabled>↷ Redo</button><button type="button" id="mtSnapToggle" aria-pressed="true" title="Snap ke frame, keyframe, marker, dan tepi klip">🧲 Snap ON</button><button type="button" id="mtBuildTracks" title="Pisahkan elemen SVG menjadi track yang dapat diedit">＋ Pecah SVG</button><button type="button" class="primary" id="mtAddMarker">＋ Marker</button><button type="button" id="mtClearMarkers">Hapus Marker</button></div>
+    <div class="mt-toolbar-actions"><button type="button" id="mtUndo" title="Undo · Ctrl+Z" disabled>↶ Undo</button><button type="button" id="mtRedo" title="Redo · Ctrl+Y" disabled>↷ Redo</button><button type="button" id="mtSnapToggle" aria-pressed="true" title="Snap ke frame, keyframe, marker, dan tepi klip">🧲 Snap ON</button><input id="mtGroupName" type="text" maxlength="28" placeholder="Nama grup" aria-label="Nama grup layer" style="width:112px;min-width:90px"><button type="button" id="mtCreateGroup" title="Gabungkan layer yang dicentang">⊞ Buat Grup</button><button type="button" id="mtToggleGroupVisibility" title="Tampilkan atau sembunyikan grup terpilih">◉ Grup</button><button type="button" id="mtDissolveGroup" title="Lepaskan layer dari grup">Lepas Grup</button><button type="button" id="mtBuildTracks" title="Pisahkan elemen SVG menjadi track yang dapat diedit">＋ Pecah SVG</button><button type="button" class="primary" id="mtAddMarker">＋ Marker</button><button type="button" id="mtClearMarkers">Hapus Marker</button></div>
    </div>
    <div class="mt-ruler-row"><div class="mt-track-name-head">TRACK / LAYER</div><div class="mt-ruler" id="mtRuler"></div></div>
    <div class="mt-track-list" id="mtTrackList"><div class="mt-empty">Muat aset untuk membuat track timeline.</div></div>
@@ -1144,7 +1145,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
 <script>
 const $=id=>document.getElementById(id);
 let sourceSvg='', sourceUrl='', sourceType='', files=[], playing=false, raf=0, startAt=0, playhead=0, lastBlob=null, lastDownloadName='animove-render.webm', currentColor='#ffbd45', currentMode='single', svgPieces=[], svgWasSplit=false, svgLayerNames=[], svgLayerHints=[], svgLayerSceneIndices=[], trozalSceneObjectSplitMode=false, preserveSvgColors=false, soloLayerIndex=-1, selectedLayerIndex=-1, layerKeyframes=[];
-let timelineMarkers=[], timelineTrackLocks={}, timelineDragState=null, keyframeGraphDragState=null;
+let timelineMarkers=[], timelineTrackLocks={}, timelineLayerGroups={}, timelineGroupSelected={}, timelineDragState=null, keyframeGraphDragState=null;
 let timelineSnapEnabled=true, motionPathDragState=null, trozalUndoStack=[], trozalUndoIndex=-1, trozalHistoryBusy=false;
 // HTML-to-Motion uses an isolated same-origin document and DOM capture; it is not rasterized through SVG foreignObject.
 let trozalMetadataActiveSource=null;
@@ -1722,6 +1723,8 @@ function refreshTimelineEditor(){
    const markers=timelineMarkers.map(m=>'<i class="mt-marker-line" style="left:'+Math.max(0,Math.min(100,Number(m.t)/duration*100))+'%"></i>').join('');
    return '<div class="mt-track-row '+(selectedLayerIndex===i?'selected':'')+'" data-mt-row="'+i+'">'+
     '<div class="mt-track-label">'+
+     '<input type="checkbox" class="mt-group-pick" data-mt-group-pick="'+i+'" aria-label="Pilih layer untuk grup" '+(timelineGroupSelected[i]?'checked':'')+'>'+
+     (timelineLayerGroups[i]?'<span class="mt-group-tag" title="Grup '+escapeLayerName(timelineLayerGroups[i])+'">▦ '+escapeLayerName(timelineLayerGroups[i])+'</span>':'')+
      '<button type="button" class="mt-eye" data-mt-eye="'+i+'" title="Tampilkan/sembunyikan layer">'+(visible?'◉':'○')+'</button>'+
      '<button type="button" class="mt-lock '+(locked?'locked':'')+'" data-mt-lock="'+i+'" aria-pressed="'+locked+'" title="Kunci klip di timeline">'+(locked?'🔒':'↔')+'</button>'+
      '<button type="button" class="mt-name" data-mt-select="'+i+'" title="'+name+'">'+name+'</button>'+
@@ -1764,11 +1767,35 @@ function wireMultiTrackEditor(){
   trozalHistoryBegin();const marker={id:'marker-'+Date.now(),t:Number(trozalSnapTime(playhead).toFixed(3)),label:'Marker '+String(timelineMarkers.length+1).padStart(2,'0')};
   timelineMarkers.push(marker);refreshTimelineEditor();scheduleAutosave();setStatus('Marker ditambahkan pada '+marker.t.toFixed(2)+' detik.');trozalHistoryCommit('Tambah marker');
  };
+ $('mtCreateGroup').onclick=()=>{
+  const chosen=Object.keys(timelineGroupSelected).filter(k=>timelineGroupSelected[k]&&Number(k)<svgPieces.length).map(Number);
+  if(chosen.length<2){setStatus('Pilih minimal dua layer untuk membuat grup.');return;}
+  const name=String($('mtGroupName').value||'').trim()||('Grup '+(new Set(Object.values(timelineLayerGroups)).size+1));
+  chosen.forEach(i=>{timelineLayerGroups[i]=name;delete timelineGroupSelected[i];});
+  refreshTimelineEditor();scheduleAutosave();setStatus('Grup "'+name+'" dibuat dari '+chosen.length+' layer. Visibilitas grup dapat diatur bersama.');
+ };
+ $('mtToggleGroupVisibility').onclick=()=>{
+  const group=timelineLayerGroups[selectedLayerIndex];
+  if(!group){setStatus('Pilih layer yang sudah menjadi anggota grup terlebih dahulu.');return;}
+  const members=svgPieces.map((_,i)=>i).filter(i=>timelineLayerGroups[i]===group);
+  const hide=members.some(i=>$('autoLayerVisible'+i)?.checked!==false);
+  trozalHistoryBegin();members.forEach(i=>{const el=$('autoLayerVisible'+i);if(el)el.checked=!hide;});
+  renderAt(playhead);refreshTimelineEditor();scheduleAutosave();trozalHistoryCommit('Visibilitas grup '+group);
+  setStatus('Grup "'+group+'" '+(hide?'disembunyikan':'ditampilkan')+' · '+members.length+' layer.');
+ };
+ $('mtDissolveGroup').onclick=()=>{
+  const group=timelineLayerGroups[selectedLayerIndex];
+  if(!group){setStatus('Pilih salah satu layer dalam grup yang akan dilepas.');return;}
+  svgPieces.forEach((_,i)=>{if(timelineLayerGroups[i]===group)delete timelineLayerGroups[i];});
+  refreshTimelineEditor();scheduleAutosave();setStatus('Grup "'+group+'" dilepas; layer tetap tersedia secara terpisah.');
+ };
  $('mtClearMarkers').onclick=()=>{
   if(!timelineMarkers.length){setStatus('Belum ada marker untuk dihapus.');return;}
   trozalHistoryBegin();timelineMarkers=[];refreshTimelineEditor();scheduleAutosave();setStatus('Semua marker timeline dihapus.');trozalHistoryCommit('Hapus semua marker');
  };
  editor.addEventListener('click',e=>{
+  const pick=e.target.closest('[data-mt-group-pick]');
+  if(pick){const i=Number(pick.dataset.mtGroupPick);timelineGroupSelected[i]=pick.checked;return;}
   const eye=e.target.closest('[data-mt-eye]');
   if(eye){const i=Number(eye.dataset.mtEye),el=$('autoLayerVisible'+i);if(el){trozalHistoryBegin();el.checked=!el.checked;renderAt(playhead);refreshTimelineEditor();scheduleAutosave();trozalHistoryCommit('Visibilitas layer '+(i+1));}return;}
   const lock=e.target.closest('[data-mt-lock]');
