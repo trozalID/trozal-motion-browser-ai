@@ -3692,7 +3692,114 @@ function buildVisualMotionHtml(){
  '*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080913;display:grid;place-items:center}.stage{position:relative;width:min(100vw,calc(100vh * '+aspect+'));height:min(100vh,calc(100vw / '+aspect+'));aspect-ratio:'+parts[0]+'/'+parts[1]+';overflow:hidden;isolation:isolate;background:#10192b}.scene{position:absolute;inset:0;opacity:0;animation-duration:'+total.toFixed(2)+'s;animation-timing-function:linear;animation-iteration-count:infinite}.art{position:absolute;inset:-5%;width:110%;height:110%;transform-origin:center}.art svg{width:100%;height:100%;display:block}.paper{filter:saturate(.82) contrast(1.05)}.hero{transform-box:fill-box;transform-origin:center;animation:heroFloat 3.8s ease-in-out infinite alternate}.cloud{animation:cloudDrift 17s linear infinite}.star{animation:twinkle 2.8s ease-in-out infinite alternate}.wave{animation:waveDrift 5s ease-in-out infinite alternate;transform-box:fill-box}.wheel{transform-box:fill-box;transform-origin:center;animation:wheelSpin 1.2s linear infinite}.snow{animation:snowFall 5s linear infinite}.ambient{position:absolute;left:var(--x);top:var(--y);width:var(--d);height:var(--d);border-radius:50%;background:'+accent+';box-shadow:0 0 12px '+accent+';opacity:0;animation:floatParticle 5s ease-in-out var(--delay) infinite}.scene:nth-child(even) .ambient{animation-direction:alternate}.stage:after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,#05071388 100%);z-index:5}'+
  '@keyframes heroFloat{0%{transform:translate3d(-1.2%,1.2%,0) rotate(-1deg)}100%{transform:translate3d(1.8%,-2%,0) rotate(1.5deg)}}@keyframes cloudDrift{from{translate:-3% 0}to{translate:5% 0}}@keyframes twinkle{from{opacity:.18}to{opacity:1}}@keyframes waveDrift{from{transform:translateY(9px)}to{transform:translateY(-12px)}}@keyframes wheelSpin{to{transform:rotate(360deg)}}@keyframes snowFall{from{transform:translateY(-30px)}to{transform:translateY(40px)}}@keyframes floatParticle{0%{opacity:0;transform:translateY(24px)}45%{opacity:.8}100%{opacity:0;transform:translateY(-34px)}}'+camCss+
  kfBlocks+'@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-delay:0ms!important}}'+
- '</style></head><body><main class="stage">'+sceneMarkup+'</main>\n</body></html>';
+ '</style></head><body><main class="stage">'+sceneMarkup+'</main>\n
+<script id="trozalPromptRecovery">
+(function(){
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ const val=(id,fallback='')=>($(id)?.value??fallback).toString().trim();
+ function generateSvgAiPrompt(){
+  const theme=val('svgAiTheme','Brand Identity & Logo');
+  const category=val('svgAiCategory','Minimal Swiss Design');
+  const specific=val('svgAiSpecific','Hero reveal');
+  const details=val('svgAiDetails','');
+  const filename=(val('svgAiFilename')||[theme,specific].join('_')).replace(/[^a-z0-9_-]+/gi,'_').replace(/^_+|_+$/g,'')||'trozal-motion';
+  const count=Math.max(1,Math.min(10,Number(val('svgAiConceptCount','3'))||3));
+  const duration=val('svgAiDuration','8 detik');
+  const ratio=val('svgAiRatio','16:9 landscape');
+  const resolution=Math.max(1080,Number(val('svgAiResolution','2160'))||2160);
+  let width=resolution,height=Math.round(resolution*9/16);
+  if(/^9:16/.test(ratio)){width=Math.round(resolution*9/16);height=resolution;}
+  else if(/^1:1/.test(ratio)){width=height=resolution;}
+  else if(/^4:5/.test(ratio)){width=Math.round(resolution*4/5);height=resolution;}
+  const preset=val('svgAiMotionPreset','Auto — adaptif terhadap tema');
+  const tempo=val('svgAiMotionTempo','Auto');
+  const intensity=val('svgAiMotionIntensity','Auto');
+  const palette=val('svgAiPalette','Auto sesuai tema');
+  const camera=val('svgAiCamera','Auto');
+  const transition=val('svgAiTransition','Auto');
+  const typography=val('svgAiTypography','Auto');
+  const prompt=[
+'ROLE',
+'You are a senior motion-graphics art director, HTML/CSS motion designer, and production front-end engineer.',
+'',
+'PROJECT BRIEF',
+'Main theme: '+theme,
+'Visual category: '+category,
+'Specific concept / subtheme: '+specific,
+'Additional art direction: '+(details||'Use professional creative judgment and make the visual metaphor specific, original, and coherent.'),
+'Palette direction: '+palette,
+'Camera direction: '+camera,
+'Transition direction: '+transition,
+'Typography direction: '+typography,
+'Motion choreography: '+preset,
+'Motion tempo: '+tempo,
+'Motion intensity: '+intensity,
+'Number of distinct concepts: exactly '+count,
+'Target duration per concept: '+duration,
+'Aspect ratio: '+ratio,
+'Canvas size: exactly '+width+' × '+height+' pixels',
+'Output filename base: '+filename,
+'',
+'DELIVERABLE',
+'Return exactly '+count+' complete, independent HTML documents. Each document must be separately usable and have a genuinely different concept, visual metaphor, layout, color treatment, typography hierarchy, and animation choreography. Do not return one document with several variations.',
+'',
+'STRICT HTML / CSS RULES',
+'- Every document must start with <!DOCTYPE html> and include html, head, title, style, and body.',
+'- Do not include JavaScript, script tags, SVG, canvas, external libraries, remote images, remote fonts, network requests, or framework dependencies.',
+'- Use HTML elements and CSS only. Build visual assets with gradients, borders, clip-path, masks, pseudo-elements, transforms, filters, and layered shapes.',
+'- Create one root element with id="animove-scene" whose CSS width and height are exactly '+width+'px and '+height+'px. Match the selected '+ratio+' ratio.',
+'- Make the scene responsive inside the fixed root canvas and keep all important content within safe margins.',
+'- Use CSS @keyframes and CSS transitions for all animation. Motion must be visible immediately on first load; do not depend on hover, click, or user input.',
+'- Set animation durations and delays so the complete choreography fits '+duration+'. Use deliberate easing, staggered entrances, controlled overshoot, and a clear final hold.',
+'- Avoid excessive flashing, random movement, layout shifts, and animation that finishes before the requested duration.',
+'- Use semantic class names and readable, organized CSS. Keep each document self-contained.',
+'- Include <title>'+filename+'</title> and <meta name="trozal-output-filename" content="'+filename+'">. For multiple concepts append _01, _02, etc.',
+'- Do not include explanations, Markdown fences, summaries, or text outside the HTML documents.',
+'',
+'QUALITY CHECK',
+'- The initial frame must already look designed and complete.',
+'- Establish a clear visual hierarchy, focal subject, depth, lighting, and intentional negative space.',
+'- Ensure the motion supports the theme and communicates a beginning, development, hero moment, and ending.',
+'- Check that no important element is clipped and that all CSS selectors and keyframes are valid.',
+'',
+'Return only the '+count+' complete HTML documents, in order, with no additional commentary.'
+  ].join('\n');
+  const out=$('svgAiPrompt');
+  if(!out)throw new Error('Kolom Prompt untuk AI tidak ditemukan.');
+  out.value=prompt;
+  out.dispatchEvent(new Event('input',{bubbles:true}));
+  const status=$('svgAiPromptStatus');
+  if(status)status.textContent='Prompt berhasil dibuat · '+count+' konsep · '+width+' × '+height+' px · '+ratio+'.';
+  const hint=$('svgAiResolutionHint');
+  if(hint)hint.textContent='Target canvas: '+width+' × '+height+' px · '+resolution+' px basis resolusi.';
+  return prompt;
+ }
+ window.generateSvgAiPrompt=generateSvgAiPrompt;
+ function bind(id,handler){
+  const el=$(id);if(!el||el.dataset.trozalPromptBound==='1')return;
+  el.dataset.trozalPromptBound='1';
+  el.addEventListener('click',e=>{e.preventDefault();try{handler();}catch(err){const status=$('svgAiPromptStatus');if(status)status.textContent='Gagal: '+(err?.message||String(err));console.error('[TROZAL PROMPT]',err);}});
+ }
+ bind('generateSvgAiPromptBtn',()=>generateSvgAiPrompt());
+ bind('copySvgAiTemplateBtn',async()=>{
+  const text=val('svgAiPrompt')||generateSvgAiPrompt();
+  try{await navigator.clipboard.writeText(text);if($('svgAiPromptStatus'))$('svgAiPromptStatus').textContent='Template prompt berhasil disalin.';}
+  catch(_){$('svgAiPrompt')?.focus();$('svgAiPrompt')?.select();if($('svgAiPromptStatus'))$('svgAiPromptStatus').textContent='Clipboard diblokir browser. Prompt dipilih; tekan Ctrl+C.';}
+ });
+ bind('pastePromptToAiBtn',async()=>{
+  const text=val('svgAiPrompt')||generateSvgAiPrompt();
+  try{await navigator.clipboard.writeText(text);if($('svgAiPromptStatus'))$('svgAiPromptStatus').textContent='Prompt disalin. Buka AI tujuan lalu tekan Ctrl+V.';}
+  catch(_){$('svgAiPrompt')?.focus();$('svgAiPrompt')?.select();if($('svgAiPromptStatus'))$('svgAiPromptStatus').textContent='Clipboard diblokir browser. Prompt dipilih; tekan Ctrl+C.';}
+ });
+ ['svgAiTheme','svgAiCategory','svgAiSpecific','svgAiDetails','svgAiFilename','svgAiConceptCount','svgAiDuration','svgAiRatio','svgAiResolution','svgAiMotionPreset','svgAiMotionTempo','svgAiMotionIntensity','svgAiPalette','svgAiCamera','svgAiTransition','svgAiTypography'].forEach(id=>{
+  $(id)?.addEventListener('change',()=>{if(val('svgAiPrompt'))generateSvgAiPrompt();});
+ });
+ console.info('[TROZAL PROMPT] Prompt generator siap; tombol Generate Prompt terhubung.');
+})();
+</script>
+
+</body></html>';
  return {html,scenes:items.length,duration:total,ratio};
 }
 $('generateVisualMotionBtn').addEventListener('click',()=>{
