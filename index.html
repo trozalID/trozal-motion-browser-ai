@@ -4242,7 +4242,7 @@ function trozalInitThemeCatalog(){
     return {theme,index,score,matched};
    }).filter(x=>x.score>0&&x.matched>0).sort((a,b)=>b.score-a.score||a.index-b.index).slice(0,12).map(x=>x.theme);
   };
-  const choose=theme=>{trozalApplyTheme(theme);results.hidden=true;};
+
   const resolve=()=>{
    const q=search.value.trim();if(!q)return;
    const hits=rankSuggestions(q),normalized=normalizeThemeText(q);
