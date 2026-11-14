@@ -2925,7 +2925,7 @@ async function trozalDrainRenderTaskQueue(){
   trozalRenderTaskRunning=false;
   if(trozalRenderTaskQueue.length){
    if(trozalRenderTaskChannel)trozalRenderTaskChannel.port2.postMessage(0);
-   else setTimeout(trozalDrainRenderTaskQueue,0);
+   else setTimeout(()=>{trozalDrainRenderTaskQueue().catch(error=>console.error('Render scheduler task failed:',error))},0);
   }
  }
 }
