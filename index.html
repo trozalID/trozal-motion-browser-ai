@@ -4208,8 +4208,10 @@ function trozalInitThemeCatalog(){
  if(randomBtn&&!randomBtn.dataset.trozalRandomBound){
   randomBtn.dataset.trozalRandomBound='1';
   randomBtn.addEventListener('click',()=>{
+   const hint=$('svgAiThemeSearchHint'),count=$('svgAiCatalogCount');
+   const log=(...args)=>{try{console.info('[TROZAL BROWSER RANDOM THEME]',...args);}catch(_){}};
    try{
-    const catalogue=Array.isArray(TROZAL_AI_THEMES)?TROZAL_AI_THEMES.filter(t=>typeof t==='string'&&t.trim()):[];
+    const catalogue=[...new Set((Array.isArray(TROZAL_AI_THEMES)?TROZAL_AI_THEMES:[]).filter(t=>typeof t==='string'&&t.trim()).map(t=>t.trim()))];
     if(!catalogue.length)throw new Error('Katalog tema kosong atau belum siap.');
     let bag=Array.isArray(window.__trozalBrowserThemeShuffleBag)?window.__trozalBrowserThemeShuffleBag:[];
     const active=select.value;
@@ -4221,22 +4223,31 @@ function trozalInitThemeCatalog(){
     const next=bag.shift();
     window.__trozalBrowserThemeShuffleBag=bag;
     if(!next)throw new Error('Tidak ada tema alternatif yang dapat dipilih.');
-    try{
-     choose(next);
-    }catch(applyError){
+    let recovered=false,applyError=null;
+    try{choose(next);}catch(err){applyError=err;recovered=true;}
+    if(select.value!==next||!$('svgAiCategory').options.length||!$('svgAiSpecific').options.length)recovered=true;
+    if(recovered){
      let opt=[...select.options].find(o=>o.value===next);
-     if(!opt){opt=new Option(next,next);select.add(opt);}
-     select.value=next;search.value=next;
-     trozalSetSelectOptions($('svgAiCategory'),['Minimal Swiss Design','Modern Editorial','Clean Corporate','Cinematic Lighting','3D Layered Composition']);
-     trozalSetSelectOptions($('svgAiSpecific'),[next+' hero reveal',next+' feature showcase',next+' closing brand frame']);
-     $('svgAiThemeSearchHint').textContent='Tema aktif: '+next+' · mode pemulihan diterapkan. Periksa console untuk detail.';
-     if($('svgAiPrompt').value.trim())generateSvgAiPrompt();
-     console.error('[TROZAL RANDOM THEME] Tema dipilih, tetapi profil tema gagal diterapkan:',applyError);
+     if(!opt){opt=document.createElement('option');opt.value=next;opt.textContent=next;select.appendChild(opt);}
+     select.value=next;search.value=next;results.hidden=true;
+     try{
+      const profile=trozalThemeProfile(next);
+      trozalSetSelectOptions($('svgAiCategory'),profile.styles);
+      trozalSetSelectOptions($('svgAiSpecific'),profile.specifics);
+     }catch(profileError){
+      trozalSetSelectOptions($('svgAiCategory'),['Minimal Swiss Design','Modern Editorial','Clean Corporate','Cinematic Lighting','3D Layered Composition','Editorial Infographic','Kinetic Typography']);
+      trozalSetSelectOptions($('svgAiSpecific'),[next+' hero reveal',next+' feature showcase',next+' process explainer',next+' closing brand frame']);
+      console.error('[TROZAL BROWSER RANDOM THEME] Profile fallback:',profileError);
+     }
+     if(applyError)console.error('[TROZAL BROWSER RANDOM THEME] Primary apply recovered:',applyError);
+     try{if($('svgAiPrompt').value.trim())generateSvgAiPrompt();}catch(promptError){console.error('[TROZAL BROWSER RANDOM THEME] Prompt refresh:',promptError);}
     }
-    console.info('[TROZAL RANDOM THEME] Tema acak diterapkan:',next,'| katalog:',catalogue.length,'| sisa antrean:',bag.length);
+    if(count)count.textContent=catalogue.length+' tema tersedia · '+bag.length+' belum dipakai';
+    if(hint)hint.textContent='✦ Tema inspirasi: '+next+' · kategori dan subtema diperbarui'+(recovered?' melalui mode pemulihan.':'.')+' Tidak mengulang sampai siklus selesai.';
+    log('applied',next,'| catalog:',catalogue.length,'| remaining:',bag.length,'| recovered:',recovered);
    }catch(err){
-    $('svgAiThemeSearchHint').textContent='Tema acak gagal: '+(err&&err.message?err.message:String(err));
-    console.error('[TROZAL RANDOM THEME] Handler gagal:',err);
+    if(hint)hint.textContent='Tema acak gagal: '+(err&&err.message?err.message:String(err));
+    console.error('[TROZAL BROWSER RANDOM THEME] Handler gagal:',err);
    }
   });
  }
