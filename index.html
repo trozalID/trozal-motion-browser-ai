@@ -5210,23 +5210,33 @@ window.setMetadataSourceStatus=trozalMetadataSourceStatus;
 
 <script type="module" src="./browser-ai.js"></script>
 <script>
-/* TROZAL MOBILE DEBUG CONSOLE — temporary in-app diagnostics for Android */
+/* TROZAL MOBILE DEBUG CONSOLE — broad Android runtime diagnostics */
 (function(){
  'use strict';
  if(window.__trozalMobileDebugInstalled)return;
  window.__trozalMobileDebugInstalled=true;
- const entries=[];const maxEntries=120;let panel,logNode,countNode;
+ const entries=[];const maxEntries=300;let panel,logNode,countNode;
  const stamp=()=>new Date().toLocaleTimeString();
+ function format(value){
+  try{
+   if(value instanceof Error)return (value.stack||value.name+': '+value.message);
+   if(typeof value==='string')return value;
+   if(value===undefined)return 'undefined';
+   if(value===null)return 'null';
+   if(typeof value==='object'){try{return JSON.stringify(value);}catch(_){return Object.prototype.toString.call(value);}}
+   return String(value);
+  }catch(_){return '[unprintable value]';}
+ }
  function render(){
   if(!logNode)return;
   logNode.replaceChildren();
-  entries.forEach(item=>{const line=document.createElement('div');line.className=item.type;line.textContent='['+item.time+'] '+item.message;logNode.appendChild(line);});
+  entries.forEach(item=>{const line=document.createElement('div');line.className=item.type;line.textContent='['+item.time+'] ['+item.category+'] '+item.message;logNode.appendChild(line);});
   logNode.scrollTop=logNode.scrollHeight;
   if(countNode)countNode.textContent=String(entries.length);
  }
- function add(type,message){
+ function add(type,category,message){
   const text=String(message==null?'':message);
-  entries.push({time:stamp(),type,message:text.slice(0,1800)});
+  entries.push({time:stamp(),type,category,message:text.slice(0,2400)});
   if(entries.length>maxEntries)entries.shift();
   render();
  }
@@ -5236,7 +5246,7 @@ window.setMetadataSourceStatus=trozalMetadataSourceStatus;
   countNode=document.createElement('span');countNode.className='count';countNode.textContent='0';fab.appendChild(countNode);
   panel=document.createElement('section');panel.id='trozalDebugPanel';panel.setAttribute('aria-label','TROZAL runtime diagnostics');
   const head=document.createElement('div');head.className='debug-head';
-  const title=document.createElement('strong');title.textContent='RUNTIME CONSOLE · Browser AI';
+  const title=document.createElement('strong');title.textContent='RUNTIME DIAGNOSTICS · Browser AI';
   const copy=document.createElement('button');copy.type='button';copy.textContent='Salin log';
   const clear=document.createElement('button');clear.type='button';clear.textContent='Bersihkan';
   const close=document.createElement('button');close.type='button';close.textContent='Tutup';
@@ -5244,39 +5254,101 @@ window.setMetadataSourceStatus=trozalMetadataSourceStatus;
   head.append(title,copy,clear,close);panel.append(head,logNode);document.body.append(fab,panel);
   fab.addEventListener('click',()=>panel.classList.toggle('open'));
   close.addEventListener('click',()=>panel.classList.remove('open'));
-  clear.addEventListener('click',()=>{entries.length=0;add('info','Log dibersihkan. Klik Tema Inspirasi Acak untuk merekam ulang.');});
+  clear.addEventListener('click',()=>{entries.length=0;add('info','SYSTEM','Log dibersihkan. Lanjutkan workflow yang ingin diperiksa.');});
   copy.addEventListener('click',()=>{
-   const content=entries.map(x=>'['+x.time+'] '+x.message).join('\n')||'Tidak ada log.';
-   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(content).then(()=>add('info','Log berhasil disalin.')).catch(()=>fallbackCopy(content));}
+   const content=entries.map(x=>'['+x.time+'] ['+x.category+'] '+x.message).join('\n')||'Tidak ada log.';
+   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(content).then(()=>add('info','SYSTEM','Log berhasil disalin.')).catch(()=>fallbackCopy(content));}
    else fallbackCopy(content);
   });
   function fallbackCopy(content){
    const area=document.createElement('textarea');area.value=content;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();
-   try{document.execCommand('copy');add('info','Perintah salin dijalankan.');}catch(e){add('err','Gagal menyalin log: '+e.message);}
+   try{document.execCommand('copy');add('info','SYSTEM','Perintah salin log dijalankan.');}catch(e){add('err','CLIPBOARD','Gagal menyalin log: '+format(e));}
    area.remove();
   }
-  add('info','Debug aktif. Buka panel ini, bersihkan log, lalu tekan Tema Inspirasi Acak.');
+  add('info','SYSTEM','Debug aktif: JavaScript, Promise, resource, network, console, dan interaksi UI dipantau.');
  }
  function boot(){setup();if(!document.getElementById('trozalDebugFab'))setTimeout(boot,250);}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
- window.addEventListener('error',e=>add('err','WINDOW ERROR: '+(e.message||'unknown')+' | '+(e.filename||'')+':'+(e.lineno||0)+':'+(e.colno||0)+(e.error&&e.error.stack?'\n'+e.error.stack:'')));
- window.addEventListener('unhandledrejection',e=>{const r=e.reason;add('err','UNHANDLED PROMISE: '+(r&&r.stack?r.stack:(r&&r.message)||r));});
- const originalError=console.error.bind(console);
- console.error=function(){try{add('err','console.error: '+Array.from(arguments).map(x=>x&&x.stack?x.stack:(typeof x==='object'?JSON.stringify(x):String(x))).join(' '));}catch(e){add('err','console.error called (format failed)');}return originalError.apply(console,arguments);};
+
+ // JavaScript runtime errors and script/resource loading failures.
+ window.addEventListener('error',e=>{
+  if(e.target&&e.target!==window){
+   const el=e.target;const url=el.src||el.href||el.currentSrc||'(URL tidak tersedia)';
+   add('err','RESOURCE LOAD','Gagal memuat <'+el.tagName.toLowerCase()+'> '+url);
+   return;
+  }
+  add('err','JAVASCRIPT',''+(e.message||'Unknown error')+' | '+(e.filename||'(file tidak diketahui)')+':'+(e.lineno||0)+':'+(e.colno||0)+(e.error&&e.error.stack?'\n'+e.error.stack:''));
+ },true);
+ window.addEventListener('unhandledrejection',e=>{
+  const r=e.reason;add('err','PROMISE REJECTION',format(r));
+ });
+ window.addEventListener('rejectionhandled',()=>add('warn','PROMISE','Promise rejection kemudian ditangani oleh aplikasi.'));
+
+ // Capture console errors and warnings without suppressing the browser console.
+ ['error','warn'].forEach(level=>{
+  const original=console[level].bind(console);
+  console[level]=function(){
+   add(level==='error'?'err':'warn','CONSOLE.'+level.toUpperCase(),Array.from(arguments).map(format).join(' '));
+   return original.apply(console,arguments);
+  };
+ });
+
+ // Failed fetch requests, including HTTP error responses.
+ if(typeof window.fetch==='function'&&!window.fetch.__trozalDebugWrapped){
+  const originalFetch=window.fetch;
+  const wrappedFetch=function(){
+   const args=arguments;const request=args[0];const url=typeof request==='string'?request:(request&&request.url)||'(URL tidak diketahui)';
+   return originalFetch.apply(this,args).then(response=>{
+    if(!response.ok)add('err','FETCH HTTP',response.status+' '+response.statusText+' | '+url);
+    return response;
+   }).catch(error=>{
+    add('err','FETCH NETWORK',url+' | '+format(error));throw error;
+   });
+  };
+  wrappedFetch.__trozalDebugWrapped=true;
+  try{window.fetch=wrappedFetch;}catch(e){add('warn','DEBUG INSTALL','Tidak dapat memasang pemantau fetch: '+format(e));}
+ }
+
+ // XMLHttpRequest failures and HTTP 4xx/5xx.
+ if(window.XMLHttpRequest&&!XMLHttpRequest.prototype.__trozalDebugWrapped){
+  const xhrMeta=new WeakMap();const proto=XMLHttpRequest.prototype;
+  const originalOpen=proto.open;const originalSend=proto.send;
+  proto.open=function(method,url){
+   xhrMeta.set(this,{method:String(method||'GET'),url:String(url||'')});
+   return originalOpen.apply(this,arguments);
+  };
+  proto.send=function(){
+   const xhr=this;const meta=xhrMeta.get(xhr)||{method:'XHR',url:'(URL tidak diketahui)'};
+   if(!xhr.__trozalDebugListener){
+    xhr.__trozalDebugListener=true;
+    xhr.addEventListener('loadend',()=>{
+     if(xhr.status>=400)add('err','XHR HTTP',meta.method+' '+xhr.status+' | '+meta.url);
+     else if(xhr.status===0)add('err','XHR NETWORK',meta.method+' | '+meta.url+' | status 0');
+    });
+    xhr.addEventListener('error',()=>add('err','XHR NETWORK',meta.method+' | '+meta.url+' | network error'));
+    xhr.addEventListener('timeout',()=>add('err','XHR TIMEOUT',meta.method+' | '+meta.url));
+   }
+   return originalSend.apply(this,arguments);
+  };
+  try{Object.defineProperty(proto,'__trozalDebugWrapped',{value:true});}catch(_){proto.__trozalDebugWrapped=true;}
+ }
+
+ // UI event tracing: retain general interaction context, not only the random-theme button.
  document.addEventListener('click',e=>{
-  const target=e.target&&e.target.closest?e.target.closest('#svgAiRandomThemeBtn'):null;
-  if(!target)return;
-  const theme=document.getElementById('svgAiTheme');
-  add('info','CLICK Tema Inspirasi Acak terdeteksi. Tema sebelum klik: '+(theme?theme.value:'select tidak ditemukan'));
-  setTimeout(()=>{
-   const t=document.getElementById('svgAiTheme'),c=document.getElementById('svgAiCategory'),sp=document.getElementById('svgAiSpecific');
-   add('info','HASIL klik: tema='+(t?t.value:'N/A')+' | kategori='+(c?c.value:'N/A')+' | subtema='+(sp?sp.value:'N/A'));
-  },120);
+  const el=e.target&&e.target.closest?e.target.closest('button,[role="button"],input[type="button"],input[type="submit"]'):null;
+  if(!el)return;
+  const label=(el.innerText||el.value||el.getAttribute('aria-label')||el.id||el.textContent||'button').trim().replace(/\s+/g,' ').slice(0,100);
+  add('info','UI CLICK',(el.id?'#'+el.id+' ':'')+label);
  },true);
  document.addEventListener('change',e=>{
-  if(!e.target||!['svgAiTheme','svgAiCategory','svgAiSpecific'].includes(e.target.id))return;
-  add('info','CHANGE '+e.target.id+' = '+e.target.value);
+  const el=e.target;if(!el||!el.matches||!el.matches('input,select,textarea'))return;
+  const value=el.type==='password'?'[disembunyikan]':String(el.value||'').slice(0,160);
+  add('info','UI CHANGE',(el.id?'#'+el.id:el.tagName.toLowerCase())+' = '+value);
  },true);
-})();
+ document.addEventListener('submit',e=>{
+  const form=e.target;add('info','UI SUBMIT',(form.id?'#'+form.id:form.getAttribute('action')||'form'));
+ },true);
+ add('info','SYSTEM','Pemantau global dipasang. Error sebelum skrip ini dimuat tidak dapat direkam.');
+})(); 
 </script>
 </body></html>
