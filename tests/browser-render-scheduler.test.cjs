@@ -27,7 +27,7 @@ async function waitFor(predicate, message) {
 
 async function testMessageChannelFifoAndSerialExecution() {
   const context = vm.createContext({ MessageChannel: FakeMessageChannel, setTimeout });
-  vm.runInContext(schedulerSource + String.fromCharCode(10) + 'globalThis.schedule = trozalRenderTaskQueue && trozalScheduleRenderTask;', context);
+  vm.runInContext(schedulerSource + String.fromCharCode(10) + 'globalThis.schedule = trozalScheduleRenderTask;', context);
   const order = [];
   let active = 0;
   let maxActive = 0;
@@ -51,7 +51,7 @@ async function testTimerFallbackFifoAndSerialExecution() {
   const context = vm.createContext({
     setTimeout: fn => { timers.push(fn); return timers.length; }
   });
-  vm.runInContext(schedulerSource + '\nglobalThis.schedule = trozalScheduleRenderTask;', context);
+  vm.runInContext(schedulerSource + String.fromCharCode(10) + 'globalThis.schedule = trozalScheduleRenderTask;', context);
   const order = [];
   let active = 0;
   let maxActive = 0;
@@ -81,7 +81,7 @@ async function testTimerFallbackHandlesRejectedTask() {
     setTimeout: fn => { timers.push(fn); return timers.length; },
     console: { error: (...args) => errors.push(args) }
   });
-  vm.runInContext(schedulerSource + '\nglobalThis.schedule = trozalScheduleRenderTask;', context);
+  vm.runInContext(schedulerSource + String.fromCharCode(10) + 'globalThis.schedule = trozalScheduleRenderTask;', context);
   const order = [];
   context.schedule(async () => { throw new Error('expected test rejection'); });
   context.schedule(async () => { order.push('continued'); });
