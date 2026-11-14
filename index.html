@@ -2885,7 +2885,15 @@ function trozalMotionBlurPixels(time,baseW,baseH){
  const velocity=Math.hypot(dx,dy)+rotation;
  return Math.min(amount,velocity*.22*amount/4);
 }
-async function drawUnsafe(){if(frame>=totalFrames){await finishRender();return}let elapsed=frame/fps;renderAt(elapsed,false,false);let bg=$('bgMode').value;if(bg==='transparent'&&$('transparentBg').checked){ctx.clearRect(0,0,w,h)}else{ctx.fillStyle=bg==='black'?'#08090c':bg==='dark'?'#141820':bg==='greenbg'?'#075b3b':bg==='bluebg'?'#1264b0':bg==='custom'?$('customBg').value:'#ffffff';ctx.fillRect(0,0,w,h)}
+async function drawUnsafe(){
+ if(window.__TROZAL_RENDER_DIAGNOSTICS===true){
+  const diagNow=performance.now(),diag=window.__TROZAL_RENDER_DIAG_STATE||(window.__TROZAL_RENDER_DIAG_STATE={count:0,totalInterval:0,minInterval:Infinity,maxInterval:0,lastAt:0});
+  if(diag.lastAt){const interval=diagNow-diag.lastAt;diag.totalInterval+=interval;diag.minInterval=Math.min(diag.minInterval,interval);diag.maxInterval=Math.max(diag.maxInterval,interval);}
+  diag.lastAt=diagNow;diag.count++;
+  if(diag.count%30===0){const samples=Math.max(1,Math.min(30,diag.count-1));console.info('[TROZAL RENDER DIAG] '+diag.count+' frames | rata-rata jeda '+(diag.totalInterval/samples).toFixed(1)+' ms | min '+(diag.minInterval===Infinity?0:diag.minInterval).toFixed(1)+' ms | max '+diag.maxInterval.toFixed(1)+' ms | cursor-independent scheduler');diag.totalInterval=0;diag.minInterval=Infinity;diag.maxInterval=0;}
+ }
+ if(frame>=totalFrames){await finishRender();return}
+ let elapsed=frame/fps;renderAt(elapsed,false,false);let bg=$('bgMode').value;if(bg==='transparent'&&$('transparentBg').checked){ctx.clearRect(0,0,w,h)}else{ctx.fillStyle=bg==='black'?'#08090c':bg==='dark'?'#141820':bg==='greenbg'?'#075b3b':bg==='bluebg'?'#1264b0':bg==='custom'?$('customBg').value:'#ffffff';ctx.fillRect(0,0,w,h)}
 let obj=$('object'),motion=getMotionState(elapsed);
 // Match CSS preview geometry: width relative to stage width, height relative to stage height.
 const baseW=htmlMotionSource?w:w*(+$('scale').value/100),baseH=htmlMotionSource?h:h*(+$('scale').value*1.35/100);
