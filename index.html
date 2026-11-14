@@ -1761,10 +1761,17 @@ function mtSetPlayhead(time){
  $('scrubber').value=String(playhead/duration*1000);
  renderAt(playhead);
 }
+function trozalGroupColor(groupName){
+ const palette=['#72d6b5','#79b8ff','#d7a2ff','#ffb86b','#f28ba8','#a8d98a','#f0d477','#7edce5','#d5a7a0','#aab4ff'];
+ const name=String(groupName||'').trim();if(!name)return '';
+ let hash=2166136261;for(let i=0;i<name.length;i++){hash^=name.charCodeAt(i);hash=Math.imul(hash,16777619);}
+ return palette[(hash>>>0)%palette.length];
+}
 function mtSelectLayer(index){
  selectedLayerIndex=index;
  document.querySelectorAll('.layer-control').forEach((card,i)=>card.classList.toggle('selected-layer',i===index));
- document.querySelectorAll('.mt-track-row').forEach((row,i)=>row.classList.toggle('selected',i===index));
+ document.querySelectorAll('.mt-track-row').forEach((row,i)=>row.classList.toggle('selected',Number(row.dataset.mtRow)===index));
+ const group=timelineLayerGroups[index]||'';const collapse=$('mtCollapseGroup');if(collapse)collapse.textContent=group&&timelineGroupCollapsed[group]?'▸ Bentangkan Grup':'▾ Ciutkan Grup';
 }
 function refreshTimelineEditor(){
  const editor=$('multiTrackEditor'),ruler=$('mtRuler'),list=$('mtTrackList'),shelf=$('mtMarkerShelf');
@@ -1780,6 +1787,7 @@ function refreshTimelineEditor(){
  if(Math.abs((Math.ceil(duration/step)*step)-duration)>.001)
   ticks+='<div class="mt-tick" style="left:100%"><span>'+duration.toFixed(1)+'s</span></div>';
  ruler.innerHTML=ticks;
+ const selectedGroup=timelineLayerGroups[selectedLayerIndex]||'';const collapseButton=$('mtCollapseGroup');if(collapseButton)collapseButton.textContent=selectedGroup&&timelineGroupCollapsed[selectedGroup]?'▸ Bentangkan Grup':'▾ Ciutkan Grup';
  const hasSplit=!!(svgWasSplit&&svgPieces.length);
  if(hasSplit){
   list.innerHTML=svgPieces.map((piece,i)=>{
@@ -1793,13 +1801,13 @@ function refreshTimelineEditor(){
    return '<div class="mt-track-row '+(selectedLayerIndex===i?'selected':'')+'" data-mt-row="'+i+'" data-mt-depth="'+depth+'">'+
     '<div class="mt-track-label" style="padding-left:'+Math.min(5,depth)*12+'px">'+
      '<input type="checkbox" class="mt-group-pick" data-mt-group-pick="'+i+'" aria-label="Pilih layer untuk grup" '+(timelineGroupSelected[i]?'checked':'')+'>'+
-     (groupName?'<span class="mt-group-tag" title="Hierarki: '+escapeLayerName(hierarchyPath)+'">▦ '+escapeLayerName(groupName)+'</span>'+(parentName?'<span class="mt-hierarchy-tag" title="Anak dari grup '+escapeLayerName(parentName)+'">↳ '+escapeLayerName(parentName)+'</span>':''):'')+
+     (groupName?'<span class="mt-group-tag" style="background:'+trozalGroupColor(groupName)+'22;color:'+trozalGroupColor(groupName)+';border:1px solid '+trozalGroupColor(groupName)+'66" title="Hierarki: '+escapeLayerName(hierarchyPath)+'">▦ '+escapeLayerName(groupName)+'</span>'+(parentName?'<span class="mt-hierarchy-tag" title="Anak dari grup '+escapeLayerName(parentName)+'">↳ '+escapeLayerName(parentName)+'</span>':''):'')+
      '<button type="button" class="mt-eye" data-mt-eye="'+i+'" title="Tampilkan/sembunyikan layer">'+(visible?'◉':'○')+'</button>'+
      '<button type="button" class="mt-lock '+(locked?'locked':'')+'" data-mt-lock="'+i+'" aria-pressed="'+locked+'" title="Kunci klip di timeline">'+(locked?'🔒':'↔')+'</button>'+
      '<button type="button" class="mt-name" data-mt-select="'+i+'" title="'+name+'">'+name+'</button>'+
     '</div>'+
     '<div class="mt-lane" data-mt-lane="'+i+'" role="button" tabindex="0" aria-label="Track '+name+'">'+markers+
-     '<div class="mt-clip" data-mt-clip="'+i+'" style="left:'+left+'%;width:'+width+'%" title="Drag untuk geser; tarik sisi untuk trim">'+
+     '<div class="mt-clip" data-mt-clip="'+i+'" style="left:'+left+'%;width:'+width+'%;'+(groupName?'border-color:'+trozalGroupColor(groupName):'')+'" title="Drag untuk geser; tarik sisi untuk trim">'+
       '<i class="mt-clip-handle start" data-mt-edge="start"></i><span>'+name+'</span><i class="mt-clip-handle end" data-mt-edge="end"></i>'+
      '</div>'+
     '</div></div>';
