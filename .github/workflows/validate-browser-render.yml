@@ -24,14 +24,14 @@ jobs:
           const fs = require('fs');
           const { spawnSync } = require('child_process');
           const html = fs.readFileSync('index.html', 'utf8');
-          const scripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script\\s*>/gi)];
+          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)];
           if (!scripts.length) throw new Error('No inline script blocks found');
           scripts.forEach((match, index) => {
             const file = '/tmp/trozal-inline-' + index + '.js';
             fs.writeFileSync(file, match[1], 'utf8');
             const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
             if (result.status !== 0) {
-              process.stderr.write('Syntax error in inline script ' + (index + 1) + '\\n');
+              process.stderr.write('Syntax error in inline script ' + (index + 1) + '\n');
               process.stderr.write(result.stderr || result.stdout || '');
               process.exit(1);
             }
