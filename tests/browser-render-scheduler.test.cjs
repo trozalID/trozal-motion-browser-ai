@@ -99,6 +99,9 @@ function testProgressStopAndExportWiring() {
   const drawEnd = html.indexOf('/* RENDER SCHEDULER:', drawStart);
   const drawBody = html.slice(drawStart, drawEnd);
   assert.match(drawBody, /setRenderProgress\(renderPercent/, 'Frame drawing must update render progress');
+  assert.match(drawBody, /__TROZAL_RENDER_DIAGNOSTICS===true/, 'Frame cadence diagnostics must be opt-in');
+  assert.match(drawBody, /__TROZAL_RENDER_DIAG_STATE/, 'Frame cadence diagnostics must retain interval samples');
+  assert.match(drawBody, /rata-rata jeda/, 'Diagnostics must report frame cadence for cursor-still versus cursor-moving comparison');
   assert.match(drawBody, /lastProgressPaintAt[\s\S]*?>=120/, 'Progress must be time-based, not mouse-event-based');
   assert.doesNotMatch(drawBody, /pointermove|mousemove|mouseenter|mouseover/, 'Progress update must not depend on mouse activity');
   assert.ok(html.includes('trozalRenderCancelRequested=true;'), 'Stop handler must set cancellation flag');
