@@ -74,6 +74,26 @@ async function testTimerFallbackFifoAndSerialExecution() {
   assert.equal(maxActive, 1, 'Timer fallback tasks must not overlap');
 }
 
+async function testTimerFallbackHandlesRejectedTask() {
+  const timers = [];
+  const errors = [];
+  const context = vm.createContext({
+    setTimeout: fn => { timers.push(fn); return timers.length; },
+    console: { error: (...args) => errors.push(args) }
+  });
+  vm.runInContext(schedulerSource + '\\nglobalThis.schedule = trozalScheduleRenderTask;', context);
+  const order = [];
+  context.schedule(async () => { throw new Error('expected test rejection'); });
+  context.schedule(async () => { order.push('continued'); });
+  for (let i = 0; i < 10 && order.length === 0; i++) {
+    const next = timers.shift();
+    if (next) next();
+    await new Promise(resolve => setImmediate(resolve));
+  }
+  assert.deepEqual(order, ['continued'], 'A rejected task must not block later fallback tasks');
+  assert.equal(errors.length, 1, 'Rejected fallback task must be reported without an unhandled rejection');
+}
+
 function testProgressStopAndExportWiring() {
   const drawStart = html.indexOf('async function drawUnsafe()');
   const drawEnd = html.indexOf('/* RENDER SCHEDULER:', drawStart);
@@ -91,8 +111,9 @@ function testProgressStopAndExportWiring() {
 (async () => {
   await testMessageChannelFifoAndSerialExecution();
   await testTimerFallbackFifoAndSerialExecution();
+  await testTimerFallbackHandlesRejectedTask();
   testProgressStopAndExportWiring();
-  process.stdout.write('PASS: FIFO, serialized async tasks, timer fallback, mouse-independent progress wiring, Stop and PNG/ProRes export wiring.\n');
+  process.stdout.write('PASS: FIFO, serialized async tasks, timer fallback including rejected tasks, mouse-independent progress wiring, Stop and PNG/ProRes export wiring.\n');
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;
