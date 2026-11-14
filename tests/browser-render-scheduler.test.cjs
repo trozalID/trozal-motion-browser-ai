@@ -65,10 +65,10 @@ async function testTimerFallbackFifoAndSerialExecution() {
   context.schedule(task(1));
   context.schedule(task(2));
   context.schedule(task(3));
-  while (timers.length || active) {
+  while (order.length < 3) {
     const next = timers.shift();
-    if (next) await next();
-    else await new Promise(resolve => setTimeout(resolve, 1));
+    if (next) next();
+    await new Promise(resolve => setImmediate(resolve));
   }
   assert.deepEqual(order, [1, 2, 3], 'Timer fallback must preserve FIFO order');
   assert.equal(maxActive, 1, 'Timer fallback tasks must not overlap');
