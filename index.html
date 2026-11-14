@@ -212,7 +212,7 @@ select,input[type=text],input[type=number],.ai-tools textarea{background:#071d15
 
 
 /* FIX27: visible multi-stage progress in sticky top bar (carried forward) */
-.topbar-render-progress{display:flex;flex-direction:column;gap:3px;width:min(300px,30vw);min-width:170px;margin-left:auto;padding:3px 8px;border:1px solid #35634a;border-radius:8px;background:#071d15}
+.topbar-render-progress{display:flex;flex-direction:column;gap:3px;width:min(300px,30vw);min-width:170px;margin-left:auto;padding:3px 8px;border:1px solid #35634a;border-radius:8px;background:#071d15};pointer-events:none;user-select:none
 .render-progress-label{display:block;font-size:10px;line-height:1.2;color:#ccebd8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .render-progress-track{height:7px;width:100%;overflow:hidden;border-radius:8px;background:#344238}
 .render-progress-fill{height:100%;width:0;border-radius:8px;background:#f2bd35;transition:width .18s ease,background .18s ease}
@@ -2908,8 +2908,25 @@ try{
  else if(svgImg)drawContained(svgImg);else if(img)drawContained(img);else{ctx.fillStyle=currentColor;ctx.beginPath();ctx.arc(0,0,Math.min(ow,oh)/3,0,Math.PI*2);ctx.fill()}
  applyShapeMaskToCanvas(ctx,baseW,baseH,shapeState,elapsed);
  drawShapePathOnCanvas(ctx,baseW,baseH,evaluateMaskLayer(shapeMaskLayers[activeShapeMask]||shapeState,elapsed));
-}catch(e){ctx.restore();throw new Error('Gagal menggambar aset pada frame '+frame+' ('+elapsed.toFixed(3)+'s): '+(e?.message||e))}ctx.restore();drawTextLayerToCanvas(ctx,w,h,elapsed);drawExportVisualEffects(ctx,w,h,elapsed,motion,baseW,baseH,cx,cy,turboMode);const renderPercent=Math.max(1,Math.min(100,Math.round(((frame+1)/totalFrames)*100)));const progressNow=performance.now(),shouldPaintProgress=frame===0||frame+1>=totalFrames||progressNow-lastProgressPaintAt>=120;if(shouldPaintProgress){lastProgressPaintAt=progressNow;setExportStatus('Rendering… '+renderPercent+'%');setRenderProgress(renderPercent,'Merender frame '+(frame+1)+'/'+totalFrames,'running')}if(frameSequenceMode){let png;try{png=await new Promise((resolve,reject)=>{try{canvas.toBlob(resolve,'image/png')}catch(e){reject(e)}})}catch(blobError){throw new Error('Canvas tidak dapat diekspor pada frame '+frame+' ('+elapsed.toFixed(3)+'s). Penyebab belum dapat dipastikan (misalnya SVG/foreignObject atau aset eksternal yang tidak mengizinkan CORS): '+(blobError?.message||blobError))}if(!png)throw new Error('Browser mengembalikan PNG kosong pada frame '+frame+' ('+elapsed.toFixed(3)+'s).');pngZip.file('frame_'+String(frame).padStart(6,'0')+'.png',png,{compression:'STORE'});frame++;setTimeout(draw,0)}else{frame++;setTimeout(draw,step)}}
+}catch(e){ctx.restore();throw new Error('Gagal menggambar aset pada frame '+frame+' ('+elapsed.toFixed(3)+'s): '+(e?.message||e))}ctx.restore();drawTextLayerToCanvas(ctx,w,h,elapsed);drawExportVisualEffects(ctx,w,h,elapsed,motion,baseW,baseH,cx,cy,turboMode);const renderPercent=Math.max(1,Math.min(100,Math.round(((frame+1)/totalFrames)*100)));const progressNow=performance.now(),shouldPaintProgress=frame===0||frame+1>=totalFrames||progressNow-lastProgressPaintAt>=120;if(shouldPaintProgress){lastProgressPaintAt=progressNow;setExportStatus('Rendering… '+renderPercent+'%');setRenderProgress(renderPercent,'Merender frame '+(frame+1)+'/'+totalFrames,'running')}if(frameSequenceMode){let png;try{png=await new Promise((resolve,reject)=>{try{canvas.toBlob(resolve,'image/png')}catch(e){reject(e)}})}catch(blobError){throw new Error('Canvas tidak dapat diekspor pada frame '+frame+' ('+elapsed.toFixed(3)+'s). Penyebab belum dapat dipastikan (misalnya SVG/foreignObject atau aset eksternal yang tidak mengizinkan CORS): '+(blobError?.message||blobError))}if(!png)throw new Error('Browser mengembalikan PNG kosong pada frame '+frame+' ('+elapsed.toFixed(3)+'s).');pngZip.file('frame_'+String(frame).padStart(6,'0')+'.png',png,{compression:'STORE'});frame++;trozalScheduleRenderTask(draw)}else{frame++;setTimeout(draw,step)}}
 
+/* RENDER SCHEDULER: frame-sequence work yields through MessageChannel, not zero-delay timers.
+   This is independent of mouse position and avoids setTimeout(0) timer clamping in active tabs. */
+const trozalRenderTaskQueue=[];
+let trozalRenderTaskChannel=null;
+function trozalScheduleRenderTask(task){
+ if(typeof MessageChannel!=='function'){setTimeout(task,0);return;}
+ if(!trozalRenderTaskChannel){
+  trozalRenderTaskChannel=new MessageChannel();
+  trozalRenderTaskChannel.port1.onmessage=()=>{
+   const next=trozalRenderTaskQueue.shift();
+   if(next)next();
+   if(trozalRenderTaskQueue.length)trozalRenderTaskChannel.port2.postMessage(0);
+  };
+ }
+ trozalRenderTaskQueue.push(task);
+ if(trozalRenderTaskQueue.length===1)trozalRenderTaskChannel.port2.postMessage(0);
+}
 async function draw(){
  if(trozalRenderCancelRequested)return;
  try{await drawUnsafe()}
