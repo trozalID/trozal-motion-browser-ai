@@ -1585,6 +1585,16 @@ function trozalLayerHierarchyTransform(index,t,local){
  const parts=[];chain.forEach(name=>{const driver=trozalGroupDirectMembers(name)[0];if(driver===undefined)return;const m=getLayerMotion(driver,t);parts.push(`translate(${m.x}%,${m.y}%) rotate(${m.rot}deg) scale(${m.scale})`);});
  parts.push(`translate(${local.x}%,${local.y}%) rotate(${local.rot}deg) scale(${local.scale})`);return parts.join(' ');
 }
+function trozalLayerHierarchyOpacity(index,t){
+ const group=timelineLayerGroups[index];if(!group)return 1;
+ let opacity=1,parent=timelineGroupParents[group],seen=new Set();
+ while(parent&&!seen.has(parent)){
+  seen.add(parent);const driver=trozalGroupDirectMembers(parent)[0];
+  if(driver!==undefined)opacity*=Math.max(0,Math.min(1,getLayerMotion(driver,t).alpha));
+  parent=timelineGroupParents[parent];
+ }
+ return opacity;
+}
 function trozalGroupDepth(name){let depth=0,seen=new Set(),p=timelineGroupParents[name];while(p&&!seen.has(p)){seen.add(p);depth++;p=timelineGroupParents[p];}return depth;}
 function trozalRefreshHierarchySelect(){const el=$('mtHierarchyParent');if(!el)return;const current=el.value;const groups=[...new Set(Object.values(timelineLayerGroups))].sort((a,b)=>a.localeCompare(b));el.innerHTML='<option value="">— Parent —</option>'+groups.map(g=>'<option value="'+escapeLayerName(g)+'">'+('　'.repeat(Math.min(5,trozalGroupDepth(g)))+'▦ '+escapeLayerName(g))+'</option>').join('');if(groups.includes(current))el.value=current;}
 function addGroupKeyframe(){
@@ -1670,7 +1680,7 @@ function renderSplitPieces(t){
   const range=sceneIndex>=0&&Array.isArray(ranges)?ranges[sceneIndex]:null;
   const sceneAlpha=trozalSceneOpacity(t,range);
   el.style.transform=trozalLayerHierarchyTransform(i,t,m);
-  el.style.opacity=m.alpha*sceneAlpha;el.style.display=visible&&solo&&sceneAlpha>0?'flex':'none';
+  const hierarchyAlpha=trozalLayerHierarchyOpacity(i,t);el.style.opacity=m.alpha*sceneAlpha*hierarchyAlpha;el.style.display=visible&&solo&&sceneAlpha>0&&hierarchyAlpha>0?'flex':'none';
  });
 }
 function assembleSvg(){svgWasSplit=false;svgPieces=[];svgLayerHints=[];if(sourceSvg)setObjectMarkup(sourceSvg);renderAt(playhead);setStatus('Layer SVG disatukan kembali menjadi objek utuh.')}
