@@ -2853,7 +2853,10 @@ function applyProject(p){
  svgLayerHints=Array.isArray(p.svgLayerHints)?p.svgLayerHints.slice():svgPieces.map((piece,i)=>{try{const d=new DOMParser().parseFromString(piece,'image/svg+xml');const n=[...d.documentElement.children].find(x=>!['defs','style','title','desc','metadata'].includes(x.localName));return n?analyzeSvgLayer({node:n,ancestors:[]},i,svgPieces.length):{kind:'detail',entrance:0,loop:0,intensity:0,reason:'Layer dipulihkan; gerakan tetap statis.'}}catch(e){return {kind:'detail',entrance:0,loop:0,intensity:0,reason:'Layer dipulihkan; gerakan tetap statis.'}}});
  svgWasSplit=!!p.svgWasSplit&&svgPieces.length>0;
  timelineMarkers=Array.isArray(p.timelineMarkers)?p.timelineMarkers.map(m=>({id:String(m.id||('marker-'+Date.now())),t:Math.max(0,Number(m.t)||0),label:String(m.label||'Marker')})):[];
- timelineTrackLocks=p.timelineTrackLocks&&typeof p.timelineTrackLocks==='object'?{...p.timelineTrackLocks}:{};\n // Restore named layer groups from saved projects; discard invalid indexes and empty names.\n timelineLayerGroups={};if(p.timelineLayerGroups&&typeof p.timelineLayerGroups==='object'&&!Array.isArray(p.timelineLayerGroups)){Object.entries(p.timelineLayerGroups).forEach(([key,value])=>{const index=Number(key),name=String(value||'').trim();if(Number.isInteger(index)&&index>=0&&index<(Array.isArray(p.svgPieces)?p.svgPieces.length:0)&&name)timelineLayerGroups[index]=name.slice(0,28);});}\n timelineGroupSelected={};timelineSnapEnabled=p.timelineSnapEnabled!==false;updateSnapButton?.();
+ timelineTrackLocks=p.timelineTrackLocks&&typeof p.timelineTrackLocks==='object'?{...p.timelineTrackLocks}:{};
+ // Restore named layer groups from saved projects; discard invalid indexes and empty names.
+ timelineLayerGroups={};if(p.timelineLayerGroups&&typeof p.timelineLayerGroups==='object'&&!Array.isArray(p.timelineLayerGroups)){Object.entries(p.timelineLayerGroups).forEach(([key,value])=>{const index=Number(key),name=String(value||'').trim();if(Number.isInteger(index)&&index>=0&&index<(Array.isArray(p.svgPieces)?p.svgPieces.length:0)&&name)timelineLayerGroups[index]=name.slice(0,28);});}
+ timelineGroupSelected={};timelineSnapEnabled=p.timelineSnapEnabled!==false;updateSnapButton?.();
  if(svgWasSplit){
    buildAutoLayerControls();
    layerKeyframes.forEach((a,i)=>paintLayerKeyframes(i));
