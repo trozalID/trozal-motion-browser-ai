@@ -27,7 +27,7 @@ async function waitFor(predicate, message) {
 
 async function testMessageChannelFifoAndSerialExecution() {
   const context = vm.createContext({ MessageChannel: FakeMessageChannel, setTimeout });
-  vm.runInContext(schedulerSource + '\nglobalThis.schedule = trozalScheduleRenderTask;', context);
+  vm.runInContext(schedulerSource + String.fromCharCode(10) + 'globalThis.schedule = trozalRenderTaskQueue && trozalScheduleRenderTask;', context);
   const order = [];
   let active = 0;
   let maxActive = 0;
