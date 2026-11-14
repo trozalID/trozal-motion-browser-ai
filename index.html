@@ -1784,10 +1784,13 @@ function refreshTimelineEditor(){
    const time=mtLayerTimes(i),left=time.start/duration*100,width=Math.max(.6,(time.end-time.start)/duration*100);
    const visible=$('autoLayerVisible'+i)?.checked!==false,locked=!!timelineTrackLocks[i],name=escapeLayerName(svgLayerNames[i]||('Layer '+(i+1)));
    const markers=timelineMarkers.map(m=>'<i class="mt-marker-line" style="left:'+Math.max(0,Math.min(100,Number(m.t)/duration*100))+'%"></i>').join('');
-   return '<div class="mt-track-row '+(selectedLayerIndex===i?'selected':'')+'" data-mt-row="'+i+'">'+
-    '<div class="mt-track-label">'+
+   const groupName=timelineLayerGroups[i]||'',depth=groupName?trozalGroupDepth(groupName):0;
+   const parentName=groupName?timelineGroupParents[groupName]||'':'';
+   const hierarchyPath=groupName?[...(()=>{const path=[],seen=new Set();let p=parentName;while(p&&!seen.has(p)){seen.add(p);path.unshift(p);p=timelineGroupParents[p];}return path;})(),groupName].join(' / '):'';
+   return '<div class="mt-track-row '+(selectedLayerIndex===i?'selected':'')+'" data-mt-row="'+i+'" data-mt-depth="'+depth+'">'+
+    '<div class="mt-track-label" style="padding-left:'+Math.min(5,depth)*12+'px">'+
      '<input type="checkbox" class="mt-group-pick" data-mt-group-pick="'+i+'" aria-label="Pilih layer untuk grup" '+(timelineGroupSelected[i]?'checked':'')+'>'+
-     (timelineLayerGroups[i]?'<span class="mt-group-tag" title="Grup '+escapeLayerName(timelineLayerGroups[i])+'">▦ '+escapeLayerName(timelineLayerGroups[i])+'</span>'+(timelineGroupParents[timelineLayerGroups[i]]?'<span class="mt-hierarchy-tag" title="Anak dari grup '+escapeLayerName(timelineGroupParents[timelineLayerGroups[i]])+'">↳ '+escapeLayerName(timelineGroupParents[timelineLayerGroups[i]])+'</span>':''):'')+
+     (groupName?'<span class="mt-group-tag" title="Hierarki: '+escapeLayerName(hierarchyPath)+'">▦ '+escapeLayerName(groupName)+'</span>'+(parentName?'<span class="mt-hierarchy-tag" title="Anak dari grup '+escapeLayerName(parentName)+'">↳ '+escapeLayerName(parentName)+'</span>':''):'')+
      '<button type="button" class="mt-eye" data-mt-eye="'+i+'" title="Tampilkan/sembunyikan layer">'+(visible?'◉':'○')+'</button>'+
      '<button type="button" class="mt-lock '+(locked?'locked':'')+'" data-mt-lock="'+i+'" aria-pressed="'+locked+'" title="Kunci klip di timeline">'+(locked?'🔒':'↔')+'</button>'+
      '<button type="button" class="mt-name" data-mt-select="'+i+'" title="'+name+'">'+name+'</button>'+
