@@ -1,0 +1,46 @@
+name: Validate Browser AI Render Scheduler
+
+on:
+  push:
+    branches: [browser-render-cursor-independent-2026-11-15]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check inline JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const { spawnSync } = require('child_process');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script\\s*>/gi)];
+          if (!scripts.length) throw new Error('No inline script blocks found');
+          scripts.forEach((match, index) => {
+            const file = '/tmp/trozal-inline-' + index + '.js';
+            fs.writeFileSync(file, match[1], 'utf8');
+            const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
+            if (result.status !== 0) {
+              process.stderr.write('Syntax error in inline script ' + (index + 1) + '\\n');
+              process.stderr.write(result.stderr || result.stdout || '');
+              process.exit(1);
+            }
+          });
+          if (!html.includes('setTimeout(()=>trozalScheduleRenderTask(draw),step)')) {
+            throw new Error('Real-time render loop is not routed through the shared scheduler');
+          }
+          if (!html.includes('pointer-events:none;user-select:none')) {
+            throw new Error('Top render progress monitor is not pointer-independent');
+          }
+          console.log('Validated ' + scripts.length + ' inline JavaScript block(s) and render scheduler wiring.');
+          NODE
