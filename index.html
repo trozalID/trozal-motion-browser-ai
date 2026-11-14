@@ -4204,7 +4204,42 @@ function trozalInitThemeCatalog(){
  search.addEventListener('change',resolve);
  search.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const first=results.querySelector('button');if(first)choose(first.textContent);else resolve();}else if(e.key==='Escape')results.hidden=true;});
  document.addEventListener('click',e=>{if(!e.target.closest('#svgMotionModePanel'))results.hidden=true;});
- const randomBtn=$('svgAiRandomThemeBtn');if(randomBtn)randomBtn.addEventListener('click',()=>{const pool=TROZAL_AI_THEMES.filter(t=>t!==select.value);choose(pool[Math.floor(Math.random()*pool.length)]);});
+ const randomBtn=$('svgAiRandomThemeBtn');
+ if(randomBtn&&!randomBtn.dataset.trozalRandomBound){
+  randomBtn.dataset.trozalRandomBound='1';
+  randomBtn.addEventListener('click',()=>{
+   try{
+    const catalogue=Array.isArray(TROZAL_AI_THEMES)?TROZAL_AI_THEMES.filter(t=>typeof t==='string'&&t.trim()):[];
+    if(!catalogue.length)throw new Error('Katalog tema kosong atau belum siap.');
+    let bag=Array.isArray(window.__trozalBrowserThemeShuffleBag)?window.__trozalBrowserThemeShuffleBag:[];
+    const active=select.value;
+    bag=bag.filter(t=>catalogue.includes(t)&&t!==active);
+    if(!bag.length){
+     bag=catalogue.filter(t=>t!==active);
+     for(let i=bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]];}
+    }
+    const next=bag.shift();
+    window.__trozalBrowserThemeShuffleBag=bag;
+    if(!next)throw new Error('Tidak ada tema alternatif yang dapat dipilih.');
+    try{
+     choose(next);
+    }catch(applyError){
+     let opt=[...select.options].find(o=>o.value===next);
+     if(!opt){opt=new Option(next,next);select.add(opt);}
+     select.value=next;search.value=next;
+     trozalSetSelectOptions($('svgAiCategory'),['Minimal Swiss Design','Modern Editorial','Clean Corporate','Cinematic Lighting','3D Layered Composition']);
+     trozalSetSelectOptions($('svgAiSpecific'),[next+' hero reveal',next+' feature showcase',next+' closing brand frame']);
+     $('svgAiThemeSearchHint').textContent='Tema aktif: '+next+' · mode pemulihan diterapkan. Periksa console untuk detail.';
+     if($('svgAiPrompt').value.trim())generateSvgAiPrompt();
+     console.error('[TROZAL RANDOM THEME] Tema dipilih, tetapi profil tema gagal diterapkan:',applyError);
+    }
+    console.info('[TROZAL RANDOM THEME] Tema acak diterapkan:',next,'| katalog:',catalogue.length,'| sisa antrean:',bag.length);
+   }catch(err){
+    $('svgAiThemeSearchHint').textContent='Tema acak gagal: '+(err&&err.message?err.message:String(err));
+    console.error('[TROZAL RANDOM THEME] Handler gagal:',err);
+   }
+  });
+ }
  const preset=$('svgAiMotionPreset'),hint=$('svgAiMotionPresetHint');
  const presetDescriptions={'Cinematic Reveal':'Build anticipation, reveal the hero, then settle.','Luxury Showcase':'Slow premium drift, macro details, elegant hold.','Futuristic Interface':'Interface scan, orbital data, controlled energy pulse.','3D Product Orbit':'Depth entrance, smooth orbit, front hero.','Waveform & Sound':'Rhythmic waveform, travelling sound ribbons, beat accents.','Kinetic Typography':'Staggered typography, phrase emphasis, clean lockup.','Particle Assembly':'Dispersed particles gather into a finished hero.','Commercial Feature Story':'Visual hook, product features, benefit, CTA.','Parallax Editorial':'Layered parallax, editorial transition, title hold.','Abstract Flow':'Organic morphing shapes and seamless flow.'};
  const updatePresetHint=()=>{hint.textContent=presetDescriptions[preset.value]||'Auto memilih urutan gerak berdasarkan tema, objek utama, dan format video.';if($('svgAiPrompt').value.trim())generateSvgAiPrompt();};
