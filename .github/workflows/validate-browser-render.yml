@@ -44,3 +44,4 @@ jobs:
           }
           console.log('Validated ' + scripts.length + ' inline JavaScript block(s) and render scheduler wiring.');
           NODE
+          node tests/browser-render-scheduler.test.cjs
