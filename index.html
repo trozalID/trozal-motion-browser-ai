@@ -895,7 +895,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
   <section class="multi-track-editor" id="multiTrackEditor" aria-label="Multi-track timeline editor">
    <div class="mt-toolbar">
     <div><strong>Multi-Track Timeline</strong><small id="mtTrackSummary">Komposisi utama · 1 track</small></div>
-    <div class="mt-toolbar-actions"><button type="button" id="mtUndo" title="Undo · Ctrl+Z" disabled>↶ Undo</button><button type="button" id="mtRedo" title="Redo · Ctrl+Y" disabled>↷ Redo</button><button type="button" id="mtSnapToggle" aria-pressed="true" title="Snap ke frame, keyframe, marker, dan tepi klip">🧲 Snap ON</button><input id="mtGroupName" type="text" maxlength="28" placeholder="Nama grup" aria-label="Nama grup layer" style="width:112px;min-width:90px"><button type="button" id="mtCreateGroup" title="Gabungkan layer yang dicentang">⊞ Buat Grup</button><button type="button" id="mtGroupKeyframe" title="Tambahkan keyframe serentak ke semua anggota grup">◆ Keyframe Grup</button><button type="button" id="mtToggleGroupVisibility" title="Tampilkan atau sembunyikan grup terpilih">◉ Grup</button><button type="button" id="mtDissolveGroup" title="Lepaskan layer dari grup">Lepas Grup</button><button type="button" id="mtBuildTracks" title="Pisahkan elemen SVG menjadi track yang dapat diedit">＋ Pecah SVG</button><button type="button" class="primary" id="mtAddMarker">＋ Marker</button><button type="button" id="mtClearMarkers">Hapus Marker</button></div>
+    <div class="mt-toolbar-actions"><button type="button" id="mtUndo" title="Undo · Ctrl+Z" disabled>↶ Undo</button><button type="button" id="mtRedo" title="Redo · Ctrl+Y" disabled>↷ Redo</button><button type="button" id="mtSnapToggle" aria-pressed="true" title="Snap ke frame, keyframe, marker, dan tepi klip">🧲 Snap ON</button><input id="mtGroupName" type="text" maxlength="28" placeholder="Nama grup" aria-label="Nama grup layer" style="width:112px;min-width:90px"><button type="button" id="mtCreateGroup" title="Gabungkan layer yang dicentang">⊞ Buat Grup</button><select id="mtHierarchyParent" aria-label="Pilih parent grup" title="Pilih parent untuk grup terpilih" style="max-width:125px;background:#0b1e19;color:#eaf5ef;border:1px solid #315b4d;border-radius:6px;padding:6px;font-size:10px"><option value="">— Parent —</option></select><button type="button" id="mtSetGroupParent" title="Jadikan grup terpilih sebagai anak dari parent">↳ Jadikan Anak</button><button type="button" id="mtClearGroupParent" title="Lepaskan grup dari parent">↰ Naikkan</button><button type="button" id="mtGroupKeyframe" title="Keyframe grup dan semua turunannya">◆ Keyframe Grup</button><button type="button" id="mtToggleGroupVisibility" title="Tampilkan atau sembunyikan grup terpilih">◉ Grup</button><button type="button" id="mtDissolveGroup" title="Lepaskan layer dari grup">Lepas Grup</button><button type="button" id="mtBuildTracks" title="Pisahkan elemen SVG menjadi track yang dapat diedit">＋ Pecah SVG</button><button type="button" class="primary" id="mtAddMarker">＋ Marker</button><button type="button" id="mtClearMarkers">Hapus Marker</button></div>
    </div>
    <div class="mt-ruler-row"><div class="mt-track-name-head">TRACK / LAYER</div><div class="mt-ruler" id="mtRuler"></div></div>
    <div class="mt-track-list" id="mtTrackList"><div class="mt-empty">Muat aset untuk membuat track timeline.</div></div>
@@ -1158,7 +1158,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
 <script>
 const $=id=>document.getElementById(id);
 let sourceSvg='', sourceUrl='', sourceType='', files=[], playing=false, raf=0, startAt=0, playhead=0, lastBlob=null, lastDownloadName='animove-render.webm', currentColor='#ffbd45', currentMode='single', svgPieces=[], svgWasSplit=false, svgLayerNames=[], svgLayerHints=[], svgLayerSceneIndices=[], trozalSceneObjectSplitMode=false, preserveSvgColors=false, soloLayerIndex=-1, selectedLayerIndex=-1, layerKeyframes=[];
-let timelineMarkers=[], timelineTrackLocks={}, timelineLayerGroups={}, timelineGroupSelected={}, timelineDragState=null, keyframeGraphDragState=null;
+let timelineMarkers=[], timelineTrackLocks={}, timelineLayerGroups={}, timelineGroupParents={}, timelineGroupSelected={}, timelineDragState=null, keyframeGraphDragState=null;
 let timelineSnapEnabled=true, motionPathDragState=null, trozalUndoStack=[], trozalUndoIndex=-1, trozalHistoryBusy=false;
 // HTML-to-Motion uses an isolated same-origin document and DOM capture; it is not rasterized through SVG foreignObject.
 let trozalMetadataActiveSource=null;
@@ -1574,10 +1574,16 @@ function addOrUpdateLayerKeyframe(i,options={}){
  paintLayerKeyframes(i);renderAt(playhead);scheduleAutosave();
  setStatus('Keyframe layer '+(i+1)+' tersimpan pada '+t.toFixed(2)+' detik · '+ease+'.');trozalHistoryCommit('Keyframe layer '+(i+1));
 }
+function trozalGroupDescendants(root){
+ const out=new Set([root]);let changed=true;while(changed){changed=false;Object.entries(timelineGroupParents).forEach(([child,parent])=>{if(out.has(parent)&&!out.has(child)){out.add(child);changed=true;}});}return out;
+}
+function trozalGroupMembers(root){const names=trozalGroupDescendants(root);return svgPieces.map((_,i)=>i).filter(i=>names.has(timelineLayerGroups[i]));}
+function trozalGroupDepth(name){let depth=0,seen=new Set(),p=timelineGroupParents[name];while(p&&!seen.has(p)){seen.add(p);depth++;p=timelineGroupParents[p];}return depth;}
+function trozalRefreshHierarchySelect(){const el=$('mtHierarchyParent');if(!el)return;const current=el.value;const groups=[...new Set(Object.values(timelineLayerGroups))].sort((a,b)=>a.localeCompare(b));el.innerHTML='<option value="">— Parent —</option>'+groups.map(g=>'<option value="'+escapeLayerName(g)+'">'+('　'.repeat(Math.min(5,trozalGroupDepth(g)))+'▦ '+escapeLayerName(g))+'</option>').join('');if(groups.includes(current))el.value=current;}
 function addGroupKeyframe(){
  const i=selectedLayerIndex,group=timelineLayerGroups[i];
  if(!group){setStatus('Pilih salah satu layer anggota grup terlebih dahulu.');return;}
- const members=svgPieces.map((_,n)=>n).filter(n=>timelineLayerGroups[n]===group);
+ const members=trozalGroupMembers(group);
  if(members.length<2){setStatus('Grup harus memiliki minimal dua layer.');return;}
  if(members.some(n=>timelineTrackLocks[n])){setStatus('Ada anggota grup yang terkunci. Buka kunci semua anggota sebelum membuat keyframe grup.');return;}
  const read=(id,d)=>{const el=$(id+i),v=el&&el.value!==''?Number(el.value):d;return Number.isFinite(v)?v:d};
@@ -1743,6 +1749,7 @@ function mtSelectLayer(index){
 function refreshTimelineEditor(){
  const editor=$('multiTrackEditor'),ruler=$('mtRuler'),list=$('mtTrackList'),shelf=$('mtMarkerShelf');
  if(!editor||!ruler||!list||!shelf)return;
+ trozalRefreshHierarchySelect();
  const duration=Math.max(.1,+$('duration').value||10),oldScroll=list.scrollTop;
  const step=duration<=10?1:duration<=20?2:5;
  let ticks='';
@@ -1813,11 +1820,13 @@ function wireMultiTrackEditor(){
   chosen.forEach(i=>{timelineLayerGroups[i]=name;delete timelineGroupSelected[i];});
   refreshTimelineEditor();scheduleAutosave();setStatus('Grup "'+name+'" dibuat dari '+chosen.length+' layer. Anggota grup kini dapat digeser bersama.');trozalHistoryCommit('Buat grup '+name);
  };
+ $('mtSetGroupParent').onclick=()=>{const child=timelineLayerGroups[selectedLayerIndex],parent=$('mtHierarchyParent')?.value||'';if(!child){setStatus('Pilih layer anggota grup yang akan dijadikan anak.');return;}if(!parent){setStatus('Pilih parent grup terlebih dahulu.');return;}if(child===parent){setStatus('Grup tidak dapat menjadi parent bagi dirinya sendiri.');return;}if(trozalGroupDescendants(child).has(parent)){setStatus('Tidak bisa: tindakan ini akan membuat siklus hierarki.');return;}trozalHistoryBegin();timelineGroupParents[child]=parent;refreshTimelineEditor();scheduleAutosave();trozalHistoryCommit('Hierarki '+child+' → '+parent);setStatus('Grup "'+child+'" sekarang menjadi anak dari "'+parent+'".');};
+ $('mtClearGroupParent').onclick=()=>{const child=timelineLayerGroups[selectedLayerIndex];if(!child||!timelineGroupParents[child]){setStatus('Grup terpilih tidak memiliki parent.');return;}trozalHistoryBegin();const parent=timelineGroupParents[child];delete timelineGroupParents[child];refreshTimelineEditor();scheduleAutosave();trozalHistoryCommit('Naikkan grup '+child);setStatus('Grup "'+child+'" dilepaskan dari parent "'+parent+'" dan menjadi root.');};
  $('mtGroupKeyframe').onclick=addGroupKeyframe;
  $('mtToggleGroupVisibility').onclick=()=>{
   const group=timelineLayerGroups[selectedLayerIndex];
   if(!group){setStatus('Pilih layer yang sudah menjadi anggota grup terlebih dahulu.');return;}
-  const members=svgPieces.map((_,i)=>i).filter(i=>timelineLayerGroups[i]===group);
+  const members=trozalGroupMembers(group);
   const hide=members.some(i=>$('autoLayerVisible'+i)?.checked!==false);
   trozalHistoryBegin();members.forEach(i=>{const el=$('autoLayerVisible'+i);if(el)el.checked=!hide;});
   renderAt(playhead);refreshTimelineEditor();scheduleAutosave();trozalHistoryCommit('Visibilitas grup '+group);
@@ -1931,7 +1940,7 @@ function trozalSnapTime(value,opts={}){
 function updateSnapButton(){const b=$('mtSnapToggle');if(!b)return;b.textContent=timelineSnapEnabled?'🧲 Snap ON':'🧲 Snap OFF';b.setAttribute('aria-pressed',String(timelineSnapEnabled));b.title=timelineSnapEnabled?'Snap aktif: frame, keyframe, marker, dan tepi klip':'Snap nonaktif'}
 function trozalHistorySnapshot(){
  const controls={};document.querySelectorAll('#autoLayerControls input, #autoLayerControls select').forEach(el=>{if(!el.id)return;controls[el.id]=el.type==='checkbox'?{checked:el.checked}:{value:el.value}});
- return JSON.stringify({layerKeyframes,timelineMarkers,timelineTrackLocks,timelineLayerGroups,controls,playhead});
+ return JSON.stringify({layerKeyframes,timelineMarkers,timelineTrackLocks,timelineLayerGroups,timelineGroupParents,controls,playhead});
 }
 function trozalHistoryPush(label){
  if(trozalHistoryBusy)return;const state=trozalHistorySnapshot();if(trozalUndoIndex>=0&&trozalUndoStack[trozalUndoIndex]?.state===state)return;
@@ -1943,7 +1952,7 @@ function trozalHistoryCommit(label){trozalHistoryPush(label||'Perubahan')}
 function updateHistoryButtons(){const u=$('mtUndo'),r=$('mtRedo');if(u)u.disabled=trozalUndoIndex<=0;if(r)r.disabled=trozalUndoIndex<0||trozalUndoIndex>=trozalUndoStack.length-1}
 function trozalRestoreHistory(index){
  if(index<0||index>=trozalUndoStack.length)return;trozalHistoryBusy=true;
- try{const snap=JSON.parse(trozalUndoStack[index].state);layerKeyframes=Array.isArray(snap.layerKeyframes)?snap.layerKeyframes:[];timelineMarkers=Array.isArray(snap.timelineMarkers)?snap.timelineMarkers:[];timelineTrackLocks=snap.timelineTrackLocks||{};timelineLayerGroups=snap.timelineLayerGroups||{};
+ try{const snap=JSON.parse(trozalUndoStack[index].state);layerKeyframes=Array.isArray(snap.layerKeyframes)?snap.layerKeyframes:[];timelineMarkers=Array.isArray(snap.timelineMarkers)?snap.timelineMarkers:[];timelineTrackLocks=snap.timelineTrackLocks||{};timelineLayerGroups=snap.timelineLayerGroups||{};timelineGroupParents=snap.timelineGroupParents||{};
   Object.entries(snap.controls||{}).forEach(([id,v])=>{const el=$(id);if(!el)return;if('checked'in v)el.checked=!!v.checked;else if('value'in v)el.value=v.value});
   playhead=trozalClamp(Number(snap.playhead)||0,0,+$('duration').value||10);for(let i=0;i<svgPieces.length;i++)paintLayerKeyframes(i);
   renderAt(playhead);refreshTimelineEditor();scheduleAutosave();trozalUndoIndex=index;updateHistoryButtons();setStatus('Undo/Redo: '+(trozalUndoStack[index].label||'perubahan')+' dipulihkan.');
@@ -2844,7 +2853,7 @@ function getProject(){
  const controls={};ids.forEach(k=>{if($(k))controls[k]=$(k).value});
  checks.forEach(k=>{if($(k))controls[k]=$(k).checked});
  const layers=svgPieces.map((piece,i)=>{const l={svg:piece,name:svgLayerNames[i]||('Layer '+(i+1))};['Visible','On','In','Out','Loop','Delay','Start','End','Duration','Speed','Intensity','Scale','Rotation','Direction'].forEach(k=>{const el=$('autoLayer'+k+i);if(el)l[k.toLowerCase()]=el.type==='checkbox'?el.checked:el.value});l.autoKey=!!$('kfAuto'+i)?.checked;return l});
- saveActiveTextLayer();syncActiveMaskFromControls();return {app:'ANIMOVE',version:12,stage:15,visualSceneSequence:Array.isArray(visualSceneSequence)?visualSceneSequence.map(x=>({...x})):[],shapeMaskLayers:shapeMaskLayers.map(x=>({...x})),activeShapeMask,nativeTextLayers:nativeTextLayers.map(x=>({...x})),selectedTextLayerId,timelineSnapEnabled,savedAt:new Date().toISOString(),controls,currentColor,playhead,sourceSvg,sourceType,sourceName:$('objectName').value,svgWasSplit,svgPieces:[...svgPieces],svgLayerNames:[...svgLayerNames],svgLayerHints:[...svgLayerHints],layerKeyframes:layerKeyframes.map(a=>(a||[]).map(k=>({...k}))),timelineMarkers:timelineMarkers.map(m=>({...m})),timelineTrackLocks:{...timelineTrackLocks},timelineLayerGroups:{...timelineLayerGroups},layers};
+ saveActiveTextLayer();syncActiveMaskFromControls();return {app:'ANIMOVE',version:12,stage:15,visualSceneSequence:Array.isArray(visualSceneSequence)?visualSceneSequence.map(x=>({...x})):[],shapeMaskLayers:shapeMaskLayers.map(x=>({...x})),activeShapeMask,nativeTextLayers:nativeTextLayers.map(x=>({...x})),selectedTextLayerId,timelineSnapEnabled,savedAt:new Date().toISOString(),controls,currentColor,playhead,sourceSvg,sourceType,sourceName:$('objectName').value,svgWasSplit,svgPieces:[...svgPieces],svgLayerNames:[...svgLayerNames],svgLayerHints:[...svgLayerHints],layerKeyframes:layerKeyframes.map(a=>(a||[]).map(k=>({...k}))),timelineMarkers:timelineMarkers.map(m=>({...m})),timelineTrackLocks:{...timelineTrackLocks},timelineLayerGroups:{...timelineLayerGroups},timelineGroupParents:{...timelineGroupParents},layers};
 }
 function applyProject(p){
  if(!p||p.app!=='ANIMOVE')throw new Error('File bukan proyek trozal_MOTION');
@@ -2869,6 +2878,8 @@ function applyProject(p){
  timelineTrackLocks=p.timelineTrackLocks&&typeof p.timelineTrackLocks==='object'?{...p.timelineTrackLocks}:{};
  // Restore named layer groups from saved projects; discard invalid indexes and empty names.
  timelineLayerGroups={};if(p.timelineLayerGroups&&typeof p.timelineLayerGroups==='object'&&!Array.isArray(p.timelineLayerGroups)){Object.entries(p.timelineLayerGroups).forEach(([key,value])=>{const index=Number(key),name=String(value||'').trim();if(Number.isInteger(index)&&index>=0&&index<(Array.isArray(p.svgPieces)?p.svgPieces.length:0)&&name)timelineLayerGroups[index]=name.slice(0,28);});}
+ timelineGroupParents={};if(p.timelineGroupParents&&typeof p.timelineGroupParents==='object'&&!Array.isArray(p.timelineGroupParents)){Object.entries(p.timelineGroupParents).forEach(([child,parent])=>{child=String(child||'').trim();parent=String(parent||'').trim();if(child&&parent&&child!==parent)timelineGroupParents[child]=parent;});}
+ Object.keys(timelineGroupParents).forEach(child=>{let pName=timelineGroupParents[child],seen=new Set([child]),valid=true;while(pName){if(seen.has(pName)){valid=false;break;}seen.add(pName);pName=timelineGroupParents[pName];}if(!valid||!Object.values(timelineLayerGroups).includes(child)||!Object.values(timelineLayerGroups).includes(timelineGroupParents[child]))delete timelineGroupParents[child];});
  timelineGroupSelected={};timelineSnapEnabled=p.timelineSnapEnabled!==false;updateSnapButton?.();
  if(svgWasSplit){
    buildAutoLayerControls();
