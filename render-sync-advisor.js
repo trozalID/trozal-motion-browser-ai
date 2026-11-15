@@ -17,7 +17,7 @@
     return;
   }
 
-  const m = { frames: [], costs: [], lastFrame: 0, lastReport: 0, dropped: 0, longTasks: 0, observer: null, raf: 0, rafTicks: 0 };
+  const m = { frames: [], costs: [], lastFrame: 0, lastReport: 0, dropped: 0, longTasks: 0, observer: null, raf: 0, rafTicks: 0, resetNoticeUntil: 0 };
   const avg = a => a.length ? a.reduce((x,y) => x+y, 0) / a.length : 0;
   const push = (a,v,max=90) => { a.push(v); if (a.length > max) a.shift(); };
 
@@ -63,7 +63,9 @@
     if (costMax > 16.7) notes.push('renderAt pernah melebihi 16,7 ms. Periksa SVG kompleks, filter, dan jumlah layer.');
     if (m.longTasks) notes.push('Browser mencatat ' + m.longTasks + ' long task (>50 ms).');
     if (!notes.length) notes.push('Belum terdeteksi bottleneck besar. Jalankan preview dan render singkat untuk mengukur beban aktual.');
-    $('renderSyncStatus').textContent = 'Sinkronisasi: ' + (cadence && cadence < 35 ? 'Stabil' : cadence && cadence < 55 ? 'Perlu dipantau' : 'Cadence sedang diukur') + ' · Target ' + target + ' FPS · Long task ' + m.longTasks;
+    $('renderSyncStatus').textContent = now < m.resetNoticeUntil
+      ? 'Pengukuran direset. Kumpulkan sampel baru…'
+      : 'Sinkronisasi: ' + (cadence && cadence < 35 ? 'Stabil' : cadence && cadence < 55 ? 'Perlu dipantau' : 'Cadence sedang diukur') + ' · Target ' + target + ' FPS · Long task ' + m.longTasks;
     $('renderSyncRecommendations').textContent = notes.join('\n');
     window.__trozalRenderSyncDiagnostics = { rafTicks: m.rafTicks, samples: m.frames.length, lastReport: m.lastReport, visibility: document.visibilityState };
   };
@@ -94,6 +96,7 @@
 
   const reset = () => {
     m.frames = []; m.costs = []; m.lastFrame = 0; m.lastReport = 0; m.dropped = 0; m.longTasks = 0; m.rafTicks = 0;
+    m.resetNoticeUntil = performance.now() + 1500;
     $('renderSyncStatus').textContent = 'Pengukuran direset. Kumpulkan sampel baru…';
   };
   $('renderSyncReset').addEventListener('click', reset);
