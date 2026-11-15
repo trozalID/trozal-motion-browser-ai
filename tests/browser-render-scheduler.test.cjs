@@ -4,6 +4,26 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const html = fs.readFileSync('index.html', 'utf8');
+
+function testMultiTrackParityAndResponsiveToolbar() {
+  assert.match(html, /class="mt-toolbar-actions mt-group-toolbar"/, 'Group and hierarchy controls must be separated from the primary toolbar');
+  const requiredControls = [
+    'mtUndo', 'mtRedo', 'mtSnapToggle', 'mtBuildTracks', 'mtAddMarker',
+    'mtClearMarkers', 'mtGroupName', 'mtCreateGroup', 'mtRenameGroup',
+    'mtHierarchyParent', 'mtSetGroupParent', 'mtClearGroupParent',
+    'mtGroupKeyframe', 'mtToggleGroupVisibility', 'mtSelectGroupMembers',
+    'mtToggleGroupLock', 'mtSoloGroup', 'mtCollapseGroup',
+    'mtCollapseAllGroups', 'mtExpandAllGroups', 'mtDissolveGroup',
+    'mtRuler', 'mtTrackList', 'mtMarkerShelf'
+  ];
+  for (const id of requiredControls) {
+    assert.ok(html.includes('id="' + id + '"'), 'Multi-Track control #' + id + ' must exist');
+  }
+  assert.match(html, /\.mt-group-toolbar\{margin:7px 0/, 'Group toolbar must have dedicated layout styling');
+  assert.match(html, /\.mt-track-row\[data-mt-depth="1"\]/, 'Nested group rows must show hierarchy indentation');
+  assert.match(html, /@media\(max-width:760px\)[\s\S]*?\.mt-group-toolbar/, 'Group controls must have compact mobile styling');
+}
+testMultiTrackParityAndResponsiveToolbar();
 const schedulerMatch = html.match(/\/\* RENDER SCHEDULER:[\s\S]*?\nasync function draw\(\)/);
 assert.ok(schedulerMatch, 'Shared render scheduler block must exist');
 const schedulerSource = schedulerMatch[0].replace(/\nasync function draw\(\)$/, '');
