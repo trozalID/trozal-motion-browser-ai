@@ -3039,59 +3039,8 @@ function trozalRunRenderPreflight(){
 }
 $('renderPreflightCheck')?.addEventListener('click',trozalRunRenderPreflight);
 ['resolution','duration','fps'].forEach(id=>$(id)?.addEventListener('change',()=>{if($('renderPreflightGrid'))trozalRunRenderPreflight()}));
-// Live render synchronization and browser performance advisor.
-(()=>{
- const metrics={intervals:[],renderCosts:[],lastFrame:0,lastReport:0,dropped:0,frames:0,longTasks:0,observer:null};
- const get=id=>document.getElementById(id);
- const ids=['renderSyncFps','renderSyncInterval','renderSyncCost','renderSyncDropped','renderSyncQueue','renderSyncDevice','renderSyncStatus','renderSyncRecommendations'];
- if(ids.some(id=>!get(id))){console.error('[TROZAL Render Sync] Elemen panel tidak lengkap:',ids.filter(id=>!get(id)));return;}
- const push=(arr,value,max=60)=>{arr.push(value);if(arr.length>max)arr.shift();};
- const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
- get('renderSyncDevice').textContent=(navigator.hardwareConcurrency||'?')+' cores · '+(navigator.deviceMemory?navigator.deviceMemory+' GB RAM':'RAM tidak dilaporkan');
- if(typeof PerformanceObserver==='function'){
-  try{metrics.observer=new PerformanceObserver(list=>{metrics.longTasks+=list.getEntries().length});metrics.observer.observe({type:'longtask',buffered:true});}catch(_){}
- }
- if(typeof renderAt==='function'&&!window.__trozalRenderAtAdvisorWrapped){
-  const original=renderAt;
-  renderAt=function(...args){
-   const start=performance.now();
-   try{return original.apply(this,args)}
-   finally{push(metrics.renderCosts,performance.now()-start,90)}
-  };
-  window.__trozalRenderAtAdvisorWrapped=true;
- }
- let rafId=0;
- const tick=now=>{
-  if(metrics.lastFrame){
-   const delta=now-metrics.lastFrame;
-   if(delta>0&&delta<1000){push(metrics.intervals,delta,90);metrics.frames++;if(delta>50)metrics.dropped++;}
-  }
-  metrics.lastFrame=now;
-  if(now-metrics.lastReport>=1000){
-   metrics.lastReport=now;
-   const cadence=avg(metrics.intervals),costAvg=avg(metrics.renderCosts),costMax=metrics.renderCosts.length?Math.max(...metrics.renderCosts):0;
-   get('renderSyncFps').textContent=metrics.intervals.length?((1000/cadence).toFixed(1)+' FPS'):'Mengukur…';
-   get('renderSyncInterval').textContent=metrics.intervals.length?(cadence.toFixed(1)+' ms'):'—';
-   get('renderSyncCost').textContent=metrics.renderCosts.length?(costAvg.toFixed(2)+' / '+costMax.toFixed(2)+' ms'):'Menunggu renderAt';
-   get('renderSyncDropped').textContent=String(metrics.dropped)+' (>50 ms)';
-   get('renderSyncQueue').textContent=(typeof trozalRenderTaskQueue!=='undefined'?String(trozalRenderTaskQueue.length+(trozalRenderTaskRunning?1:0)):'Tidak tersedia');
-   const target=Math.max(1,Number(get('fps')?.value)||30),notes=[];
-   if(cadence>50)notes.push('Cadence UI rendah: tutup tab berat, nonaktifkan ekstensi berat, atau kurangi efek dekoratif.');
-   else if(cadence>0&&cadence>1000/target*1.5)notes.push('Cadence preview lebih rendah dari target FPS. Preview browser tidak selalu sama dengan FPS hasil ekspor.');
-   if(costMax>16.7)notes.push('renderAt pernah melebihi 16,7 ms. Periksa SVG kompleks, filter, dan jumlah layer.');
-   if(metrics.longTasks>0)notes.push('Browser mencatat '+metrics.longTasks+' long task (lebih dari 50 ms) sejak panel dibuka.');
-   if(!notes.length)notes.push('Belum terdeteksi bottleneck besar pada sampel ini. Jalankan preview dan render singkat untuk menguji beban aktual.');
-   get('renderSyncStatus').textContent='Sinkronisasi: '+(cadence&&cadence<35?'Stabil':cadence&&cadence<55?'Perlu dipantau':'Cadence sedang diukur')+' · Target proyek '+target+' FPS · Long task '+metrics.longTasks;
-   get('renderSyncRecommendations').textContent=notes.join('\n');
-  }
-  rafId=requestAnimationFrame(tick);
- };
- const reset=()=>{metrics.intervals=[];metrics.renderCosts=[];metrics.dropped=0;metrics.frames=0;metrics.longTasks=0;metrics.lastFrame=0;metrics.lastReport=0;get('renderSyncStatus').textContent='Pengukuran direset. Kumpulkan sampel baru…';};
- get('renderSyncReset').addEventListener('click',reset);
- get('renderSyncRunPreflight').addEventListener('click',()=>{if(typeof trozalRunRenderPreflight==='function')trozalRunRenderPreflight();});
- window.addEventListener('pagehide',()=>{if(rafId)cancelAnimationFrame(rafId);metrics.observer?.disconnect();},{once:true});
- rafId=requestAnimationFrame(tick);
-})();
+/* Render Sync Advisor runs from the isolated render-sync-advisor.js bootstrap. */
+
 $('motionBlurAmount')?.addEventListener('input',()=>{const out=$('motionBlurAmountValue');if(out)out.textContent=$('motionBlurAmount').value+' px';});
 $('motionBlurEnabled')?.addEventListener('change',()=>{const out=$('motionBlurReadout');if(out)out.textContent=$('motionBlurEnabled').checked?'Mode: aktif · Blur adaptif mengikuti kecepatan gerak objek.':'Mode: nonaktif · Tidak mengubah durasi atau FPS ekspor.';});
 $('cancelRenderBtn')?.addEventListener('click',()=>{if(typeof trozalRenderCancelHandler==='function')trozalRenderCancelHandler();});
