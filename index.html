@@ -2636,6 +2636,8 @@ function renderAt(t,syncPreview=true,updateStage=true){
  if($('shadow').checked)filters.push('drop-shadow(0 6px 8px #0003)');$('object').style.filter=filters.join(' ')||'none';$('object').style.outline='none';drawPreviewEffects(playhead,m);
  $('scrubber').value=p*1000;$('trackfill').style.width=p*100+'%';$('timeReadout').textContent='00:'+String(Math.floor(playhead/60)).padStart(2,'0')+':'+(playhead%60).toFixed(1).padStart(4,'0');
 }
+// Expose the editor hooks used by the isolated Render Sync Advisor bootstrap.
+window.renderAt=renderAt;
 function tick(now){if(!playing)return;let d=+$('duration').value;playhead=(now-startAt)/1000;if(playhead>d){if($('loop').checked){startAt=now;playhead=0}else{playhead=d;playing=false;$('playBtn').textContent='▶ Putar'}}renderAt(playhead);if(playing)raf=requestAnimationFrame(tick)}
 $('playBtn').onclick=()=>{if(playing){playing=false;cancelAnimationFrame(raf);$('playBtn').textContent='▶ Putar';return}playing=true;startAt=performance.now()-playhead*1000;$('playBtn').textContent='❚❚ Jeda';raf=requestAnimationFrame(tick)};
 $('stopBtn').onclick=()=>{playing=false;cancelAnimationFrame(raf);playhead=0;renderAt(0);$('playBtn').textContent='▶ Putar'};
@@ -3037,6 +3039,8 @@ function trozalRunRenderPreflight(){
  const notes=[];if(width>3840||height>2160)notes.push('Resolusi di atas 4K: pertimbangkan uji render pendek terlebih dahulu.');if(pixels>900000000)notes.push('Beban pixel-frame sangat tinggi; turunkan resolusi, durasi, atau FPS bila memori terbatas.');if(ram&&buffer>ram*1024*.18)notes.push('Satu buffer frame diperkirakan besar dibanding RAM perangkat.');if(fps>30)notes.push('FPS di atas 30 meningkatkan jumlah frame dan waktu ekspor.');if(!notes.length)notes.push('Pengaturan berada dalam rentang beban moderat. Tetap lakukan uji render singkat.');
  $('renderPreflightStatus').textContent='Pemeriksaan selesai · '+width+'×'+height+' · '+duration.toFixed(1)+' detik · '+fps+' FPS.\\n'+notes.join('\\n');return{width,height,duration,fps,frames,pixels,buffer,profile};
 }
+// The external Advisor script runs in its own script scope and needs this bridge.
+window.trozalRunRenderPreflight=trozalRunRenderPreflight;
 $('renderPreflightCheck')?.addEventListener('click',trozalRunRenderPreflight);
 ['resolution','duration','fps'].forEach(id=>$(id)?.addEventListener('change',()=>{if($('renderPreflightGrid'))trozalRunRenderPreflight()}));
 /* Render Sync Advisor runs from the isolated render-sync-advisor.js bootstrap. */
