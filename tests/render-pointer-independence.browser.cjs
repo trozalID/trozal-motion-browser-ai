@@ -40,14 +40,15 @@ async function measureScenario(pointerLocation) {
     });
     await page.evaluate(() => { window.__TROZAL_RENDER_DIAG_STATE = null; });
 
-    const progressBox = await page.locator('#renderProgress').boundingBox();
-    assert.ok(progressBox && progressBox.width > 80, 'Top progress monitor must be visible');
     const viewport = page.viewportSize();
     const startedAt = Date.now();
     moving = true;
     let pointerTicks = 0;
 
     await page.locator('#renderBtn').click();
+    await page.locator('#trozalFloatingRender.is-visible').waitFor({ state: 'visible', timeout: 10000 });
+    const progressBox = await page.locator('#trozalFloatingRender').boundingBox();
+    assert.ok(progressBox && progressBox.width > 80, 'Floating render monitor must be visible during rendering');
     const pointerDriver = (async () => {
       while (moving && Date.now() - startedAt < 40000) {
         let x, y;
@@ -86,7 +87,7 @@ async function measureScenario(pointerLocation) {
         minFrameIntervalMs: Number.isFinite(d.minInterval) ? d.minInterval : 0,
         maxFrameIntervalMs: d.maxInterval || 0,
         frameSpanMs: d.firstAt && d.lastAt ? d.lastAt - d.firstAt : 0,
-        progressLabel: document.getElementById('renderProgressLabel')?.textContent || '',
+        progressLabel: document.getElementById('tfrStage')?.textContent || '',
         renderStatus: document.getElementById('exportStatus')?.textContent || ''
       };
     });
@@ -113,7 +114,7 @@ async function measureScenario(pointerLocation) {
     const ratio = slower / faster;
     console.log(JSON.stringify({
       result: ratio <= 1.7 ? 'PASS' : 'FAIL',
-      comparison: 'pointer moving over progress panel vs pointer moving away',
+      comparison: 'pointer moving over floating render monitor vs pointer moving away',
       panel,
       away,
       slowerToFasterRatio: Number(ratio.toFixed(3))
