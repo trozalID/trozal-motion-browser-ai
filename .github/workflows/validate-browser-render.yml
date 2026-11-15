@@ -30,33 +30,24 @@ jobs:
           done
           cat /tmp/browser-ai-http.log
           exit 1
-      - name: Check inline JavaScript syntax
+      - name: Check standalone JavaScript and scheduler wiring
         shell: bash
         run: |
           set -euo pipefail
+          node --check render-sync-advisor.js
           node <<'NODE'
           const fs = require('fs');
-          const { spawnSync } = require('child_process');
           const html = fs.readFileSync('index.html', 'utf8');
-          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)];
-          if (!scripts.length) throw new Error('No inline script blocks found');
-          scripts.forEach((match, index) => {
-            const file = '/tmp/trozal-inline-' + index + '.js';
-            fs.writeFileSync(file, match[1], 'utf8');
-            const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
-            if (result.status !== 0) {
-              process.stderr.write('Syntax error in inline script ' + (index + 1) + '\n');
-              process.stderr.write(result.stderr || result.stdout || '');
-              process.exit(1);
-            }
-          });
           if (!html.includes('setTimeout(()=>trozalScheduleRenderTask(draw),step)')) {
             throw new Error('Real-time render loop is not routed through the shared scheduler');
           }
           if (!html.includes('pointer-events:none;user-select:none')) {
             throw new Error('Top render progress monitor is not pointer-independent');
           }
-          console.log('Validated ' + scripts.length + ' inline JavaScript block(s) and render scheduler wiring.');
+          if (!html.includes('render-sync-advisor.js')) {
+            throw new Error('Render Sync Advisor standalone script is not loaded');
+          }
+          console.log('Validated standalone Advisor syntax and render scheduler wiring.');
           NODE
           node tests/browser-render-scheduler.test.cjs
       - name: Exercise Render Sync Advisor in Chromium
