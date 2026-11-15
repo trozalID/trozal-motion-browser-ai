@@ -4543,8 +4543,6 @@ function trozalInitThemeCatalog(){
  });
  console.info('[TROZAL PROMPT] Prompt generator siap; tombol Generate Prompt terhubung.');
 })();
-</script>
-<script src="./render-sync-advisor.js" defer>
 
 /* Restored HTML-to-Motion import and deterministic capture implementation. */
 function trozalSanitizeImportedHtmlCss(css){
@@ -4772,6 +4770,10 @@ async function generateMotionSvgLocally(){
  }catch(err){const message='HTML-to-Motion gagal: '+(err?.message||String(err));setAiStatus(message);setStatus(message);setRenderProgress(0,'HTML tidak dapat dimuat','error');console.error(message,err);}
 }
 $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
+
 </script>
+<script src="./render-sync-advisor.js" defer>
+
+
 </body>
 </html>
