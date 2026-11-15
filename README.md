@@ -34,17 +34,30 @@ The app only reports ProRes as successful after FFprobe verifies the codec, prof
 
 The FFmpeg core is downloaded by the browser from this repository's GitHub Pages origin on first use. It runs in the user's browser; frames are not uploaded to a paid rendering service. 4K or long renders can require substantial browser memory.
 
-## Local AI Vision metadata (no paid API)
+## Browser AI — Gemini Cloud only
 
-TROZAL MOTION can analyze actual preview frames using a local Ollama model. The recommended starting model for a 16 GB RAM / GTX 1660 Super PC is `qwen3-vl:2b`. No OpenAI API key is required and image analysis runs on the user's computer.
+This repository's AI features use the Google Gemini Cloud API. No AI model is downloaded to or inferred on the user's PC. This Browser edition does not use Ollama, TROZAL Bridge, local inference, or WebGPU model inference.
 
-1. Install Ollama for Windows: https://ollama.com/download/windows
-2. Run `TROZAL_LOCAL_VISION_SETUP.bat` from this repository. It configures the GitHub Pages origin and downloads `qwen3-vl:2b`.
-3. Quit Ollama from the system tray and restart it.
-4. Open the site, expand the TROZAL LOCAL VISION panel, and click **Cek Ollama**.
-5. Click **Analisis Visual Sebenarnya** to analyze three preview frames, or select up to four screenshots.
+### AI Scene Composer
 
-See [TROZAL_LOCAL_VISION.md](TROZAL_LOCAL_VISION.md) for setup, privacy, and troubleshooting details. Metadata is an AI draft and should be reviewed before export.
+1. Open TROZAL MOTION and expand **TROZAL AI SCENE COMPOSER · GEMINI CLOUD**.
+2. Create a Gemini API key in [Google AI Studio](https://aistudio.google.com/apikey).
+3. Paste the key into the shared Gemini API key field and press **Periksa Koneksi**.
+4. Choose a Gemini model, enter the visual brief, and press **GENERATE ADEGAN DENGAN GEMINI**.
+5. Review the generated HTML/SVG in the composer preview. Use **Kirim ke Preview TROZAL** to load it into the main motion editor.
+
+### Browser Vision metadata
+
+Use the same API key and model. Select up to three PNG/JPG/WebP screenshots, or let TROZAL capture three samples from the main Preview at 0%, 50%, and 85% of the duration. Press **ANALISIS VISUAL DENGAN GEMINI CLOUD**. The result is a draft based on the supplied sample images and must be reviewed before export.
+
+### Privacy and limits
+
+- The Gemini API key is held in the active page field only. TROZAL does not write it to localStorage or sessionStorage.
+- The visual brief and any submitted screenshots are sent to Google Gemini Cloud for inference. Do not submit confidential or sensitive material.
+- API quota, availability, and charges depend on the Google AI account and selected model.
+- The procedural SVG fallback is template-based and does not call an AI service.
+
+The app does not bundle a local language or vision model. It needs internet connectivity and a valid Gemini API key for generative AI and vision features.
 
 ## Licensing
 
