@@ -7,15 +7,17 @@ const { chromium } = require('playwright');
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.bringToFront();
   try {
     await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
+    await page.bringToFront();
     const panel = page.locator('#renderSyncAdvisorPanel');
     await panel.waitFor({ state: 'attached' });
     assert.equal(await panel.count(), 1, 'Render Sync Advisor panel must exist exactly once');
     for (const id of ['renderSyncFps','renderSyncInterval','renderSyncCost','renderSyncDropped','renderSyncQueue','renderSyncDevice','renderSyncStatus','renderSyncRecommendations']) {
       assert.equal(await page.locator('#' + id).count(), 1, 'Expected #' + id);
     }
+    const initState = await page.evaluate(() => ({ visibility: document.visibilityState, wrapped: !!window.__trozalRenderAtAdvisorWrapped, device: document.getElementById('renderSyncDevice')?.textContent }));
+    console.log('Render Sync init:', JSON.stringify(initState));
     await page.waitForFunction(() => {
       const value = document.getElementById('renderSyncFps')?.textContent || '';
       return value.includes('FPS');
