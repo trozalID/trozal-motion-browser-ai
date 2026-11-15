@@ -16,8 +16,18 @@ const { chromium } = require('playwright');
     for (const id of ['renderSyncFps','renderSyncInterval','renderSyncCost','renderSyncDropped','renderSyncQueue','renderSyncDevice','renderSyncStatus','renderSyncRecommendations']) {
       assert.equal(await page.locator('#' + id).count(), 1, 'Expected #' + id);
     }
-    const initState = await page.evaluate(() => ({ visibility: document.visibilityState, wrapped: !!window.__trozalRenderAtAdvisorWrapped, device: document.getElementById('renderSyncDevice')?.textContent }));
+    const initState = await page.evaluate(() => ({
+      visibility: document.visibilityState,
+      wrapped: !!window.__trozalRenderAtAdvisorWrapped,
+      device: document.getElementById('renderSyncDevice')?.textContent,
+      renderAtHook: typeof window.renderAt,
+      preflightHook: typeof window.trozalRunRenderPreflight,
+      advisorInitialized: !!window.__trozalRenderSyncAdvisorInitialized
+    }));
     console.log('Render Sync init:', JSON.stringify(initState));
+    assert.equal(initState.renderAtHook, 'function', 'Render Sync Advisor must receive the renderAt bridge');
+    assert.equal(initState.preflightHook, 'function', 'Render Sync Advisor must receive the render preflight bridge');
+    assert.equal(initState.wrapped, true, 'Advisor must wrap the editor renderAt function');
     await page.waitForFunction(() => {
       const value = document.getElementById('renderSyncFps')?.textContent || '';
       return value.includes('FPS') && (window.__trozalRenderSyncDiagnostics?.rafTicks || 0) >= 2;
@@ -36,7 +46,19 @@ const { chromium } = require('playwright');
     await page.locator('#renderSyncReset').click();
     await page.waitForFunction(() => document.getElementById('renderSyncStatus')?.textContent.includes('Pengukuran direset'));
     await page.locator('#renderSyncRunPreflight').click();
-    await page.waitForFunction(() => document.getElementById('renderPreflightStatus')?.textContent.includes('Pemeriksaan selesai'));
+    await page.waitForFunction(
+      () => document.getElementById('renderPreflightStatus')?.textContent.includes('Pemeriksaan selesai'),
+      undefined,
+      { timeout: 5000 }
+    ).catch(async error => {
+      const snapshot = await page.evaluate(() => ({
+        preflightHook: typeof window.trozalRunRenderPreflight,
+        status: document.getElementById('renderPreflightStatus')?.textContent || 'missing',
+        recommendations: document.getElementById('renderSyncRecommendations')?.textContent || 'missing',
+        gridCells: document.getElementById('renderPreflightGrid')?.children.length || 0
+      })).catch(() => null);
+      throw new Error(error.message + ' | preflightSnapshot=' + JSON.stringify(snapshot) + ' | pageErrors=' + JSON.stringify(errors));
+    });
     const diagnostics = await page.evaluate(() => window.__trozalRenderSyncDiagnostics || null);
     assert.ok(diagnostics && diagnostics.rafTicks >= 2, 'Advisor requestAnimationFrame loop must remain alive');
     assert.ok(diagnostics.samples >= 1, 'Advisor must collect live cadence samples');
