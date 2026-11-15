@@ -3061,7 +3061,6 @@ $('renderPreflightCheck')?.addEventListener('click',trozalRunRenderPreflight);
  }
  let rafId=0;
  const tick=now=>{
-  if(document.hidden){metrics.lastFrame=now;rafId=requestAnimationFrame(tick);return;}
   if(metrics.lastFrame){
    const delta=now-metrics.lastFrame;
    if(delta>0&&delta<1000){push(metrics.intervals,delta,90);metrics.frames++;if(delta>50)metrics.dropped++;}
