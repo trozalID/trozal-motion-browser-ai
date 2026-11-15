@@ -117,7 +117,7 @@
   if(starts.length)code=code.slice(Math.min.apply(null,starts));
   if(!/<svg[\s>]/i.test(code)||!/<\/svg>/i.test(code))throw new Error('Gemini belum menghasilkan SVG lengkap. Ubah brief lalu coba lagi.');
   if(/<script\b|<iframe\b|<object\b|<embed\b|<foreignObject\b/i.test(code))throw new Error('Hasil memuat script atau elemen tertanam yang tidak diizinkan. Generate ulang dengan SVG dan CSS saja.');
-  if(/https?:\/\/|url\(\s*['"]?\/\//i.test(code))throw new Error('Hasil memakai referensi eksternal. Minta Gemini membuat seluruh visual dengan SVG dan CSS inline.');
+  if(/(?:href|src)\s*=\s*['"]https?:\/\/|url\(\s*['"]?https?:\/\//i.test(code))throw new Error('Hasil memakai referensi aset eksternal. Minta Gemini membuat seluruh visual dengan SVG dan CSS inline.');
   if((lower.includes('<!doctype html')||lower.includes('<html'))&&!lower.includes('</html>'))throw new Error('Dokumen HTML terpotong sebelum tag penutup. Coba generate ulang.');
   if(typeof buildSafeHtmlDocument==='function')code=buildSafeHtmlDocument(code);
   const parsed=new DOMParser().parseFromString(code,'text/html');
