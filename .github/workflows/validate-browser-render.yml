@@ -59,7 +59,7 @@ jobs:
           if (!html.includes("fetchBlob(coreBlobUrl,'text/javascript'") || !html.includes("fetchBlob(wasmBlobUrl,'application/wasm'")) {
             throw new Error('FFmpeg core/WASM download progress reader is not wired into initialization');
           }
-          if (!html.includes('setTimeout(()=>trozalScheduleRenderTask(draw),step)')) {
+          if (!html.includes('setTimeout(()=>trozalScheduleRenderTask(draw),Math.max(0,nextFrameAt-performance.now()))')) {
             throw new Error('Real-time render loop is not routed through the shared scheduler');
           }
           if (!html.includes('pointer-events:none;user-select:none')) {
