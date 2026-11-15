@@ -4544,6 +4544,234 @@ function trozalInitThemeCatalog(){
  console.info('[TROZAL PROMPT] Prompt generator siap; tombol Generate Prompt terhubung.');
 })();
 </script>
-<script src="./render-sync-advisor.js" defer></script>
+<script src="./render-sync-advisor.js" defer>
+
+/* Restored HTML-to-Motion import and deterministic capture implementation. */
+function trozalSanitizeImportedHtmlCss(css){
+ // External CSS resources are the main hidden source of tainted canvases in HTML-to-Motion.
+ // Keep local fragment/data/blob references; remove remote URLs and imports before SVG rasterization.
+ let out=String(css||'').replace(/@import\s+(?:url\([^)]*\)|['"][^'"]*['"])[^;]*;/gi,'');
+ out=out.replace(/@font-face\s*\{[^}]*\}/gi,rule=>/url\(\s*['"]?(?:https?:|\/\/|\.\.?\/)/i.test(rule)?'':rule);
+ out=out.replace(/url\(\s*(['"]?)(.*?)\1\s*\)/gi,(whole,q,url)=>/^(#|data:|blob:)/i.test(url.trim())?whole:'none');
+ out=out.replace(/image-set\([^)]*\)/gi,'none').replace(/-webkit-image-set\([^)]*\)/gi,'none');
+ return out;
+}
+let htmlToImageLoader=null;
+async function ensureHtmlToImage(){
+ if(window.htmlToImage?.toCanvas){htmlMotionRenderer=window.htmlToImage;return htmlMotionRenderer;}
+ if(htmlMotionRenderer?.toCanvas)return htmlMotionRenderer;
+ if(!htmlToImageLoader){htmlToImageLoader=(async()=>{
+  const urls=['https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js','https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.min.js'];
+  let lastError=null;
+  for(const src of urls){
+   try{await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=()=>window.htmlToImage?.toCanvas?(htmlMotionRenderer=window.htmlToImage,resolve()):reject(new Error('html-to-image tidak tersedia: '+src));script.onerror=()=>reject(new Error('Gagal memuat '+src));document.head.appendChild(script);});htmlMotionRenderer=window.htmlToImage;return htmlMotionRenderer;}
+   catch(err){lastError=err;}
+  }
+  htmlToImageLoader=null;
+  throw new Error('html-to-image gagal dimuat. Periksa koneksi internet/CDN. '+(lastError?.message||lastError));
+ })();}
+ return htmlToImageLoader;
+}
+let html2canvasLoader=null;
+async function ensureHtml2Canvas(){
+ if(typeof window.html2canvas==='function')return window.html2canvas;
+ if(!html2canvasLoader){html2canvasLoader=(async()=>{
+  const urls=['https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js','https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js'];
+  let lastError=null;
+  for(const src of urls){
+   try{await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=()=>typeof window.html2canvas==='function'?resolve():reject(new Error('html2canvas tidak tersedia setelah memuat '+src));script.onerror=()=>reject(new Error('Gagal memuat '+src));document.head.appendChild(script);});return window.html2canvas;}
+   catch(err){lastError=err;}
+  }
+  html2canvasLoader=null;
+  throw new Error('html2canvas gagal dimuat dari jsDelivr dan unpkg. Detail terakhir: '+(lastError?.message||lastError));
+ })();}
+ return html2canvasLoader;
+}
+function trozalReadHtmlOutputName(raw){
+ try{
+  const d=new DOMParser().parseFromString(String(raw||''),'text/html');
+  const meta=d.querySelector('meta[name="trozal-output-filename"],meta[name="output-filename"],meta[name="filename"]');
+  const tagged=d.querySelector('[data-trozal-filename]');
+  const candidate=meta?.getAttribute('content')||tagged?.getAttribute('data-trozal-filename')||d.querySelector('title')?.textContent||'';
+  return trozalSafeFileName(candidate,'');
+ }catch(_){return '';}
+}
+function trozalInferSceneSize(raw,doc,root,styles){
+ const getPx=(text,prop)=>{const m=String(text||'').match(new RegExp('(?:^|[;\\s])'+prop+'\\s*:\\s*([0-9.]+)\\s*px','i'));return m?Number(m[1]):0;};
+ let w=getPx(root?.getAttribute('style')||'','width'),h=getPx(root?.getAttribute('style')||'','height');
+ const css=String(styles||'');
+ const selectors=[/#animove-scene\s*\{([^}]*)\}/i,/#scene\s*\{([^}]*)\}/i,/\.scene\s*\{([^}]*)\}/i];
+ let rule='';for(const re of selectors){const m=css.match(re);if(m){rule=m[1];break;}}
+ w=w||getPx(rule,'width');h=h||getPx(rule,'height');
+ const viewport=doc.querySelector('meta[name="viewport"]')?.content||'';
+ const vw=Number((viewport.match(/width\s*=\s*(\d+)/i)||[])[1]||0);
+ if(!w&&vw)w=vw;
+ if(!w||!h){
+  const aspect=String(raw||'').match(/aspect-ratio\s*:\s*(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/i);
+  if(aspect&&w&&!h)h=w*Number(aspect[2])/Number(aspect[1]);
+ }
+ if(!w||!h){
+  const pair=String(raw||'').match(/width\s*[:=]\s*["']?(\d{3,5})\s*(?:px)?[;"'\s,]+height\s*[:=]\s*["']?(\d{3,5})/i);
+  if(pair){w=w||Number(pair[1]);h=h||Number(pair[2]);}
+ }
+ w=w>=320&&w<=16384?w:1920;h=h>=320&&h<=16384?h:1080;
+ return {width:Math.round(w),height:Math.round(h)};
+}
+function buildSafeHtmlDocument(raw){
+ // Accept complete HTML documents and fragments. The entire body is captured so
+ // body backgrounds and body::before/body::after pseudo-elements are not lost.
+ let cleanRaw=String(raw||'').replace(/^\s*```(?:html|htm)?\s*/i,'').replace(/\s*```\s*$/,'');
+ cleanRaw=cleanRaw.replace(/^\uFEFF/,'');
+ const doc=new DOMParser().parseFromString(cleanRaw,'text/html');
+ if(!doc.body)throw new Error('Dokumen HTML tidak dapat dibaca.');
+ const cssLooksLikeStylesheet=value=>{
+  const t=String(value||'').trim();
+  if(t.length<24)return false;
+  const hasBlock=/[.#*\w\[\]:,>+~ -]+\s*\{[\s\S]*?:[\s\S]*?;?[\s\S]*?\}/.test(t);
+  const hasCssTokens=/(?:@keyframes|@media|@import|--[\w-]+\s*:|(?:^|[;{\s])(?:display|position|background|color|width|height|transform|animation|opacity|font-size|border|filter)\s*:)/i.test(t);
+  return hasBlock&&hasCssTokens;
+ };
+ const recoveredCss=[];
+ const walker=doc.createTreeWalker(doc.body,NodeFilter.SHOW_TEXT);
+ const textNodes=[];while(walker.nextNode())textNodes.push(walker.currentNode);
+ for(const node of textNodes){
+  const value=node.nodeValue||'';
+  const normalized=value.replace(/\\n/g,'\n').replace(/\\t/g,'\t').trim();
+  if(cssLooksLikeStylesheet(normalized)){recoveredCss.push(normalized);node.parentNode?.removeChild(node);}
+ }
+ const styles=[...doc.querySelectorAll('style')].map(st=>st.textContent||'').concat(recoveredCss)
+  .map(css=>trozalSanitizeImportedHtmlCss(css)).filter(Boolean).join('\n');
+ const nonCodeChildren=[...doc.body.children].filter(el=>!['SCRIPT','STYLE','META','LINK','TEMPLATE','NOSCRIPT'].includes(el.tagName));
+ const bodyVisualCss=styles+'\n'+(doc.body.getAttribute('style')||'')+'\n'+(doc.documentElement.getAttribute('style')||'');
+ const bodyHasVisualCss=/(?:^|[}\s,])(?:html|body)(?:::?(?:before|after))?\s*\{[^}]*\b(?:content|background(?:-color|-image)?|box-shadow|border|filter)\s*:/i.test(bodyVisualCss)||/\bbackground(?:-color|-image)?\s*:/.test(bodyVisualCss);
+ const sceneHasVisualCss=/#animove-scene(?:::?(?:before|after))?\s*\{[^}]*\b(?:content|background(?:-color|-image)?|box-shadow|border|filter)\s*:/i.test(styles);
+ const sceneMarkupExists=nonCodeChildren.length>0;
+ const hasImportedScripts=doc.querySelectorAll('script').length>0;
+ if(hasImportedScripts)throw new Error('Dokumen ini masih berisi tag <script>. TroZal MOTION tidak menjalankan JavaScript dari HTML impor, sehingga objek atau gerakan yang dibuat oleh skrip tidak akan masuk ke video. Buat ulang HTML tanpa tag <script>; susun objek langsung di dalam <body> dan gunakan CSS @keyframes untuk animasi.');
+ if(!sceneMarkupExists&&!bodyHasVisualCss&&!sceneHasVisualCss){
+  throw new Error('HTML belum memiliki elemen visual. Yang terbaca hanya CSS atau metadata. Tempel dokumen HTML lengkap yang memiliki elemen di dalam <body>, atau gunakan desain CSS body::before/body::after yang benar-benar menggambar objek.');
+ }
+ htmlMotionOutputName=trozalReadHtmlOutputName(cleanRaw);
+ let root=doc.querySelector('#animove-scene');
+ let safeRoot;
+ if(root){safeRoot=root.cloneNode(true);}
+ else{
+  safeRoot=doc.createElement('div');safeRoot.id='animove-scene';
+  [...doc.body.childNodes].forEach(n=>safeRoot.appendChild(n.cloneNode(true)));
+  safeRoot.setAttribute('data-trozal-auto-scene','true');
+ }
+ const inferredSize=trozalInferSceneSize(cleanRaw,doc,safeRoot,styles);
+ htmlMotionWidth=inferredSize.width;htmlMotionHeight=inferredSize.height;
+ safeRoot.querySelectorAll('script,iframe,object,embed,link,meta,video,audio,source,track').forEach(n=>n.remove());
+ safeRoot.querySelectorAll('style').forEach(n=>{n.textContent=trozalSanitizeImportedHtmlCss(n.textContent||'');});
+ [...safeRoot.querySelectorAll('*')].forEach(el=>[...el.attributes].forEach(a=>{
+  const name=a.name.toLowerCase(),value=(a.value||'').trim();
+  if(name.startsWith('on')){el.removeAttribute(a.name);return;}
+  if(name==='style'){el.setAttribute(a.name,trozalSanitizeImportedHtmlCss(value));return;}
+  if(['srcset','imagesrcset','poster','background'].includes(name)){el.removeAttribute(a.name);return;}
+  if(['src','href','xlink:href'].includes(name)&&value&&!value.startsWith('#')&&!/^(data:image\/(?:png|jpe?g|gif|webp|svg\+xml);|blob:)/i.test(value))el.removeAttribute(a.name);
+ }));
+ if(safeRoot.hasAttribute?.('style'))safeRoot.setAttribute('style',trozalSanitizeImportedHtmlCss(safeRoot.getAttribute('style')));
+ const tokenDefaults={
+  'bg-dark':'#080D18','bg':'#080D18','background':'#080D18','cyan':'#00E5FF',
+  'cyan-glow':'rgba(0,229,255,.48)','white':'#FFFFFF','text':'#FFFFFF',
+  'gold':'#D7B56D','primary':'#00E5FF','accent':'#00E5FF','black':'#05070C'
+ };
+ const declared=new Set();
+ const cssForScan=styles+'\n'+[...safeRoot.querySelectorAll('[style]')].map(e=>e.getAttribute('style')||'').join('\n');
+ for(const m of cssForScan.matchAll(/--([\w-]+)\s*:/g))declared.add(m[1]);
+ const used=new Set();for(const m of cssForScan.matchAll(/var\(\s*--([\w-]+)/g))used.add(m[1]);
+ const missing=[...used].filter(name=>!declared.has(name));
+ const tokenCss=missing.map(name=>{const key=name.toLowerCase();const value=tokenDefaults[key]||(/(?:glow|shadow)/.test(key)?'rgba(0,229,255,.35)':/(?:white|text|foreground)/.test(key)?'#FFFFFF':/(?:bg|background|dark)/.test(key)?'#080D18':'#00E5FF');return '--'+name+': '+value+';'}).join('\n');
+ const headCss=(styles||tokenCss)?'<style>'+[styles,tokenCss?':root{'+tokenCss+'}':''].filter(Boolean).join('\n').replace(/<\/style/gi,'<\\/style')+'</style>':'';
+ const sceneStyle='position:relative;width:'+htmlMotionWidth+'px;height:'+htmlMotionHeight+'px;min-width:'+htmlMotionWidth+'px;min-height:'+htmlMotionHeight+'px;overflow:hidden;transform-origin:top left;';
+ if(!safeRoot.style.position)safeRoot.style.position='relative';
+ if(!/^[0-9.]+px$/i.test(safeRoot.style.width||''))safeRoot.style.width=htmlMotionWidth+'px';
+ if(!/^[0-9.]+px$/i.test(safeRoot.style.height||''))safeRoot.style.height=htmlMotionHeight+'px';
+ if(!safeRoot.style.overflow)safeRoot.style.overflow='hidden';
+ if(safeRoot.getAttribute('data-trozal-auto-scene')==='true')safeRoot.setAttribute('style',sceneStyle);
+ const safeAttributeValue=(name,value)=>name.toLowerCase()==='style'?trozalSanitizeImportedHtmlCss(value):String(value);
+ const cleanHtmlAttrs=[...doc.documentElement.attributes].filter(a=>!/^on/i.test(a.name)).map(a=>' '+a.name+'="'+safeAttributeValue(a.name,a.value).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"').join('');
+ const cleanBodyAttrs=[...doc.body.attributes].filter(a=>!/^on/i.test(a.name)).map(a=>' '+a.name+'="'+safeAttributeValue(a.name,a.value).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"').join('');
+ // Do not force a transparent body background: it can erase an imported background.
+ // Capture doc.body below so body backgrounds and pseudo-elements remain visible.
+ const layoutCss='html,body{box-sizing:border-box;margin:0!important;padding:0!important;width:'+htmlMotionWidth+'px!important;height:'+htmlMotionHeight+'px!important;min-width:'+htmlMotionWidth+'px!important;min-height:'+htmlMotionHeight+'px!important;overflow:hidden!important}#animove-scene{box-sizing:border-box}';
+ return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+'\n/* TROZAL UI MODES · Professional is the default; Classic preserves the legacy presentation. */\n.ui-layout-switcher{display:flex;align-items:center;gap:4px;padding:3px;border:1px solid #40516a;border-radius:9px;background:#111923;flex:0 0 auto}\n.ui-layout-label{padding:0 6px;color:#91a9c4;font-size:9px;font-weight:900;letter-spacing:1px}\n.ui-layout-btn{padding:6px 10px;border-radius:6px;font-size:10px;font-weight:800;white-space:nowrap}\n.ui-layout-btn[aria-pressed="true"]{background:linear-gradient(135deg,#245d78,#287b86);border-color:#62c5d1;color:#f2feff;box-shadow:0 0 0 1px #62c5d133}\nbody[data-ui-layout="professional"] .topbar{background:linear-gradient(110deg,#172331,#202b3a 55%,#182d37);border-bottom-color:#3b6578}\nbody[data-ui-layout="professional"] .sidebar{background:linear-gradient(180deg,#1b2733,#1b1f29 45%);border-color:#345064}\nbody[data-ui-layout="professional"] .sidebar.right{background:linear-gradient(180deg,#282436,#1e202b 48%);border-left-color:#55436a}\nbody[data-ui-layout="professional"] .main{background:#151c25}\nbody[data-ui-layout="professional"] .panel{box-shadow:0 5px 16px #0002;border-color:#3b5264}\nbody[data-ui-layout="professional"] .panel h3{color:#a9d7e9}\nbody[data-ui-layout="professional"] .sidebar.right .panel{border-color:#574768}\nbody[data-ui-layout="professional"] .sidebar.right .panel h3{color:#d2b5f1}\nbody[data-ui-layout="professional"] .topcontrols{background:#1c2935;border-bottom-color:#3a596d}\nbody[data-ui-layout="professional"] .stagewrap{background:radial-gradient(ellipse at center,#202d3b 0%,#151c25 72%)}\nbody[data-ui-layout="classic"] .ui-layout-btn[aria-pressed="true"]{background:#d8a94d;border-color:#f0c76f;color:#20190c}\n@media(max-width:1050px){.ui-layout-switcher{order:4}.topright{flex-wrap:wrap}}\n@media(max-width:720px){.ui-layout-switcher{width:100%;justify-content:flex-end}.ui-layout-label{margin-right:auto}.ui-layout-btn{min-height:36px}.topbar{height:auto;min-height:42px}}\n</style></head><body'+cleanBodyAttrs+'>'+safeRoot.outerHTML+'</body></html>';
+}
+function installHtmlCaptureFallbacks(doc,scene){
+ // Intentionally preserve the original composition. Earlier fallback code replaced
+ // crescent geometry and disabled inset shadows/filters, causing preview/render drift.
+ return;
+}
+
+async function createHtmlMotionRenderer(raw){
+ const safeDoc=buildSafeHtmlDocument(raw);
+ if(htmlMotionIframe){htmlMotionIframe.remove();htmlMotionIframe=null;}
+ const frame=document.createElement('iframe');frame.setAttribute('sandbox','allow-same-origin');frame.title='HTML Motion preview and deterministic export capture (imported scripts removed)';
+ frame.style.cssText='width:'+htmlMotionWidth+'px;height:'+htmlMotionHeight+'px;border:0;display:block;position:absolute;left:50%;top:50%;transform-origin:center center;background:transparent;';
+ frame.srcdoc=safeDoc;
+ // Fit the complete HTML scene to the stage instead of cropping oversized AI/4K canvases.
+ $('object').style.width='100%';$('object').style.height='100%';$('object').style.transform='none';$('object').style.opacity='1';$('object').style.clipPath='none';
+ $('object').innerHTML='';$('object').appendChild(frame);htmlMotionIframe=frame;const fitScale=Math.min(Math.max(1,$('object').clientWidth)/htmlMotionWidth,Math.max(1,$('object').clientHeight)/htmlMotionHeight);frame.style.transform='translate(-50%,-50%) scale('+fitScale+')';
+ await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('HTML scene tidak selesai dimuat dalam 15 detik.')),15000);frame.onload=()=>{clearTimeout(timer);resolve();};frame.onerror=()=>{clearTimeout(timer);reject(new Error('Gagal memuat dokumen HTML di frame terisolasi.'));};});
+ const doc=frame.contentDocument;if(!doc)throw new Error('Dokumen HTML terisolasi tidak dapat diakses.');
+ await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+ const scene=doc.body;
+ if(!scene)throw new Error('Elemen visual HTML tidak ditemukan.');
+ if(doc.fonts?.ready)await doc.fonts.ready;
+ // Original HTML effects are preserved; no visual fallback rewrites are applied.
+ // Pause all CSS/Web Animations at a deterministic point; each render frame seeks these timelines.
+ const animations=doc.getAnimations({subtree:true});htmlMotionAnimations=animations;animations.forEach(a=>{try{a.pause();}catch(_){}});
+ htmlMotionFontsReady=doc.fonts?.ready||Promise.resolve();htmlMotionRenderer=null;htmlMotionLastTime=-1;
+ htmlMotionSource=safeDoc;htmlMotionFrame=null;sourceSvg='';sourceType='text/html';sourceUrl='';svgWasSplit=false;svgPieces=[];svgPieceImgs=[];svgImg=null;img=null;
+ return {doc,scene,animations};
+}
+async function captureHtmlMotionAt(seconds){
+ if(!htmlMotionIframe?.contentDocument)throw new Error('HTML Motion belum dimuat. Terapkan ulang kode HTML.');
+ if(htmlMotionCaptureBusy)throw new Error('Capture HTML masih berjalan.');
+ htmlMotionCaptureBusy=true;
+ try{
+  const doc=htmlMotionIframe.contentDocument,scene=doc.body;
+  const htmlSpeed=Math.max(.05,+$('speed').value||1),ms=Math.max(0,seconds*1000*htmlSpeed);
+  // Use the exact same cached animation objects as preview; no per-frame DOM animation scan.
+  if(Math.abs(ms-htmlMotionLastTime)>.01){htmlMotionAnimations.forEach(animation=>{try{animation.pause();animation.currentTime=ms;}catch(_){}});htmlMotionLastTime=ms;}
+  // Give Chromium one paint opportunity after seeking CSS/Web Animations so the
+  // DOM snapshot sees the same transform/perspective state as the visible Preview.
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  if(htmlMotionFontsReady)await htmlMotionFontsReady;
+  void scene.getBoundingClientRect();
+  const [outW,outH]=($('resolution').value||'1920x1080').split('x').map(Number);
+  const captureScale=Math.max(.25,Math.min(2,Math.max((outW||1920)/htmlMotionWidth,(outH||1080)/htmlMotionHeight)));
+  // html-to-image uses the browser's SVG foreignObject renderer, preserving native
+  // CSS variables, inset box-shadows, filters/drop-shadows, gradients and pseudo-elements.
+  const renderer=await ensureHtmlToImage();
+  const canvas=await renderer.toCanvas(scene,{
+   width:htmlMotionWidth,height:htmlMotionHeight,pixelRatio:captureScale,
+   backgroundColor:'transparent',cacheBust:false,
+   skipFonts:false
+  });
+  htmlMotionFrame=canvas;return canvas;
+ }finally{htmlMotionCaptureBusy=false;}
+}
+
+async function generateMotionSvgLocally(){
+ const raw=$('aiCodeTerminal').value.trim() || sourceSvg || '';
+ if(!raw){setAiStatus('Tempel satu dokumen HTML lengkap di terminal terlebih dahulu.');$('aiCodeTerminal').focus();return;}
+ try{
+  const result=await createHtmlMotionRenderer(raw);
+  $('aiCodeTerminal').value=raw.replace(/^```(?:html|htm)?\s*/i,'').replace(/\s*```$/,'');
+  preserveSvgColors=true;
+  if(!htmlMotionOutputName)htmlMotionOutputName=trozalReadHtmlOutputName(raw);
+  $('objectName').value=htmlMotionOutputName||'HTML_to_Motion_Graphic';
+  const motionControl=$('motion');const mode=motionControl?.value||'gentleDrift';
+  const modeLoopMap={gentleDrift:7,microBounce:3,slowRotate:1,pendulum:8,heartbeat:15,orbit:17,wind:13,subtleTilt:8,elasticPop:18,parallax:11};
+  const selectedLoop=modeLoopMap[mode]??7;
+  playhead=0;renderAt(0);
+  setAiStatus(`HTML berhasil dimuat. ${result.animations.length} animasi CSS/Web Animations terdeteksi. Capture mengambil seluruh body agar background dan pseudo-element CSS tetap terlihat. Skrip impor dan referensi eksternal dihapus; gunakan CSS @keyframes untuk animasi yang ikut diekspor.`);
+  setStatus('HTML-to-Motion aktif. Preview dan render memakai komposisi HTML asli; efek CSS dipertahankan.');
+ }catch(err){const message='HTML-to-Motion gagal: '+(err?.message||String(err));setAiStatus(message);setStatus(message);setRenderProgress(0,'HTML tidak dapat dimuat','error');console.error(message,err);}
+}
+$('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
+</script>
 </body>
 </html>
