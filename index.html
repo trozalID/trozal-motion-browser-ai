@@ -4599,13 +4599,14 @@ window.trozalBuildThemeCreativeBrief = function(theme, category, specific) {
  }
  const categoryGuide =
   /paper cutout|cutout/i.test(c) ? 'Render the chosen subject as carefully layered paper/cardstock shapes with visible cut edges, tactile shadows, stacked depth, and hand-crafted transitions.' :
+  /isometric|diorama/i.test(c) ? 'Use a consistent isometric camera angle, coherent scale, believable contact shadows, modular spatial layers, and a readable path through the scene.' :
   /cinematic|lighting/i.test(c) ? 'Use cinematic key/fill/rim lighting, atmospheric depth, controlled contrast, deliberate camera movement, and a composed hero frame.' :
   /3d|photoreal|product/i.test(c) ? 'Use credible 3D form, consistent perspective, believable material response, controlled reflections, and a purposeful camera orbit or push-in.' :
   /editorial|typography/i.test(c) ? 'Use editorial grid discipline, strong typographic scale, asymmetric but balanced composition, clean margins, and a deliberate headline-to-detail reading order.' :
   /corporate|clean/i.test(c) ? 'Use a clean corporate information system, precise alignment, restrained colors, readable cards, and clear hierarchy without generic filler dashboards.' :
   /infographic|data visualization/i.test(c) ? 'Use labeled information blocks, consistent units, logical flow, accurate hierarchy, and concise callouts; do not invent data.' :
   /luxury|premium/i.test(c) ? 'Use restrained luxury art direction, refined materials, precise spacing, elegant type, subtle highlights, and no excessive ornament.' :
-  /flat vector|illustration/i.test(c) ? 'Use a coherent vector illustration language, consistent stroke/shape weight, controlled color blocking, and purposeful illustrated symbols.' :
+  /flat vector|2d cartoon|hand.?drawn|line art/i.test(c) ? 'Use a coherent vector or hand-drawn illustration language, consistent stroke/shape weight, controlled color blocking, and purposeful illustrated symbols.' :
   /futuristic|cyberpunk|neon|hud|holographic|sci.?fi|techno/i.test(c) ? 'Use a disciplined futuristic visual system: dark or controlled atmospheric backgrounds, luminous edge lighting, scanning or data motion, precise interface geometry, and a clearly readable hero subject.' :
   /glass|translucent|refraction|crystal/i.test(c) ? 'Use translucent layers, believable refraction, soft caustics, controlled reflections, layered glass depth, and high-contrast readable text. Avoid turning every object into a glass card.' :
   /isometric|diorama/i.test(c) ? 'Use a consistent isometric camera angle, coherent scale, believable contact shadows, modular spatial layers, and a readable path through the scene.' :
@@ -4617,6 +4618,7 @@ window.trozalBuildThemeCreativeBrief = function(theme, category, specific) {
   /bold|brutalist|high contrast/i.test(c) ? 'Use oversized typography, strong geometric blocks, sharp contrast, decisive alignment, and controlled negative space without sacrificing legibility.' :
   /swiss|minimal|monochrome|bauhaus/i.test(c) ? 'Use grid discipline, precise alignment, restrained geometry, limited palette, typographic hierarchy, and intentional negative space.' :
   /2d|cartoon|character|clay|stop motion|hand.drawn/i.test(c) ? 'Use consistent character proportions, shape language, line weight, material texture, and expressive pose-to-pose movement. Keep all supporting props on-theme.' :
+  /illustration|cartoon|character|clay|stop motion/i.test(c) ? 'Use consistent illustration proportions, shape language, line weight, expressive pose-to-pose movement, and a cohesive setting. Keep all supporting props on-theme.' :
   'Apply the selected visual category "'+c+'" as the visual grammar while preserving the subject and meaning of the main theme.';
  const lines=[
   'Main theme (exact selected topic): '+t,
