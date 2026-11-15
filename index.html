@@ -4432,9 +4432,9 @@ function trozalInitThemeCatalog(){
    }
   });
  }
- const preset=$('svgAiMotionPreset'),hint=$('svgAiMotionPresetHint');
+ const preset=$('svgAiMotionPreset'),presetHint=$('svgAiMotionPresetHint');
  const presetDescriptions={'Cinematic Reveal':'Build anticipation, reveal the hero, then settle.','Luxury Showcase':'Slow premium drift, macro details, elegant hold.','Futuristic Interface':'Interface scan, orbital data, controlled energy pulse.','3D Product Orbit':'Depth entrance, smooth orbit, front hero.','Waveform & Sound':'Rhythmic waveform, travelling sound ribbons, beat accents.','Kinetic Typography':'Staggered typography, phrase emphasis, clean lockup.','Particle Assembly':'Dispersed particles gather into a finished hero.','Commercial Feature Story':'Visual hook, product features, benefit, CTA.','Parallax Editorial':'Layered parallax, editorial transition, title hold.','Abstract Flow':'Organic morphing shapes and seamless flow.'};
- const updatePresetHint=()=>{hint.textContent=presetDescriptions[preset.value]||'Auto memilih urutan gerak berdasarkan tema, objek utama, dan format video.';if($('svgAiPrompt').value.trim())generateSvgAiPrompt();};
+ const updatePresetHint=()=>{presetHint.textContent=presetDescriptions[preset.value]||'Auto memilih urutan gerak berdasarkan tema, objek utama, dan format video.';if($('svgAiPrompt').value.trim())generateSvgAiPrompt();};
  preset.addEventListener('change',updatePresetHint);
  ['svgAiMotionTempo','svgAiMotionIntensity'].forEach(id=>$(id).addEventListener('change',()=>{if($('svgAiPrompt').value.trim())generateSvgAiPrompt();}));
  updatePresetHint();
