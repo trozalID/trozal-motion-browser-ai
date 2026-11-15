@@ -40,6 +40,8 @@ jobs:
           mkdir -p site/vendor/ffmpeg site/vendor/prores-core
           cp index.html site/index.html
           cp browser-ai.js site/browser-ai.js
+          cp render-sync-advisor.js site/render-sync-advisor.js
+          cp browser-ai-gemini-cloud.js site/browser-ai-gemini-cloud.js
           touch site/.nojekyll
 
       - name: Validate inline JavaScript syntax
@@ -159,6 +161,8 @@ jobs:
           set -euo pipefail
           grep -q -- '--enable-encoder=prores_ks' /tmp/ffmpeg-wasm/Dockerfile
           test -s site/index.html
+          test -s site/render-sync-advisor.js
+          test -s site/browser-ai-gemini-cloud.js
           test -s site/vendor/ffmpeg/worker.js
           test -s site/vendor/prores-core/ffmpeg-core.js
           test -s site/vendor/prores-core/ffmpeg-core.wasm
