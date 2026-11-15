@@ -683,6 +683,30 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
 }
 </style>
 
+<style id="trozal-center-workspace-guard">
+/* Keep the central editor/preview mounted and visible when Cloud AI panels initialize. */
+.app > main.main{
+ display:flex!important;
+ flex-direction:column!important;
+ min-width:0!important;
+ min-height:0!important;
+ visibility:visible!important;
+ opacity:1!important;
+}
+.app > main.main > .topcontrols,
+.app > main.main > .stagewrap,
+.app > main.main > .stageinfo,
+.app > main.main > .timeline,
+.app > main.main > .status{
+ visibility:visible!important;
+ opacity:1!important;
+}
+.app > main.main > .stagewrap{display:flex!important;flex:1 1 auto!important;min-width:0!important}
+.app > main.main #stage{display:flex!important;visibility:visible!important;opacity:1!important}
+@media(max-width:720px){
+ .app > main.main{order:-1!important;width:100%!important;min-height:550px!important}
+}
+</style>
 </head>
 <body>
 <script>
