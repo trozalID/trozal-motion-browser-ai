@@ -7,6 +7,7 @@ on:
       - browser-render-advisor-global-hooks-2026-11-15
       - browser-render-pointer-independent-2026-11-15
       - browser-theme-concept-alignment-2026-11-15
+      - browser-ai-theme-intelligence-2026-11-15
   workflow_dispatch:
 
 permissions:
@@ -86,6 +87,8 @@ jobs:
         run: node tests/theme-concept-alignment.browser.cjs
       - name: Audit all catalogue themes and domain-specific AI prompts
         run: node tests/theme-catalogue-coverage.browser.cjs
+      - name: Test floating render monitor interactions in Chromium
+        run: node tests/floating-render-monitor.browser.cjs
       - name: Stop local preview server
         if: always()
         run: if [ -f /tmp/browser-ai-http.pid ]; then kill "$(cat /tmp/browser-ai-http.pid)" || true; fi
