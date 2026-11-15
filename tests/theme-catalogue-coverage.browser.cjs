@@ -54,8 +54,11 @@ const { chromium } = require('playwright');
           'Domain motion grammar:',
           'Domain exclusions:'
         ];
+        const summaryFields = ['DOMAIN:', 'TEMA UTAMA:', 'TUJUAN:', 'SUBJEK UTAMA:', 'GAYA VISUAL:', 'ASET VISUAL:', 'PALET & MATERIAL:', 'KOMPOSISI:', 'ALUR GERAK:', 'BATASAN:'];
         if (!brief.prompt.includes(theme) || !brief.prompt.includes(specific) ||
-            required.some(line => !brief.prompt.includes(line))) {
+            required.some(line => !brief.prompt.includes(line)) ||
+            summaryFields.some(line => !brief.summary.includes(line)) ||
+            !brief.summary.includes(theme) || !brief.summary.includes(domain.label)) {
           promptGaps.push(theme);
         }
         if (!samples[domain.id]) samples[domain.id] = { theme, category, specific, label: domain.label };
@@ -86,6 +89,12 @@ const { chromium } = require('playwright');
       assert.ok(prompt.includes('Main theme: ' + sample.theme), domainId + ' prompt must retain its selected main theme');
       assert.ok(prompt.includes('Mapped theme domain: ' + sample.label + ' (' + domainId + ')'),
         domainId + ' prompt must include the mapped domain label');
+      assert.ok(prompt.includes('Visual category: ' + sample.category), domainId + ' prompt must retain the selected visual category');
+      assert.ok(prompt.includes('Specific concept / subtheme: ' + sample.specific), domainId + ' prompt must retain the selected subtheme');
+      const visibleBrief = await page.locator('#svgAiThemeBrief').innerText();
+      assert.ok(visibleBrief.includes(sample.label), domainId + ' concept preview must show its domain');
+      assert.ok(visibleBrief.includes('ASET VISUAL:'), domainId + ' concept preview must show the visual assets');
+      assert.ok(visibleBrief.includes('ALUR GERAK:'), domainId + ' concept preview must show the motion sequence');
       assert.ok(prompt.includes('THEME-SPECIFIC CREATIVE BLUEPRINT'),
         domainId + ' prompt must include the theme-specific creative blueprint');
       sampleOutput.push({ domain: domainId, theme: sample.theme, categoryCount: await page.locator('#svgAiCategory option').count(), subthemeCount: await page.locator('#svgAiSpecific option').count() });
