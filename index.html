@@ -4597,6 +4597,17 @@ window.trozalBuildThemeCreativeBrief = function(theme, category, specific) {
   /infographic|data visualization/i.test(c) ? 'Use labeled information blocks, consistent units, logical flow, accurate hierarchy, and concise callouts; do not invent data.' :
   /luxury|premium/i.test(c) ? 'Use restrained luxury art direction, refined materials, precise spacing, elegant type, subtle highlights, and no excessive ornament.' :
   /flat vector|illustration/i.test(c) ? 'Use a coherent vector illustration language, consistent stroke/shape weight, controlled color blocking, and purposeful illustrated symbols.' :
+  /futuristic|cyberpunk|neon|hud|holographic|sci.?fi|techno/i.test(c) ? 'Use a disciplined futuristic visual system: dark or controlled atmospheric backgrounds, luminous edge lighting, scanning or data motion, precise interface geometry, and a clearly readable hero subject.' :
+  /glass|translucent|refraction|crystal/i.test(c) ? 'Use translucent layers, believable refraction, soft caustics, controlled reflections, layered glass depth, and high-contrast readable text. Avoid turning every object into a glass card.' :
+  /isometric|diorama/i.test(c) ? 'Use a consistent isometric camera angle, coherent scale, believable contact shadows, modular spatial layers, and a readable path through the scene.' :
+  /retro|vintage|y2k|vaporwave|synthwave|pixel|voxel/i.test(c) ? 'Use a deliberate era-specific visual language: appropriate typography, grid, texture, palette, pixel scale or analog artifacts. Keep references coherent rather than mixing unrelated decades.' :
+  /abstract|generative|liquid|fluid|particle|fractal|op art|biomorphic|ambient|loop/i.test(c) ? 'Use a defined visual rule for shape, repetition, rhythm, symmetry, transformation, or material motion. Every abstract element must support the chosen experiment and composition.' :
+  /ui|interface|prototype|microinteraction|dashboard/i.test(c) ? 'Use plausible interface anatomy, consistent spacing, component hierarchy, purposeful micro-interactions, readable labels, and no fabricated data or irrelevant controls.' :
+  /broadcast|social|media|news|concert|audio|waveform|stage/i.test(c) ? 'Use platform-appropriate safe areas, strong title and lower-third hierarchy, consistent caption placement, and repeatable motion package rules.' :
+  /nature|organic|environment|botanical/i.test(c) ? 'Use organic silhouettes, natural material cues, believable habitat or process context, layered depth, and ecological color relationships.' :
+  /bold|brutalist|high contrast/i.test(c) ? 'Use oversized typography, strong geometric blocks, sharp contrast, decisive alignment, and controlled negative space without sacrificing legibility.' :
+  /swiss|minimal|monochrome|bauhaus/i.test(c) ? 'Use grid discipline, precise alignment, restrained geometry, limited palette, typographic hierarchy, and intentional negative space.' :
+  /2d|cartoon|character|clay|stop motion|hand.drawn/i.test(c) ? 'Use consistent character proportions, shape language, line weight, material texture, and expressive pose-to-pose movement. Keep all supporting props on-theme.' :
   'Apply the selected visual category "'+c+'" as the visual grammar while preserving the subject and meaning of the main theme.';
  const lines=[
   'Main theme (exact selected topic): '+t,
@@ -4617,7 +4628,19 @@ window.trozalBuildThemeCreativeBrief = function(theme, category, specific) {
   'Domain motion grammar: '+domain.motion,
   'Domain exclusions: '+domain.avoid
  ];
- return {summary:'TUJUAN: '+d.purpose+'\nSUBJEK: '+sp+'\nGAYA: '+c+'\nARAH: '+d.hero, prompt:lines.join('\n')};
+ return {summary:[
+  'DOMAIN: '+domain.label+' ('+domain.id+')',
+  'TEMA UTAMA: '+t,
+  'TUJUAN: '+d.purpose,
+  'SUBJEK UTAMA: '+sp,
+  'GAYA VISUAL: '+c,
+  'ARAH SUBJEK: '+d.hero,
+  'ASET VISUAL: '+d.assets,
+  'PALET & MATERIAL: '+d.palette,
+  'KOMPOSISI: '+d.composition,
+  'ALUR GERAK: '+d.sequence,
+  'BATASAN: '+d.avoid
+ ].join('\n'), prompt:lines.join('\n')};
 };
 window.trozalUpdateThemeBrief = function() {
  const theme=document.getElementById('svgAiTheme')?.value||'';
