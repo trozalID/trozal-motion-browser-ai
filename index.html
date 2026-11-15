@@ -1141,14 +1141,14 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
    <div id="metadataEvidence" class="metadata-evidence">Belum dianalisis. Sistem akan memisahkan deskripsi terverifikasi, prompt/rencana, dan teks SVG/HTML.</div>
    <section class="metadata-evidence" id="trozalLocalVisionPanel" style="margin-top:12px;border:1px solid #269b75;background:rgba(20,150,105,.07)">
     <div style="font-weight:800;color:#38c995;margin-bottom:6px">✦ TROZAL BROWSER VISION · METADATA DARI PIXEL</div>
-    <p class="help">Browser AI Vision menganalisis gambar bukti atau frame Preview melalui Gemini Cloud. Tidak memakai Ollama atau Bridge. API key hanya digunakan saat permintaan berlangsung dan tidak disimpan oleh aplikasi.</p>
+    <p class="help">Model image-captioning dijalankan di browser. Sistem membaca frame hasil Preview, lalu menyusun judul, deskripsi, kategori, dan keyword berdasarkan caption visual. Tidak memakai Ollama atau Bridge.</p>
     <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap">
      <button type="button" id="trozalVisionCheckBtn">Periksa Browser Vision</button>
-     <span class="help">Gemini Cloud · analisis visual berbasis gambar</span>
+     <span class="help">GPU WebGPU diutamakan · CPU fallback tersedia</span>
     </div>
     <label style="margin-top:8px">Gambar bukti (opsional)</label>
     <input type="file" id="trozalVisionImages" accept="image/png,image/jpeg,image/webp" multiple>
-    <small class="help">Pilih hingga 3 screenshot (PNG/JPG/WebP). Jika kosong, sistem mengambil satu bukti visual dari Preview yang sedang tampil.</small>
+    <small class="help">Pilih hingga 3 screenshot. Jika kosong, sistem menangkap 3 frame dari Preview utama TROZAL pada 0%, 50%, dan 85% durasi.</small>
     <div class="row" style="margin-top:8px;flex-wrap:wrap">
      <button type="button" class="primary" id="trozalVisionAnalyzeBtn">✦ ANALISIS VISUAL DENGAN BROWSER AI</button>
      <button type="button" id="trozalVisionClearImagesBtn">Hapus gambar pilihan</button>
@@ -1173,7 +1173,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
      </section>
     </section>
     <div id="trozalVisionStatus" class="help" aria-live="polite">Model Vision belum dimuat. Tekan Periksa Browser Vision untuk mengecek dukungan.</div>
-    <div id="trozalVisionConnection" class="help" aria-live="polite">Belum ada permintaan analisis. Gambar hanya dikirim setelah Anda menekan tombol analisis.</div>
+    <div id="trozalVisionConnection" class="help" aria-live="polite">Browser Vision berjalan lokal setelah model diunduh.</div>
    </section>
    <div id="metadataPlatformValidation" class="metadata-evidence">Pilih platform untuk melihat pemeriksaan judul dan keyword.</div>
    <section class="metadata-evidence" id="trozalMetadataSourcePanel" style="margin:12px 0;border:1px solid #b18aff;background:rgba(125,78,190,.09)">
@@ -3866,85 +3866,7 @@ function buildVisualMotionHtml(){
  '@keyframes heroFloat{0%{transform:translate3d(-1.2%,1.2%,0) rotate(-1deg)}100%{transform:translate3d(1.8%,-2%,0) rotate(1.5deg)}}@keyframes cloudDrift{from{translate:-3% 0}to{translate:5% 0}}@keyframes twinkle{from{opacity:.18}to{opacity:1}}@keyframes waveDrift{from{transform:translateY(9px)}to{transform:translateY(-12px)}}@keyframes wheelSpin{to{transform:rotate(360deg)}}@keyframes snowFall{from{transform:translateY(-30px)}to{transform:translateY(40px)}}@keyframes floatParticle{0%{opacity:0;transform:translateY(24px)}45%{opacity:.8}100%{opacity:0;transform:translateY(-34px)}}'+camCss+
  kfBlocks+'@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-delay:0ms!important}}'+
  '</style></head><body><main class="stage">'+sceneMarkup+'</main>\n'+
- '
-
-<script src="./render-sync-advisor.js" defer>
-
-
-</script>
-</body>
-</html>
-),'');
-  const start=clean.indexOf('{'), end=clean.lastIndexOf('}');
-  if(start<0||end<=start) throw new Error('Gemini tidak mengembalikan JSON metadata yang valid.');
-  return JSON.parse(clean.slice(start,end+1));
- };
- const renderEvidence = async images => {
-  const panel=$('trozalGeminiContactSheetPanel'), grid=$('trozalGeminiContactSheet');
-  if(!panel||!grid) return;
-  grid.innerHTML='';
-  for(let i=0;i<images.length;i++){
-   const url=URL.createObjectURL(images[i]),wrap=document.createElement('div'),img=document.createElement('img'),cap=document.createElement('div');
-   img.src=url;img.alt='Bukti visual '+(i+1);img.style.cssText='width:100%;aspect-ratio:16/9;object-fit:contain;background:#080d14;border-radius:6px';
-   cap.textContent='Bukti '+(i+1);cap.className='help';wrap.append(img,cap);grid.append(wrap);
-  }
-  panel.style.display='block';
- };
- const analyze = async () => {
-  const key=String($('trozalGeminiApiKey')?.value||'').trim();
-  if(!key){status('trozalGeminiStatus','Masukkan Gemini API key terlebih dahulu.',true);$('trozalGeminiApiKey')?.focus();return;}
-  const buttons=['trozalVisionAnalyzeBtn','trozalGeminiAnalyzeBtn']; buttons.forEach(id=>{if($(id))$(id).disabled=true;});
-  try{
-   status('trozalGeminiStatus','Menyiapkan bukti visual…'); status('trozalVisionStatus','Menyiapkan Browser AI Vision…');
-   const blobs=await getEvidenceImages(); await renderEvidence(blobs);
-   const parts=[{type:'text',text:'Analisis gambar ini sebagai bukti visual untuk metadata video microstock. Jangan menebak objek, orang, lokasi, teks, merek, atau aksi yang tidak terlihat. Jika beberapa gambar tersedia, gabungkan hanya fakta yang konsisten. Kembalikan JSON valid saja dengan field: title (English, concise), description (English, factual, 1-2 sentences), category (choose the closest from: Graphic Resources, Technology, Business, Education, Science, Nature, Culture and Religion, Celebration, Backgrounds and Textures, Lifestyle, Food, Sports, Travel, Industry, People, Plants and Flowers, Buildings and Architecture, Transportation, Environment), keywords (array of up to 47 English terms, most specific first), visible_summary (Indonesian concise), visible_objects (array of clearly visible objects), confidence (low/medium/high). Do not add unsupported details. Do not include markdown fences.'}];
-   for(const blob of blobs) parts.push(await imagePart(blob));
-   status('trozalGeminiStatus','Mengirim gambar ke Gemini…'); status('trozalVisionStatus','Analisis visual sedang berjalan…');
-   const response=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({model:'gemini-3.8-flash',input:parts})});
-   const data=await response.json().catch(()=>({}));
-   if(!response.ok) throw new Error(data.error?.message||('Gemini API merespons HTTP '+response.status));
-   const raw=extractText(data); if(!raw) throw new Error('Respons Gemini kosong atau tidak berisi teks metadata.');
-   const meta=parseJson(raw);
-   if($('metadataTitle'))$('metadataTitle').value=String(meta.title||'').trim();
-   if($('metadataDescription'))$('metadataDescription').value=String(meta.description||'').trim();
-   if($('metadataCategory')&&meta.category){const sel=$('metadataCategory'),match=[...sel.options].find(o=>o.text.trim().toLowerCase()===String(meta.category).trim().toLowerCase());if(match)sel.value=match.value;}
-   const keywords=Array.isArray(meta.keywords)?meta.keywords.map(x=>String(x).trim()).filter(Boolean).slice(0,47):[];
-   if($('metadataKeywords'))$('metadataKeywords').value=keywords.join(', ');
-   if($('metadataSubject'))$('metadataSubject').value=String(meta.visible_summary||'').trim();
-   if($('trozalGeminiVisualSummary'))$('trozalGeminiVisualSummary').textContent='Ringkasan visual: '+String(meta.visible_summary||'Tidak tersedia.');
-   if($('trozalGeminiVisibleObjects'))$('trozalGeminiVisibleObjects').textContent='Objek yang terlihat: '+(Array.isArray(meta.visible_objects)?meta.visible_objects.join(', '):'Tidak tersedia')+' · Keyakinan: '+String(meta.confidence||'tidak dinyatakan');
-   status('trozalGeminiStatus','Analisis selesai. Periksa kembali semua metadata sebelum digunakan.');
-   status('trozalVisionStatus','Browser AI Vision selesai menganalisis '+blobs.length+' bukti visual.');
-   status('trozalVisionConnection','Permintaan Gemini selesai melalui cloud; tidak ada model lokal atau Ollama yang digunakan.');
-   if($('metadataStatus'))$('metadataStatus').textContent='Metadata visual dari Gemini siap ditinjau.';
-  }catch(error){
-   status('trozalGeminiStatus','Analisis gagal: '+(error?.message||String(error)),true);
-   status('trozalVisionStatus','Browser AI Vision gagal. Periksa API key, koneksi, dan format gambar.',true);
-   console.error('[TROZAL Browser Vision]',error);
-  }finally{buttons.forEach(id=>{if($(id))$(id).disabled=false;});}
- };
- $('trozalVisionCheckBtn')?.addEventListener('click',()=>{
-  const secure=window.isSecureContext||location.hostname==='localhost'||location.hostname==='127.0.0.1';
-  status('trozalVisionStatus',secure?'Browser siap mengirim gambar ke Gemini Cloud. Masukkan API key untuk menjalankan analisis.':'Browser tidak berada di secure context; gunakan HTTPS atau localhost.',!secure);
-  status('trozalVisionConnection','Mode Browser AI Cloud · tidak menggunakan Ollama, Bridge, atau model lokal.');
- });
- $('trozalVisionAnalyzeBtn')?.addEventListener('click',analyze);
- $('trozalGeminiAnalyzeBtn')?.addEventListener('click',analyze);
- $('trozalVisionClearImagesBtn')?.addEventListener('click',()=>{
-  const input=$('trozalVisionImages');if(input)input.value='';
-  const grid=$('trozalGeminiContactSheet');if(grid)grid.innerHTML='';
-  const panel=$('trozalGeminiContactSheetPanel');if(panel)panel.style.display='none';
-  status('trozalVisionStatus','Gambar pilihan dibersihkan.');
- });
- $('trozalVisionImages')?.addEventListener('change',e=>{
-  const files=[...(e.target.files||[])];
-  status('trozalVisionStatus',files.length>3?'Maksimal 3 gambar; hanya 3 pertama yang diproses.':files.length+' gambar dipilih. Tekan Analisis Visual untuk melanjutkan.',files.length>3);
- });
- console.info('[TROZAL Browser Vision] Gemini Cloud handlers wired.');
-})();
-</script>
-
-</body></html>';
+ '</body></html>';
  return {html,scenes:items.length,duration:total,ratio};
 }
 $('generateVisualMotionBtn').addEventListener('click',()=>{
@@ -5349,76 +5271,5 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
 
 
 </script>
-<script>
-/* TROZAL Browser Vision — Gemini Cloud image analysis; no Ollama/Bridge. */
-(() => {
- 'use strict';
- if(window.__trozalBrowserVisionWired)return;
- window.__trozalBrowserVisionWired=true;
- const $=id=>document.getElementById(id);
- const set=(id,msg,bad=false)=>{const e=$(id);if(e){e.textContent=msg;e.style.color=bad?'#ff9da4':'';}};
- const read=blob=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result||''));r.onerror=()=>no(new Error('Gagal membaca gambar.'));r.readAsDataURL(blob);});
- const getImages=async()=>{
-  const files=[...($('trozalVisionImages')?.files||[])].slice(0,3);
-  if(files.length)return files;
-  const stage=$('stage');if(!stage)throw new Error('Preview tidak ditemukan. Unggah screenshot sebagai bukti.');
-  let renderer=window.htmlToImage;
-  if(!renderer?.toBlob&&typeof window.ensureHtmlToImage==='function')renderer=await window.ensureHtmlToImage();
-  if(!renderer?.toBlob)throw new Error('Capture Preview tidak tersedia. Unggah screenshot PNG/JPG/WebP.');
-  const blob=await renderer.toBlob(stage,{pixelRatio:1,cacheBust:false});
-  if(!blob)throw new Error('Gagal mengambil Preview.');return [blob];
- };
- const parseResponse=data=>{
-  if(data.output_text)return data.output_text;
-  const out=[];(data.steps||[]).filter(x=>x.type==='model_output').forEach(x=>(x.content||[]).forEach(p=>{if(p.type==='text')out.push(p.text)}));
-  if(!out.length)(data.candidates||[]).forEach(x=>(x.content?.parts||[]).forEach(p=>{if(p.text)out.push(p.text)}));
-  return out.join('\n');
- };
- const analyze=async()=>{
-  const key=String($('trozalGeminiApiKey')?.value||'').trim();
-  if(!key){set('trozalGeminiStatus','Masukkan Gemini API key terlebih dahulu.',true);$('trozalGeminiApiKey')?.focus();return;}
-  const btns=['trozalVisionAnalyzeBtn','trozalGeminiAnalyzeBtn'];btns.forEach(id=>{if($(id))$(id).disabled=true;});
-  try{
-   set('trozalGeminiStatus','Menyiapkan bukti visual…');set('trozalVisionStatus','Menyiapkan Browser AI Vision…');
-   const images=await getImages(), parts=[{type:'text',text:'Analyze these images as factual visual evidence for microstock video metadata. Never guess unseen objects, people, brands, locations, text, or actions. Return valid JSON only with title (English), description (English, factual), category (one of Graphic Resources, Technology, Business, Education, Science, Nature, Culture and Religion, Celebration, Backgrounds and Textures, Lifestyle, Food, Sports, Travel, Industry, People, Plants and Flowers, Buildings and Architecture, Transportation, Environment), keywords (up to 47 specific English terms), visible_summary (Indonesian), visible_objects (array), confidence (low/medium/high). Do not add unsupported details.'}];
-   for(const blob of images){
-    if(!/^image\/(png|jpeg|webp)$/i.test(blob.type||''))throw new Error('Format gambar harus PNG, JPG, atau WebP.');
-    if(blob.size>8*1024*1024)throw new Error('Setiap gambar maksimal 8 MB.');
-    const dataUrl=await read(blob),comma=dataUrl.indexOf(',');if(comma<0)throw new Error('Data gambar tidak valid.');
-    parts.push({type:'image',mime_type:blob.type,data:dataUrl.slice(comma+1)});
-   }
-   const grid=$('trozalGeminiContactSheet'),panel=$('trozalGeminiContactSheetPanel');
-   if(grid){grid.innerHTML='';images.forEach((blob,i)=>{const img=document.createElement('img');img.src=URL.createObjectURL(blob);img.alt='Bukti '+(i+1);img.style.cssText='width:100%;aspect-ratio:16/9;object-fit:contain;background:#080d14;border-radius:6px';grid.append(img);});}
-   if(panel)panel.style.display='block';
-   set('trozalGeminiStatus','Mengirim '+images.length+' bukti visual ke Gemini…');
-   const res=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({model:'gemini-3.8-flash',input:parts})});
-   const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error(data.error?.message||('Gemini API HTTP '+res.status));
-   let raw=String(parseResponse(data)||'').trim(),fence=String.fromCharCode(96);
-   raw=raw.replace(new RegExp('^'+fence+'{3}(?:json)?\\s*','i'),'').replace(new RegExp('\\s*'+fence+'{3}$'),'');
-   const a=raw.indexOf('{'),b=raw.lastIndexOf('}');if(a<0||b<=a)throw new Error('Respons Gemini bukan JSON metadata yang valid.');
-   const meta=JSON.parse(raw.slice(a,b+1));
-   if($('metadataTitle'))$('metadataTitle').value=String(meta.title||'');
-   if($('metadataDescription'))$('metadataDescription').value=String(meta.description||'');
-   if($('metadataCategory')&&meta.category){const sel=$('metadataCategory'),opt=[...sel.options].find(o=>o.text.toLowerCase()===String(meta.category).toLowerCase());if(opt)sel.value=opt.value;}
-   if($('metadataKeywords'))$('metadataKeywords').value=(Array.isArray(meta.keywords)?meta.keywords:[]).map(x=>String(x).trim()).filter(Boolean).slice(0,47).join(', ');
-   if($('metadataSubject'))$('metadataSubject').value=String(meta.visible_summary||'');
-   if($('trozalGeminiVisualSummary'))$('trozalGeminiVisualSummary').textContent='Ringkasan visual: '+String(meta.visible_summary||'Tidak tersedia.');
-   if($('trozalGeminiVisibleObjects'))$('trozalGeminiVisibleObjects').textContent='Objek terlihat: '+(Array.isArray(meta.visible_objects)?meta.visible_objects.join(', '):'Tidak tersedia')+' · Keyakinan: '+String(meta.confidence||'tidak dinyatakan');
-   set('trozalGeminiStatus','Analisis selesai. Tinjau semua metadata sebelum digunakan.');
-   set('trozalVisionStatus','Browser AI Vision selesai menganalisis '+images.length+' bukti visual.');
-   set('trozalVisionConnection','Gemini Cloud aktif untuk permintaan ini; tidak menggunakan Ollama, Bridge, atau model lokal.');
-   if($('metadataStatus'))$('metadataStatus').textContent='Metadata visual Gemini siap ditinjau.';
-  }catch(err){set('trozalGeminiStatus','Analisis gagal: '+(err?.message||String(err)),true);set('trozalVisionStatus','Browser AI Vision gagal. Periksa API key, koneksi, dan gambar.',true);console.error('[TROZAL Browser Vision]',err);}
-  finally{btns.forEach(id=>{if($(id))$(id).disabled=false;});}
- };
- $('trozalVisionCheckBtn')?.addEventListener('click',()=>{const secure=window.isSecureContext||location.hostname==='localhost'||location.hostname==='127.0.0.1';set('trozalVisionStatus',secure?'Browser siap mengirim gambar ke Gemini Cloud. Masukkan API key untuk analisis.':'Gunakan HTTPS atau localhost untuk menjalankan Browser AI.',!secure);set('trozalVisionConnection','Mode Browser AI Cloud · tanpa Ollama dan Bridge.');});
- $('trozalVisionAnalyzeBtn')?.addEventListener('click',analyze);
- $('trozalGeminiAnalyzeBtn')?.addEventListener('click',analyze);
- $('trozalVisionClearImagesBtn')?.addEventListener('click',()=>{if($('trozalVisionImages'))$('trozalVisionImages').value='';if($('trozalGeminiContactSheet'))$('trozalGeminiContactSheet').innerHTML='';if($('trozalGeminiContactSheetPanel'))$('trozalGeminiContactSheetPanel').style.display='none';set('trozalVisionStatus','Gambar pilihan dibersihkan.');});
- $('trozalVisionImages')?.addEventListener('change',e=>{const n=e.target.files?.length||0;set('trozalVisionStatus',n>3?'Maksimal 3 gambar; hanya 3 pertama diproses.':n+' gambar dipilih.',n>3);});
- console.info('[TROZAL Browser Vision] Gemini Cloud handlers wired.');
-})();
-</script>
-
 </body>
 </html>
