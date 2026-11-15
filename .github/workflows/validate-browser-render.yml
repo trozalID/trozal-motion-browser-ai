@@ -16,6 +16,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start local preview server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/browser-ai-http.log 2>&1 &
+          echo $! > /tmp/browser-ai-http.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/index.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/browser-ai-http.log
+          exit 1
       - name: Check inline JavaScript syntax
         shell: bash
         run: |
@@ -45,3 +59,8 @@ jobs:
           console.log('Validated ' + scripts.length + ' inline JavaScript block(s) and render scheduler wiring.');
           NODE
           node tests/browser-render-scheduler.test.cjs
+      - name: Exercise Render Sync Advisor in Chromium
+        run: node tests/render-sync-advisor.browser.cjs
+      - name: Stop local preview server
+        if: always()
+        run: if [ -f /tmp/browser-ai-http.pid ]; then kill "$(cat /tmp/browser-ai-http.pid)" || true; fi
