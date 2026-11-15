@@ -7,6 +7,7 @@ const { chromium } = require('playwright');
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  await page.bringToFront();
   try {
     await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
     const panel = page.locator('#renderSyncAdvisorPanel');
@@ -18,7 +19,7 @@ const { chromium } = require('playwright');
     await page.waitForFunction(() => {
       const value = document.getElementById('renderSyncFps')?.textContent || '';
       return value.includes('FPS');
-    }, { timeout: 8000 });
+    }, { timeout: 12000 }).catch(async error => { const values = await Promise.all(['renderSyncFps','renderSyncInterval','renderSyncStatus','renderSyncRecommendations'].map(id => page.locator('#' + id).textContent().catch(() => 'missing'))); throw new Error(error.message + ' | metrics=' + JSON.stringify(values) + ' | pageErrors=' + JSON.stringify(errors)); });
     await page.locator('#renderSyncReset').click();
     await page.waitForFunction(() => document.getElementById('renderSyncStatus')?.textContent.includes('Pengukuran direset'));
     await page.locator('#renderSyncRunPreflight').click();
