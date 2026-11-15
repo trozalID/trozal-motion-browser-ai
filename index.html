@@ -3078,12 +3078,17 @@ async function draw(){
  if(trozalRenderCancelRequested)return;
  try{await drawUnsafe()}
  catch(err){
+  // A frame failure must never fall through to MediaRecorder.onstop as a successful partial export.
+  recorderFailed=true;trozalRenderCancelRequested=true;trozalRenderCancelHandler=null;
   console.error('trozal_MOTION render frame error:',err);
   try{if(rec&&rec.state!=='inactive')rec.stop()}catch(e){}
   try{if(stream)stream.getTracks().forEach(track=>track.stop())}catch(e){}
+  const cancelButton=$('cancelRenderBtn');if(cancelButton){cancelButton.style.display='none';cancelButton.disabled=false;}
+  if(window.__trozalRenderMetrics)window.__trozalRenderMetrics.active=false;
   $('renderBtn').disabled=false;$('renderBtn').textContent='▶ Render';$('stage')?.classList.remove('rendering-preview-paused');renderAt(renderPreviewHoldTime);
-  setStatus('Rendering gagal: '+(err?.message||String(err)));
-  setExportStatus('Render gagal pada frame '+frame+': '+(err?.message||String(err)));setRenderProgress(Math.round(frame/Math.max(1,totalFrames)*100),'Render gagal','error');
+  setStatus('Rendering gagal pada frame '+frame+': '+(err?.message||String(err)));
+  setExportStatus('Render gagal pada frame '+frame+'. File parsial tidak disimpan: '+(err?.message||String(err)));
+  setRenderProgress(Math.round(frame/Math.max(1,totalFrames)*100),'Render gagal · file parsial dibuang','error');
  }
 }
 if(rec){rec.start(250);renderClockStart=performance.now()}draw()};
