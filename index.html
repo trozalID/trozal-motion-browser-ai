@@ -495,9 +495,11 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 
 /* TROZAL FIX · Android Chrome desktop-mode: keep both side panels reachable */
 @media (min-width:721px) and (max-width:1050px) {
+  /* The live DOM has exactly three workspace columns: left sidebar, center editor, right sidebar.
+     Do not reserve 8px splitter columns unless actual resizer elements are mounted. */
   .app {
     display:grid !important;
-    grid-template-columns:minmax(180px,20vw) 8px minmax(260px,1fr) 8px minmax(180px,20vw) !important;
+    grid-template-columns:minmax(180px,20vw) minmax(260px,1fr) minmax(180px,20vw) !important;
     width:100% !important;
     max-width:100% !important;
     height:calc(100vh - 54px) !important;
@@ -516,8 +518,8 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
     overscroll-behavior:contain;
     -webkit-overflow-scrolling:touch;
   }
-  .layout-resizer { display:block !important; }
-  .layout-resizer[data-edge="right"] { display:block !important; }
+  /* No splitter nodes exist in this DOM revision; keep the three-column grid gap-free. */
+  .layout-resizer { display:none !important; }
   .main { min-width:0 !important; min-height:0 !important; overflow-y:auto !important; overflow-x:hidden !important; }
 }
 
