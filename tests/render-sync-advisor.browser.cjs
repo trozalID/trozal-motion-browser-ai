@@ -5,6 +5,18 @@ const { chromium } = require('playwright');
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await page.addInitScript(() => {
+    window.__browserScriptErrors = [];
+    window.addEventListener('error', event => {
+      window.__browserScriptErrors.push({
+        message: event.message,
+        filename: event.filename,
+        line: event.lineno,
+        column: event.colno,
+        stack: event.error?.stack || ''
+      });
+    }, true);
+  });
   const errors = [];
   const consoleErrors = [];
   page.on('pageerror', error => errors.push(error.stack || error.message));
@@ -34,7 +46,8 @@ const { chromium } = require('playwright');
         mainInlineScripts: [...document.scripts].filter(s => !s.src).length,
         advisorSrc: [...document.scripts].map(s => s.src).filter(Boolean),
         advisorInitialized: !!window.__trozalRenderSyncAdvisorInitialized,
-        diagnostics: window.__trozalRenderSyncDiagnostics || null
+        diagnostics: window.__trozalRenderSyncDiagnostics || null,
+        scriptErrors: window.__browserScriptErrors || []
       }));
       throw new Error('Advisor hook bridge unavailable: ' + JSON.stringify({ initState, runtime, pageErrors: errors, consoleErrors }));
     }
