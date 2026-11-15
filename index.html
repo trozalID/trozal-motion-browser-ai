@@ -742,6 +742,10 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
    <label>Kategori spesifik / subtema (relevan dengan tema)</label><select id="svgAiSpecific"><option>Logo reveal with custom emblem</option><option>Logo build from geometric pieces</option><option>Wordmark kinetic reveal</option><option>Brand guideline opener</option><option>Product hero on floating podium</option><option>Product 360 showcase</option><option>Cosmetic bottle luxury reveal</option><option>Food hero with ingredient orbit</option><option>Sneaker / fashion product launch</option><option>Smartphone device showcase</option><option>App onboarding sequence</option><option>Website landing page hero</option><option>SaaS feature explainer</option><option>Animated dashboard KPI</option><option>Data chart growth story</option><option>Financial market overview</option><option>AI neural network visualization</option><option>Robotics and automation</option><option>Cloud computing ecosystem</option><option>Cybersecurity shield sequence</option><option>Medical awareness explainer</option><option>Anatomy / science visualization</option><option>Learning process step-by-step</option><option>Timeline and roadmap</option><option>Before-after transformation</option><option>Process flow diagram</option><option>Comparison infographic</option><option>Statistics counter sequence</option><option>World map data routes</option><option>Travel destination opener</option><option>City / architecture flythrough</option><option>Nature landscape layers</option><option>Ocean and underwater scene</option><option>Wildlife conservation story</option><option>Renewable energy system</option><option>Solar / wind energy explainer</option><option>Sports event opener</option><option>Fitness training sequence</option><option>Esports tournament package</option><option>Music visualizer interface</option><option>Character mascot introduction</option><option>Animated storytelling scene</option><option>Event countdown</option><option>New year celebration</option><option>Ramadan lantern and crescent</option><option>Eid greeting composition</option><option>Wedding invitation motion</option><option>Sale campaign and discount</option><option>App interface micro-interaction</option><option>Notification and UX flow</option><option>Loading / progress animation</option><option>Abstract liquid transition</option><option>Particle field and energy</option><option>Typography quote animation</option><option>News headline package</option><option>Real estate property showcase</option><option>Automotive feature presentation</option><option>Custom specific concept</option></select>
    <div id="svgAiThemeBrief" role="status" aria-live="polite" style="margin:7px 0 10px;padding:9px 10px;border:1px solid #355b47;border-radius:8px;background:#0a2219;color:#d8eee0;font-size:10px;line-height:1.55;white-space:pre-line">Pilih tema untuk melihat tujuan konsep, subjek utama, dan arahan visual.</div>
    <label>Detail tambahan (opsional)</label><input type="text" id="svgAiDetails" placeholder="Contoh: ikon lebah, warna emas, latar putih">
+    <div id="svgAiAutoSpecPanel" role="status" aria-live="polite" style="margin:8px 0 10px;padding:10px;border:1px solid #4d795f;border-radius:9px;background:linear-gradient(145deg,#0b241b,#101e1a);color:#d8eee0;font-size:10px;line-height:1.6">
+     <strong style="display:block;color:#9de5b7;letter-spacing:.06em;margin-bottom:6px">SPESIFIKASI TEMA OTOMATIS · DINAMIS</strong>
+     <div id="svgAiAutoSpec" style="white-space:pre-wrap;overflow-wrap:anywhere">Pilih tema dan kategori untuk melihat spesifikasi visual lengkap.</div>
+    </div>
    <section class="browser-art-direction" id="browserArtDirection">
     <h4>✦ CREATIVE DIRECTION · KONTROL ART DESIGN</h4>
     <p>Pilih arahan tambahan agar hasil HTML Motion lebih konsisten. Mode otomatis mengikuti tema.</p>
@@ -4688,6 +4692,11 @@ window.trozalUpdateThemeBrief = function() {
  const brief=window.trozalBuildThemeCreativeBrief(theme,category,specific);
  const host=document.getElementById('svgAiThemeBrief');
  if(host)host.textContent=brief.summary;
+ const spec=document.getElementById('svgAiAutoSpec');
+ if(spec){
+  const details=document.getElementById('svgAiDetails')?.value?.trim()||'Belum ada detail tambahan.';
+  spec.textContent=brief.summary+'\n\nSPESIFIKASI VISUAL LENGKAP\n'+brief.prompt+'\n\nDETAIL TAMBAHAN PENGGUNA\n'+details+'\n\nATURAN INTEGRASI\nDetail tambahan bersifat aditif: gabungkan dengan identitas tema, kategori visual, subtema, aset, palet, komposisi, dan alur gerak. Jangan mengganti atau menghapus spesifikasi otomatis.';
+ }
  return brief;
 };
 function trozalThemeProfile(theme){
@@ -4768,6 +4777,7 @@ function trozalInitThemeCatalog(){
  select.addEventListener('change',()=>choose(select.value));
  $('svgAiCategory').addEventListener('change',trozalUpdateThemeBrief);
  $('svgAiSpecific').addEventListener('change',trozalUpdateThemeBrief);
+ $('svgAiDetails').addEventListener('input',trozalUpdateThemeBrief);
  document.querySelectorAll('[data-theme-pick]').forEach(btn=>btn.addEventListener('click',()=>choose(btn.dataset.themePick)));
   const normalizeThemeText=value=>String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   const rankSuggestions=query=>{
@@ -4911,6 +4921,10 @@ trozalInitThemeCatalog();
 'Additional art direction: '+(details||'Use professional creative judgment and make the visual metaphor specific, original, and coherent.'),
 'THEME-SPECIFIC CREATIVE BLUEPRINT',
 themeBrief.prompt,
+'THEME- AND CATEGORY-SPECIFIC CREATIVE SPECIFICATION',
+'Preserve every domain-specific visual, material, composition, motion, and exclusion instruction above. The selected category changes visual execution only; it must not replace the main theme.',
+'USER DETAIL INTEGRATION RULE',
+'Additional art direction is additive. Combine every user-provided detail with the full automatic theme/category specification. Do not discard, simplify, or overwrite either set of requirements.',
 'Palette direction: '+palette,
 'Camera direction: '+camera,
 'Transition direction: '+transition,
