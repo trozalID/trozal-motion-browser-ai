@@ -2,7 +2,9 @@ name: Validate Browser AI Render Scheduler
 
 on:
   push:
-    branches: [browser-render-cursor-independent-2026-11-15]
+    branches:
+      - browser-render-cursor-independent-2026-11-15
+      - browser-render-advisor-global-hooks-2026-11-15
   workflow_dispatch:
 
 permissions:
