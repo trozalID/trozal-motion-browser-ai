@@ -34,16 +34,17 @@ const { chromium } = require('playwright');
         headers,
         body: JSON.stringify({
           models: [
-            { name: 'models/gemini-3.8-flash' },
-            { name: 'models/gemini-3.5-flash-lite' },
-            { name: 'models/gemini-3.1-pro-preview' }
+            { name: 'models/gemini-3.8-flash', supportedGenerationMethods: ['generateContent'] },
+            { name: 'models/gemini-3.5-flash-lite', supportedGenerationMethods: ['generateContent'] },
+            { name: 'models/gemini-3.1-pro-preview', supportedGenerationMethods: ['generateContent'] }
           ]
         })
       });
     }
-    if (url.pathname.endsWith('/interactions')) {
+    if (/\/models\/[^/]+:generateContent$/.test(url.pathname)) {
       const body = request.postDataJSON();
-      const imageInput = Array.isArray(body.input) && body.input.some(item => item.type === 'image');
+      const parts = body.contents?.[0]?.parts || [];
+      const imageInput = parts.some(item => item.inline_data);
       const output = imageInput
         ? JSON.stringify({
             title: 'Blue Glass Sphere with Soft Reflections',
@@ -58,11 +59,7 @@ const { chromium } = require('playwright');
       return route.fulfill({
         status: 200,
         headers,
-        body: JSON.stringify({
-          id: 'test-interaction',
-          status: 'completed',
-          steps: [{ type: 'model_output', content: [{ type: 'text', text: output }] }]
-        })
+        body: JSON.stringify({ candidates: [{ content: { parts: [{ text: output }] } }] })
       });
     }
     return route.fulfill({ status: 404, headers, body: JSON.stringify({ error: { message: 'not found' } }) });
@@ -92,12 +89,12 @@ const { chromium } = require('playwright');
   const output = await page.locator('#visualMotionOutput').inputValue();
   assert.match(output, /<svg/i);
   assert.doesNotMatch(output, /<script\b|<iframe\b|https?:\/\//i, 'Returned HTML/SVG must remain safe for the motion importer');
-  const sceneRequest = requests.find(item => item.method === 'POST' && item.path.endsWith('/interactions') && typeof item.body?.input === 'string');
+  const sceneRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && typeof item.body?.contents?.[0]?.parts?.[0]?.text === 'string');
   assert.ok(sceneRequest, 'Scene generation should call Gemini Interactions API with a text brief');
-  assert.equal(sceneRequest.body.model, 'gemini-3.8-flash');
-  assert.equal(sceneRequest.body.store, false, 'Interactions should be stateless');
-  assert.match(sceneRequest.body.input, /perfume bottle/i);
-  assert.match(sceneRequest.body.input, /Aspect ratio/);
+  assert.equal(sceneRequest.path, '/v1beta/models/gemini-3.8-flash:generateContent');
+  assert.equal(sceneRequest.body.contents[0].role, 'user');
+  assert.match(sceneRequest.body.contents[0].parts[0].text, /perfume bottle/i);
+  assert.match(sceneRequest.body.contents[0].parts[0].text, /Aspect ratio/);
 
   const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pKkAAAAASUVORK5CYII=', 'base64');
   await page.locator('#trozalVisionImages').setInputFiles({
@@ -108,11 +105,11 @@ const { chromium } = require('playwright');
   assert.equal(await page.locator('#metadataDescription').inputValue(), 'A polished blue glass sphere floats against a dark gradient background with soft reflected light.');
   assert.equal(await page.locator('#metadataKeywords').inputValue(), 'blue glass sphere, floating object, dark gradient, soft reflections, abstract background');
   assert.match(await page.locator('#trozalGeminiStatus').innerText(), /Selesai/);
-  const visionRequest = requests.find(item => item.method === 'POST' && item.path.endsWith('/interactions') && Array.isArray(item.body?.input));
+  const visionRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.inline_data));
   assert.ok(visionRequest, 'Vision should call Gemini Interactions API with image input');
-  assert.equal(visionRequest.body.store, false);
-  assert.equal(visionRequest.body.input.filter(item => item.type === 'image').length, 1);
-  assert.match(visionRequest.body.input.find(item => item.type === 'text').text, /visible pixels/);
+  assert.equal(visionRequest.body.contents[0].role, 'user');
+  assert.equal(visionRequest.body.contents[0].parts.filter(item => item.inline_data).length, 1);
+  assert.match(visionRequest.body.contents[0].parts.find(item => item.text)?.text, /visible pixels/);
 
   const storage = await page.evaluate(() => ({
     local: JSON.stringify(Object.values(localStorage)),
@@ -148,7 +145,7 @@ const { chromium } = require('playwright');
     checked: [
       'Gemini API key is shared by Scene Composer and Browser Vision',
       'API key is sent in x-goog-api-key header',
-      'Gemini Interactions requests use store:false',
+      'Gemini generateContent REST API used for both text and image',
       'HTML/SVG output is returned and safe-checked',
       'Vision metadata is generated from image inputs',
       'Local WebGPU, Ollama, Bridge and local-model UI are absent',
