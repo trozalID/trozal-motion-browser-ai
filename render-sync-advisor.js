@@ -17,7 +17,7 @@
     return;
   }
 
-  const m = { frames: [], costs: [], lastFrame: 0, lastReport: 0, dropped: 0, longTasks: 0, observer: null, raf: 0 };
+  const m = { frames: [], costs: [], lastFrame: 0, lastReport: 0, dropped: 0, longTasks: 0, observer: null, raf: 0, rafTicks: 0 };
   const avg = a => a.length ? a.reduce((x,y) => x+y, 0) / a.length : 0;
   const push = (a,v,max=90) => { a.push(v); if (a.length > max) a.shift(); };
 
@@ -49,7 +49,7 @@
     const cadence = avg(m.frames);
     const costAvg = avg(m.costs);
     const costMax = m.costs.length ? Math.max(...m.costs) : 0;
-    $('renderSyncFps').textContent = m.frames.length ? (1000 / cadence).toFixed(1) + ' FPS' : 'Mengukur…';
+    $('renderSyncFps').textContent = m.frames.length ? (1000 / cadence).toFixed(1) + ' FPS' : '0.0 FPS · menunggu frame';
     $('renderSyncInterval').textContent = m.frames.length ? cadence.toFixed(1) + ' ms' : '—';
     $('renderSyncCost').textContent = m.costs.length ? costAvg.toFixed(2) + ' / ' + costMax.toFixed(2) + ' ms' : 'Menunggu renderAt';
     $('renderSyncDropped').textContent = m.dropped + ' (>50 ms)';
@@ -65,9 +65,11 @@
     if (!notes.length) notes.push('Belum terdeteksi bottleneck besar. Jalankan preview dan render singkat untuk mengukur beban aktual.');
     $('renderSyncStatus').textContent = 'Sinkronisasi: ' + (cadence && cadence < 35 ? 'Stabil' : cadence && cadence < 55 ? 'Perlu dipantau' : 'Cadence sedang diukur') + ' · Target ' + target + ' FPS · Long task ' + m.longTasks;
     $('renderSyncRecommendations').textContent = notes.join('\n');
+    window.__trozalRenderSyncDiagnostics = { rafTicks: m.rafTicks, samples: m.frames.length, lastReport: m.lastReport, visibility: document.visibilityState };
   };
 
   const tick = now => {
+    m.rafTicks++;
     if (m.lastFrame) {
       const delta = now - m.lastFrame;
       if (delta > 0 && delta < 1000) {
@@ -82,7 +84,7 @@
   };
 
   const reset = () => {
-    m.frames = []; m.costs = []; m.lastFrame = 0; m.lastReport = 0; m.dropped = 0; m.longTasks = 0;
+    m.frames = []; m.costs = []; m.lastFrame = 0; m.lastReport = 0; m.dropped = 0; m.longTasks = 0; m.rafTicks = 0;
     $('renderSyncStatus').textContent = 'Pengukuran direset. Kumpulkan sampel baru…';
   };
   $('renderSyncReset').addEventListener('click', reset);
