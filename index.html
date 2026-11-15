@@ -369,7 +369,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 /* FIX33 · Resizable workspace, movable feature panels, Phase-2 overlays */
 .app{
  --trozal-left:290px;--trozal-right:290px;
- grid-template-columns:minmax(210px,var(--trozal-left)) 8px minmax(360px,1fr) 8px minmax(210px,var(--trozal-right));
+ grid-template-columns:minmax(210px,var(--trozal-left)) minmax(360px,1fr) minmax(210px,var(--trozal-right));
 }
 .layout-resizer{position:relative;z-index:25;cursor:col-resize;touch-action:none;background:linear-gradient(90deg,transparent,rgba(125,224,169,.08),transparent)}
 .layout-resizer::after{content:"";position:absolute;top:35%;bottom:35%;left:3px;width:2px;border-radius:3px;background:#397b56;transition:background .15s,box-shadow .15s}
@@ -421,7 +421,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 .mt-toolbar-actions #mtUndo:disabled,.mt-toolbar-actions #mtRedo:disabled{opacity:.35;cursor:not-allowed}
 .mt-toolbar-actions #mtSnapToggle[aria-pressed="true"]{border-color:#73d99c;color:#aaf0c0;background:#153e2c}
 .mt-toolbar-actions #mtSnapToggle[aria-pressed="false"]{border-color:#5c5140;color:#b9ad93;background:#29251f}
-@media(max-width:1050px){.app{grid-template-columns:minmax(200px,var(--trozal-left)) 8px minmax(300px,1fr)}.right{display:none}.layout-resizer[data-edge="right"]{display:none}}
+@media(max-width:1050px){.app{grid-template-columns:minmax(200px,var(--trozal-left)) minmax(300px,1fr)}.right{display:none}.layout-resizer{display:none}}
 @media(max-width:720px){
  .app{display:flex;flex-direction:column;height:auto;overflow:visible}
  .layout-resizer{display:none}
