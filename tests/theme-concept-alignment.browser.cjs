@@ -10,7 +10,19 @@ const { chromium } = require('playwright');
 
   try {
     await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => (document.getElementById('svgAiTheme')?.options.length || 0) > 100);
+    await page.waitForFunction(() => {
+      const options = [...(document.getElementById('svgAiTheme')?.options || [])].map(o => o.textContent.trim());
+      return options.includes('Christmas & Holiday') && options.includes('Career & Recruitment');
+    }, undefined, { timeout: 12000 }).catch(async error => {
+      const snapshot = await page.evaluate(() => ({
+        readyState: document.readyState,
+        themes: [...(document.getElementById('svgAiTheme')?.options || [])].map(o => o.textContent.trim()).slice(0, 25),
+        globalThemeCount: Array.isArray(window.TROZAL_AI_THEMES) ? window.TROZAL_AI_THEMES.length : null,
+        briefHelper: typeof window.trozalBuildThemeCreativeBrief,
+        applyThemeHint: document.getElementById('svgAiThemeSearchHint')?.textContent || ''
+      }));
+      throw new Error(error.message + ' | themeInitSnapshot=' + JSON.stringify(snapshot));
+    });
 
     await page.locator('#svgAiTheme').selectOption({ label: 'Christmas & Holiday' });
     await page.waitForFunction(() => {
