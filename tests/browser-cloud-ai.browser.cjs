@@ -74,8 +74,8 @@ const { chromium } = require('playwright');
   assert.equal(await page.locator('#visualMotionAiModel').count(), 0, 'No local WebGPU model selector should remain');
   assert.equal(await page.locator('#trozalVisionCheckBtn').count(), 0, 'No local Browser Vision model-check control should remain');
   assert.equal(await page.locator('#trozalLocalVisionPanel').count(), 0, 'Legacy local Vision panel should be removed');
-  assert.equal(await page.locator('#browserGeminiCloudPanel').innerText().then(t => /Ollama|Bridge|WebGPU inference|Qwen/i.test(t)), false, 'Scene Composer panel must state cloud-only flow');
-  assert.equal(await page.locator('#trozalBrowserVisionCloudPanel').innerText().then(t => /Ollama|Bridge|WebGPU|model lokal/i.test(t)), false, 'Vision panel must state cloud-only flow');
+  assert.match(await page.locator('#browserGeminiCloudPanel').innerText(), /Gemini Cloud/i, 'Scene Composer panel must state cloud-only flow');
+  assert.match(await page.locator('#trozalBrowserVisionCloudPanel').innerText(), /Gemini Cloud/i, 'Vision panel must state cloud-only flow');
 
   await page.locator('#trozalGeminiApiKey').fill('test-browser-key-never-persist');
   await page.locator('#trozalGeminiCheckBtn').click();
