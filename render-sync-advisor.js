@@ -78,6 +78,15 @@
       }
     }
     m.lastFrame = now;
+    // Publish a heartbeat every animation frame so stalled RAF is diagnosable,
+    // even when the slower UI report cadence has not fired yet.
+    window.__trozalRenderSyncDiagnostics = {
+      rafTicks: m.rafTicks,
+      samples: m.frames.length,
+      lastFrame: now,
+      lastReport: m.lastReport,
+      visibility: document.visibilityState
+    };
     wrapRenderAt();
     report(now);
     m.raf = requestAnimationFrame(tick);
