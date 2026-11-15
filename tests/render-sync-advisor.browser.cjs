@@ -20,12 +20,15 @@ const { chromium } = require('playwright');
     console.log('Render Sync init:', JSON.stringify(initState));
     await page.waitForFunction(() => {
       const value = document.getElementById('renderSyncFps')?.textContent || '';
-      return value.includes('FPS');
+      return value.includes('FPS') && (window.__trozalRenderSyncDiagnostics?.rafTicks || 0) >= 2;
     }, undefined, { timeout: 12000 }).catch(async error => { const values = await Promise.all(['renderSyncFps','renderSyncInterval','renderSyncStatus','renderSyncRecommendations'].map(id => page.locator('#' + id).textContent().catch(() => 'missing'))); throw new Error(error.message + ' | metrics=' + JSON.stringify(values) + ' | pageErrors=' + JSON.stringify(errors)); });
     await page.locator('#renderSyncReset').click();
     await page.waitForFunction(() => document.getElementById('renderSyncStatus')?.textContent.includes('Pengukuran direset'));
     await page.locator('#renderSyncRunPreflight').click();
     await page.waitForFunction(() => document.getElementById('renderPreflightStatus')?.textContent.includes('Pemeriksaan selesai'));
+    const diagnostics = await page.evaluate(() => window.__trozalRenderSyncDiagnostics || null);
+    assert.ok(diagnostics && diagnostics.rafTicks >= 2, 'Advisor requestAnimationFrame loop must remain alive');
+    assert.ok(diagnostics.samples >= 1, 'Advisor must collect live cadence samples');
     const gridColumns = await page.locator('#renderSyncMetrics').evaluate(el => getComputedStyle(el).gridTemplateColumns);
     assert.ok(gridColumns.split(' ').length >= 1, 'Metrics grid must render at mobile viewport');
     assert.deepEqual(errors, [], 'Unexpected uncaught JavaScript errors');
