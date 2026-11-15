@@ -4552,6 +4552,9 @@ function trozalInitThemeCatalog(){
  updatePresetHint();
 }
 
+// Initialize the theme catalogue before the prompt controls are bound.
+trozalInitThemeCatalog();
+
 (function(){
  'use strict';
  const $=id=>document.getElementById(id);
