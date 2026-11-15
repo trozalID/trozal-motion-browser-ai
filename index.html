@@ -4633,6 +4633,21 @@ function trozalThemeProfile(theme){
  const specifics=[t+' visual identity and hero reveal',t+' cinematic showcase with layered depth',t+' feature sequence with kinetic typography',t+' key visual and information layout',t+' material, texture and detail study',t+' process explainer with animated callouts',t+' campaign opener and closing frame'];
  return {styles,specifics};
 }
+
+// Normalize every catalogue entry to a sufficiently rich, domain-aware profile.
+const trozalThemeProfileBase = trozalThemeProfile;
+trozalThemeProfile = function(theme) {
+ const base=trozalThemeProfileBase(theme)||{};
+ const domain=window.trozalGetThemeDomainProfile(theme);
+ const styles=[...new Set([...(base.styles||[]),...domain.styles])];
+ const specifics=[...new Set([...(base.specifics||[]),...domain.subthemes.map(item=>String(theme||'').trim()+' — '+item)])];
+ return {
+  styles:styles.slice(0,Math.max(7,Math.min(12,styles.length))),
+  specifics:specifics.slice(0,Math.max(8,Math.min(16,specifics.length)))
+ };
+};
+window.trozalThemeProfile=trozalThemeProfile;
+
 function trozalSetSelectOptions(select,items,prefer){select.replaceChildren();[...new Set(items)].forEach((v,i)=>{const o=document.createElement('option');o.textContent=v;o.value=v;if((prefer&&v===prefer)||(!prefer&&i===0))o.selected=true;select.appendChild(o);});}
 function trozalApplyTheme(theme,keepCustomSearch=false){
  const clean=String(theme||'').trim();if(!clean)return;
