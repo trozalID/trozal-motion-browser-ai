@@ -5,6 +5,7 @@ on:
     branches:
       - browser-render-cursor-independent-2026-11-15
       - browser-render-advisor-global-hooks-2026-11-15
+      - browser-render-pointer-independent-2026-11-15
   workflow_dispatch:
 
 permissions:
@@ -78,6 +79,8 @@ jobs:
           grep -n "timeout: 12000\|snapshot=" tests/render-sync-advisor.browser.cjs
       - name: Exercise Render Sync Advisor in Chromium
         run: node tests/render-sync-advisor.browser.cjs
+      - name: Compare render throughput with pointer over and away from progress panel
+        run: node tests/render-pointer-independence.browser.cjs
       - name: Stop local preview server
         if: always()
         run: if [ -f /tmp/browser-ai-http.pid ]; then kill "$(cat /tmp/browser-ai-http.pid)" || true; fi
