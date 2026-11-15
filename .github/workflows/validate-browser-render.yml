@@ -8,6 +8,7 @@ on:
       - browser-render-pointer-independent-2026-11-15
       - browser-theme-concept-alignment-2026-11-15
       - browser-ai-theme-intelligence-2026-11-15
+      - fix/browser-ai-gemini-cloud-only-2026-11-15
   workflow_dispatch:
 
 permissions:
@@ -40,6 +41,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check render-sync-advisor.js
+          node --check browser-ai-gemini-cloud.js
           node <<'NODE'
           const fs = require('fs');
           const { spawnSync } = require('child_process');
@@ -89,6 +91,8 @@ jobs:
         run: node tests/theme-catalogue-coverage.browser.cjs
       - name: Test floating render monitor interactions in Chromium
         run: node tests/floating-render-monitor.browser.cjs
+      - name: Test Gemini Cloud-only Scene Composer and Browser Vision
+        run: node tests/browser-cloud-ai.browser.cjs
       - name: Stop local preview server
         if: always()
         run: if [ -f /tmp/browser-ai-http.pid ]; then kill "$(cat /tmp/browser-ai-http.pid)" || true; fi
