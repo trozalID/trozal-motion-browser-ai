@@ -10,6 +10,7 @@ async function measureScenario(pointerLocation) {
   const browser = measureScenario.browser;
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const pageErrors = [];
+  let moving = false;
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
   await page.addInitScript(() => {
     window.__TROZAL_RENDER_DIAGNOSTICS = true;
@@ -43,7 +44,7 @@ async function measureScenario(pointerLocation) {
     assert.ok(progressBox && progressBox.width > 80, 'Top progress monitor must be visible');
     const viewport = page.viewportSize();
     const startedAt = Date.now();
-    let moving = true;
+    moving = true;
     let pointerTicks = 0;
 
     await page.locator('#renderBtn').click();
