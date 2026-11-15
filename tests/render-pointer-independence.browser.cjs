@@ -40,14 +40,15 @@ async function measureScenario(pointerLocation) {
     });
     await page.evaluate(() => { window.__TROZAL_RENDER_DIAG_STATE = null; });
 
-    const progressBox = await page.locator('#renderProgress').boundingBox();
-    assert.ok(progressBox && progressBox.width > 80, 'Top progress monitor must be visible');
+    assert.equal(await page.locator('#trozalFloatingRender').count(), 1, 'Floating render monitor must be mounted');
+    await page.locator('#renderBtn').click();
+    await page.waitForFunction(() => document.getElementById('trozalFloatingRender')?.classList.contains('is-visible'), undefined, { timeout: 10000 });
+    const progressBox = await page.locator('#trozalFloatingRender').boundingBox();
+    assert.ok(progressBox && progressBox.width > 80, 'Floating render monitor must be visible');
     const viewport = page.viewportSize();
     const startedAt = Date.now();
     moving = true;
     let pointerTicks = 0;
-
-    await page.locator('#renderBtn').click();
     const pointerDriver = (async () => {
       while (moving && Date.now() - startedAt < 40000) {
         let x, y;
