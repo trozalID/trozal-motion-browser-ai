@@ -101,8 +101,6 @@ const { chromium } = require('playwright');
       await page.locator('#generateSvgAiPromptBtn').click();
       const prompt = await page.locator('#svgAiPrompt').inputValue();
       assert.ok(prompt.includes('Main theme: ' + item.theme), item.theme + ' must remain the main prompt subject');
-
-    assert.deepEqual(errors, [], 'Theme selection and prompt generation must not throw browser errors');')));
       assert.ok(prompt.includes('Visual category: ' + item.category));
       assert.ok(prompt.includes('Specific concept / subtheme: ' + item.specific));
       assert.ok(prompt.includes('Mapped theme domain: ' + item.domain));
