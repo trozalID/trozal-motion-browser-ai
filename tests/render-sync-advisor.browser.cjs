@@ -21,7 +21,18 @@ const { chromium } = require('playwright');
     await page.waitForFunction(() => {
       const value = document.getElementById('renderSyncFps')?.textContent || '';
       return value.includes('FPS') && (window.__trozalRenderSyncDiagnostics?.rafTicks || 0) >= 2;
-    }, undefined, { timeout: 12000 }).catch(async error => { const values = await Promise.all(['renderSyncFps','renderSyncInterval','renderSyncStatus','renderSyncRecommendations'].map(id => page.locator('#' + id).textContent().catch(() => 'missing'))); throw new Error(error.message + ' | metrics=' + JSON.stringify(values) + ' | pageErrors=' + JSON.stringify(errors)); });
+    }, undefined, { timeout: 12000 }).catch(async error => {
+      const snapshot = await page.evaluate(() => ({
+        diagnostics: window.__trozalRenderSyncDiagnostics || null,
+        initialized: !!window.__trozalRenderSyncAdvisorInitialized,
+        advisorScript: [...document.scripts].map(s => s.src).filter(src => src.includes('render-sync-advisor')),
+        readyState: document.readyState,
+        visibility: document.visibilityState,
+        fps: document.getElementById('renderSyncFps')?.textContent || 'missing'
+      })).catch(() => null);
+      const values = await Promise.all(['renderSyncFps','renderSyncInterval','renderSyncStatus','renderSyncRecommendations'].map(id => page.locator('#' + id).textContent().catch(() => 'missing')));
+      throw new Error(error.message + ' | snapshot=' + JSON.stringify(snapshot) + ' | metrics=' + JSON.stringify(values) + ' | pageErrors=' + JSON.stringify(errors));
+    });
     await page.locator('#renderSyncReset').click();
     await page.waitForFunction(() => document.getElementById('renderSyncStatus')?.textContent.includes('Pengukuran direset'));
     await page.locator('#renderSyncRunPreflight').click();
