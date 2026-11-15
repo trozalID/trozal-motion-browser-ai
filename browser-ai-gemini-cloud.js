@@ -46,34 +46,29 @@
   return value;
  }
  function interactionText(payload){
-  if(typeof payload?.output_text==='string'&&payload.output_text.trim())return payload.output_text.trim();
-  const chunks=[];
-  (Array.isArray(payload?.steps)?payload.steps:[]).forEach(step=>{
-   if(step?.type!=='model_output'||!Array.isArray(step.content))return;
-   step.content.forEach(part=>{
-    if(part?.type==='text'&&typeof part.text==='string')chunks.push(part.text);
-   });
-  });
-  return chunks.join('\n').trim();
+  const parts=payload?.candidates?.[0]?.content?.parts;
+  if(!Array.isArray(parts))return '';
+  return parts.filter(part=>typeof part?.text==='string'&&!part.thought).map(part=>part.text).join('\n').trim();
  }
  async function createInteraction(input,options){
   options=options||{};
-  const body={model:modelId(),input:input,store:false,stream:false};
-  if(options.systemInstruction)body.system_instruction=options.systemInstruction;
-  if(options.generationConfig)body.generation_config=options.generationConfig;
-  const payload=await requestJson(API+'/interactions',{
+  const parts=typeof input==='string'?[{text:input}]:input.map(item=>{
+   if(item.type==='text')return {text:item.text};
+   if(item.type==='image')return {inline_data:{mime_type:item.mime_type,data:item.data}};
+   throw new Error('Tipe input Gemini tidak didukung: '+item.type);
+  });
+  const body={
+   contents:[{role:'user',parts}],
+   generationConfig:Object.assign({temperature:0.3,maxOutputTokens:8192},options.generationConfig||{})
+  };
+  const payload=await requestJson(API+'/models/'+encodeURIComponent(modelId())+':generateContent',{
    method:'POST',
    mode:'cors',
    credentials:'omit',
-   headers:{
-    'Content-Type':'application/json',
-    'x-goog-api-key':requireKey(),
-    'Api-Revision':'2026-05-20'
-   },
+   headers:{'Content-Type':'application/json','x-goog-api-key':requireKey()},
    body:JSON.stringify(body),
    signal:options.signal
   },options.timeoutMs||180000);
-  if(payload.status==='failed')throw new Error(payload.error?.message||'Gemini melaporkan interaksi gagal.');
   const output=interactionText(payload);
   if(!output)throw new Error('Gemini menyelesaikan permintaan tetapi tidak mengembalikan teks. Coba ulangi atau pilih model lain.');
   return output;
@@ -81,21 +76,24 @@
  async function checkConnection(){
   const button=$('trozalGeminiCheckBtn');
   if(button)button.disabled=true;
-  status('trozalGeminiConnectionStatus','Memeriksa daftar model Gemini yang dapat diakses…');
+  status('trozalGeminiConnectionStatus','Memeriksa model Gemini yang mendukung generateContent…');
   try{
-   const data=await requestJson(API+'/models',{
+   const data=await requestJson(API+'/models?pageSize=1000',{
     method:'GET',
     mode:'cors',
     credentials:'omit',
-    headers:{'x-goog-api-key':requireKey(),'Api-Revision':'2026-05-20'}
+    headers:{'x-goog-api-key':requireKey()}
    },30000);
-   const available=Array.isArray(data.models)?data.models.map(item=>String(item.name||'').replace(/^models\//,'')):[];
+   const available=(Array.isArray(data.models)?data.models:[]).filter(item=>
+    Array.isArray(item.supportedGenerationMethods)&&item.supportedGenerationMethods.includes('generateContent')
+   );
+   const names=available.map(item=>String(item.name||'').replace(/^models\//,''));
    const selected=modelId();
-   if(available.length&&!available.includes(selected)){
-    status('trozalGeminiConnectionStatus','API key terhubung, tetapi model '+selected+' tidak tercantum pada daftar model yang tersedia untuk key ini. Pilih model lain.',true);
+   if(names.length&&!names.includes(selected)){
+    status('trozalGeminiConnectionStatus','API key terhubung, tetapi model '+selected+' tidak tersedia untuk generateContent pada key ini. Pilih salah satu model yang mendukung generateContent.',true);
     return false;
    }
-   status('trozalGeminiConnectionStatus','TERHUBUNG · '+available.length+' model terdaftar · Pilihan: '+selected+' · Semua inferensi menggunakan Gemini Cloud.');
+   status('trozalGeminiConnectionStatus','TERHUBUNG · '+names.length+' model mendukung generateContent · Pilihan: '+selected+' · Gemini Cloud aktif.');
    status('trozalVisionConnection','Gemini Cloud aktif. Browser Vision memakai API key dan model yang sama.');
    return true;
   }catch(error){
@@ -171,7 +169,7 @@
   try{
    const output=await createInteraction(buildScenePrompt(),{
     systemInstruction:'You are an expert motion-graphics art director and SVG animation engineer. Create a visually rich, concept-specific production-ready HTML/SVG animation. Follow all explicit visual requirements and preserve the entire requested concept. Return complete code only.',
-    generationConfig:{temperature:0.35,max_output_tokens:8192},
+    generationConfig:{temperature:0.35,maxOutputTokens:8192},
     signal:controller.signal,
     timeoutMs:240000
    });
@@ -350,7 +348,7 @@
    images.forEach(image=>input.push({type:'image',data:image.data,mime_type:image.mime_type}));
    status('trozalGeminiStatus','Mengirim '+images.length+' gambar ke '+modelId()+' · Gemini Cloud…');
    const output=await createInteraction(input,{
-    generationConfig:{temperature:0.15,max_output_tokens:4096},
+    generationConfig:{temperature:0.15,maxOutputTokens:4096,responseMimeType:'application/json'},
     signal:controller.signal,
     timeoutMs:180000
    });
