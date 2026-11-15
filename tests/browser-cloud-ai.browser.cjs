@@ -71,6 +71,14 @@ const { chromium } = require('playwright');
   assert.equal(await page.locator('#browserGeminiCloudPanel').count(), 1, 'Gemini Cloud AI panel must exist');
   assert.equal(await page.locator('#trozalBrowserVisionCloudPanel').count(), 1, 'Gemini Cloud Vision panel must exist');
   assert.equal(await page.locator('#trozalGeminiApiKey').count(), 1, 'There must be exactly one shared API key field');
+  // Regression guard: the central motion editor must never disappear when Cloud AI panels load.
+  for (const selector of ['main.main', '.stagewrap', '#stage', '.timeline']) {
+    const node = page.locator(selector).first();
+    assert.equal(await node.count(), 1, 'Central editor element must exist: ' + selector);
+    const rect = await node.boundingBox();
+    assert.ok(rect && rect.width > 100 && rect.height > 40, 'Central editor element must remain visible: ' + selector + ' ' + JSON.stringify(rect));
+  }
+  assert.equal(await page.locator('.app').evaluate(node => getComputedStyle(node).display), 'grid', 'Desktop must retain the editor workspace grid');
   assert.equal(await page.locator('#visualMotionAiModel').count(), 0, 'No local WebGPU model selector should remain');
   assert.equal(await page.locator('#trozalVisionCheckBtn').count(), 0, 'No local Browser Vision model-check control should remain');
   assert.equal(await page.locator('#trozalLocalVisionPanel').count(), 0, 'Legacy local Vision panel should be removed');
@@ -88,7 +96,8 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => document.getElementById('visualMotionOutput')?.value.includes('<svg'));
   const output = await page.locator('#visualMotionOutput').inputValue();
   assert.match(output, /<svg/i);
-  assert.doesNotMatch(output, /<script\b|<iframe\b|https?:\/\//i, 'Returned HTML/SVG must remain safe for the motion importer');
+  assert.doesNotMatch(output, /<script\\b|<iframe\\b/i, 'Returned HTML/SVG must not contain executable script or iframe elements');
+  assert.doesNotMatch(output, /(?:href|src)\\s*=\\s*['\"]https?:\\/\\//i, 'Returned HTML/SVG must not reference external assets');
   const sceneRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && typeof item.body?.contents?.[0]?.parts?.[0]?.text === 'string');
   assert.ok(sceneRequest, 'Scene generation should call Gemini Interactions API with a text brief');
   assert.equal(sceneRequest.path, '/v1beta/models/gemini-3.8-flash:generateContent');
@@ -120,6 +129,11 @@ const { chromium } = require('playwright');
   assert.equal(storage.session.includes('test-browser-key-never-persist'), false, 'API key must not be persisted in sessionStorage');
   assert.equal(storage.cookie.includes('test-browser-key-never-persist'), false, 'API key must not be persisted in cookies');
 
+  await page.setViewportSize({ width: 390, height: 900 });
+  for (const selector of ['main.main', '.stagewrap', '#stage', '.timeline']) {
+    const rect = await page.locator(selector).first().boundingBox();
+    assert.ok(rect && rect.width > 100 && rect.height > 40, 'Central editor must remain visible on mobile: ' + selector + ' ' + JSON.stringify(rect));
+  }
   await page.setViewportSize({ width: 360, height: 900 });
   const responsive = await page.evaluate(() => ['browserGeminiCloudPanel', 'trozalBrowserVisionCloudPanel'].map(id => {
     const node = document.getElementById(id);
