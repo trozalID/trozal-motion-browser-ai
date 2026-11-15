@@ -561,6 +561,7 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 
 /* Render preflight panel · amber technical theme */
 #renderPreflightPanel{background:linear-gradient(145deg,#49351a,#2a2117 62%,#382718);border:1px solid #c28c3c;box-shadow:0 8px 22px #140d05aa}#renderPreflightPanel h3{color:#ffe0a5}#renderPreflightPanel .help{color:#f1d9b4}#renderPreflightPanel button.primary{background:linear-gradient(135deg,#ffe0a0,#d49a42);color:#291a07}.render-preflight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}.render-preflight-grid>div{padding:7px;border:1px solid #8f682e;border-radius:7px;background:#241a10}.render-preflight-grid b{display:block;color:#f6c976;font-size:9px;text-transform:uppercase}.render-preflight-grid span{display:block;color:#fff0d3;font-size:11px;margin-top:3px}
+.theme-auto-spec{margin:9px 0;padding:10px;border:1px solid #355b47;border-radius:9px;background:linear-gradient(145deg,#10291f,#101c20);color:#e3f5e9}.theme-auto-spec h4{margin:0 0 6px;color:#b8e8c8;font-size:11px;letter-spacing:.05em}.theme-auto-spec .help{margin:0 0 8px;color:#bdd7c8;font-size:10px}.theme-auto-spec #svgAiAutoSpec{font-size:10px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto}
 /* Render Sync and Performance Advisor */
 #renderSyncAdvisorPanel{background:linear-gradient(145deg,#17394b,#102631 65%,#172b3b);border:1px solid #4c9fbd;box-shadow:0 8px 22px #020f18aa}
 #renderSyncAdvisorPanel h3{color:#c5efff;letter-spacing:.045em}
@@ -742,6 +743,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
    <label>Kategori spesifik / subtema (relevan dengan tema)</label><select id="svgAiSpecific"><option>Logo reveal with custom emblem</option><option>Logo build from geometric pieces</option><option>Wordmark kinetic reveal</option><option>Brand guideline opener</option><option>Product hero on floating podium</option><option>Product 360 showcase</option><option>Cosmetic bottle luxury reveal</option><option>Food hero with ingredient orbit</option><option>Sneaker / fashion product launch</option><option>Smartphone device showcase</option><option>App onboarding sequence</option><option>Website landing page hero</option><option>SaaS feature explainer</option><option>Animated dashboard KPI</option><option>Data chart growth story</option><option>Financial market overview</option><option>AI neural network visualization</option><option>Robotics and automation</option><option>Cloud computing ecosystem</option><option>Cybersecurity shield sequence</option><option>Medical awareness explainer</option><option>Anatomy / science visualization</option><option>Learning process step-by-step</option><option>Timeline and roadmap</option><option>Before-after transformation</option><option>Process flow diagram</option><option>Comparison infographic</option><option>Statistics counter sequence</option><option>World map data routes</option><option>Travel destination opener</option><option>City / architecture flythrough</option><option>Nature landscape layers</option><option>Ocean and underwater scene</option><option>Wildlife conservation story</option><option>Renewable energy system</option><option>Solar / wind energy explainer</option><option>Sports event opener</option><option>Fitness training sequence</option><option>Esports tournament package</option><option>Music visualizer interface</option><option>Character mascot introduction</option><option>Animated storytelling scene</option><option>Event countdown</option><option>New year celebration</option><option>Ramadan lantern and crescent</option><option>Eid greeting composition</option><option>Wedding invitation motion</option><option>Sale campaign and discount</option><option>App interface micro-interaction</option><option>Notification and UX flow</option><option>Loading / progress animation</option><option>Abstract liquid transition</option><option>Particle field and energy</option><option>Typography quote animation</option><option>News headline package</option><option>Real estate property showcase</option><option>Automotive feature presentation</option><option>Custom specific concept</option></select>
    <div id="svgAiThemeBrief" role="status" aria-live="polite" style="margin:7px 0 10px;padding:9px 10px;border:1px solid #355b47;border-radius:8px;background:#0a2219;color:#d8eee0;font-size:10px;line-height:1.55;white-space:pre-line">Pilih tema untuk melihat tujuan konsep, subjek utama, dan arahan visual.</div>
    <label>Detail tambahan (opsional)</label><input type="text" id="svgAiDetails" placeholder="Contoh: ikon lebah, warna emas, latar putih">
+   <section class="theme-auto-spec" id="svgAiAutoSpecPanel" aria-live="polite"><h4>✦ SPESIFIKASI TEMA OTOMATIS · DINAMIS</h4><p class="help">Spesifikasi mengikuti tema, kategori, dan subtema. Detail tambahan digabungkan sebagai arahan pelengkap, bukan menggantikan spesifikasi inti.</p><div id="svgAiAutoSpec" role="status">Pilih tema dan kategori untuk membentuk spesifikasi visual.</div></section>
    <section class="browser-art-direction" id="browserArtDirection">
     <h4>✦ CREATIVE DIRECTION · KONTROL ART DESIGN</h4>
     <p>Pilih arahan tambahan agar hasil HTML Motion lebih konsisten. Mode otomatis mengikuti tema.</p>
@@ -3940,7 +3942,8 @@ let htmlDiagnosticDebounce=0;$('aiCodeTerminal').addEventListener('input',()=>{c
 
 
 // FIX27 AI topic catalogue and semantic style/subtheme matching.
-const TROZAL_AI_THEMES=[
+const TROZAL_AI_THEMES=[...new Set([
+
 'Brand Identity & Logo','Kinetic Typography','Product Commercial','E-commerce & Retail','Social Media Content','YouTube Intro / Outro','Explainer & Educational','Technology & Artificial Intelligence','SaaS & Web App','Mobile App UI','Dashboard & Data Storytelling','Business & Corporate','Finance & Fintech','Healthcare & Wellness','Medical & Pharmaceutical','Science & Research','Education & E-learning','Food & Beverage','Restaurant & Culinary','Beauty & Cosmetics','Fashion & Lifestyle','Travel & Tourism','Architecture & Interior','Real Estate','Automotive & Transportation','Gaming & Esports','Music & Entertainment','Sports & Fitness','Nature & Environment','Wildlife & Conservation','Ocean & Marine Life','Green Energy & Sustainability','Space & Astronomy','Culture & Heritage','Indonesian Culture & Tourism','Festival & Celebration','Ramadan & Eid','Islamic Education & Values','Hajj & Umrah','Christmas & Holiday','Chinese New Year & Lunar Festival','Diwali & Festival of Lights','Halloween & Spooky Season','New Year Countdown','Wedding & Event','News & Editorial','Infographic & Statistics','Maps & Geospatial','Abstract & Experimental','Character & Mascot','Storytelling & Narrative','Public Service Announcement','Microstock Motion Design','Packaging & Label Design','Typography & Fonts','Cybersecurity','Cloud Computing','Robotics & Automation','Blockchain & Web3','Internet of Things','Smart Home','Renewable Energy','Agriculture & Farming','Pet & Animal Care','Parenting & Family','Career & Recruitment','Logistics & Supply Chain','Education Technology','Travel Destination','Coffee & Tea','Bakery & Dessert','Banking & Insurance','Construction & Engineering','Government & Civic Services','Mental Wellness & Mindfulness','Luxury & Premium Brand','Science Fiction & Fantasy','Weather & Climate','Space Exploration','Wedding Photography & Videography',
 "AI & Generative Media",
 "Prompt Engineering & AI Tools",
@@ -3998,8 +4001,7 @@ const TROZAL_AI_THEMES=[
 "Mobile Payments & Digital Wallet",
 "Sports Broadcast & Score Graphics",
 "Book Cover & Audiobook Promo",
-"Museum & Exhibition"
-,
+"Museum & Exhibition",
 "Abstract Art & Visual Experiments",
 "Abstract Motion Graphics",
 "Sound Wave & Audio Visualizer",
@@ -4096,7 +4098,8 @@ const TROZAL_AI_THEMES=[
 "Isometric World & Diorama",
 "Low Poly 3D Worlds",
 "Voxel Art & 3D Pixel",
-"Typography Kinetic Experiments",
+"Typography Kinetic Experiments"
+,
 "Cinematic Brand Film",
 "Cinematic Title Sequence",
 "Hollywood Film Opener",
@@ -4195,7 +4198,9 @@ const TROZAL_AI_THEMES=[
 "Beverage Pouring Macro Film",
 "Fragrance Atmosphere Film",
 "Luxury Packaging Reveal",
-"Minimal Product Hero Loop"];
+"Minimal Product Hero Loop"
+])];
+// Explicitly publish the catalogue for later classic-script blocks and inline handlers.
 window.TROZAL_AI_THEMES=TROZAL_AI_THEMES;
 const TROZAL_THEME_RULES=[
  {re:/chinese|lunar/i,styles:['Premium Luxury','Paper Cutout','Flat Vector Illustration','3D Layered Composition'],specific:['Chinese New Year zodiac animal reveal','Red and gold lantern festival greeting','Lunar New Year couplet and ornament animation','Zodiac wheel and lucky symbol rotation','Firecracker and celebratory light sequence','Traditional blossom and gold pattern reveal']},
@@ -4685,9 +4690,12 @@ window.trozalUpdateThemeBrief = function() {
  const theme=document.getElementById('svgAiTheme')?.value||'';
  const category=document.getElementById('svgAiCategory')?.value||'';
  const specific=document.getElementById('svgAiSpecific')?.value||'';
+ const details=document.getElementById('svgAiDetails')?.value.trim()||'';
  const brief=window.trozalBuildThemeCreativeBrief(theme,category,specific);
  const host=document.getElementById('svgAiThemeBrief');
  if(host)host.textContent=brief.summary;
+ const specHost=document.getElementById('svgAiAutoSpec');
+ if(specHost)specHost.textContent=brief.summary+'\n\nSPESIFIKASI LENGKAP TEMA + KATEGORI:\n'+brief.prompt+'\n\nDETAIL TAMBAHAN PENGGUNA:\n'+(details||'Belum ada detail tambahan. Jangan menghilangkan atau mengganti spesifikasi otomatis; gunakan arahan kreatif sesuai tema dan kategori.')+'\n\nATURAN PENGGABUNGAN:\nDetail tambahan adalah batasan atau penekanan tambahan. Pertahankan tujuan tema, subjek utama, aset relevan, palet, komposisi, alur gerak, dan batasan domain di atas.';
  return brief;
 };
 function trozalThemeProfile(theme){
@@ -4872,6 +4880,7 @@ function trozalInitThemeCatalog(){
 }
 
 // Initialize the theme catalogue before the prompt controls are bound.
+$('svgAiDetails').addEventListener('input',()=>{window.trozalUpdateThemeBrief?.();if($('svgAiPrompt').value.trim())generateSvgAiPrompt()});
 trozalInitThemeCatalog();
 
 (function(){
