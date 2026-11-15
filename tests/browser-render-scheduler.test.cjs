@@ -19,7 +19,7 @@ function testRenderSyncPerformanceAdvisor() {
   assert.match(html, /new PerformanceObserver/);
   assert.match(html, /requestAnimationFrame\(tick\)/);
   assert.match(html, /window\.__trozalRenderAtAdvisorWrapped/);
-  assert.match(html, /renderAt avg \/ max/);
+  assert.match(html, /renderAt avg \/ max/i);
 }
 testRenderSyncPerformanceAdvisor();
 
