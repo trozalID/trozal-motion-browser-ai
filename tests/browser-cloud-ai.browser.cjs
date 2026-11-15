@@ -79,6 +79,20 @@ const { chromium } = require('playwright');
     assert.ok(rect && rect.width > 100 && rect.height > 40, 'Central editor element must remain visible: ' + selector + ' ' + JSON.stringify(rect));
   }
   assert.equal(await page.locator('.app').evaluate(node => getComputedStyle(node).display), 'grid', 'Desktop must retain the editor workspace grid');
+  // Check the breakpoint where the old five-track CSS put <main> into an 8px grid column.
+  for (const width of [1050, 1024, 900, 800, 721]) {
+    await page.setViewportSize({ width, height: 900 });
+    const layout = await page.locator('.app').evaluate(node => {
+      const style = getComputedStyle(node);
+      const main = node.querySelector('main.main');
+      const rect = main.getBoundingClientRect();
+      return { display: style.display, columns: style.gridTemplateColumns.split(' ').filter(Boolean).length, width: rect.width, height: rect.height };
+    });
+    assert.equal(layout.display, 'grid', 'Tablet workspace must remain a grid at ' + width + 'px');
+    assert.equal(layout.columns, 3, 'Tablet workspace must have exactly three actual grid columns at ' + width + 'px: ' + JSON.stringify(layout));
+    assert.ok(layout.width >= 260 && layout.height > 100, 'Central editor must have usable dimensions at ' + width + 'px: ' + JSON.stringify(layout));
+  }
+  await page.setViewportSize({ width: 1280, height: 1000 });
   assert.equal(await page.locator('#visualMotionAiModel').count(), 0, 'No local WebGPU model selector should remain');
   assert.equal(await page.locator('#trozalVisionCheckBtn').count(), 0, 'No local Browser Vision model-check control should remain');
   assert.equal(await page.locator('#trozalLocalVisionPanel').count(), 0, 'Legacy local Vision panel should be removed');
@@ -96,10 +110,10 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => document.getElementById('visualMotionOutput')?.value.includes('<svg'));
   const output = await page.locator('#visualMotionOutput').inputValue();
   assert.match(output, /<svg/i);
-  assert.doesNotMatch(output, /<script\\b|<iframe\\b/i, 'Returned HTML/SVG must not contain executable script or iframe elements');
+  assert.doesNotMatch(output, /<script\b|<iframe\b/i, 'Returned HTML/SVG must not contain executable script or iframe elements');
   assert.doesNotMatch(output, /(?:href|src)\s*=\s*['"]https?:\/\//i, 'Returned HTML/SVG must not reference external assets');
   const sceneRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && typeof item.body?.contents?.[0]?.parts?.[0]?.text === 'string');
-  assert.ok(sceneRequest, 'Scene generation should call Gemini Interactions API with a text brief');
+  assert.ok(sceneRequest, 'Scene generation should call Gemini generateContent with a text brief');
   assert.equal(sceneRequest.path, '/v1beta/models/gemini-3.8-flash:generateContent');
   assert.equal(sceneRequest.body.contents[0].role, 'user');
   assert.match(sceneRequest.body.contents[0].parts[0].text, /perfume bottle/i);
@@ -115,7 +129,7 @@ const { chromium } = require('playwright');
   assert.equal(await page.locator('#metadataKeywords').inputValue(), 'blue glass sphere, floating object, dark gradient, soft reflections, abstract background');
   assert.match(await page.locator('#trozalGeminiStatus').innerText(), /Selesai/);
   const visionRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.inline_data));
-  assert.ok(visionRequest, 'Vision should call Gemini Interactions API with image input');
+  assert.ok(visionRequest, 'Vision should call Gemini generateContent with image input');
   assert.equal(visionRequest.body.contents[0].role, 'user');
   assert.equal(visionRequest.body.contents[0].parts.filter(item => item.inline_data).length, 1);
   assert.match(visionRequest.body.contents[0].parts.find(item => item.text)?.text, /visible pixels/);
