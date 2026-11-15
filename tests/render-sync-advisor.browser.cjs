@@ -6,7 +6,9 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
+  const consoleErrors = [];
+  page.on('pageerror', error => errors.push(error.stack || error.message));
+  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
   try {
     await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
     await page.bringToFront();
@@ -25,9 +27,17 @@ const { chromium } = require('playwright');
       advisorInitialized: !!window.__trozalRenderSyncAdvisorInitialized
     }));
     console.log('Render Sync init:', JSON.stringify(initState));
-    assert.equal(initState.renderAtHook, 'function', 'Render Sync Advisor must receive the renderAt bridge');
-    assert.equal(initState.preflightHook, 'function', 'Render Sync Advisor must receive the render preflight bridge');
-    assert.equal(initState.wrapped, true, 'Advisor must wrap the editor renderAt function');
+    if (initState.renderAtHook !== 'function' || initState.preflightHook !== 'function' || !initState.wrapped) {
+      const runtime = await page.evaluate(() => ({
+        readyState: document.readyState,
+        scriptCount: document.scripts.length,
+        mainInlineScripts: [...document.scripts].filter(s => !s.src).length,
+        advisorSrc: [...document.scripts].map(s => s.src).filter(Boolean),
+        advisorInitialized: !!window.__trozalRenderSyncAdvisorInitialized,
+        diagnostics: window.__trozalRenderSyncDiagnostics || null
+      }));
+      throw new Error('Advisor hook bridge unavailable: ' + JSON.stringify({ initState, runtime, pageErrors: errors, consoleErrors }));
+    }
     await page.waitForFunction(() => {
       const value = document.getElementById('renderSyncFps')?.textContent || '';
       return value.includes('FPS') && (window.__trozalRenderSyncDiagnostics?.rafTicks || 0) >= 2;
