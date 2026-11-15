@@ -5,6 +5,24 @@ const vm = require('node:vm');
 
 const html = fs.readFileSync('index.html', 'utf8');
 
+function testRenderSyncPerformanceAdvisor() {
+  const required = [
+    'renderSyncAdvisorPanel', 'renderSyncFps', 'renderSyncInterval',
+    'renderSyncCost', 'renderSyncDropped', 'renderSyncQueue',
+    'renderSyncDevice', 'renderSyncStatus', 'renderSyncRecommendations',
+    'renderSyncReset', 'renderSyncRunPreflight'
+  ];
+  for (const id of required) {
+    assert.ok(html.includes('id="' + id + '"'), 'Render Sync Advisor must include #' + id);
+  }
+  assert.match(html, /RENDER SYNC AND PERFORMANCE ADVISOR/);
+  assert.match(html, /new PerformanceObserver/);
+  assert.match(html, /requestAnimationFrame\(tick\)/);
+  assert.match(html, /window\.__trozalRenderAtAdvisorWrapped/);
+  assert.match(html, /renderAt avg \/ max/);
+}
+testRenderSyncPerformanceAdvisor();
+
 function testMultiTrackParityAndResponsiveToolbar() {
   assert.match(html, /class="mt-toolbar-actions mt-group-toolbar"/, 'Group and hierarchy controls must be separated from the primary toolbar');
   const requiredControls = [
