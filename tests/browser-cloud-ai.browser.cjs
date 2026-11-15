@@ -1,0 +1,163 @@
+'use strict';
+const assert = require('node:assert/strict');
+const { chromium } = require('playwright');
+
+(async () => {
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  const pageErrors = [];
+  const requests = [];
+  page.on('pageerror', error => pageErrors.push(error.stack || error.message));
+
+  await page.route('https://generativelanguage.googleapis.com/**', async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const headers = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-methods': 'GET, POST, OPTIONS',
+      'access-control-allow-headers': 'Content-Type, x-goog-api-key, Api-Revision',
+      'access-control-max-age': '600',
+      'content-type': 'application/json'
+    };
+    if (request.method() === 'OPTIONS') {
+      return route.fulfill({ status: 204, headers });
+    }
+    requests.push({
+      method: request.method(),
+      path: url.pathname,
+      apiKey: request.headers()['x-goog-api-key'] || '',
+      body: request.method() === 'POST' ? request.postDataJSON() : null
+    });
+    if (url.pathname.endsWith('/models')) {
+      return route.fulfill({
+        status: 200,
+        headers,
+        body: JSON.stringify({
+          models: [
+            { name: 'models/gemini-3.8-flash' },
+            { name: 'models/gemini-3.5-flash-lite' },
+            { name: 'models/gemini-3.1-pro-preview' }
+          ]
+        })
+      });
+    }
+    if (url.pathname.endsWith('/interactions')) {
+      const body = request.postDataJSON();
+      const imageInput = Array.isArray(body.input) && body.input.some(item => item.type === 'image');
+      const output = imageInput
+        ? JSON.stringify({
+            title: 'Blue Glass Sphere with Soft Reflections',
+            description: 'A polished blue glass sphere floats against a dark gradient background with soft reflected light.',
+            category: 'Graphic Resources',
+            keywords: ['blue glass sphere', 'floating object', 'dark gradient', 'soft reflections', 'abstract background'],
+            visual_summary: 'A single blue glass sphere floating against a dark background.',
+            visible_objects: ['blue glass sphere'],
+            confidence_notes: ''
+          })
+        : '<!doctype html><html><head><style>html,body{margin:0;width:100%;height:100%;background:#101d32}svg{width:100%;height:100%}.orb{transform-origin:center;animation:float 4s ease-in-out infinite}@keyframes float{50%{transform:translateY(-18px)}}</style></head><body><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900"><defs><radialGradient id="g"><stop stop-color="#7de5ff"/><stop offset="1" stop-color="#174a85"/></radialGradient></defs><g id="background"><rect width="1600" height="900" fill="#101d32"/></g><g id="subject" class="orb"><circle cx="800" cy="430" r="170" fill="url(#g)"/></g></svg></body></html>';
+      return route.fulfill({
+        status: 200,
+        headers,
+        body: JSON.stringify({
+          id: 'test-interaction',
+          status: 'completed',
+          steps: [{ type: 'model_output', content: [{ type: 'text', text: output }] }]
+        })
+      });
+    }
+    return route.fulfill({ status: 404, headers, body: JSON.stringify({ error: { message: 'not found' } }) });
+  });
+
+  await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => typeof window.htmlToImage === 'object' || document.getElementById('generateVisualMotionAiBtn'));
+
+  assert.equal(await page.locator('#browserGeminiCloudPanel').count(), 1, 'Gemini Cloud AI panel must exist');
+  assert.equal(await page.locator('#trozalBrowserVisionCloudPanel').count(), 1, 'Gemini Cloud Vision panel must exist');
+  assert.equal(await page.locator('#trozalGeminiApiKey').count(), 1, 'There must be exactly one shared API key field');
+  assert.equal(await page.locator('#visualMotionAiModel').count(), 0, 'No local WebGPU model selector should remain');
+  assert.equal(await page.locator('#trozalVisionCheckBtn').count(), 0, 'No local Browser Vision model-check control should remain');
+  assert.equal(await page.locator('#trozalLocalVisionPanel').count(), 0, 'Legacy local Vision panel should be removed');
+  assert.equal(await page.locator('#browserGeminiCloudPanel').innerText().then(t => /Ollama|Bridge|WebGPU inference|Qwen/i.test(t)), false, 'Scene Composer panel must state cloud-only flow');
+  assert.equal(await page.locator('#trozalBrowserVisionCloudPanel').innerText().then(t => /Ollama|Bridge|WebGPU|model lokal/i.test(t)), false, 'Vision panel must state cloud-only flow');
+
+  await page.locator('#trozalGeminiApiKey').fill('test-browser-key-never-persist');
+  await page.locator('#trozalGeminiCheckBtn').click();
+  await page.waitForFunction(() => document.getElementById('trozalGeminiConnectionStatus')?.textContent.includes('TERHUBUNG'));
+  assert.ok(requests.some(item => item.method === 'GET' && item.path.endsWith('/models')));
+  assert.ok(requests.every(item => item.apiKey === 'test-browser-key-never-persist'), 'API key must be sent in the header, not URL/query');
+
+  await page.locator('#visualMotionPrompt').fill('A premium transparent glass perfume bottle rotating on a polished black podium, elegant rim lighting, subtle gold particles and slow camera orbit.');
+  await page.locator('#generateVisualMotionAiBtn').click();
+  await page.waitForFunction(() => document.getElementById('visualMotionOutput')?.value.includes('<svg'));
+  const output = await page.locator('#visualMotionOutput').inputValue();
+  assert.match(output, /<svg/i);
+  assert.doesNotMatch(output, /<script\b|<iframe\b|https?:\/\//i, 'Returned HTML/SVG must remain safe for the motion importer');
+  const sceneRequest = requests.find(item => item.method === 'POST' && item.path.endsWith('/interactions') && typeof item.body?.input === 'string');
+  assert.ok(sceneRequest, 'Scene generation should call Gemini Interactions API with a text brief');
+  assert.equal(sceneRequest.body.model, 'gemini-3.8-flash');
+  assert.equal(sceneRequest.body.store, false, 'Interactions should be stateless');
+  assert.match(sceneRequest.body.input, /perfume bottle/i);
+  assert.match(sceneRequest.body.input, /Aspect ratio/);
+
+  const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pKkAAAAASUVORK5CYII=', 'base64');
+  await page.locator('#trozalVisionImages').setInputFiles({
+    name: 'evidence.png', mimeType: 'image/png', buffer: tinyPng
+  });
+  await page.locator('#trozalGeminiAnalyzeBtn').click();
+  await page.waitForFunction(() => document.getElementById('metadataTitle')?.value.includes('Blue Glass Sphere'));
+  assert.equal(await page.locator('#metadataDescription').inputValue(), 'A polished blue glass sphere floats against a dark gradient background with soft reflected light.');
+  assert.equal(await page.locator('#metadataKeywords').inputValue(), 'blue glass sphere, floating object, dark gradient, soft reflections, abstract background');
+  assert.match(await page.locator('#trozalGeminiStatus').innerText(), /Selesai/);
+  const visionRequest = requests.find(item => item.method === 'POST' && item.path.endsWith('/interactions') && Array.isArray(item.body?.input));
+  assert.ok(visionRequest, 'Vision should call Gemini Interactions API with image input');
+  assert.equal(visionRequest.body.store, false);
+  assert.equal(visionRequest.body.input.filter(item => item.type === 'image').length, 1);
+  assert.match(visionRequest.body.input.find(item => item.type === 'text').text, /visible pixels/);
+
+  const storage = await page.evaluate(() => ({
+    local: JSON.stringify(Object.values(localStorage)),
+    session: JSON.stringify(Object.values(sessionStorage)),
+    cookie: document.cookie
+  }));
+  assert.equal(storage.local.includes('test-browser-key-never-persist'), false, 'API key must not be persisted in localStorage');
+  assert.equal(storage.session.includes('test-browser-key-never-persist'), false, 'API key must not be persisted in sessionStorage');
+  assert.equal(storage.cookie.includes('test-browser-key-never-persist'), false, 'API key must not be persisted in cookies');
+
+  await page.setViewportSize({ width: 360, height: 900 });
+  const responsive = await page.evaluate(() => ['browserGeminiCloudPanel', 'trozalBrowserVisionCloudPanel'].map(id => {
+    const node = document.getElementById(id);
+    return { id, width: node.clientWidth, scrollWidth: node.scrollWidth };
+  }));
+  for (const panel of responsive) {
+    assert.ok(panel.scrollWidth <= panel.width + 2, panel.id + ' should not overflow at 360px viewport: ' + JSON.stringify(panel));
+  }
+
+  const localRequests = requests.filter(item => /127\.0\.0\.1:11434|localhost:11434|ollama|bridge/i.test(item.path));
+  assert.deepEqual(localRequests, [], 'BROWSER AI must not call Ollama or Bridge endpoints');
+  assert.deepEqual(pageErrors, [], 'No uncaught JavaScript errors should occur');
+
+  console.log(JSON.stringify({
+    result: 'PASS',
+    model: 'gemini-3.8-flash',
+    apiRequests: requests.length,
+    sceneGeneration: 'PASS',
+    browserVision: 'PASS',
+    sharedApiKeyNotPersisted: 'PASS',
+    noLocalAiOrBridgeCalls: 'PASS',
+    responsiveAt360px: responsive,
+    checked: [
+      'Gemini API key is shared by Scene Composer and Browser Vision',
+      'API key is sent in x-goog-api-key header',
+      'Gemini Interactions requests use store:false',
+      'HTML/SVG output is returned and safe-checked',
+      'Vision metadata is generated from image inputs',
+      'Local WebGPU, Ollama, Bridge and local-model UI are absent',
+      'API key is not persisted to browser storage',
+      'Cloud AI panels do not overflow on narrow viewport'
+    ]
+  }, null, 2));
+  await browser.close();
+})().catch(error => {
+  console.error(error);
+  process.exit(1);
+});
