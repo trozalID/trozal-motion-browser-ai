@@ -301,6 +301,13 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 .mt-toolbar small{font-size:9px;color:#b9aa88}
 .mt-toolbar-actions{display:flex;gap:5px;flex-wrap:wrap}
 .mt-toolbar-actions button{padding:5px 7px;font-size:9px;border-color:#80632d}
+.mt-group-toolbar{margin:7px 0;align-items:center}
+.mt-group-toolbar input,.mt-group-toolbar select{max-width:150px;min-width:105px;padding:5px 7px;font-size:9px;background:#101d22;color:#eee;border:1px solid #536d72;border-radius:5px}
+.mt-group-toolbar button{font-size:9px;padding:5px 7px}
+.mt-track-row[data-mt-depth="1"] .mt-track-label{padding-left:12px}
+.mt-track-row[data-mt-depth="2"] .mt-track-label{padding-left:24px}
+.mt-track-row[data-mt-depth="3"] .mt-track-label{padding-left:36px}
+@media(max-width:760px){.mt-group-toolbar input,.mt-group-toolbar select{min-width:95px;max-width:120px}.mt-group-toolbar button{font-size:8px;padding:4px 5px}}
 .mt-ruler-row,.mt-track-row{display:grid;grid-template-columns:155px minmax(0,1fr);gap:7px;align-items:center}
 .mt-track-name-head{font-size:8px;letter-spacing:.8px;font-weight:800;color:#bda36e;padding:5px 3px}
 .mt-ruler{height:23px;position:relative;border-bottom:1px solid #6c5732;background:linear-gradient(180deg,rgba(217,177,91,.08),transparent)}
@@ -896,7 +903,31 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
   <section class="multi-track-editor" id="multiTrackEditor" aria-label="Multi-track timeline editor">
    <div class="mt-toolbar">
     <div><strong>Multi-Track Timeline</strong><small id="mtTrackSummary">Komposisi utama · 1 track</small></div>
-    <div class="mt-toolbar-actions"><button type="button" id="mtUndo" title="Undo · Ctrl+Z" disabled>↶ Undo</button><button type="button" id="mtRedo" title="Redo · Ctrl+Y" disabled>↷ Redo</button><button type="button" id="mtSnapToggle" aria-pressed="true" title="Snap ke frame, keyframe, marker, dan tepi klip">🧲 Snap ON</button><input id="mtGroupName" type="text" maxlength="28" placeholder="Nama grup / nama baru" aria-label="Nama grup atau nama baru" style="width:132px;min-width:100px"><button type="button" id="mtCreateGroup" title="Gabungkan layer yang dicentang">⊞ Buat Grup</button><button type="button" id="mtRenameGroup" title="Ganti nama grup terpilih dan pertahankan seluruh relasi parent-child">✎ Ganti Nama</button><select id="mtHierarchyParent" aria-label="Pilih parent grup" title="Pilih parent untuk grup terpilih" style="max-width:125px;background:#0b1e19;color:#eaf5ef;border:1px solid #315b4d;border-radius:6px;padding:6px;font-size:10px"><option value="">— Parent —</option></select><button type="button" id="mtSetGroupParent" title="Jadikan grup terpilih sebagai anak dari parent">↳ Jadikan Anak</button><button type="button" id="mtClearGroupParent" title="Lepaskan grup dari parent">↰ Naikkan</button><button type="button" id="mtGroupKeyframe" title="Keyframe grup dan semua turunannya">◆ Keyframe Grup</button><button type="button" id="mtToggleGroupVisibility" title="Tampilkan atau sembunyikan grup terpilih">◉ Grup</button><button type="button" id="mtSelectGroupMembers" title="Pilih atau batalkan pilihan semua layer dalam grup dan turunannya">☑ Isi Grup</button><button type="button" id="mtToggleGroupLock" title="Kunci atau buka kunci semua layer dalam grup dan turunannya">🔒 Kunci Isi</button><button type="button" id="mtSoloGroup" title="Fokus sementara pada grup terpilih; klik lagi untuk pulihkan visibilitas">◎ Solo Grup</button><button type="button" id="mtCollapseGroup" title="Ciutkan atau bentangkan isi grup terpilih di timeline">▾ Ciutkan Grup</button><button type="button" id="mtCollapseAllGroups" title="Ciutkan semua grup di timeline">▾ Semua</button><button type="button" id="mtExpandAllGroups" title="Bentangkan semua grup di timeline">▸ Semua</button><button type="button" id="mtDissolveGroup" title="Lepaskan layer dari grup">Lepas Grup</button><button type="button" id="mtBuildTracks" title="Pisahkan elemen SVG menjadi track yang dapat diedit">＋ Pecah SVG</button><button type="button" class="primary" id="mtAddMarker">＋ Marker</button><button type="button" id="mtClearMarkers">Hapus Marker</button></div>
+    <div class="mt-toolbar-actions" role="group" aria-label="Kontrol timeline">
+     <button type="button" id="mtUndo" title="Undo · Ctrl+Z" disabled>↶ Undo</button>
+     <button type="button" id="mtRedo" title="Redo · Ctrl+Y" disabled>↷ Redo</button>
+     <button type="button" id="mtSnapToggle" aria-pressed="true" title="Snap ke frame, keyframe, marker, dan tepi klip">🧲 Snap ON</button>
+     <button type="button" id="mtBuildTracks" title="Pisahkan elemen SVG menjadi track yang dapat diedit">＋ Pecah SVG</button>
+     <button type="button" class="primary" id="mtAddMarker">＋ Marker</button>
+     <button type="button" id="mtClearMarkers">Hapus Marker</button>
+    </div>
+   </div>
+   <div class="mt-toolbar-actions mt-group-toolbar" role="group" aria-label="Kontrol grup dan hierarki Multi-Track">
+    <input id="mtGroupName" type="text" maxlength="28" placeholder="Nama grup / nama baru" aria-label="Nama grup atau nama baru">
+    <button type="button" id="mtCreateGroup" title="Gabungkan layer yang dicentang">▦ Buat Grup</button>
+    <button type="button" id="mtRenameGroup" title="Ganti nama grup terpilih dan pertahankan relasi parent-child">Ganti Nama</button>
+    <select id="mtHierarchyParent" aria-label="Pilih parent grup" title="Pilih parent untuk grup terpilih"><option value="">— Parent —</option></select>
+    <button type="button" id="mtSetGroupParent" title="Jadikan grup terpilih sebagai anak dari parent">Jadikan Anak</button>
+    <button type="button" id="mtClearGroupParent" title="Lepaskan grup dari parent">Lepas Parent</button>
+    <button type="button" id="mtGroupKeyframe" title="Keyframe grup dan semua turunannya">◆ Keyframe Grup</button>
+    <button type="button" id="mtToggleGroupVisibility" title="Tampilkan atau sembunyikan grup terpilih">◉ Visibilitas Grup</button>
+    <button type="button" id="mtSelectGroupMembers" title="Pilih semua layer dalam grup dan turunannya">Pilih Isi Grup</button>
+    <button type="button" id="mtToggleGroupLock" title="Kunci atau buka kunci semua layer dalam grup">🔒 Kunci Grup</button>
+    <button type="button" id="mtSoloGroup" title="Fokus sementara pada grup terpilih">◎ Solo Grup</button>
+    <button type="button" id="mtCollapseGroup" title="Ciutkan atau bentangkan grup terpilih">▾ Ciutkan Grup</button>
+    <button type="button" id="mtCollapseAllGroups" title="Ciutkan semua grup">Ciutkan Semua</button>
+    <button type="button" id="mtExpandAllGroups" title="Bentangkan semua grup">Bentangkan Semua</button>
+    <button type="button" id="mtDissolveGroup" title="Lepaskan layer dari grup">Lepas Grup</button>
    </div>
    <div class="mt-ruler-row"><div class="mt-track-name-head">TRACK / LAYER</div><div class="mt-ruler" id="mtRuler"></div></div>
    <div class="mt-track-list" id="mtTrackList"><div class="mt-empty">Muat aset untuk membuat track timeline.</div></div>
