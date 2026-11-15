@@ -4531,6 +4531,37 @@ window.trozalGetThemeDomainProfile = function(theme) {
  ];
  return profiles.find(p=>p.re.test(n)) || profiles[profiles.length-1];
 };
+window.trozalGetVisualCategoryGuide = function(category) {
+ const c=String(category||'').trim();
+ const rules=[
+  [/paper cutout|paper craft|cutout/i,'Build layered cardstock or paper forms with visible cut edges, tactile cast shadows, stacked depth, and hand-crafted transitions.'],
+  [/isometric|diorama/i,'Use a consistent isometric camera angle, coherent scale, believable contact shadows, modular spatial layers, and a readable path through the scene.'],
+  [/food|culinary|beverage|cooking|macro texture|appetizing/i,'Use appetizing ingredient accuracy, macro texture, controlled food styling, tactile steam or liquid movement, and a clear finished-product hero.'],
+  [/fashion|beauty|skincare|fragrance|jewelry|jewellery|watch|luxury|quiet luxury/i,'Use refined material treatment, deliberate styling, restrained highlights, tactile macro detail, elegant typography, and a premium campaign composition.'],
+  [/ui|interface|prototype|microinteraction|ux|component|dashboard/i,'Use plausible interface anatomy, consistent spacing, component hierarchy, meaningful micro-interactions, legible labels, and no fabricated data or irrelevant controls.'],
+  [/glass|glassmorphism|translucent|refraction|crystal/i,'Use translucent layers, believable refraction, soft caustics, controlled reflections, layered glass depth, and high-contrast readable text. Avoid making every element a glass card.'],
+  [/futuristic|cyberpunk|neon|hud|holographic|sci.?fi|techno/i,'Use a disciplined futuristic visual system: controlled dark atmosphere, luminous edge lighting, scanning or data motion, precise interface geometry, and a clearly readable hero subject.'],
+  [/retro|vintage|y2k|vaporwave|synthwave|pixel|voxel|analog/i,'Use a coherent era-specific visual language with appropriate typography, grid, texture, palette, pixel scale, or analog artifacts. Do not mix unrelated decades.'],
+  [/3d|photoreal|pbr|material study|turntable|exploded view|ray.?traced|sculpture|render/i,'Use credible three-dimensional form, consistent perspective, believable material response, controlled reflections, depth of field, and purposeful camera movement.'],
+  [/cinematic|lighting|film|documentary|volumetric|anamorphic|macro cinematography/i,'Use deliberate key/fill/rim lighting, atmospheric depth, controlled contrast, purposeful camera movement, and a composed hero frame.'],
+  [/commercial|campaign|advertising|retail|e.?commerce|product hero|benefit.?led|cta/i,'Use a clear campaign hook, prominent product or message, benefit-led hierarchy, clean feature callouts, platform-safe typography, and a resolved CTA/end card.'],
+  [/brand|identity|logo|emblem|monogram|packaging|label|typography specimen/i,'Use a coherent identity system, optical alignment, grid discipline, logo clear-space, repeatable motifs, and a strong final brand lockup.'],
+  [/finance|fintech|bank|payment|insurance|investment/i,'Use transparent financial labels, consistent currency units, careful data hierarchy, credible transaction stages, and no invented financial results or guarantees.'],
+  [/health|medical|clinical|wellness|care|dental/i,'Use sensitive, accessible information design, clinically appropriate symbols, calm visual hierarchy, readable labels, and no unsupported medical claims.'],
+  [/scientific|science|education|learning|diagram|blueprint|technical/i,'Use accurate labeled diagrams, consistent units and notation, ordered explanation steps, legible captions, and no fabricated research results.'],
+  [/data|infographic|statistics|map|geospatial|civic|public information/i,'Use accurate chart or map hierarchy, clear legends, consistent units, source/date context when supplied, and concise explanatory callouts.'],
+  [/broadcast|media|audio|waveform|stage|concert|lower.?third|editorial package/i,'Use platform-safe title areas, strong headline or performer hierarchy, consistent lower-thirds/captions, and repeatable motion-package rules.'],
+  [/sports|fitness|athletic|score|broadcast graphics/i,'Use sport-specific geometry and equipment, dynamic but readable score or performance hierarchy, bold motion accents, and no fabricated scores or records.'],
+  [/nature|organic|environment|wildlife|botanical|ecology/i,'Use natural silhouettes and material cues, believable habitat/process context, layered environmental depth, and ecological color relationships.'],
+  [/abstract|generative|fluid|liquid|particle|fractal|op art|biomorphic|ambient|loop/i,'Define a visual rule for form, rhythm, repetition, symmetry, transformation, or material motion. Every abstract element must support the chosen experiment.'],
+  [/flat vector|vector|illustration|cartoon|character|monoline|iconography/i,'Use a consistent illustration system with controlled shape and stroke weight, purposeful color blocking, coherent proportions, and clear silhouette readability.'],
+  [/editorial|typography|swiss|monochrome|minimal|bauhaus/i,'Use disciplined grid alignment, expressive typographic scale, intentional negative space, restrained geometry, and a clear headline-to-detail reading order.'],
+  [/corporate|clean|business|professional/i,'Use precise alignment, restrained colors, readable information modules, consistent typography, and a clear narrative without generic filler dashboards.'],
+  [/bold|brutalist|high contrast|impact typography/i,'Use oversized typography, decisive geometric blocks, strong contrast, deliberate alignment, and controlled negative space without sacrificing legibility.']
+ ];
+ const match=rules.find(([re])=>re.test(c));
+ return match ? match[1] : 'Apply the selected visual category "'+c+'" as the visual grammar while preserving the subject and meaning of the main theme. Make the selected category visible through material, geometry, typography, lighting, composition, and motion behavior.';
+};
 window.trozalBuildThemeCreativeBrief = function(theme, category, specific) {
  const t=String(theme||'').trim(), c=String(category||'').trim(), sp=String(specific||'').trim();
  const n=t.toLowerCase(), sn=sp.toLowerCase(), cn=c.toLowerCase();
@@ -4597,29 +4628,7 @@ window.trozalBuildThemeCreativeBrief = function(theme, category, specific) {
  } else {
   d.hero='Use the selected subtheme "'+sp+'" as the main subject, not as a decorative caption. Build the scene around objects, symbols, and actions that naturally belong to "'+t+'".';
  }
- const categoryGuide =
-  /paper cutout|cutout/i.test(c) ? 'Render the chosen subject as carefully layered paper/cardstock shapes with visible cut edges, tactile shadows, stacked depth, and hand-crafted transitions.' :
-  /isometric|diorama/i.test(c) ? 'Use a consistent isometric camera angle, coherent scale, believable contact shadows, modular spatial layers, and a readable path through the scene.' :
-  /cinematic|lighting/i.test(c) ? 'Use cinematic key/fill/rim lighting, atmospheric depth, controlled contrast, deliberate camera movement, and a composed hero frame.' :
-  /3d|photoreal|product/i.test(c) ? 'Use credible 3D form, consistent perspective, believable material response, controlled reflections, and a purposeful camera orbit or push-in.' :
-  /editorial|typography/i.test(c) ? 'Use editorial grid discipline, strong typographic scale, asymmetric but balanced composition, clean margins, and a deliberate headline-to-detail reading order.' :
-  /corporate|clean/i.test(c) ? 'Use a clean corporate information system, precise alignment, restrained colors, readable cards, and clear hierarchy without generic filler dashboards.' :
-  /infographic|data visualization/i.test(c) ? 'Use labeled information blocks, consistent units, logical flow, accurate hierarchy, and concise callouts; do not invent data.' :
-  /luxury|premium/i.test(c) ? 'Use restrained luxury art direction, refined materials, precise spacing, elegant type, subtle highlights, and no excessive ornament.' :
-  /flat vector|2d cartoon|hand.?drawn|line art/i.test(c) ? 'Use a coherent vector or hand-drawn illustration language, consistent stroke/shape weight, controlled color blocking, and purposeful illustrated symbols.' :
-  /futuristic|cyberpunk|neon|hud|holographic|sci.?fi|techno/i.test(c) ? 'Use a disciplined futuristic visual system: dark or controlled atmospheric backgrounds, luminous edge lighting, scanning or data motion, precise interface geometry, and a clearly readable hero subject.' :
-  /glass|translucent|refraction|crystal/i.test(c) ? 'Use translucent layers, believable refraction, soft caustics, controlled reflections, layered glass depth, and high-contrast readable text. Avoid turning every object into a glass card.' :
-  /isometric|diorama/i.test(c) ? 'Use a consistent isometric camera angle, coherent scale, believable contact shadows, modular spatial layers, and a readable path through the scene.' :
-  /retro|vintage|y2k|vaporwave|synthwave|pixel|voxel/i.test(c) ? 'Use a deliberate era-specific visual language: appropriate typography, grid, texture, palette, pixel scale or analog artifacts. Keep references coherent rather than mixing unrelated decades.' :
-  /abstract|generative|liquid|fluid|particle|fractal|op art|biomorphic|ambient|loop/i.test(c) ? 'Use a defined visual rule for shape, repetition, rhythm, symmetry, transformation, or material motion. Every abstract element must support the chosen experiment and composition.' :
-  /ui|interface|prototype|microinteraction|dashboard/i.test(c) ? 'Use plausible interface anatomy, consistent spacing, component hierarchy, purposeful micro-interactions, readable labels, and no fabricated data or irrelevant controls.' :
-  /broadcast|social|media|news|concert|audio|waveform|stage/i.test(c) ? 'Use platform-appropriate safe areas, strong title and lower-third hierarchy, consistent caption placement, and repeatable motion package rules.' :
-  /nature|organic|environment|botanical/i.test(c) ? 'Use organic silhouettes, natural material cues, believable habitat or process context, layered depth, and ecological color relationships.' :
-  /bold|brutalist|high contrast/i.test(c) ? 'Use oversized typography, strong geometric blocks, sharp contrast, decisive alignment, and controlled negative space without sacrificing legibility.' :
-  /swiss|minimal|monochrome|bauhaus/i.test(c) ? 'Use grid discipline, precise alignment, restrained geometry, limited palette, typographic hierarchy, and intentional negative space.' :
-  /2d|cartoon|character|clay|stop motion|hand.drawn/i.test(c) ? 'Use consistent character proportions, shape language, line weight, material texture, and expressive pose-to-pose movement. Keep all supporting props on-theme.' :
-  /illustration|cartoon|character|clay|stop motion/i.test(c) ? 'Use consistent illustration proportions, shape language, line weight, expressive pose-to-pose movement, and a cohesive setting. Keep all supporting props on-theme.' :
-  'Apply the selected visual category "'+c+'" as the visual grammar while preserving the subject and meaning of the main theme.';
+ const categoryGuide = window.trozalGetVisualCategoryGuide(c);
  const lines=[
   'Main theme (exact selected topic): '+t,
   'Main-theme intent: '+d.purpose,
