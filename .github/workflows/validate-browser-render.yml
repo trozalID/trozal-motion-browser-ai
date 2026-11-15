@@ -41,15 +41,15 @@ jobs:
           const fs = require('fs');
           const { spawnSync } = require('child_process');
           const html = fs.readFileSync('index.html', 'utf8');
-          const inlineScripts = [...html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi)]
-            .filter(match => !/\\bsrc\\s*=/.test(match[1]));
+          const inlineScripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)]
+            .filter(match => !/\bsrc\s*=/.test(match[1]));
           if (!inlineScripts.length) throw new Error('No inline application scripts found');
           inlineScripts.forEach((match, index) => {
             const file = '/tmp/browser-ai-inline-' + index + '.js';
             fs.writeFileSync(file, match[2], 'utf8');
             const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
             if (result.status !== 0) {
-              process.stderr.write('Inline script ' + (index + 1) + ' syntax error\\n');
+              process.stderr.write('Inline script ' + (index + 1) + ' syntax error\n');
               process.stderr.write(result.stderr || result.stdout || '');
               process.exit(1);
             }
