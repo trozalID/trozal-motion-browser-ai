@@ -560,6 +560,18 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 
 /* Render preflight panel · amber technical theme */
 #renderPreflightPanel{background:linear-gradient(145deg,#49351a,#2a2117 62%,#382718);border:1px solid #c28c3c;box-shadow:0 8px 22px #140d05aa}#renderPreflightPanel h3{color:#ffe0a5}#renderPreflightPanel .help{color:#f1d9b4}#renderPreflightPanel button.primary{background:linear-gradient(135deg,#ffe0a0,#d49a42);color:#291a07}.render-preflight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}.render-preflight-grid>div{padding:7px;border:1px solid #8f682e;border-radius:7px;background:#241a10}.render-preflight-grid b{display:block;color:#f6c976;font-size:9px;text-transform:uppercase}.render-preflight-grid span{display:block;color:#fff0d3;font-size:11px;margin-top:3px}
+/* Render Sync and Performance Advisor */
+#renderSyncAdvisorPanel{background:linear-gradient(145deg,#17394b,#102631 65%,#172b3b);border:1px solid #4c9fbd;box-shadow:0 8px 22px #020f18aa}
+#renderSyncAdvisorPanel h3{color:#c5efff;letter-spacing:.045em}
+#renderSyncAdvisorPanel .help{color:#c6e2ed}
+.render-sync-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:9px 0}
+.render-sync-grid>div{min-width:0;padding:8px;border:1px solid #39758b;border-radius:8px;background:#0b202b}
+.render-sync-grid b{display:block;color:#91d9ef;font-size:9px;text-transform:uppercase;letter-spacing:.04em}
+.render-sync-grid span{display:block;color:#f0fbff;font-size:12px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.render-sync-status,.render-sync-recommendations{padding:9px;border:1px solid #39758b;border-radius:8px;background:#0d2633;color:#d8f2fb;font-size:11px;line-height:1.55;white-space:pre-line}
+.render-sync-recommendations{margin-top:7px;border-color:#8c7745;background:#282316;color:#f5e3b7}
+#renderSyncAdvisorPanel button{font-size:10px}
+@media(max-width:760px){.render-sync-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.render-sync-grid span{font-size:11px}}
 /* Freeze visible preview while export frames are rendered off-screen */
 .stage.rendering-preview-paused{position:relative}.stage.rendering-preview-paused::after{content:'PREVIEW DIJEDA · RENDER BERJALAN';position:absolute;z-index:50;left:50%;top:12px;transform:translateX(-50%);padding:7px 12px;border:1px solid #f2c36d;border-radius:7px;background:#241b0ee8;color:#ffe2a3;font-size:10px;font-weight:900;letter-spacing:.06em;pointer-events:none;white-space:nowrap;box-shadow:0 3px 14px #0008}
 /* Browser AI workspace editor — matching Ollama workspace tools */
@@ -1084,6 +1096,24 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
    <div class="render-preflight-grid" id="renderPreflightGrid"><div><b>Frame</b><span>—</span></div><div><b>Pixel-frame</b><span>—</span></div><div><b>Buffer / frame</b><span>—</span></div><div><b>Profil</b><span>—</span></div></div>
    <button type="button" id="renderPreflightCheck" class="primary" style="width:100%">Periksa kesiapan render</button>
    <div class="status" id="renderPreflightStatus">Atur durasi, FPS, dan resolusi lalu jalankan pemeriksaan.</div>
+  </section>
+  <section class="panel" id="renderSyncAdvisorPanel" aria-labelledby="renderSyncAdvisorTitle">
+   <h3 id="renderSyncAdvisorTitle">◈ RENDER SYNC AND PERFORMANCE ADVISOR</h3>
+   <p class="help">Monitor sinkronisasi preview secara langsung, waktu eksekusi renderAt, kestabilan frame browser, dan rekomendasi beban. FPS monitor adalah cadence UI browser, bukan klaim kecepatan ekspor video.</p>
+   <div class="render-sync-grid" id="renderSyncMetrics" aria-live="polite">
+    <div><b>UI cadence</b><span id="renderSyncFps">Mengukur…</span></div>
+    <div><b>Frame interval</b><span id="renderSyncInterval">—</span></div>
+    <div><b>RenderAt avg / max</b><span id="renderSyncCost">—</span></div>
+    <div><b>Frame terlambat</b><span id="renderSyncDropped">—</span></div>
+    <div><b>Render queue</b><span id="renderSyncQueue">—</span></div>
+    <div><b>Perangkat</b><span id="renderSyncDevice">—</span></div>
+   </div>
+   <div class="render-sync-status" id="renderSyncStatus" role="status">Mengumpulkan sampel performa browser…</div>
+   <div class="render-sync-recommendations" id="renderSyncRecommendations">Rekomendasi akan diperbarui dari pengukuran aktual.</div>
+   <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px">
+    <button type="button" id="renderSyncReset" class="primary">Reset pengukuran</button>
+    <button type="button" id="renderSyncRunPreflight">Jalankan preflight</button>
+   </div>
   </section>
   <section class="panel panel-tone-metadata" id="stockMetadataPanel">
    <h3><b>✦</b> 8. METADATA VIDEO MICROSTOCK</h3>
@@ -3009,6 +3039,59 @@ function trozalRunRenderPreflight(){
 }
 $('renderPreflightCheck')?.addEventListener('click',trozalRunRenderPreflight);
 ['resolution','duration','fps'].forEach(id=>$(id)?.addEventListener('change',()=>{if($('renderPreflightGrid'))trozalRunRenderPreflight()}));
+// Live render synchronization and browser performance advisor.
+(()=>{
+ const metrics={intervals:[],renderCosts:[],lastFrame:0,lastReport:0,dropped:0,frames:0,longTasks:0,observer:null};
+ const ids=['renderSyncFps','renderSyncInterval','renderSyncCost','renderSyncDropped','renderSyncQueue','renderSyncDevice','renderSyncStatus','renderSyncRecommendations'];
+ if(ids.some(id=>!$(id)))return;
+ const push=(arr,value,max=60)=>{arr.push(value);if(arr.length>max)arr.shift();};
+ const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+ $('renderSyncDevice').textContent=(navigator.hardwareConcurrency||'?')+' cores · '+(navigator.deviceMemory?navigator.deviceMemory+' GB RAM':'RAM tidak dilaporkan');
+ if(typeof PerformanceObserver==='function'){
+  try{metrics.observer=new PerformanceObserver(list=>{metrics.longTasks+=list.getEntries().length});metrics.observer.observe({type:'longtask',buffered:true});}catch(_){}
+ }
+ if(typeof renderAt==='function'&&!window.__trozalRenderAtAdvisorWrapped){
+  const original=renderAt;
+  renderAt=function(...args){
+   const start=performance.now();
+   try{return original.apply(this,args)}
+   finally{push(metrics.renderCosts,performance.now()-start,90)}
+  };
+  window.__trozalRenderAtAdvisorWrapped=true;
+ }
+ let rafId=0;
+ const tick=now=>{
+  if(document.hidden){metrics.lastFrame=now;rafId=requestAnimationFrame(tick);return;}
+  if(metrics.lastFrame){
+   const delta=now-metrics.lastFrame;
+   if(delta>0&&delta<1000){push(metrics.intervals,delta,90);metrics.frames++;if(delta>50)metrics.dropped++;}
+  }
+  metrics.lastFrame=now;
+  if(now-metrics.lastReport>=1000){
+   metrics.lastReport=now;
+   const cadence=avg(metrics.intervals),costAvg=avg(metrics.renderCosts),costMax=metrics.renderCosts.length?Math.max(...metrics.renderCosts):0;
+   $('renderSyncFps').textContent=metrics.intervals.length?((1000/cadence).toFixed(1)+' FPS'):'Mengukur…';
+   $('renderSyncInterval').textContent=metrics.intervals.length?(cadence.toFixed(1)+' ms'):'—';
+   $('renderSyncCost').textContent=metrics.renderCosts.length?(costAvg.toFixed(2)+' / '+costMax.toFixed(2)+' ms'):'Menunggu renderAt';
+   $('renderSyncDropped').textContent=String(metrics.dropped)+' (>50 ms)';
+   $('renderSyncQueue').textContent=(typeof trozalRenderTaskQueue!=='undefined'?String(trozalRenderTaskQueue.length+(trozalRenderTaskRunning?1:0)):'Tidak tersedia');
+   const target=Math.max(1,Number($('fps')?.value)||30),notes=[];
+   if(cadence>50)notes.push('Cadence UI rendah: tutup tab berat, nonaktifkan ekstensi berat, atau kurangi efek dekoratif.');
+   else if(cadence>0&&cadence>1000/target*1.5)notes.push('Cadence preview lebih rendah dari target FPS. Preview browser tidak selalu sama dengan FPS hasil ekspor.');
+   if(costMax>16.7)notes.push('renderAt pernah melebihi 16,7 ms. Periksa SVG kompleks, filter, dan jumlah layer.');
+   if(metrics.longTasks>0)notes.push('Browser mencatat '+metrics.longTasks+' long task (lebih dari 50 ms) sejak panel dibuka.');
+   if(!notes.length)notes.push('Belum terdeteksi bottleneck besar pada sampel ini. Jalankan preview dan render singkat untuk menguji beban aktual.');
+   $('renderSyncStatus').textContent='Sinkronisasi: '+(cadence&&cadence<35?'Stabil':cadence&&cadence<55?'Perlu dipantau':'Cadence sedang diukur')+' · Target proyek '+target+' FPS · Long task '+metrics.longTasks;
+   $('renderSyncRecommendations').textContent=notes.join('\n');
+  }
+  rafId=requestAnimationFrame(tick);
+ };
+ const reset=()=>{metrics.intervals=[];metrics.renderCosts=[];metrics.dropped=0;metrics.frames=0;metrics.longTasks=0;metrics.lastFrame=0;metrics.lastReport=0;$('renderSyncStatus').textContent='Pengukuran direset. Kumpulkan sampel baru…';};
+ $('renderSyncReset').addEventListener('click',reset);
+ $('renderSyncRunPreflight').addEventListener('click',()=>{if(typeof trozalRunRenderPreflight==='function')trozalRunRenderPreflight();});
+ window.addEventListener('pagehide',()=>{if(rafId)cancelAnimationFrame(rafId);metrics.observer?.disconnect();},{once:true});
+ rafId=requestAnimationFrame(tick);
+})();
 $('motionBlurAmount')?.addEventListener('input',()=>{const out=$('motionBlurAmountValue');if(out)out.textContent=$('motionBlurAmount').value+' px';});
 $('motionBlurEnabled')?.addEventListener('change',()=>{const out=$('motionBlurReadout');if(out)out.textContent=$('motionBlurEnabled').checked?'Mode: aktif · Blur adaptif mengikuti kecepatan gerak objek.':'Mode: nonaktif · Tidak mengubah durasi atau FPS ekspor.';});
 $('cancelRenderBtn')?.addEventListener('click',()=>{if(typeof trozalRenderCancelHandler==='function')trozalRenderCancelHandler();});
