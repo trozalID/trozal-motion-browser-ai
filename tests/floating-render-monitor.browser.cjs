@@ -104,6 +104,54 @@ const { chromium } = require('playwright');
     assert.equal(cancel.state, 'STOPPED');
     assert.match(cancel.stage, /Render dibatalkan/);
 
+    // Exercise the application's real PNG Sequence render cancellation path.
+    const livePage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    const liveErrors = [];
+    livePage.on('pageerror', error => liveErrors.push(error.stack || error.message));
+    livePage.on('dialog', dialog => dialog.accept());
+    await livePage.addInitScript(() => {
+      window.confirm = () => true;
+      window.JSZip = class {
+        file() { return this; }
+        async generateAsync() { return new Blob(['cancel-test'], { type: 'application/zip' }); }
+      };
+    });
+    await livePage.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
+    await livePage.locator('#demoBtn').click();
+    await livePage.locator('#resolution').selectOption('1280x720');
+    await livePage.locator('#fps').selectOption('24');
+    await livePage.locator('#format').selectOption('pngseq');
+    await livePage.locator('#renderSpeedMode').selectOption('turbo');
+    await livePage.locator('#duration').evaluate(el => {
+      el.value = '4';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await livePage.locator('#renderBtn').click();
+    await livePage.locator('#trozalFloatingRender.is-visible').waitFor({ state: 'visible', timeout: 10000 });
+    await livePage.waitForFunction(() => window.__trozalRenderMetrics?.active === true, undefined, { timeout: 10000 });
+    await livePage.locator('#tfrCancel').click();
+    await livePage.waitForFunction(() =>
+      document.getElementById('renderBtn')?.disabled === false &&
+      document.getElementById('tfrState')?.textContent === 'STOPPED',
+      undefined,
+      { timeout: 10000 }
+    );
+    const liveCancel = await livePage.evaluate(() => ({
+      metricsActive: window.__trozalRenderMetrics?.active,
+      cancelDisabled: document.getElementById('tfrCancel')?.disabled,
+      renderButtonDisabled: document.getElementById('renderBtn')?.disabled,
+      stage: document.getElementById('tfrStage')?.textContent,
+      status: document.getElementById('exportStatus')?.textContent || ''
+    }));
+    assert.equal(liveCancel.metricsActive, false, 'Real render metrics must stop after cancellation');
+    assert.equal(liveCancel.cancelDisabled, true, 'Monitor Cancel must disable after real render cancellation');
+    assert.equal(liveCancel.renderButtonDisabled, false, 'Render button must recover after cancellation');
+    assert.match(liveCancel.stage, /Render dibatalkan/);
+    assert.match(liveCancel.status, /dibatalkan/i);
+    assert.deepEqual(liveErrors, [], 'Real PNG Sequence cancellation must not throw browser errors');
+    await livePage.close();
+
     assert.deepEqual(pageErrors, [], 'Floating render monitor interactions must not throw browser errors');
     console.log(JSON.stringify({
       result: 'PASS',
@@ -111,7 +159,7 @@ const { chromium } = require('playwright');
       drag: 'free-position + viewport-clamped',
       persistence: 'localStorage position saved',
       minimizeRestore: 'passed',
-      cancelHandler: 'called and disabled after stop',
+      cancelHandler: 'synthetic callback and real PNG Sequence render cancellation passed',
       legacyProgressUi: 'hidden'
     }, null, 2));
   } finally {
