@@ -561,7 +561,18 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 
 /* Render preflight panel · amber technical theme */
 #renderPreflightPanel{background:linear-gradient(145deg,#49351a,#2a2117 62%,#382718);border:1px solid #c28c3c;box-shadow:0 8px 22px #140d05aa}#renderPreflightPanel h3{color:#ffe0a5}#renderPreflightPanel .help{color:#f1d9b4}#renderPreflightPanel button.primary{background:linear-gradient(135deg,#ffe0a0,#d49a42);color:#291a07}.render-preflight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}.render-preflight-grid>div{padding:7px;border:1px solid #8f682e;border-radius:7px;background:#241a10}.render-preflight-grid b{display:block;color:#f6c976;font-size:9px;text-transform:uppercase}.render-preflight-grid span{display:block;color:#fff0d3;font-size:11px;margin-top:3px}
-.theme-auto-spec{margin:9px 0;padding:10px;border:1px solid #355b47;border-radius:9px;background:linear-gradient(145deg,#10291f,#101c20);color:#e3f5e9}.theme-auto-spec h4{margin:0 0 6px;color:#b8e8c8;font-size:11px;letter-spacing:.05em}.theme-auto-spec .help{margin:0 0 8px;color:#bdd7c8;font-size:10px}.theme-auto-spec #svgAiAutoSpec{font-size:10px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto}
+
+#trozalFloatingRender{position:fixed;right:18px;bottom:18px;z-index:10050;width:min(390px,calc(100vw - 28px));background:linear-gradient(145deg,#18232c,#101820);color:#edf5fb;border:1px solid rgba(245,190,75,.8);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.48);font:12px/1.45 Inter,Segoe UI,Arial,sans-serif;display:none;overflow:hidden}
+#trozalFloatingRender.is-visible{display:block}#trozalFloatingRender .tfr-head{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(255,190,65,.09);cursor:grab;user-select:none}
+#trozalFloatingRender .tfr-title{font-weight:900;letter-spacing:.6px;flex:1}#trozalFloatingRender button{padding:5px 9px;border-radius:7px;font-size:11px}
+#trozalFloatingRender .tfr-body{padding:12px}#trozalFloatingRender .tfr-main{display:flex;align-items:end;justify-content:space-between;gap:10px;margin-bottom:8px}
+#trozalFloatingRender .tfr-pct{font-size:27px;font-weight:900;color:#67e4a0}#trozalFloatingRender .tfr-speed{font-size:17px;font-weight:800;text-align:right}
+#trozalFloatingRender .tfr-track{height:8px;background:#34433f;border-radius:20px;overflow:hidden;margin:8px 0 12px}#trozalFloatingRender .tfr-fill{height:100%;width:0;background:linear-gradient(90deg,#16b978,#9be7a7)}
+#trozalFloatingRender .tfr-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}#trozalFloatingRender .tfr-stat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:7px;min-width:0}
+#trozalFloatingRender .tfr-stat small{display:block;color:#aebdca;font-size:10px}#trozalFloatingRender .tfr-stat b{display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#trozalFloatingRender .tfr-actions{display:flex;gap:7px;margin-top:10px}#trozalFloatingRender .tfr-actions button{flex:1}#trozalFloatingRender .tfr-cancel{background:#8f2631!important;color:#fff!important}
+#trozalFloatingRender.is-minimized{width:260px}#trozalFloatingRender.is-minimized .tfr-body{display:none}
+@media(max-width:520px){#trozalFloatingRender{right:10px;bottom:10px;width:calc(100vw - 20px)}}
 /* Render Sync and Performance Advisor */
 #renderSyncAdvisorPanel{background:linear-gradient(145deg,#17394b,#102631 65%,#172b3b);border:1px solid #4c9fbd;box-shadow:0 8px 22px #020f18aa}
 #renderSyncAdvisorPanel h3{color:#c5efff;letter-spacing:.045em}
@@ -743,7 +754,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
    <label>Kategori spesifik / subtema (relevan dengan tema)</label><select id="svgAiSpecific"><option>Logo reveal with custom emblem</option><option>Logo build from geometric pieces</option><option>Wordmark kinetic reveal</option><option>Brand guideline opener</option><option>Product hero on floating podium</option><option>Product 360 showcase</option><option>Cosmetic bottle luxury reveal</option><option>Food hero with ingredient orbit</option><option>Sneaker / fashion product launch</option><option>Smartphone device showcase</option><option>App onboarding sequence</option><option>Website landing page hero</option><option>SaaS feature explainer</option><option>Animated dashboard KPI</option><option>Data chart growth story</option><option>Financial market overview</option><option>AI neural network visualization</option><option>Robotics and automation</option><option>Cloud computing ecosystem</option><option>Cybersecurity shield sequence</option><option>Medical awareness explainer</option><option>Anatomy / science visualization</option><option>Learning process step-by-step</option><option>Timeline and roadmap</option><option>Before-after transformation</option><option>Process flow diagram</option><option>Comparison infographic</option><option>Statistics counter sequence</option><option>World map data routes</option><option>Travel destination opener</option><option>City / architecture flythrough</option><option>Nature landscape layers</option><option>Ocean and underwater scene</option><option>Wildlife conservation story</option><option>Renewable energy system</option><option>Solar / wind energy explainer</option><option>Sports event opener</option><option>Fitness training sequence</option><option>Esports tournament package</option><option>Music visualizer interface</option><option>Character mascot introduction</option><option>Animated storytelling scene</option><option>Event countdown</option><option>New year celebration</option><option>Ramadan lantern and crescent</option><option>Eid greeting composition</option><option>Wedding invitation motion</option><option>Sale campaign and discount</option><option>App interface micro-interaction</option><option>Notification and UX flow</option><option>Loading / progress animation</option><option>Abstract liquid transition</option><option>Particle field and energy</option><option>Typography quote animation</option><option>News headline package</option><option>Real estate property showcase</option><option>Automotive feature presentation</option><option>Custom specific concept</option></select>
    <div id="svgAiThemeBrief" role="status" aria-live="polite" style="margin:7px 0 10px;padding:9px 10px;border:1px solid #355b47;border-radius:8px;background:#0a2219;color:#d8eee0;font-size:10px;line-height:1.55;white-space:pre-line">Pilih tema untuk melihat tujuan konsep, subjek utama, dan arahan visual.</div>
    <label>Detail tambahan (opsional)</label><input type="text" id="svgAiDetails" placeholder="Contoh: ikon lebah, warna emas, latar putih">
-   <section class="theme-auto-spec" id="svgAiAutoSpecPanel" aria-live="polite"><h4>✦ SPESIFIKASI TEMA OTOMATIS · DINAMIS</h4><p class="help">Spesifikasi mengikuti tema, kategori, dan subtema. Detail tambahan digabungkan sebagai arahan pelengkap, bukan menggantikan spesifikasi inti.</p><div id="svgAiAutoSpec" role="status">Pilih tema dan kategori untuk membentuk spesifikasi visual.</div></section>
+   
    <section class="browser-art-direction" id="browserArtDirection">
     <h4>✦ CREATIVE DIRECTION · KONTROL ART DESIGN</h4>
     <p>Pilih arahan tambahan agar hasil HTML Motion lebih konsisten. Mode otomatis mengikuti tema.</p>
@@ -1244,6 +1255,36 @@ function setExportStatus(t){
  const stage=msg.replace(/\s*[·|].*$/,'').replace(/\s*\d+(?:\.\d+)?%.*$/,'').trim()||'Memproses';
  setRenderProgress(pct,stage,failed?'error':succeeded?'success':(pct>0?'running':'idle'));
 }
+function trozalInitFloatingRenderMonitor(){
+ if(document.getElementById('trozalFloatingRender'))return;
+ const panel=document.createElement('section');panel.id='trozalFloatingRender';panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');
+ panel.innerHTML='<div class="tfr-head"><strong class="tfr-title">TROZAL · RENDER MONITOR</strong><span id="tfrState">READY</span><button type="button" id="tfrMin">−</button><button type="button" id="tfrClose">×</button></div><div class="tfr-body"><div class="tfr-main"><div><div class="tfr-pct" id="tfrPct">0%</div><small id="tfrStage">Menunggu render</small></div><div><div class="tfr-speed" id="tfrSpeed">— FPS</div><small>Kecepatan aktual</small></div></div><div class="tfr-track"><div class="tfr-fill" id="tfrFill"></div></div><div class="tfr-grid"><div class="tfr-stat"><small>Resolusi</small><b id="tfrResolution">—</b></div><div class="tfr-stat"><small>Target FPS</small><b id="tfrTargetFps">—</b></div><div class="tfr-stat"><small>Frame</small><b id="tfrFrames">—</b></div><div class="tfr-stat"><small>Durasi</small><b id="tfrDuration">—</b></div><div class="tfr-stat"><small>Waktu berjalan</small><b id="tfrElapsed">—</b></div><div class="tfr-stat"><small>Estimasi sisa</small><b id="tfrEta">—</b></div><div class="tfr-stat" style="grid-column:1/-1"><small>Output</small><b id="tfrFormat">—</b></div></div><div class="tfr-actions"><button type="button" id="tfrCancel" class="tfr-cancel">■ Cancel Render</button></div></div>';
+ document.body.appendChild(panel);
+ const head=panel.querySelector('.tfr-head');let drag=null;
+ head.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button'))return;const r=panel.getBoundingClientRect();drag={x:e.clientX-r.left,y:e.clientY-r.top};head.setPointerCapture?.(e.pointerId);});
+ head.addEventListener('pointermove',e=>{if(!drag)return;panel.style.left=Math.max(0,Math.min(innerWidth-panel.offsetWidth,e.clientX-drag.x))+'px';panel.style.top=Math.max(0,Math.min(innerHeight-panel.offsetHeight,e.clientY-drag.y))+'px';panel.style.right='auto';panel.style.bottom='auto';});
+ const stop=()=>drag=null;head.addEventListener('pointerup',stop);head.addEventListener('pointercancel',stop);
+ document.getElementById('tfrMin').onclick=()=>{panel.classList.toggle('is-minimized');document.getElementById('tfrMin').textContent=panel.classList.contains('is-minimized')?'＋':'−';};
+ document.getElementById('tfrClose').onclick=()=>{if(window.__trozalRenderMetrics?.active)panel.classList.add('is-minimized');else panel.classList.remove('is-visible');};
+ document.getElementById('tfrCancel').onclick=()=>{if(typeof trozalRenderCancelHandler==='function'&&confirm('Batalkan proses render sekarang?'))trozalRenderCancelHandler();};
+}
+function trozalUpdateFloatingRenderMonitor(percent,label,state){
+ const m=window.__trozalRenderMetrics,panel=document.getElementById('trozalFloatingRender');if(!panel)return;
+ if(m&&(state==='success'||state==='error'))m.active=false;
+ const running=!!(m&&m.active),p=Math.max(0,Math.min(100,Number(percent)||0));if(running||state==='success'||state==='error')panel.classList.add('is-visible');if(!running&&state==='idle')return;
+ const now=performance.now(),elapsed=m?Math.max(.001,(now-m.startedAt)/1000):0;
+ if(m){const delta=p-(m.lastPercent||0),dt=Math.max(.001,(now-(m.lastUpdateAt||now))/1000);if(delta>0){const instant=(delta/100*m.totalFrames)/dt;m.speed=m.speed?m.speed*.65+instant*.35:instant;}m.lastPercent=p;m.lastUpdateAt=now;}
+ const frames=m?Math.min(m.totalFrames,Math.round(p/100*m.totalFrames)):0,eta=m&&p>0&&p<100?elapsed*(100-p)/p:0;
+ const clock=s=>{s=Math.max(0,Math.floor(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+ const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+ set('tfrPct',p.toFixed(1)+'%');set('tfrStage',label||'Memproses');set('tfrState',state==='success'?'COMPLETED':state==='error'?'STOPPED':running?'RENDERING':'READY');
+ const fill=document.getElementById('tfrFill');if(fill)fill.style.width=p+'%';set('tfrSpeed',m&&m.speed?m.speed.toFixed(1)+' FPS':'Menghitung…');
+ set('tfrResolution',m?m.width+' × '+m.height:'—');set('tfrTargetFps',m?m.fps+' FPS':'—');set('tfrFrames',m?frames.toLocaleString('id-ID')+' / '+m.totalFrames.toLocaleString('id-ID'):'—');
+ set('tfrDuration',m?m.duration.toFixed(1)+' dtk':'—');set('tfrElapsed',m?clock(elapsed):'—');set('tfrEta',m&&p>0&&p<100?clock(eta):p>=100?'00:00':'Menghitung…');set('tfrFormat',m?m.format:'—');
+ const cancel=document.getElementById('tfrCancel');if(cancel)cancel.disabled=!running;
+}
+trozalInitFloatingRenderMonitor();
+
 function setRenderProgress(percent,label,state){
  const p=Math.max(0,Math.min(100,Number(percent)||0));
  const fill=$('renderProgressFill'),text=$('renderProgressLabel'),bar=$('renderProgress');
@@ -4690,12 +4731,9 @@ window.trozalUpdateThemeBrief = function() {
  const theme=document.getElementById('svgAiTheme')?.value||'';
  const category=document.getElementById('svgAiCategory')?.value||'';
  const specific=document.getElementById('svgAiSpecific')?.value||'';
- const details=document.getElementById('svgAiDetails')?.value.trim()||'';
  const brief=window.trozalBuildThemeCreativeBrief(theme,category,specific);
  const host=document.getElementById('svgAiThemeBrief');
  if(host)host.textContent=brief.summary;
- const specHost=document.getElementById('svgAiAutoSpec');
- if(specHost)specHost.textContent=brief.summary+'\n\nSPESIFIKASI LENGKAP TEMA + KATEGORI:\n'+brief.prompt+'\n\nDETAIL TAMBAHAN PENGGUNA:\n'+(details||'Belum ada detail tambahan. Jangan menghilangkan atau mengganti spesifikasi otomatis; gunakan arahan kreatif sesuai tema dan kategori.')+'\n\nATURAN PENGGABUNGAN:\nDetail tambahan adalah batasan atau penekanan tambahan. Pertahankan tujuan tema, subjek utama, aset relevan, palet, komposisi, alur gerak, dan batasan domain di atas.';
  return brief;
 };
 function trozalThemeProfile(theme){
@@ -4880,7 +4918,6 @@ function trozalInitThemeCatalog(){
 }
 
 // Initialize the theme catalogue before the prompt controls are bound.
-$('svgAiDetails').addEventListener('input',()=>{window.trozalUpdateThemeBrief?.();if($('svgAiPrompt').value.trim())generateSvgAiPrompt()});
 trozalInitThemeCatalog();
 
 (function(){
