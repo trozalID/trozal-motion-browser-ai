@@ -97,7 +97,7 @@ const { chromium } = require('playwright');
   const output = await page.locator('#visualMotionOutput').inputValue();
   assert.match(output, /<svg/i);
   assert.doesNotMatch(output, /<script\\b|<iframe\\b/i, 'Returned HTML/SVG must not contain executable script or iframe elements');
-  assert.doesNotMatch(output, /(?:href|src)\\s*=\\s*['\"]https?:\\/\\//i, 'Returned HTML/SVG must not reference external assets');
+  assert.doesNotMatch(output, /(?:href|src)\s*=\s*['"]https?:\/\//i, 'Returned HTML/SVG must not reference external assets');
   const sceneRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && typeof item.body?.contents?.[0]?.parts?.[0]?.text === 'string');
   assert.ok(sceneRequest, 'Scene generation should call Gemini Interactions API with a text brief');
   assert.equal(sceneRequest.path, '/v1beta/models/gemini-3.8-flash:generateContent');
