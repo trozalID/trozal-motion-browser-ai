@@ -30,6 +30,7 @@ const { chromium } = require('playwright');
       let minimumCategories = Infinity;
       let minimumSubthemes = Infinity;
       const samples = {};
+      const visualGuideGaps = [];
 
       for (const theme of names) {
         const domain = window.trozalGetThemeDomainProfile(theme);
@@ -37,6 +38,8 @@ const { chromium } = require('playwright');
         const category = profile.styles?.[0] || '';
         const specific = profile.specifics?.[0] || '';
         const brief = window.trozalBuildThemeCreativeBrief(theme, category, specific);
+        const categoryGuide = window.trozalGetVisualCategoryGuide(category);
+        if (!categoryGuide || categoryGuide.length < 60 || !brief.prompt.includes(categoryGuide)) visualGuideGaps.push(theme);
         familyCounts[domain.id] = (familyCounts[domain.id] || 0) + 1;
         minimumCategories = Math.min(minimumCategories, profile.styles?.length || 0);
         minimumSubthemes = Math.min(minimumSubthemes, profile.specifics?.length || 0);
@@ -69,6 +72,7 @@ const { chromium } = require('playwright');
         unclassified,
         thinProfiles,
         promptGaps,
+        visualGuideGaps,
         minimumCategories,
         minimumSubthemes,
         samples
@@ -79,6 +83,22 @@ const { chromium } = require('playwright');
     assert.deepEqual(audit.unclassified, [], 'Every built-in theme must map to a named creative domain');
     assert.deepEqual(audit.thinProfiles, [], 'Every built-in theme must have at least 7 categories and 8 subthemes');
     assert.deepEqual(audit.promptGaps, [], 'Every theme brief must include the full domain-specific prompt blueprint');
+    assert.deepEqual(audit.visualGuideGaps, [], 'Every theme must receive a concrete visual-category guide');
+    const expectedDomains = {
+      'Christmas & Holiday':'holiday-celebration',
+      'Career & Recruitment':'people-workplace',
+      'Dashboard & Data Storytelling':'maps-data-public',
+      'Gaming & Esports':'gaming-character',
+      'Islamic Education & Values':'culture-heritage',
+      'Space & Astronomy':'space-cosmos',
+      'Website UI Motion':'technology-software',
+      '3D Product Visualization':'product-commercial',
+      'Event Sponsor Package':'media-entertainment',
+      'Parenting & Family':'family-parenting',
+      'Education Technology':'education-technology'
+    };
+    const domainMismatches = await page.evaluate(expected => Object.entries(expected).filter(([theme,domain]) => window.trozalGetThemeDomainProfile(theme)?.id !== domain).map(([theme,domain]) => ({theme,expected:domain,actual:window.trozalGetThemeDomainProfile(theme)?.id})), expectedDomains);
+    assert.deepEqual(domainMismatches, [], 'Representative themes must map to their intended domains');
     assert.ok(Object.keys(audit.familyCounts).length >= 15, 'The catalogue should use a broad set of distinct creative domains');
 
     const sampleOutput = [];
@@ -95,6 +115,8 @@ const { chromium } = require('playwright');
       assert.ok(visibleBrief.includes(sample.label), domainId + ' concept preview must show its domain');
       assert.ok(visibleBrief.includes('ASET VISUAL:'), domainId + ' concept preview must show the visual assets');
       assert.ok(visibleBrief.includes('ALUR GERAK:'), domainId + ' concept preview must show the motion sequence');
+      const selectedCategoryGuide = await page.evaluate(category => window.trozalGetVisualCategoryGuide(category), sample.category);
+      assert.ok(prompt.includes(selectedCategoryGuide), domainId + ' prompt must include the selected category grammar');
       assert.ok(prompt.includes('THEME-SPECIFIC CREATIVE BLUEPRINT'),
         domainId + ' prompt must include the theme-specific creative blueprint');
       sampleOutput.push({ domain: domainId, theme: sample.theme, categoryCount: await page.locator('#svgAiCategory option').count(), subthemeCount: await page.locator('#svgAiSpecific option').count() });
@@ -118,6 +140,8 @@ const { chromium } = require('playwright');
       creativeDomainsCovered: Object.keys(audit.familyCounts).length,
       minimumCategories: audit.minimumCategories,
       minimumSubthemes: audit.minimumSubthemes,
+      visualGuideGaps: audit.visualGuideGaps.length,
+      representativeDomainMappings: 'PASS',
       familyCounts: audit.familyCounts,
       representativePromptTests: sampleOutput,
       holidayAndPeopleThemesSeparated: true
