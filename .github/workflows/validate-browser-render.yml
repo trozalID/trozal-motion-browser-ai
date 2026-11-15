@@ -1,0 +1,92 @@
+name: Validate Browser AI Render Scheduler
+
+on:
+  push:
+    branches:
+      - browser-render-cursor-independent-2026-11-15
+      - browser-render-advisor-global-hooks-2026-11-15
+      - browser-render-pointer-independent-2026-11-15
+      - browser-theme-concept-alignment-2026-11-15
+      - browser-ai-theme-intelligence-floating-render-2026-11-15
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start local preview server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/browser-ai-http.log 2>&1 &
+          echo $! > /tmp/browser-ai-http.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/index.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/browser-ai-http.log
+          exit 1
+      - name: Check standalone JavaScript and scheduler wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check render-sync-advisor.js
+          node <<'NODE'
+          const fs = require('fs');
+          const { spawnSync } = require('child_process');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const inlineScripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)]
+            .filter(match => !/\bsrc\s*=/.test(match[1]));
+          if (!inlineScripts.length) throw new Error('No inline application scripts found');
+          inlineScripts.forEach((match, index) => {
+            const file = '/tmp/browser-ai-inline-' + index + '.js';
+            fs.writeFileSync(file, match[2], 'utf8');
+            const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
+            if (result.status !== 0) {
+              process.stderr.write('Inline script ' + (index + 1) + ' syntax error\n');
+              process.stderr.write(result.stderr || result.stdout || '');
+              process.exit(1);
+            }
+          });
+          console.log('Validated ' + inlineScripts.length + ' inline application scripts.');
+          if (!html.includes("fetchBlob(coreBlobUrl,'text/javascript'") || !html.includes("fetchBlob(wasmBlobUrl,'application/wasm'")) {
+            throw new Error('FFmpeg core/WASM download progress reader is not wired into initialization');
+          }
+          if (!html.includes('setTimeout(()=>trozalScheduleRenderTask(draw),Math.max(0,nextFrameAt-performance.now()))')) {
+            throw new Error('Real-time render loop is not routed through the shared scheduler');
+          }
+          if (!html.includes('pointer-events:none;user-select:none')) {
+            throw new Error('Top render progress monitor is not pointer-independent');
+          }
+          if (!html.includes('render-sync-advisor.js')) {
+            throw new Error('Render Sync Advisor standalone script is not loaded');
+          }
+          console.log('Validated standalone Advisor syntax and render scheduler wiring.');
+          NODE
+          node tests/browser-render-scheduler.test.cjs
+      - name: Verify checked-out test revision
+        run: |
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          git rev-parse HEAD
+          sha256sum tests/render-sync-advisor.browser.cjs render-sync-advisor.js
+          grep -n "timeout: 12000\|snapshot=" tests/render-sync-advisor.browser.cjs
+      - name: Exercise Render Sync Advisor in Chromium
+        run: node tests/render-sync-advisor.browser.cjs
+      - name: Compare render throughput with pointer over and away from progress panel
+        run: node tests/render-pointer-independence.browser.cjs
+      - name: Validate theme categories and AI prompt alignment in Chromium
+        run: node tests/theme-concept-alignment.browser.cjs
+      - name: Audit all catalogue themes and domain-specific AI prompts
+        run: node tests/theme-catalogue-coverage.browser.cjs
+      - name: Stop local preview server
+        if: always()
+        run: if [ -f /tmp/browser-ai-http.pid ]; then kill "$(cat /tmp/browser-ai-http.pid)" || true; fi
