@@ -45,6 +45,17 @@ const { chromium } = require('playwright');
     const holidayBrief = await page.locator('#svgAiThemeBrief').innerText();
     assert.match(holidayBrief, /Christmas|holiday/i);
     assert.match(holidayBrief, /Gift box/i);
+    await page.locator('#svgAiDetails').fill('aksen emas, ikon lebah kecil, latar putih');
+    let autoSpec = await page.locator('#svgAiAutoSpec').innerText();
+    assert.match(autoSpec, /Christmas & Holiday/);
+    assert.match(autoSpec, /Paper Cutout Holiday Illustration/);
+    assert.match(autoSpec, /aksen emas, ikon lebah kecil, latar putih/);
+    await page.locator('#svgAiCategory').selectOption({ label: 'Cinematic Winter Lighting' });
+    autoSpec = await page.locator('#svgAiAutoSpec').innerText();
+    assert.match(autoSpec, /Cinematic Winter Lighting/);
+    assert.match(autoSpec, /Christmas & Holiday/);
+    assert.match(autoSpec, /aksen emas, ikon lebah kecil, latar putih/);
+    await page.locator('#svgAiCategory').selectOption({ label: 'Paper Cutout Holiday Illustration' });
 
     await page.locator('#generateSvgAiPromptBtn').click();
     const holidayPrompt = await page.locator('#svgAiPrompt').inputValue();
@@ -55,6 +66,9 @@ const { chromium } = require('playwright');
     assert.match(holidayPrompt, /Paper Cutout Holiday Illustration/);
     assert.match(holidayPrompt, /cardstock|cut edges/i);
     assert.match(holidayPrompt, /Never introduce employee onboarding/i);
+    assert.match(holidayPrompt, /THEME- AND CATEGORY-SPECIFIC CREATIVE SPECIFICATION/);
+    assert.match(holidayPrompt, /USER DETAIL INTEGRATION RULE/);
+    assert.match(holidayPrompt, /aksen emas, ikon lebah kecil, latar putih/);
 
     await page.locator('#svgAiTheme').selectOption({ label: 'Career & Recruitment' });
     await page.waitForFunction(() =>
