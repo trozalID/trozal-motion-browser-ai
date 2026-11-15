@@ -100,7 +100,7 @@ const { chromium } = require('playwright');
       assert.equal(await page.evaluate(theme => window.trozalGetThemeDomainProfile(theme)?.label, item.theme), item.domain);
       await page.locator('#generateSvgAiPromptBtn').click();
       const prompt = await page.locator('#svgAiPrompt').inputValue();
-      assert.match(prompt, new RegExp('Main theme: ' + item.theme.replace(/[.*+?^\\{}()|[\]\\]/g, '\u005c\    assert.match(hrPrompt, /Do not use Christmas ornaments/i);
+      assert.ok(prompt.includes('Main theme: ' + item.theme), item.theme + ' must remain the main prompt subject');
 
     assert.deepEqual(errors, [], 'Theme selection and prompt generation must not throw browser errors');')));
       assert.ok(prompt.includes('Visual category: ' + item.category));
