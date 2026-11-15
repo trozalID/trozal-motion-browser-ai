@@ -2707,8 +2707,15 @@ async function encodeMovWithWasm(pngZip,totalFrames,fps,width,height,outputForma
     if(!wasmCheck.ok)throw new Error('FFmpeg WASM lokal tidak tersedia: HTTP '+wasmCheck.status);
     ffmpeg.on('log',({message})=>{if(message)setExportStatus('FFmpeg ['+activeCdn+']: '+message.slice(0,160))});
     setExportStatus('Menginisialisasi mesin FFmpeg.wasm dari '+cdn.name+'…');
-    await timeout(ffmpeg.load({classWorkerURL:workerBlobUrl,coreURL:coreBlobUrl,wasmURL:wasmBlobUrl}),180000,'Inisialisasi FFmpeg.wasm');
-    lastLoadError=null;break;
+    let coreObjectUrl='',wasmObjectUrl='';
+    try{
+     coreObjectUrl=await timeout(fetchBlob(coreBlobUrl,'text/javascript','FFmpeg core','Unduh FFmpeg core'),125000,'Unduh FFmpeg core');
+     wasmObjectUrl=await timeout(fetchBlob(wasmBlobUrl,'application/wasm','FFmpeg WASM','Unduh FFmpeg WASM'),125000,'Unduh FFmpeg WASM');
+     await timeout(ffmpeg.load({classWorkerURL:workerBlobUrl,coreURL:coreObjectUrl,wasmURL:wasmObjectUrl}),180000,'Inisialisasi FFmpeg.wasm');
+     lastLoadError=null;break;
+    }finally{
+     [coreObjectUrl,wasmObjectUrl].forEach(u=>{if(u)URL.revokeObjectURL(u)});
+    }
    }catch(e){
     lastLoadError=e;
     try{if(ffmpeg)ffmpeg.terminate()}catch(_){}
