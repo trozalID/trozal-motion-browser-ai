@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const html = fs.readFileSync('index.html', 'utf8');
+const advisor = fs.readFileSync('render-sync-advisor.js', 'utf8');
 
 function testRenderSyncPerformanceAdvisor() {
   const required = [
@@ -16,9 +17,10 @@ function testRenderSyncPerformanceAdvisor() {
     assert.ok(html.includes('id="' + id + '"'), 'Render Sync Advisor must include #' + id);
   }
   assert.match(html, /RENDER SYNC AND PERFORMANCE ADVISOR/);
-  assert.match(html, /new PerformanceObserver/);
-  assert.match(html, /requestAnimationFrame\(tick\)/);
-  assert.match(html, /window\.__trozalRenderAtAdvisorWrapped/);
+  assert.match(advisor, /new PerformanceObserver/);
+  assert.match(advisor, /requestAnimationFrame\(tick\)/);
+  assert.match(advisor, /window\.__trozalRenderAtAdvisorWrapped/);
+  assert.ok(html.includes('render-sync-advisor.js'), 'Standalone Advisor bootstrap must be loaded');
   assert.match(html, /renderAt avg \/ max/i);
 }
 testRenderSyncPerformanceAdvisor();
