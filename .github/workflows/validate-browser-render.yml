@@ -55,6 +55,9 @@ jobs:
             }
           });
           console.log('Validated ' + inlineScripts.length + ' inline application scripts.');
+          if (!html.includes("fetchBlob(coreBlobUrl,'text/javascript'") || !html.includes("fetchBlob(wasmBlobUrl,'application/wasm'")) {
+            throw new Error('FFmpeg core/WASM download progress reader is not wired into initialization');
+          }
           if (!html.includes('setTimeout(()=>trozalScheduleRenderTask(draw),step)')) {
             throw new Error('Real-time render loop is not routed through the shared scheduler');
           }
