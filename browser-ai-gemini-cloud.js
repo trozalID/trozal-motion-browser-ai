@@ -235,41 +235,73 @@
    'Atmospheric particles: '+(includeParticles?'Use only when relevant to the brief.':'Do not add decorative particles.'),
    'Depth layers: '+(includeDepth?'Use visible foreground, middle ground and background depth.':'Prefer a flatter composition.')
   ].filter(Boolean).join('\n\n');
- }
- async function generateScene(){
-  const button=$('generateVisualMotionAiBtn');
-  const cancel=$('cancelBrowserAiGenerationBtn');
-  if(sceneController)return;
-  const controller=new AbortController();
-  sceneController=controller;
-  if(button){button.disabled=true;button.textContent='Gemini sedang membuat adegan…';}
-  if(cancel)cancel.style.display='block';
-  status('visualMotionAiStatus','Mengirim brief ke Gemini Cloud ('+modelId()+')…');
-  try{
-   const output=await createInteraction(buildScenePrompt(),{
-    systemInstruction:'You are an expert motion-graphics art director and SVG animation engineer. Create a visually rich, concept-specific production-ready HTML/SVG animation. Follow all explicit visual requirements and preserve the entire requested concept. Return complete code only.',
-    generationConfig:{temperature:0.35,maxOutputTokens:8192},
-    signal:controller.signal,
-    timeoutMs:240000
-   });
-   const code=extractHtml(output);
-   $('visualMotionOutput').value=code;
-   $('visualMotionPreview').srcdoc=code;
+ }async function generateScene(){
+   const button=$('generateVisualMotionAiBtn'),cancel=$('cancelBrowserAiGenerationBtn');
+   if(sceneController)return;
+   const controller=new AbortController();sceneController=controller;
+   const engine=$('trozalSceneEngine')?.value||'auto',fallback=$('trozalSceneAutoFallback')?.checked!==false;
+   if(button){button.disabled=true;button.textContent='Scene Composer sedang bekerja…';}
+   if(cancel)cancel.style.display='block';
+   try{
+    if(engine==='template'||!apiKey()){
+     if(engine!=='template'&&!fallback)throw new Error('Gemini API key belum diisi dan fallback otomatis dimatikan.');
+     if(engine!=='template')status('trozalSceneEngineStatus','Gemini API key belum tersedia · Smart Template mengambil alih.');
+     else status('trozalSceneEngineStatus','Smart Template Composer aktif · tanpa API.');
+     applySceneCode(buildTemplateScene(),'Smart Template fallback');return;
+    }
+    status('trozalSceneEngineStatus','Gemini Cloud menjadi mesin utama · fallback '+(fallback?'aktif':'nonaktif')+'.');
+    status('visualMotionAiStatus','Mengirim brief ke Gemini Cloud ('+modelId()+')…');
+    try{
+     const output=await createInteraction(buildScenePrompt(),{generationConfig:{temperature:0.35,maxOutputTokens:8192},signal:controller.signal,timeoutMs:240000});
+     if(controller.signal.aborted)throw new Error('Permintaan dibatalkan.');
+     applySceneCode(extractHtml(output),'Gemini Cloud');
+     status('trozalSceneEngineStatus','Selesai · Gemini Cloud berhasil digunakan sebagai mesin utama.');
+    }catch(error){
+     if(controller.signal.aborted)throw error;
+     if(!fallback)throw error;
+     status('trozalSceneEngineStatus','Gemini gagal ('+(error.message||String(error))+') · Smart Template Composer mengambil alih.');
+     applySceneCode(buildTemplateScene(),'Smart Template fallback');
+     status('visualMotionAiStatus','Fallback otomatis berhasil. Hasil dibuat tanpa API; periksa komposisi sebelum impor.');
+     showSceneRecovery('Gemini tidak menyelesaikan permintaan. Smart Template sudah membuat draf lokal; brief tetap tersedia. Anda dapat mencoba Gemini kembali kapan saja.');
+    }
+   }catch(error){
+    const cancelled=controller.signal.aborted;
+    status('visualMotionAiStatus',cancelled?'Generasi dibatalkan.':'Gagal membuat adegan: '+(error.message||String(error)),!cancelled);
+    if(!cancelled)showSceneRecovery(error.message||String(error));
+   }finally{
+    sceneController=null;
+    if(button){button.disabled=false;button.textContent='✦ GENERATE ADEGAN · AUTO';}
+    if(cancel)cancel.style.display='none';
+   }
+  }
+  function escapeSceneText(value){return String(value||'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));}
+  function buildTemplateScene(){
+   const brief=String($('visualMotionPrompt')?.value||'').trim();
+   if(!brief)throw new Error('Tulis brief visual terlebih dahulu.');
+   const lower=(brief+' '+String($('svgAiPrompt')?.value||'')).toLowerCase(),accent=$('visualMotionAccent')?.value||'#65d9ff';
+   const title=escapeSceneText(brief.replace(/\s+/g,' ').slice(0,76));
+   const kind=/space|galaxy|planet|ruang angkasa|kosmos|bintang/.test(lower)?'space':/city|urban|building|kota|gedung|arsitektur/.test(lower)?'city':/product|bottle|phone|watch|produk|kemasan/.test(lower)?'product':/nature|forest|mountain|ocean|hutan|gunung|laut|alam/.test(lower)?'nature':/education|school|science|learning|pendidikan|sekolah|sains/.test(lower)?'education':/sport|football|soccer|basket|esport|olahraga/.test(lower)?'sport':'abstract';
+   const shapes={
+    space:'<circle cx="640" cy="350" r="112" fill="url(#hero)"/><ellipse cx="640" cy="350" rx="190" ry="58" fill="none" stroke="#d8f4ff" stroke-width="7" transform="rotate(-22 640 350)"/><circle cx="790" cy="280" r="25" fill="'+accent+'"/>',
+    city:'<path d="M430 520V300h95v220M550 520V210h125v310M700 520V335h105v185M830 520V260h90v260" fill="url(#hero)" stroke="#d9f7ff" stroke-width="4"/><path d="M450 335h45m55-45h55m-55 90h55m90-45h55" stroke="#fff" stroke-width="8"/>',
+    product:'<rect x="535" y="205" width="210" height="300" rx="42" fill="url(#hero)" stroke="#f2fbff" stroke-width="6"/><rect x="580" y="165" width="120" height="48" rx="12" fill="#d9f7ff"/><circle cx="640" cy="390" r="42" fill="'+accent+'"/>',
+    nature:'<path d="M300 520L510 230l145 190 105-145 230 245Z" fill="url(#hero)"/><circle cx="900" cy="180" r="72" fill="'+accent+'"/><path d="M470 520q-30-115 55-185 75 80 42 185" fill="#70d6a4"/>',
+    education:'<rect x="455" y="225" width="370" height="265" rx="28" fill="url(#hero)" stroke="#e6f8ff" stroke-width="6"/><path d="M520 310h240M520 365h180M520 420h205" stroke="#fff" stroke-width="15" stroke-linecap="round"/>',
+    sport:'<circle cx="640" cy="350" r="145" fill="url(#hero)" stroke="#f2fbff" stroke-width="7"/><path d="M640 205l48 72 85 26-52 72 2 88-83-27-83 27 2-88-52-72 85-26Z" fill="none" stroke="#fff" stroke-width="9"/>',
+    abstract:'<circle cx="640" cy="350" r="138" fill="url(#hero)"/><rect x="515" y="220" width="250" height="250" rx="42" fill="none" stroke="#f4fbff" stroke-width="8" transform="rotate(35 640 350)"/><path d="M450 350h380M640 160v380" stroke="'+accent+'" stroke-width="5"/>'
+   }[kind];
+   const dots=$('visualMotionParticles')?.checked!==false?Array.from({length:24},(_,i)=>'<circle cx="'+(90+(i*137)%1100)+'" cy="'+(70+(i*83)%560)+'" r="'+(2+i%4)+'" fill="'+(i%3===0?accent:'#eaf8ff')+'" opacity=".55"/>').join(''):'';
+   const orbit=$('visualMotionDepth')?.checked!==false?'<circle cx="640" cy="350" r="255" fill="none" stroke="'+accent+'" stroke-opacity=".22" stroke-width="2" stroke-dasharray="8 18"/>':'';
+   return '<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TROZAL Smart Scene</title><style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07101d;font-family:Arial,sans-serif}.stage{width:100%;height:100%;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 45%,#203b58,#050a13 78%)}svg{width:100%;height:100%;display:block}.float{animation:float 6s ease-in-out infinite}.orbit{transform-origin:640px 350px;animation:orbit 18s linear infinite}.pulse{transform-origin:640px 350px;animation:pulse 4s ease-in-out infinite}.glow{filter:drop-shadow(0 0 24px '+accent+'88)}.caption{font-size:25px;letter-spacing:4px;fill:#d9edff;opacity:.8}@keyframes float{50%{transform:translateY(-18px)}}@keyframes orbit{to{transform:rotate(360deg)}}@keyframes pulse{50%{opacity:.62;transform:scale(1.06)}}</style></head><body><main class="stage"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-label="'+title+'"><defs><linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+accent+'"/><stop offset="1" stop-color="#6454c8"/></linearGradient><radialGradient id="halo"><stop stop-color="'+accent+'" stop-opacity=".36"/><stop offset="1" stop-color="'+accent+'" stop-opacity="0"/></radialGradient></defs><g id="background"><rect width="1280" height="720" fill="#07101d"/><ellipse cx="640" cy="350" rx="510" ry="300" fill="url(#halo)"/></g><g id="environment" class="orbit">'+orbit+dots+'</g><g id="main-subject" class="float glow"><g class="pulse">'+shapes+'</g></g><g id="secondary-objects" class="orbit"><path d="M210 560Q640 630 1070 560" fill="none" stroke="'+accent+'" stroke-width="2" opacity=".45"/><circle cx="280" cy="530" r="8" fill="#fff"/><circle cx="1000" cy="525" r="6" fill="'+accent+'"/></g><g id="foreground"><text x="640" y="625" text-anchor="middle" class="caption">'+title+'</text><path d="M470 650h340" stroke="'+accent+'" stroke-width="3"/></g></svg></main></body></html>';
+  }
+  function applySceneCode(code,source){
+   $('visualMotionOutput').value=code;$('visualMotionPreview').srcdoc=code;
    if(typeof visualMotionPreviewSetRatio==='function')visualMotionPreviewSetRatio();
    const recovery=$('trozalGeminiRecoveryPanel');if(recovery)recovery.style.display='none';
-   status('visualMotionAiStatus','Selesai · HTML/SVG dibuat melalui Gemini Cloud ('+code.length.toLocaleString()+' karakter). Periksa Preview sebelum mengimpor.');
-   status('visualMotionStatus','Gemini Cloud Scene Composer selesai. Klik “Kirim ke Preview TROZAL” untuk memasukkan hasil ke mesin motion utama.');
-  }catch(error){
-   const cancelled=controller.signal.aborted;
-   status('visualMotionAiStatus',cancelled?'Generasi dibatalkan.':'Gagal membuat adegan: '+(error.message||String(error)),!cancelled);
-   if(!cancelled)showSceneRecovery(error.message||String(error));
-  }finally{
-   sceneController=null;
-   if(button){button.disabled=false;button.textContent='✦ GENERATE ADEGAN DENGAN GEMINI';}
-   if(cancel)cancel.style.display='none';
+   status('visualMotionAiStatus','Selesai · '+source+' menghasilkan HTML/SVG ('+code.length.toLocaleString()+' karakter). Periksa Preview sebelum mengimpor.');
+   status('visualMotionStatus',source+' Scene Composer selesai. Klik “Kirim ke Preview TROZAL” untuk memasukkan hasil ke mesin motion utama.');
   }
- }
- function splitDataUrl(value){
+  function splitDataUrl(value){
   const match=String(value||'').match(/^data:(image\/(?:png|jpeg|webp));base64,([a-z0-9+/=]+)$/i);
   if(!match)throw new Error('Format gambar tidak didukung. Gunakan PNG, JPG, atau WebP.');
   return {mime_type:match[1].toLowerCase(),data:match[2]};
