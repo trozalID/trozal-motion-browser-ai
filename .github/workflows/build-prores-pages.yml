@@ -42,6 +42,7 @@ jobs:
           cp browser-ai.js site/browser-ai.js
           cp render-sync-advisor.js site/render-sync-advisor.js
           cp browser-ai-gemini-cloud.js site/browser-ai-gemini-cloud.js
+          cp browser-gpu-health.js site/browser-gpu-health.js
           touch site/.nojekyll
 
       - name: Validate inline JavaScript syntax
@@ -82,6 +83,7 @@ jobs:
           test -s site/vendor/ffmpeg/index.js
           test -s site/vendor/ffmpeg/worker.js
           test -s site/vendor/jszip.min.js
+          test -s site/browser-gpu-health.js
 
       - name: Build FFmpeg core with ProRes 4444 enabled
         shell: bash
