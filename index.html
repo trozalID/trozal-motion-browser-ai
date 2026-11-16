@@ -838,6 +838,11 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
    <label>1 · BRIEF VISUAL / CERITA ADEGAN</label>
    <textarea id="visualMotionPrompt" rows="6" placeholder="Contoh: Santa Claus mengendarai kereta luncur terbang di antara gedung-gedung kota pada malam hari. Bulan bersinar, salju turun, kendaraan bergerak di jalan, kamera mengikuti kereta dari samping. Akhiri dengan pemandangan kota dari kejauhan."></textarea>
    <p class="help">Tulis satu cerita utuh atau pisahkan beberapa adegan dengan baris baru. Generator akan membaca kata kunci visual dan membangun gambar vektor berbeda untuk setiap adegan. Tidak perlu menulis judul atau teks layar.</p>
+   <div id="trozalSceneUnderstandingPanel" style="margin:8px 0 12px;padding:10px;border:1px solid #4b8c80;border-radius:9px;background:linear-gradient(145deg,#102b2a,#17242b);color:#dff8ef">
+    <strong style="display:block;color:#a8ead0;font-size:10px;letter-spacing:.06em">SCENE INTELLIGENCE · RENCANA ADEGAN</strong>
+    <small style="display:block;color:#bdd8d0;margin:4px 0 7px">Rencana beat diperbarui saat brief atau durasi berubah. Ini membantu AI menjaga urutan aksi dan kontinuitas subjek.</small>
+    <pre id="trozalSceneUnderstandingOutput" style="white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:10px;line-height:1.55;margin:0;color:#e2f4ec">Tulis brief untuk membangun rencana adegan.</pre>
+   </div>
    <div class="row">
     <div><label>RASIO VIDEO</label><select id="visualMotionRatio"><option value="16:9">16:9 · Landscape</option><option value="9:16">9:16 · Vertical</option><option value="1:1">1:1 · Square</option><option value="4:5">4:5 · Portrait</option><option value="21:9">21:9 · Cinematic</option></select></div>
     <div><label>DURASI</label><select id="visualMotionDuration"><option value="8">8 detik</option><option value="10">10 detik</option><option value="15" selected>15 detik</option><option value="20">20 detik</option><option value="30">30 detik</option><option value="45">45 detik</option><option value="60">60 detik</option></select></div>
@@ -5623,5 +5628,6 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
  },true);
 })();
 </script>
+<script src="./js/scene-intelligence.js" defer></script>
 </body>
 </html>
