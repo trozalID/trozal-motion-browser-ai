@@ -14,6 +14,7 @@ const { chromium } = require('playwright');
       };
     });
     await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
+    await page.addScriptTag({ path: require.resolve('jszip/dist/jszip.min.js') });
     const unavailable = await page.evaluate(() => {
       const pipeline = window.TrozalGpuFramePipeline;
       if (!pipeline) throw new Error('GPU frame pipeline script was not loaded');
