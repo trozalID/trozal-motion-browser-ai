@@ -28,7 +28,7 @@ const { chromium } = require('playwright');
       assert.equal(result.stats.draws, 1);
       assert.equal(result.stats.uploads, 1);
       console.log('GPU frame pipeline browser test passed:', JSON.stringify(result));
-      await page.locator('#demoBtn').click();
+      await page.locator('#clearBtn').click();\n      const pngDataUrl = await page.evaluate(() => { const c=document.createElement('canvas'); c.width=64; c.height=64; const x=c.getContext('2d'); x.fillStyle='#ef3340'; x.fillRect(0,0,64,64); return c.toDataURL('image/png'); });\n      await page.locator('#fileInput').setInputFiles({ name:'gpu-test.png', mimeType:'image/png', buffer:Buffer.from(pngDataUrl.split(',')[1],'base64') });\n      await page.waitForFunction(() => { const image=document.querySelector('#object img'); return !!image && image.complete && image.naturalWidth>0; });
       await page.evaluate(() => {
         document.getElementById('resolution').value = '1280x720';
         document.getElementById('duration').value = '1';
@@ -50,7 +50,7 @@ const { chromium } = require('playwright');
           metrics: window.__trozalRenderMetrics || null,
           diagnostics: window.__TROZAL_RENDER_DIAG_STATE || null,
           gpu: window.TrozalGpuFramePipeline?.getStats?.(),
-          hasSvg: !!document.querySelector('#object svg')
+          hasSvg: !!document.querySelector('#object svg'), hasImage: !!document.querySelector('#object img')
         }));
         throw new Error(error.message + ' · render snapshot=' + JSON.stringify(snapshot));
       }
