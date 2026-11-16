@@ -12,6 +12,7 @@ on:
       - feature/browser-gpu-adaptive-gemini-failover-2026-11-16
       - feature/browser-gpu-renderer-gemini-resilience-2026-11-16
       - feature/browser-transparent-draggable-panels-center-sliders-2026-11-16
+      - fix/browser-preview-height-runtime-diagnostics-2026-11-16
   workflow_dispatch:
 
 permissions:
