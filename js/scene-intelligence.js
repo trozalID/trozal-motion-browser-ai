@@ -48,14 +48,42 @@
   if(/\b(with|bersama|antara|between)\b/i.test(raw))return {type:'RELASI SPASIAL',actor:'subjek yang disebut dalam brief',verb:'berinteraksi/berada bersama',target:'objek atau subjek terkait',cause:'pertahankan jarak, orientasi, dan urutan kedekatan yang dinyatakan brief',effect:'jangan mengubah relasi spasial tanpa aksi yang menjelaskannya',confidence:'contextual'};
   return null;
  }
+
+ function inferMotion(line){
+  const s=String(line||'').toLowerCase(),has=re=>re.test(s);
+  const locomotion=has(/walk|run|sprint|jog|crawl|climb|swim|fly|soar|drive|ride|slide|roll|berlari|berjalan|melompat|merangkak|memanjat|berenang|terbang|meluncur|mengendarai/);
+  const rotation=has(/turn|twist|spin|rotate|orbit|pivot|berputar|memutar|berotasi|berpaling/);
+  const jump=has(/jump|leap|hop|bounce|melompat|meloncat|memantul/);
+  const direction=has(/left|right|upward|downward|forward|backward|toward|away|clockwise|counterclockwise|kiri|kanan|atas|bawah|maju|mundur|mendekat|menjauh|searah jarum|berlawanan arah/);
+  const limb=has(/arm|hand|leg|foot|head|shoulder|elbow|knee|tail|wing|lengan|tangan|kaki|kepala|bahu|siku|lutut|ekor|sayap/);
+  const contact=has(/push|pull|grab|hold|lift|carry|throw|catch|hit|strike|kick|press|touch|open|close|mendorong|menarik|meraih|memegang|mengangkat|membawa|melempar|menangkap|memukul|menendang|menekan|menyentuh|membuka|menutup/);
+  const pose=jump?'kompresi awal → tolakan → fase melayang → pendaratan dengan tekukan sendi dan settle':
+   locomotion?'pose kontak dan pose ayun bergantian; pusat massa bergerak mengikuti lintasan, hindari kaki meluncur':
+   rotation?'tetapkan pivot/poros terlebih dahulu; rotasikan tubuh atau objek terhadap poros itu tanpa drift pusat yang tidak diminta':
+   contact?'siapkan pose antisipasi → titik kontak → follow-through → recoil/settle sesuai aksi':
+   limb?'gerakkan sendi yang disebut secara berurutan; pertahankan hubungan anatomis dan hindari anggota tubuh terlepas':
+   'gunakan pose awal yang stabil, satu perubahan pose yang terbaca, lalu pose akhir/hold; jangan menambahkan gestur yang tidak disebut';
+  const path=direction?'ikuti arah yang eksplisit dalam brief dan pertahankan screen direction antar-frame':
+   locomotion?'gunakan lintasan halus dan konsisten; tentukan titik awal, jalur, dan titik akhir':
+   'jangan mengarang arah atau perpindahan posisi; pertahankan posisi dasar bila brief tidak menyebut gerak';
+  const pivot=rotation?'pivot berada pada pusat sendi/objek yang logis dan konsisten':
+   limb?'pivot pada sendi terkait (bahu, siku, pinggul, lutut, pergelangan)':
+   'jaga anchor/pivot subjek stabil selama transformasi';
+  const interaction=contact?'titik kontak harus terlihat; tangan/alat, target, dan gaya bergerak selaras; target baru bereaksi setelah kontak':
+   'jangan menciptakan kontak fisik jika tidak dinyatakan';
+  const environment=has(/dust|water|smoke|cloth|hair|grass|tree|rain|snow|debu|air|asap|kain|rambut|rumput|pohon|hujan|salju/)?
+   'reaksi lingkungan mengikuti gaya/arah gerak (riak, partikel, deformasi, atau sway) dengan jeda dan intensitas proporsional':
+   'lingkungan tetap stabil kecuali brief menyebut reaksi atau interaksi';
+  return {pose,path,pivot,interaction,environment,locomotion,rotation,jump,limb};
+ }
  function build(brief,duration){
   const beats=splitBeats(brief),seconds=Math.max(3,Math.min(60,Number(duration)||15));
   if(!beats.length)return 'Belum ada brief. Tulis subjek, aksi, lingkungan, dan perubahan adegan untuk melihat rencana.';
   const slot=seconds/beats.length,rows=[],relations=[];
   beats.forEach((line,index)=>{
-   const plan=classify(line,index,beats.length),start=(index*slot).toFixed(1),end=(index===beats.length-1?seconds:(index+1)*slot).toFixed(1),relation=inferInteraction(line);
+   const plan=classify(line,index,beats.length),start=(index*slot).toFixed(1),end=(index===beats.length-1?seconds:(index+1)*slot).toFixed(1),relation=inferInteraction(line),motion=inferMotion(line);
    rows.push((index+1)+'. '+start+'–'+end+'s | '+plan.action+'\n   BRIEF: '+line+'\n   SHOT: '+plan.shot+'\n   KAMERA: '+plan.camera+'\n   STAGING: '+plan.staging);
-   if(relation)relations.push((relations.length+1)+'. '+relation.type+' | AKTOR: '+relation.actor+' | AKSI: '+relation.verb+' | TARGET: '+relation.target+'\n   SEBAB / KONTAK: '+relation.cause+'\n   AKIBAT / RESPONS: '+relation.effect);
+   rows.push('   POSE & SIKLUS GERAK: '+motion.pose+'\\n   TRAJEKTORI: '+motion.path+'\\n   PIVOT / ANCHOR: '+motion.pivot+'\\n   KONTAK: '+motion.interaction+'\\n   RESPONS LINGKUNGAN: '+motion.environment);\n   if(relation)relations.push((relations.length+1)+'. '+relation.type+' | AKTOR: '+relation.actor+' | AKSI: '+relation.verb+' | TARGET: '+relation.target+'\n   SEBAB / KONTAK: '+relation.cause+'\n   AKIBAT / RESPONS: '+relation.effect);
   });
   const interactionSection=relations.length?['GRAF INTERAKSI OBJEK (hubungan yang terdeteksi):',...relations,'URUTAN KAUSAL: pemicu/niat → pendekatan → kontak/aksi → reaksi target → keadaan akhir. Jangan tampilkan akibat sebelum penyebabnya.']:['GRAF INTERAKSI OBJEK: belum ada relasi aktor-target yang cukup eksplisit. Jangan mengarang interaksi; pertahankan aksi sesuai brief.'];
   return ['RINGKASAN: '+beats.length+' beat naratif · '+seconds+' detik · shot dan gerak kamera dipilih dari aksi pada tiap beat',...rows,...interactionSection,'KUNCI KONTINUITAS: pertahankan identitas, siluet, bentuk, warna, skala, arah gerak, dan posisi relatif subjek utama antar-beat kecuali brief menyebut perubahan.','KEDALAMAN: pisahkan foreground, midground, dan background; gunakan parallax hanya jika ada layer yang benar-benar berbeda jarak. Jaga subjek utama tetap terbaca dan tidak tertutup dekorasi.','LOGIKA KAMERA: satu motivasi kamera per beat. Jangan menggabungkan pan, zoom, orbit, dan shake secara acak. Gerakan kamera harus membantu aksi atau mengarahkan perhatian.','PACING: sisakan waktu untuk antisipasi, aksi, dan settle/hold; jangan memotong momen penemuan atau impact.','TRANSISI: hubungkan beat dengan arah gerak, komposisi, atau match cut yang konsisten; pergantian lokasi harus didukung brief.','BATAS KREATIF: jangan menambahkan tokoh, properti, lokasi, atau peristiwa baru yang tidak tersirat dalam brief.'].join('\n');
@@ -66,7 +94,7 @@
   const update=()=>{output.textContent=build(prompt.value,duration.value);};
   prompt.addEventListener('input',update);duration.addEventListener('change',update);update();
  }
- const api={splitBeats,classify,inferInteraction,build,mountPreview};root.TROZAL_SCENE_INTELLIGENCE=api;
+ const api={splitBeats,classify,inferInteraction,inferMotion,build,mountPreview};root.TROZAL_SCENE_INTELLIGENCE=api;
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(typeof document!=='undefined'){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mountPreview,{once:true});else mountPreview();}
 })(typeof window!=='undefined'?window:globalThis);
