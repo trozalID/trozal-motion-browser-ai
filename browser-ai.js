@@ -137,6 +137,13 @@ function renderProceduralScene(plan, ratio, duration, brief, options = {}) {
   ];
   return svg.join("");
 }
+const TROZAL_IP_SAFETY_POLICY = [
+  "INTELLECTUAL PROPERTY / ORIGINALITY: Create original visual content only.",
+  "Do not depict, name, reproduce, trace, imitate, or closely evoke copyrighted characters, fictional universes, celebrity likenesses, signature costumes, protected artwork, proprietary designs, or recognizable third-party intellectual property.",
+  "Do not show real company/product logos, brand marks, trademarks, watermarks, signatures, or recognizable corporate identities. Do not invent a logo or wordmark; for branding/logo themes use abstract non-identifying geometry only, with no logo, brand name, or trademark.",
+  "Use original fictional subjects, generic non-branded objects, fresh compositions, and independently created visual language. If the brief requests protected IP, transform it into a distinct original alternative using only broad, unprotected mood or genre attributes; never copy distinctive protected elements.",
+  "Do not include copyrighted lyrics, quotations, source artwork, screenshots, or copied text."
+].join("\\n");
 async function planVisualScenesWithBrowserAI(brief, preferredCount = 4) {
   const text = String(brief || "").trim();
   if (!text) throw new Error("Prompt cerita masih kosong.");
@@ -145,7 +152,7 @@ async function planVisualScenesWithBrowserAI(brief, preferredCount = 4) {
     messages: [
       {
         role: "system",
-        content: 'Kamu adalah sutradara storyboard dan continuity supervisor animasi. Ubah brief menjadi 3-6 momen visual yang kronologis dan saling menyambung, bukan variasi prompt yang berulang. Kunci kontinuitas: pertahankan identitas dan ciri subjek utama, jumlah objek, kostum/bentuk, lokasi, properti, palet warna, arah cahaya, dan gaya visual pada semua scene; jangan mengganti karakter atau memindahkan lokasi tanpa alasan cerita. Susun alur establishing → perkembangan aksi → momen puncak → resolusi (sesuaikan jumlah scene). Setiap scene harus menyebut aksi yang terlihat, posisi/perubahan subjek, dan petunjuk lingkungan yang konsisten. Variasikan kamera hanya jika mendukung aksi; hindari orbit/pan yang tidak masuk akal. Balas HANYA JSON valid: {"scenes":[{"text":"deskripsi visual konkret 12-24 kata; sebut subjek dan aksi yang terlihat","duration":3,"camera":"parallax","transition":"crossfade","style":"cinematic"}]}. Enum camera: parallax, pan, orbit, follow, locked. Enum transition: crossfade, slide, zoom, glitch, cut. Enum style: cinematic, illustration, neon, papercut. Gunakan style yang sama di semua scene kecuali brief meminta perubahan. Jangan sertakan markdown.'
+        content: TROZAL_IP_SAFETY_POLICY + '\\n\\n' + 'Kamu adalah sutradara storyboard dan continuity supervisor animasi. Ubah brief menjadi 3-6 momen visual yang kronologis dan saling menyambung, bukan variasi prompt yang berulang. Kunci kontinuitas: pertahankan identitas dan ciri subjek utama, jumlah objek, kostum/bentuk, lokasi, properti, palet warna, arah cahaya, dan gaya visual pada semua scene; jangan mengganti karakter atau memindahkan lokasi tanpa alasan cerita. Susun alur establishing → perkembangan aksi → momen puncak → resolusi (sesuaikan jumlah scene). Setiap scene harus menyebut aksi yang terlihat, posisi/perubahan subjek, dan petunjuk lingkungan yang konsisten. Variasikan kamera hanya jika mendukung aksi; hindari orbit/pan yang tidak masuk akal. Balas HANYA JSON valid: {"scenes":[{"text":"deskripsi visual konkret 12-24 kata; sebut subjek dan aksi yang terlihat","duration":3,"camera":"parallax","transition":"crossfade","style":"cinematic"}]}. Enum camera: parallax, pan, orbit, follow, locked. Enum transition: crossfade, slide, zoom, glitch, cut. Enum style: cinematic, illustration, neon, papercut. Gunakan style yang sama di semua scene kecuali brief meminta perubahan. Jangan sertakan markdown.'
       },
       {
         role: "user",
@@ -194,7 +201,7 @@ async function generateScene() {
     setStatus("Browser AI menyusun arahan adegan ringkas…");
     const result = await activeEngine.chat.completions.create({
       messages: [
-        { role: "system", content: 'Return ONLY compact JSON: {"subject":"...","environment":"...","motion":"...","duration":12}. No markdown. Keep each text field under 12 words.' },
+        { role: "system", content: TROZAL_IP_SAFETY_POLICY + '\\n\\n' + 'Return ONLY compact JSON: {"subject":"...","environment":"...","motion":"...","duration":12}. No markdown. Keep each text field under 12 words.' },
         { role: "user", content: "Brief: " + brief + ". Style: " + style + ". Accent: " + accent + ". Camera: " + camera + ". Transition: " + transition + ". Duration: " + duration + " seconds. Describe the subject and environment faithfully." }
       ],
       temperature: 0.2,
