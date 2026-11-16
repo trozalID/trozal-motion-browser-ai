@@ -24,4 +24,17 @@ assert.equal(collision.type,'BENTURAN / TABRAKAN');
 assert.match(scene.build('The robot pushes the red crate. The crate slides across the floor.',10),/GRAF INTERAKSI OBJEK/);
 assert.match(scene.build('The robot pushes the red crate.',8),/URUTAN KAUSAL/);
 assert.match(scene.build('A quiet blue room.',8),/belum ada relasi aktor-target/);
-console.log('PASS: beat timing, shot planning, interaction graph, causal order, object continuity');
+
+const walk=scene.inferMotion('The character runs forward and turns left.');
+assert.equal(walk.locomotion,true);assert.match(walk.path,/arah yang eksplisit/);assert.match(walk.pose,/pose kontak/);
+const jump=scene.inferMotion('The child jumps over a small stream.');
+assert.equal(jump.jump,true);assert.match(jump.pose,/fase melayang/);
+const pivot=scene.inferMotion('The dancer spins clockwise on one foot.');
+assert.equal(pivot.rotation,true);assert.match(pivot.pivot,/pusat sendi/);
+const hand=scene.inferMotion('The mechanic lifts the metal lever with both hands.');
+assert.equal(hand.limb,true);assert.match(hand.interaction,/titik kontak/);
+const still=scene.inferMotion('A quiet blue room.');
+assert.match(still.path,/jangan mengarang arah/);assert.match(still.environment,/tetap stabil/);
+assert.match(scene.build('The character runs forward.',8),/POSE & SIKLUS GERAK/);
+assert.match(scene.build('The dancer spins clockwise.',8),/pivot/);
+\nconsole.log('PASS: beat timing, shot planning, interaction graph, causal order, object continuity');
