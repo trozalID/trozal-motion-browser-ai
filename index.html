@@ -5451,8 +5451,11 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
   const applyPreviewPixels=pixels=>{
    const max=Math.max(320,Math.round(window.innerHeight*.76));
    const px=Math.max(280,Math.min(max,Math.round(pixels)));
-   stageWrap.style.flex='0 0 '+px+'px';stageWrap.style.height=px+'px';stageWrap.style.minHeight='280px';
-   stageWrap.style.maxHeight='none';main.style.overflowY='auto';
+   stageWrap.style.setProperty('flex','0 0 '+px+'px','important');
+   stageWrap.style.setProperty('height',px+'px','important');
+   stageWrap.style.setProperty('min-height','280px','important');
+   stageWrap.style.setProperty('max-height','none','important');
+   main.style.overflowY='auto';
    resizeGrip.setAttribute('aria-valuenow',String(px));
    const slider=main.querySelector('#trozalCenterHeight'),output=main.querySelector('#trozalCenterHeightValue');
    if(slider){slider.value=String(Math.max(30,Math.min(76,Math.round(px/window.innerHeight*100))));}
@@ -5493,9 +5496,9 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
   const setHeight=v=>{
    const n=Math.max(30,Math.min(76,Number(v)||48));
    main.style.setProperty('--trozal-preview-height',n+'vh');
-   stageWrap.style.flex='0 0 '+n+'vh';
-   stageWrap.style.height=n+'vh';
-   stageWrap.style.minHeight='280px';
+   stageWrap.style.setProperty('flex','0 0 '+n+'vh','important');
+   stageWrap.style.setProperty('height',n+'vh','important');
+   stageWrap.style.setProperty('min-height','280px','important');
    main.style.overflowY='auto';
    bar.querySelector('#trozalCenterHeightValue').textContent=n+'vh';
   };
