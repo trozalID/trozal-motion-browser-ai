@@ -166,7 +166,7 @@ const { chromium } = require('playwright');
   vision503AttemptsRemaining = 2;
   const visionCallsBeforeRetry = requests.filter(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.inline_data)).length;
   await page.locator('#trozalGeminiAnalyzeBtn').click();
-  await page.waitForFunction(() => document.getElementById('trozalGeminiStatus')?.textContent.includes('Selesai'), { timeout: 30000 });
+  await page.waitForFunction(() => document.getElementById('trozalGeminiStatus')?.textContent.includes('Selesai'), null, { timeout: 30000 });
   const visionCallsAfterRetry = requests.filter(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.inline_data)).length;
   assert.equal(visionCallsAfterRetry - visionCallsBeforeRetry, 3, 'Two temporary 503 responses should be retried before success');
   assert.match(await page.locator('#trozalVisionStatus').innerText(), /Analisis cloud selesai/);
