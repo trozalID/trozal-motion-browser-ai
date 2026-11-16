@@ -18,6 +18,7 @@ on:
       - fix/browser-gemini-vision-contact-sheet-2026-11-16
       - feature/browser-scene-composer-scene-intelligence-2026-11-16
       - feature/browser-gemini-vision-smart-fallback-2026-11-16
+      - feature/browser-mp4-bitrate-original-policy-2026-11-16
       - fix/browser-pages-scene-intelligence-gemini-timeout-2026-11-16
   workflow_dispatch:
 
