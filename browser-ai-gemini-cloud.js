@@ -111,7 +111,8 @@
   });
   const body={
    contents:[{role:'user',parts}],
-   generationConfig:Object.assign({temperature:0.3,maxOutputTokens:8192},options.generationConfig||{}),\n   ...(options.systemInstruction?{systemInstruction:{parts:[{text:String(options.systemInstruction)}]}}:{})
+   generationConfig:Object.assign({temperature:0.3,maxOutputTokens:8192},options.generationConfig||{}),
+   ...(options.systemInstruction?{systemInstruction:{parts:[{text:String(options.systemInstruction)}]}}:{})
   };
   const payload=await requestJson(API+'/models/'+encodeURIComponent(modelId())+':generateContent',{
    method:'POST',
