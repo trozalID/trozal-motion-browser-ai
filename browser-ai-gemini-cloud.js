@@ -479,9 +479,9 @@
  function buildVisionFallbackMetadata(allowed){
   const brief=String($('visualMotionPrompt')?.value||'').trim();
   const theme=String($('svgAiPrompt')?.value||'').trim();
-  const sourceText=(brief+' '+theme).replace(/\\s+/g,' ').trim();
+  const sourceText=(brief+' '+theme).replace(/\s+/g,' ').trim();
   if(!sourceText)throw new Error('Fallback metadata membutuhkan brief atau detail tema. Bukti visual tetap tersedia; isi brief lalu coba lagi.');
-  const titleSeed=(brief||theme).split(/[.!?\\n]/)[0].trim();
+  const titleSeed=(brief||theme).split(/[.!?\n]/)[0].trim();
   const title=(titleSeed||'Motion graphics concept').slice(0,100);
   const description=(brief||theme).slice(0,360);
   const words=sourceText.toLowerCase().match(/[a-z0-9]{3,}/g)||[];
