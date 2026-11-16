@@ -140,6 +140,29 @@ const { chromium } = require('playwright');
   await page.locator('#trozalVisionImages').setInputFiles({
     name: 'evidence.png', mimeType: 'image/png', buffer: tinyPng
   });
+
+  // Metadata source buttons must never cross-route HTML Motion to the Scene AI handler.
+  await page.locator('#aiCodeTerminal').fill('');
+  await page.locator('#metadataFromHtmlMotionBtn').click();
+  await page.waitForFunction(() => document.getElementById('trozalMetadataSourceStatus')?.textContent.includes('Belum ada HTML Motion'));
+  assert.doesNotMatch(await page.locator('#trozalMetadataSourceStatus').innerText(), /Scene Composer/i,
+    'HTML Motion button must not invoke the Scene AI source check');
+
+  const htmlMotionSample = '<!doctype html><html><head><style>html,body{margin:0;width:100%;height:100%;background:#10243a} .orb{width:180px;height:180px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff,#54b9e8 35%,#16426e 75%);margin:120px auto;animation:float 3s ease-in-out infinite}@keyframes float{50%{transform:translateY(-20px)}}</style></head><body><div class="orb"></div></body></html>';
+  await page.locator('#aiCodeTerminal').fill(htmlMotionSample);
+  await page.locator('#metadataFromHtmlMotionBtn').click();
+  await page.waitForFunction(() => document.getElementById('trozalMetadataSourceStatus')?.textContent.includes('SELESAI'), null, { timeout: 30000 });
+  assert.match(await page.locator('#trozalMetadataSourceStatus').innerText(), /Metadata HTML Motion/i);
+  const loadedHtmlState = await page.evaluate(() => window.trozalGetHtmlMotionMetadataSource?.());
+  assert.equal(loadedHtmlState?.loaded, true, 'HTML Motion metadata action must load the HTML source into the primary Preview');
+
+  // The button also reuses an already active HTML Motion Preview when the Terminal is cleared.
+  await page.locator('#aiCodeTerminal').fill('');
+  await page.locator('#metadataFromHtmlMotionBtn').click();
+  await page.waitForFunction(() => document.getElementById('trozalMetadataSourceStatus')?.textContent.includes('SELESAI'), null, { timeout: 30000 });
+  assert.ok((await page.locator('#aiCodeTerminal').inputValue()).includes('<html'),
+    'Active HTML Motion source must be restored to Terminal before the second analysis');
+
   await page.locator('#trozalGeminiAnalyzeBtn').click();
   await page.waitForFunction(() => document.getElementById('metadataTitle')?.value.includes('Blue Glass Sphere'));
   assert.equal(await page.locator('#metadataDescription').inputValue(), 'A polished blue glass sphere floats against a dark gradient background with soft reflected light.');
