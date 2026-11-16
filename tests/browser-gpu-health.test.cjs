@@ -1,0 +1,11 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const source = fs.readFileSync('browser-gpu-health.js', 'utf8');
+assert.match(source, /navigator\.gpu/);
+assert.match(source, /webgl2/);
+assert.match(source, /VideoEncoder\.isConfigSupported/);
+assert.match(source, /Renderer frame saat ini/);
+assert.match(source, /Jalur ekspor lama tetap dipertahankan/);
+assert.doesNotMatch(source, /navigator\.gpu\.requestDevice/);
+console.log('Browser GPU capability monitor static checks passed.');
