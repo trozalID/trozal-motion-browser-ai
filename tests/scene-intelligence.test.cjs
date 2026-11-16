@@ -5,6 +5,10 @@ assert.deepEqual(scene.splitBeats('A sunrise opens. A train enters the valley. T
 assert.equal(scene.splitBeats('   ').length,0);
 const plan=scene.build('A diver descends into a blue cave. Bioluminescent fish circle the diver. The diver discovers a glowing arch.',15);
 assert.match(plan,/3 beat naratif/);assert.match(plan,/0.0–5.0s/);assert.match(plan,/5.0–10.0s/);assert.match(plan,/10.0–15.0s/);
-assert.match(plan,/KUNCI KONTINUITAS/);assert.match(plan,/jangan menambah peristiwa/);
+assert.match(plan,/PENEMUAN \/ REVEAL/);assert.match(plan,/CLOSE-UP lalu REVEAL/);assert.match(plan,/slow push-in/);
+assert.match(plan,/KUNCI KONTINUITAS/);assert.match(plan,/jangan menambahkan tokoh/);
+assert.match(scene.build('A train travels through the city. A vehicle crashes. The scene ends.',9),/PROFILE TRACKING/);
+assert.match(scene.build('A vehicle crashes into a barrier.',8),/DETAIL IMPACT/);
 assert.match(scene.build('One continuous scene',8),/1 beat naratif/);
-console.log('PASS: scene beat segmentation, timing, continuity guidance, and empty brief handling');
+assert.equal(scene.classify('The camera follows a runner.',0,1).action,'PERGERAKAN / PERJALANAN');
+console.log('PASS: beat segmentation, timing, action classification, shot selection, camera motivation, continuity');
