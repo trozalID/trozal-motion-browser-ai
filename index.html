@@ -715,6 +715,60 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
  .app > main.main{order:-1!important;width:100%!important;min-height:550px!important}
 }
 </style>
+<style id="trozal-classic-layout-mode">
+/* CLASSIC MODE — traditional docked editor. All panels stay mounted and reachable. */
+body[data-ui-layout="classic"]{--classic-bg:#202733;--classic-panel:#252f3d;--classic-edge:#526174;--classic-text:#e5eaf0;--classic-muted:#b7c2cf}
+body[data-ui-layout="classic"] .topbar{background:#202a37!important;border-bottom:2px solid #526174!important;box-shadow:none!important}
+body[data-ui-layout="classic"] .brand span{color:#d7b56d}
+body[data-ui-layout="classic"] .ui-layout-switcher{background:#151d28;border:1px solid #657487;border-radius:3px}
+body[data-ui-layout="classic"] .ui-layout-btn{border-radius:2px;background:#303c4c;color:#e2e8f0;box-shadow:none}
+body[data-ui-layout="classic"] .ui-layout-btn[aria-pressed="true"]{background:#d8b66e!important;color:#1e2630!important;border:1px solid #f0d79e!important;box-shadow:inset 0 -2px #9a7538!important}
+body[data-ui-layout="classic"] .sidebar,
+body[data-ui-layout="classic"] .sidebar.right{background:#202a37!important;border-color:#526174!important}
+body[data-ui-layout="classic"] .panel,
+body[data-ui-layout="classic"] .panel[class*="panel-tone-"]{background:#283443!important;background-image:none!important;border:1px solid #526174!important;border-left:3px solid #8294a8!important;border-radius:4px!important;box-shadow:none!important;transition:none!important}
+body[data-ui-layout="classic"] .panel h3{color:#e3c783!important;border-bottom:1px solid #526174;padding-bottom:6px;letter-spacing:.035em}
+body[data-ui-layout="classic"] .panel h3 b{color:#e3c783!important}
+body[data-ui-layout="classic"] label{color:#d6dee8}
+body[data-ui-layout="classic"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+body[data-ui-layout="classic"] select,
+body[data-ui-layout="classic"] textarea{border-radius:3px!important;border-color:#66778b!important;background:#17212d!important;color:#f0f4f8!important;box-shadow:none!important}
+body[data-ui-layout="classic"] button{border-radius:3px;box-shadow:none!important}
+body[data-ui-layout="classic"] .tabs .active{background:#d8b66e!important;color:#202733!important}
+body[data-ui-layout="classic"] .main{background:#171f2a!important}
+body[data-ui-layout="classic"] .stagewrap{background:#202a37!important}
+body[data-ui-layout="classic"] .stage{border:1px solid #64758a;box-shadow:none}
+body[data-ui-layout="classic"] .topcontrols{background:#222e3c!important;border-color:#526174!important;box-shadow:none!important}
+body[data-ui-layout="classic"] .help,
+body[data-ui-layout="classic"] .panel .help{color:#bdc8d5}
+@media(min-width:1051px){
+ body[data-ui-layout="classic"] .app{
+  grid-template-columns:minmax(245px,25vw) minmax(0,1fr)!important;
+  grid-template-rows:minmax(360px,1fr) minmax(210px,34vh)!important;
+  grid-template-areas:"left center" "left dock"!important;
+  gap:0!important;
+ }
+ body[data-ui-layout="classic"] .app>.sidebar:not(.right){grid-area:left!important;min-width:0;min-height:0;height:100%;overflow:auto;border-right:2px solid #526174!important}
+ body[data-ui-layout="classic"] .app>.main{grid-area:center!important;min-width:0;min-height:0;height:100%;overflow:auto}
+ body[data-ui-layout="classic"] .app>.sidebar.right{
+  grid-area:dock!important;display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(245px,1fr))!important;
+  grid-auto-rows:max-content;align-content:start;align-items:start;
+  gap:8px;padding:9px!important;min-width:0;min-height:0;height:100%;max-height:none;
+  overflow:auto;border-left:0!important;border-top:2px solid #526174!important;
+  border-right:0!important;
+ }
+ body[data-ui-layout="classic"] .app>.sidebar.right>.panel{min-width:0;width:auto;margin:0!important;align-self:start}
+}
+@media(max-width:1050px){
+ body[data-ui-layout="classic"] .panel,
+ body[data-ui-layout="classic"] .panel[class*="panel-tone-"]{padding:9px!important;margin-bottom:7px!important}
+}
+@media(max-width:720px){
+ body[data-ui-layout="classic"] .app{display:flex!important;flex-direction:column!important}
+ body[data-ui-layout="classic"] .app>.sidebar.right{display:block!important;height:auto!important;max-height:none!important;overflow:visible!important}
+}
+</style>
 </head>
 <body>
 <script>
