@@ -192,9 +192,13 @@
     try{await navigator.clipboard.writeText(buildScenePrompt());copy.textContent='Brief tersalin';}
     catch(_){const prompt=$('visualMotionPrompt');if(prompt){prompt.focus();prompt.select();copy.textContent='Brief dipilih · Ctrl+C';}}
    });
+   const retry=document.createElement('button');retry.type='button';retry.textContent='Coba ulang Gemini';
+   retry.addEventListener('click',()=>{if(!sceneController)generateScene();});
+   const check=document.createElement('button');check.type='button';check.textContent='Periksa koneksi & model';
+   check.addEventListener('click',()=>checkConnection());
    const manual=document.createElement('button');manual.type='button';manual.textContent='Buka HTML Terminal';
    manual.addEventListener('click',()=>{$('aiCodeTerminal')?.focus();$('aiCodeTerminal')?.scrollIntoView({behavior:'smooth',block:'center'});});
-   actions.append(copy,manual);panel.append(title,detail,actions);statusNode.insertAdjacentElement('afterend',panel);
+   actions.append(copy,retry,check,manual);panel.append(title,detail,actions);statusNode.insertAdjacentElement('afterend',panel);
   }
   $('trozalGeminiRecoveryDetail').textContent=String(message||'Gemini tidak tersedia. Brief tidak dihapus; editor, preview, dan render manual tetap bisa digunakan.');
   panel.style.display='block';
