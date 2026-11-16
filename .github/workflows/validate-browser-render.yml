@@ -16,6 +16,7 @@ on:
       - fix/browser-preview-height-runtime-diagnostics-2026-11-16
       - fix/browser-preview-drag-resizer-2026-11-16
       - fix/browser-gemini-vision-contact-sheet-2026-11-16
+      - feature/browser-scene-composer-scene-intelligence-2026-11-16
   workflow_dispatch:
 
 permissions:
@@ -112,6 +113,8 @@ jobs:
         run: node tests/theme-catalogue-coverage.browser.cjs
       - name: Test floating render monitor interactions in Chromium
         run: node tests/floating-render-monitor.browser.cjs
+      - name: Validate scene intelligence beat planning and continuity guidance
+        run: node tests/scene-intelligence.test.cjs
       - name: Test Gemini Cloud-only Scene Composer and Browser Vision
         run: node tests/browser-cloud-ai.browser.cjs
       - name: Verify Preview height slider and Runtime Diagnostics controls

@@ -1,0 +1,42 @@
+'use strict';
+// Stage: Character & Object Motion Intelligence regression coverage.
+const assert=require('node:assert/strict');
+const scene=require('../js/scene-intelligence.js');
+assert.deepEqual(scene.splitBeats('A sunrise opens. A train enters the valley. The camera follows.'),['A sunrise opens.','A train enters the valley.','The camera follows.']);
+assert.equal(scene.splitBeats('   ').length,0);
+const plan=scene.build('A diver descends into a blue cave. Bioluminescent fish circle the diver. The diver discovers a glowing arch.',15);
+assert.match(plan,/3 beat naratif/);assert.match(plan,/0.0–5.0s/);assert.match(plan,/5.0–10.0s/);assert.match(plan,/10.0–15.0s/);
+assert.match(plan,/PENEMUAN \/ REVEAL/);assert.match(plan,/CLOSE-UP lalu REVEAL/);assert.match(plan,/slow push-in/);
+assert.match(plan,/KUNCI KONTINUITAS/);assert.match(plan,/jangan menambahkan tokoh/);
+assert.match(scene.build('A train travels through the city. A vehicle crashes. The scene ends.',9),/PROFILE TRACKING/);
+assert.match(scene.build('A vehicle crashes into a barrier.',8),/DETAIL IMPACT/);
+assert.match(scene.build('One continuous scene',8),/1 beat naratif/);
+assert.equal(scene.classify('The camera follows a runner.',0,1).action,'PERGERAKAN / PERJALANAN');
+const push=scene.inferInteraction('The robot pushes the red crate.');
+assert.equal(push.type,'KONTAK / MANIPULASI');assert.equal(push.actor,'The robot');assert.equal(push.target,'red crate');
+const handoff=scene.inferInteraction('Mira gives the blue key to Rafi.');
+assert.equal(handoff.type,'TRANSFER / PEMBERIAN');assert.match(handoff.target,/blue key to Rafi/);
+const trigger=scene.inferInteraction('The engineer activates the control panel.');
+assert.equal(trigger.type,'PEMICU / AKTIVASI');
+const gaze=scene.inferInteraction('The child looks at the glowing door.');
+assert.equal(gaze.type,'TATAPAN / PERHATIAN');
+const collision=scene.inferInteraction('The car crashes into the barrier.');
+assert.equal(collision.type,'BENTURAN / TABRAKAN');
+assert.match(scene.build('The robot pushes the red crate. The crate slides across the floor.',10),/GRAF INTERAKSI OBJEK/);
+assert.match(scene.build('The robot pushes the red crate.',8),/URUTAN KAUSAL/);
+assert.match(scene.build('A quiet blue room.',8),/belum ada relasi aktor-target/);
+
+const walk=scene.inferMotion('The character runs forward and turns left.');
+assert.equal(walk.locomotion,true);assert.match(walk.path,/arah yang eksplisit/);assert.match(walk.pose,/pose kontak/);
+const jump=scene.inferMotion('The child jumps over a small stream.');
+assert.equal(jump.jump,true);assert.match(jump.pose,/fase melayang/);
+const pivot=scene.inferMotion('The dancer spins clockwise on one foot.');
+assert.equal(pivot.rotation,true);assert.match(pivot.pivot,/pusat sendi/);
+const hand=scene.inferMotion('The mechanic lifts the metal lever with both hands.');
+assert.equal(hand.limb,true);assert.match(hand.interaction,/titik kontak/);
+const still=scene.inferMotion('A quiet blue room.');
+assert.match(still.path,/jangan mengarang arah/);assert.match(still.environment,/tetap stabil/);
+assert.match(scene.build('The character runs forward.',8),/POSE & SIKLUS GERAK/);
+assert.match(scene.build('The dancer spins clockwise.',8),/pivot/);
+
+console.log('PASS: beat timing, shot planning, interaction graph, causal order, object continuity');
