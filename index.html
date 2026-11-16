@@ -1181,6 +1181,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
    <div class="render-preflight-grid" id="renderPreflightGrid"><div><b>Frame</b><span>—</span></div><div><b>Pixel-frame</b><span>—</span></div><div><b>Buffer / frame</b><span>—</span></div><div><b>Profil</b><span>—</span></div></div>
    <button type="button" id="renderPreflightCheck" class="primary" style="width:100%">Periksa kesiapan render</button>
    <div class="status" id="renderPreflightStatus">Atur durasi, FPS, dan resolusi lalu jalankan pemeriksaan.</div>
+   <div class="help" id="trozalHybridCanvasStatus" role="status">Hybrid Canvas: benchmark akan dijalankan saat render pertama.</div>
   </section>
   <section class="panel" id="renderSyncAdvisorPanel" aria-labelledby="renderSyncAdvisorTitle">
    <h3 id="renderSyncAdvisorTitle">◈ RENDER SYNC AND PERFORMANCE ADVISOR</h3>
@@ -3119,7 +3120,7 @@ ctx.beginPath();ctx.rect(-baseW/2,-baseH/2,baseW*motion.revealX,baseH*motion.rev
 const shapeState=shapeMaskState(),motionBlurPx=trozalMotionBlurPixels(elapsed,baseW,baseH);
 try{
  const p=Math.max(0,Math.min(1,elapsed/Math.max(.001,d))),ph=elapsed*2*Math.PI*+$('speed').value;
- const drawContained=(source,dx=0,dy=0,rot=0,layerScale=1)=>{const sw=source.naturalWidth||source.width||1,sh=source.naturalHeight||source.height||1,fit=Math.min(ow/sw,oh/sh)*layerScale;let dw=sw*fit,dh=sh*fit,drawable=source;if(window.__trozalGpuFrameAssistEnabled&&!htmlMotionSource&&window.TrozalGpuFramePipeline){const gw=Math.max(1,Math.round(dw)),gh=Math.max(1,Math.round(dh)),gpuFrame=window.TrozalGpuFramePipeline.render(source,gw,gh);if(gpuFrame){drawable=gpuFrame;dw=gw;dh=gh}}ctx.save();if(motionBlurPx>0)ctx.filter='blur('+motionBlurPx.toFixed(2)+'px)';ctx.translate(dx,dy);ctx.rotate(rot*Math.PI/180);if($('shadow').checked){ctx.shadowColor='rgba(0,0,0,.22)';ctx.shadowBlur=Math.max(1,w/(turboMode?360:180));ctx.shadowOffsetY=Math.max(1,h/180)}ctx.drawImage(drawable,-dw/2,-dh/2,dw,dh);ctx.restore()};
+ const drawContained=(source,dx=0,dy=0,rot=0,layerScale=1)=>{const sw=source.naturalWidth||source.width||1,sh=source.naturalHeight||source.height||1,fit=Math.min(ow/sw,oh/sh)*layerScale;let dw=sw*fit,dh=sh*fit,drawable=source;if(!htmlMotionSource&&window.__trozalGpuFrameAssistEnabled===true&&window.TrozalGpuFramePipeline){const gw=Math.max(1,Math.round(dw)),gh=Math.max(1,Math.round(dh)),gpuFrame=window.TrozalGpuFramePipeline.render(source,gw,gh);if(gpuFrame){drawable=gpuFrame;dw=gw;dh=gh}else{window.__trozalGpuFrameAssistEnabled=false}}ctx.save();if(motionBlurPx>0)ctx.filter='blur('+motionBlurPx.toFixed(2)+'px)';ctx.translate(dx,dy);ctx.rotate(rot*Math.PI/180);if($('shadow').checked){ctx.shadowColor='rgba(0,0,0,.22)';ctx.shadowBlur=Math.max(1,w/(turboMode?360:180));ctx.shadowOffsetY=Math.max(1,h/180)}ctx.drawImage(drawable,-dw/2,-dh/2,dw,dh);ctx.restore()};
  if(htmlMotionSource){const htmlCanvas=await captureHtmlMotionAt(elapsed);drawContained(htmlCanvas)}
  else if(svgPieceImgs.length){svgPieceImgs.forEach((pi,i)=>{
   const visible=document.getElementById('autoLayerVisible'+i)?.checked!==false,solo=soloLayerIndex<0||soloLayerIndex===i;if(!visible||!solo)return;
@@ -3188,7 +3189,7 @@ async function draw(){
   setRenderProgress(Math.round(frame/Math.max(1,totalFrames)*100),'Render gagal · file parsial dibuang','error');
  }
 }
-if(rec){rec.start(250);renderClockStart=performance.now()}draw()};
+if(window.TrozalHybridCanvasRenderer)await window.TrozalHybridCanvasRenderer.prepare();if(rec){rec.start(250);renderClockStart=performance.now()}draw()};
 function trozalRunRenderPreflight(){
  const [width,height]=String($('resolution')?.value||'1920x1080').split('x').map(Number),duration=Math.max(0,Number($('duration')?.value)||0),fps=Math.max(1,Number($('fps')?.value)||30),frames=Math.max(1,Math.round(duration*fps)),pixels=width*height*frames,buffer=width*height*4/1048576,ram=Number(navigator.deviceMemory||0);
  const profile=pixels>900000000?'Sangat berat':pixels>350000000?'Berat':pixels>120000000?'Menengah':'Ringan';
@@ -5430,6 +5431,7 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
 </script>
 <script src="./browser-ai-gemini-cloud.js" defer></script>
 <script src="./browser-gpu-frame-pipeline.js" defer></script>
+<script src="./hybrid-canvas-renderer.js" defer></script>
 <script src="./browser-gpu-health.js" defer></script>
 <style id="trozal-center-controls-style">
 #trozalCenterControls{position:sticky;top:0;z-index:80;display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:7px 10px;margin:0 0 8px;border:1px solid rgba(117,210,169,.35);border-radius:9px;background:rgba(13,30,25,.66);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#d9f5e4;font-size:10px}
