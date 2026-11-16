@@ -1,4 +1,5 @@
 name: Validate Browser AI Render Scheduler
+# Gemini Vision timeout resilience regression coverage
 
 on:
   push:
