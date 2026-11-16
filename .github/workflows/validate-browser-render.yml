@@ -10,6 +10,7 @@ on:
       - browser-ai-theme-intelligence-2026-11-15
       - fix/browser-ai-gemini-cloud-only-2026-11-15
       - feature/browser-gpu-adaptive-gemini-failover-2026-11-16
+      - feature/browser-gpu-renderer-gemini-resilience-2026-11-16
   workflow_dispatch:
 
 permissions:
