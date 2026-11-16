@@ -3,6 +3,18 @@ name: Build ProRes WASM and Deploy GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'browser-ai-gemini-cloud.js'
+      - 'hybrid-canvas-renderer.js'
+      - 'browser-gpu-health.js'
+      - 'browser-gpu-frame-pipeline.js'
+      - 'render-sync-advisor.js'
+      - 'js/scene-intelligence.js'
+      - '.github/workflows/build-prores-pages.yml'
+      - 'tests/ffmpeg-wasm-runtime-smoke.browser.cjs'
   workflow_dispatch:
 
 permissions:
@@ -17,8 +29,8 @@ concurrency:
 jobs:
   build-and-deploy:
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      name: ${{ github.event_name == 'pull_request' && 'pages-build-validation' || 'github-pages' }}
+      url: ${{ github.event_name == 'pull_request' && '' || steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     timeout-minutes: 240
     steps:
@@ -190,16 +202,45 @@ jobs:
           ls -lh site/vendor/prores-core site/vendor/ffmpeg | head -40
           du -sh site
 
+      - name: Install Playwright Chromium for real FFmpeg WASM smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Smoke test generated GitHub Pages assets and real MP4/ProRes encoding
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '<!doctype html><meta charset="utf-8"><title>TROZAL FFmpeg smoke</title>' > site/__ffmpeg_smoke__.html
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory site > /tmp/trozal-pages-smoke.log 2>&1 &
+          echo $! > /tmp/trozal-pages-smoke.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/__ffmpeg_smoke__.html >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/vendor/ffmpeg/index.js >/dev/null
+          curl -fsS http://127.0.0.1:4173/vendor/ffmpeg/worker.js >/dev/null
+          curl -fsS http://127.0.0.1:4173/vendor/prores-core/ffmpeg-core.js >/dev/null
+          curl -fsS http://127.0.0.1:4173/vendor/prores-core/ffmpeg-core.wasm >/dev/null
+          node tests/ffmpeg-wasm-runtime-smoke.browser.cjs
+          kill "$(cat /tmp/trozal-pages-smoke.pid)" || true
+          rm -f site/__ffmpeg_smoke__.html
+
       - name: Configure GitHub Pages
+        if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
         with:
           enablement: true
 
       - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
       - name: Deploy to GitHub Pages
+        if: github.event_name != 'pull_request'
         id: deployment
         uses: actions/deploy-pages@v4
