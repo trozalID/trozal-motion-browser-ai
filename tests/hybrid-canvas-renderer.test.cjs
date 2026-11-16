@@ -20,7 +20,7 @@ assert.match(html, /__trozalGpuFrameAssistEnabled===true/);
 assert.match(html, /id=["']stage["']/);
 assert.match(html, /class=["'][^"']*timeline[^"']*["']/);
 for (const id of ['renderBtn','cancelRenderBtn','format','resolution','proresMode','multiTrackEditor']) {
-  assert.equal((html.match(new RegExp('id=["']' + id + '["']','g')) || []).length, 1,
+  assert.equal((html.match(new RegExp("id=[\\\"']" + id + "[\\\"']", 'g')) || []).length, 1,
     'Existing editor/export control must remain exactly once: #' + id);
 }
 assert.match(html, /value=["']3840x2160["']/);
