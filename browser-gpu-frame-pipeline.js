@@ -5,7 +5,7 @@
   'use strict';
   if (window.TrozalGpuFramePipeline) return;
   let canvas = null, gl = null, program = null, buffer = null, textureLocation = null;
-  let failed = false, draws = 0, uploads = 0, activationReported = false;
+  let failed = false, draws = 0, uploads = 0, fallbacks = 0, activationReported = false;
   const cache = new WeakMap();
   const vertexSource = `#version 300 es
     in vec2 a_position; in vec2 a_texCoord; out vec2 v_texCoord;
@@ -76,6 +76,6 @@
   }
   window.TrozalGpuFramePipeline=Object.freeze({
     render,
-    getStats:()=>({available:!!gl&&!failed,failed,draws,uploads,mode:'GPU image texture scaling + Canvas2D scene composition'})
+    getStats:()=>({available:!!gl&&!failed,failed,draws,uploads,fallbacks,mode:'GPU image texture scaling + Canvas2D scene composition'})
   });
 })();
