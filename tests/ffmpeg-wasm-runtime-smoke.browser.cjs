@@ -12,7 +12,8 @@ const assert = require('node:assert/strict');
 
     const result = await page.evaluate(async () => {
       const logs = [];
-      const { FFmpeg } = await import('/vendor/ffmpeg/index.js');
+      const packageRoot = new URL('/vendor/ffmpeg/', location.origin).href;
+      const { FFmpeg } = await import(packageRoot + 'index.js');
       const ffmpeg = new FFmpeg();
       ffmpeg.on('log', ({ message }) => {
         if (message) logs.push(String(message));
