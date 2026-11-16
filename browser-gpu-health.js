@@ -110,7 +110,6 @@
       const status=document.getElementById('trozalGpuBenchmarkResult');
       if(status)status.textContent='Mengukur Canvas2D dan GPU Assist. Tunggu hingga selesai.';
       try{
-        window.__trozalGpuFrameAssistEnabled=true;
         const report=await window.TrozalGpuFramePipeline.benchmark();
         const lines=report.results.map(item=>item.resolution+': Canvas2D '+item.canvas2dMedianMs+' ms · GPU Assist '+item.gpuAssistMedianMs+' ms · '+(item.ratio<1?'GPU lebih cepat':'Canvas2D lebih cepat')+' ('+item.ratio+'×)');
         const current=document.getElementById('trozalGpuBenchmarkResult');
