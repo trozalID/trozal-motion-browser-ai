@@ -71,7 +71,9 @@
       if(!activationReported){activationReported=true;window.dispatchEvent(new CustomEvent('trozal:gpu-frame-assist-used',{detail:{draws,uploads}}));}
       return canvas;
     } catch(error) {
-      failed=true;console.warn('TROZAL GPU frame assist failed; falling back to Canvas2D.',error);return null;
+      fallbacks++;
+      if(gl){for(let i=0;i<4;i++){if(gl.getError()===gl.NO_ERROR)break;}}
+      console.warn('TROZAL GPU layer fallback to Canvas2D for this frame.',error);return null;
     }
   }
   window.TrozalGpuFramePipeline=Object.freeze({
