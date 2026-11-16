@@ -9,6 +9,7 @@ on:
       - browser-theme-concept-alignment-2026-11-15
       - browser-ai-theme-intelligence-2026-11-15
       - fix/browser-ai-gemini-cloud-only-2026-11-15
+      - feature/browser-gpu-adaptive-gemini-failover-2026-11-16
   workflow_dispatch:
 
 permissions:
@@ -42,6 +43,7 @@ jobs:
           set -euo pipefail
           node --check render-sync-advisor.js
           node --check browser-ai-gemini-cloud.js
+          node --check browser-gpu-health.js
           node <<'NODE'
           const fs = require('fs');
           const { spawnSync } = require('child_process');
@@ -69,12 +71,16 @@ jobs:
           if (!html.includes('pointer-events:none;user-select:none')) {
             throw new Error('Top render progress monitor is not pointer-independent');
           }
+          if (!html.includes('browser-gpu-health.js')) {
+            throw new Error('GPU health monitor script is not loaded');
+          }
           if (!html.includes('render-sync-advisor.js')) {
             throw new Error('Render Sync Advisor standalone script is not loaded');
           }
           console.log('Validated standalone Advisor syntax and render scheduler wiring.');
           NODE
           node tests/browser-render-scheduler.test.cjs
+          node tests/browser-gpu-health.test.cjs
       - name: Verify checked-out test revision
         run: |
           echo "GITHUB_SHA=$GITHUB_SHA"
