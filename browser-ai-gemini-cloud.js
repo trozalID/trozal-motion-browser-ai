@@ -26,24 +26,35 @@
  async function requestJson(url,options,timeoutMs){
   options=options||{};
   const externalSignal=options.signal||null;
-  const controller=new AbortController();
-  let timedOut=false;
-  const abortFromCaller=()=>controller.abort(externalSignal?.reason);
+  const totalBudgetMs=Math.max(1000,Math.min(Number(timeoutMs)||90000,120000));
+  const totalController=new AbortController();
+  let totalTimedOut=false;
+  const abortFromCaller=()=>totalController.abort(externalSignal?.reason);
   if(externalSignal?.aborted)abortFromCaller();
   else externalSignal?.addEventListener('abort',abortFromCaller,{once:true});
-  const timeoutId=setTimeout(()=>{timedOut=true;controller.abort(new Error('Gemini request timeout'));},Math.max(1000,timeoutMs||90000));
-  const signal=controller.signal;
-  const requestOptions=Object.assign({},options,{signal});
+  const totalTimer=setTimeout(()=>{totalTimedOut=true;totalController.abort(new Error('Gemini total request timeout'));},totalBudgetMs);
+  const totalSignal=totalController.signal;
+  const startedAt=Date.now();
   let lastError=null;
   const waitForRetry=(delay)=>new Promise((resolve,reject)=>{
-   if(signal.aborted){reject(new Error('Permintaan dibatalkan.'));return;}
-   const timerId=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve();},delay);
-   const abort=()=>{clearTimeout(timerId);signal.removeEventListener('abort',abort);reject(new Error('Permintaan dibatalkan.'));};
-   signal.addEventListener('abort',abort,{once:true});
+   if(totalSignal.aborted){reject(new Error('Permintaan dibatalkan.'));return;}
+   const timerId=setTimeout(()=>{totalSignal.removeEventListener('abort',abort);resolve();},Math.min(delay,Math.max(0,totalBudgetMs-(Date.now()-startedAt))));
+   const abort=()=>{clearTimeout(timerId);totalSignal.removeEventListener('abort',abort);reject(new Error('Permintaan dibatalkan.'));};
+   totalSignal.addEventListener('abort',abort,{once:true});
   });
   try{
-   if(signal.aborted)throw new Error('Permintaan dibatalkan.');
+   if(totalSignal.aborted)throw new Error('Permintaan dibatalkan.');
    for(let attempt=0;attempt<3;attempt++){
+    if(totalSignal.aborted)throw new Error('Permintaan dibatalkan.');
+    const remaining=totalBudgetMs-(Date.now()-startedAt);
+    if(remaining<=0){totalTimedOut=true;throw new Error('Gemini total request timeout');}
+    const attemptController=new AbortController();
+    let attemptTimedOut=false;
+    const abortAttempt=()=>attemptController.abort(totalSignal.reason);
+    totalSignal.addEventListener('abort',abortAttempt,{once:true});
+    const attemptTimeout=Math.min(30000,remaining);
+    const attemptTimer=setTimeout(()=>{attemptTimedOut=true;attemptController.abort(new Error('Gemini attempt timeout'));},attemptTimeout);
+    const requestOptions=Object.assign({},options,{signal:attemptController.signal});
     let retryAfterMs=0;
     try{
      const response=await fetch(url,requestOptions);
@@ -63,34 +74,41 @@
       lastError=error;
      }else return payload;
     }catch(error){
-     if(signal.aborted)throw error;
+     if(totalSignal.aborted)throw error;
      if(error?.status&&error.status!==408&&error.status!==425&&error.status<500)throw error;
      if(error?.status>=500||error?.status===408||error?.status===425){
       lastError=error;
+     }else if(attemptTimedOut){
+      lastError=new Error('Percobaan Gemini melewati batas '+Math.round(attemptTimeout/1000)+' detik.');
      }else if(error instanceof TypeError||/Failed to fetch|NetworkError|Load failed|network/i.test(error?.message||'')){
       lastError=error;
      }else throw error;
+    }finally{
+     clearTimeout(attemptTimer);
+     totalSignal.removeEventListener('abort',abortAttempt);
     }
+    if(totalSignal.aborted)throw new Error('Permintaan dibatalkan.');
     if(attempt<2){
-     // 503/5xx dari Gemini biasanya sementara. Beri jeda eksponensial yang
-     // cukup, dan hormati Retry-After hingga batas aman 30 detik.
      const backoff=2200*Math.pow(2,attempt);
      const jitter=Math.floor(Math.random()*Math.min(900,backoff*.15));
-     await waitForRetry(Math.min(30000,Math.max(backoff+jitter,retryAfterMs)));
+     const remainingAfterAttempt=totalBudgetMs-(Date.now()-startedAt);
+     if(remainingAfterAttempt<=0){totalTimedOut=true;throw new Error('Gemini total request timeout');}
+     await waitForRetry(Math.min(remainingAfterAttempt,30000,Math.max(backoff+jitter,retryAfterMs)));
     }
    }
    if(lastError?.status>=500)throw new Error('Gemini sedang mengalami gangguan server setelah 3 percobaan. Prompt dan editor tetap tersedia; coba lagi beberapa saat. Detail: '+lastError.message);
+   if(lastError&&/melewati batas/.test(lastError.message))throw new Error('Gemini tidak merespons dalam batas waktu tiap percobaan. Proses dihentikan setelah 3 percobaan atau batas waktu total. Brief dan pekerjaan editor tetap aman.');
    throw new Error('Koneksi Gemini gagal setelah 3 percobaan. Periksa internet lalu coba lagi. Pekerjaan editor tidak dihapus.');
   }catch(error){
    if(externalSignal?.aborted)throw new Error('Permintaan dibatalkan oleh pengguna. Brief dan pekerjaan editor tetap aman.');
-   if(timedOut||signal.aborted)throw new Error('Permintaan Gemini melewati batas waktu ('+Math.round((timeoutMs||90000)/1000)+' detik). Anda dapat mencoba lagi; brief dan pekerjaan editor tetap aman.');
+   if(totalTimedOut||totalSignal.aborted)throw new Error('Permintaan Gemini melewati batas waktu total ('+Math.round(totalBudgetMs/1000)+' detik). Anda dapat mencoba lagi; brief dan pekerjaan editor tetap aman.');
    if(error?.status===429)throw new Error('Kuota / rate limit Gemini tercapai (HTTP 429). Retry otomatis dihentikan agar tidak menghabiskan percobaan. Periksa Google AI Studio / billing, tunggu reset kuota, atau pilih model lain yang API key Anda izinkan. Brief tetap tersedia untuk mode manual.');
    if(/Failed to fetch|NetworkError|Load failed/i.test(error?.message||'')){
     throw new Error('Tidak dapat menghubungi Gemini Cloud setelah retry otomatis. Periksa koneksi internet, izin jaringan browser, dan status layanan Google. Brief tetap tersedia untuk mode manual.');
    }
    throw error;
   }finally{
-   clearTimeout(timeoutId);
+   clearTimeout(totalTimer);
    externalSignal?.removeEventListener('abort',abortFromCaller);
   }
  }
