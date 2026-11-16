@@ -114,7 +114,7 @@
         const report=await window.TrozalGpuFramePipeline.benchmark();
         const lines=report.results.map(item=>item.resolution+': Canvas2D '+item.canvas2dMedianMs+' ms · GPU Assist '+item.gpuAssistMedianMs+' ms · '+(item.ratio<1?'GPU lebih cepat':'Canvas2D lebih cepat')+' ('+item.ratio+'×)');
         const current=document.getElementById('trozalGpuBenchmarkResult');
-        if(current)current.textContent=lines.join('\\n')+'\\nCatatan: uji sintetis scaling gambar statis, bukan durasi ekspor video penuh.';
+        if(current)current.textContent=lines.join('\n')+'\nCatatan: uji sintetis scaling gambar statis, bukan durasi ekspor video penuh.';
         window.__trozalGpuBenchmarkLastResult=report;
       }catch(error){
         const current=document.getElementById('trozalGpuBenchmarkResult');
