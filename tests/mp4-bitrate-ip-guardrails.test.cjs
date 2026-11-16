@@ -24,5 +24,10 @@ const policy = [
 for (const phrase of policy) {
   assert.ok(html.toLowerCase().includes(phrase.toLowerCase()), 'Missing IP policy phrase: ' + phrase);
 }
-if (fs.existsSync('browser-ai.js')) {\n  const ai = fs.readFileSync('browser-ai.js', 'utf8');\n  assert.ok(ai.includes('TROZAL_IP_SAFETY_POLICY'), 'Browser AI scene engine must include IP policy');\n  assert.ok((ai.match(/TROZAL_IP_SAFETY_POLICY/g) || []).length >= 3, 'Policy must be attached to both storyboard and scene-generation system prompts');\n}\n
+if (fs.existsSync('browser-ai.js')) {
+  const ai = fs.readFileSync('browser-ai.js', 'utf8');
+  assert.ok(ai.includes('TROZAL_IP_SAFETY_POLICY'), 'Browser AI scene engine must include IP policy');
+  assert.ok((ai.match(/TROZAL_IP_SAFETY_POLICY/g) || []).length >= 3, 'Policy must be attached to both storyboard and scene-generation system prompts');
+}
+
 console.log('MP4 bitrate and IP prompt guardrail regression checks passed.');
