@@ -5,7 +5,8 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch({ headless: true, args: ['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
   const page = await browser.newPage();
   try {
-    await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });\n    await page.addScriptTag({ path: require.resolve('jszip/dist/jszip.min.js') });
+    await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
+    await page.addScriptTag({ path: require.resolve('jszip/dist/jszip.min.js') });
     const result = await page.evaluate(() => {
       const pipeline = window.TrozalGpuFramePipeline;
       if (!pipeline) throw new Error('GPU frame pipeline script was not loaded');
