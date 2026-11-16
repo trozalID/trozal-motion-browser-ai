@@ -8,6 +8,7 @@ const { chromium } = require('playwright');
   const pageErrors = [];
   const requests = [];
   let failNextSceneGeneration = false;
+  let vision503AttemptsRemaining = 0;
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
 
   await page.route('https://generativelanguage.googleapis.com/**', async route => {
@@ -50,6 +51,14 @@ const { chromium } = require('playwright');
       }
       const parts = body.contents?.[0]?.parts || [];
       const imageInput = parts.some(item => item.inline_data);
+      if (imageInput && vision503AttemptsRemaining > 0) {
+        vision503AttemptsRemaining -= 1;
+        return route.fulfill({
+          status: 503,
+          headers: { ...headers, 'retry-after': '0' },
+          body: JSON.stringify({ error: { message: 'temporary overload test' } })
+        });
+      }
       const output = imageInput
         ? JSON.stringify({
             title: 'Blue Glass Sphere with Soft Reflections',
@@ -136,6 +145,31 @@ const { chromium } = require('playwright');
   assert.equal(await page.locator('#metadataDescription').inputValue(), 'A polished blue glass sphere floats against a dark gradient background with soft reflected light.');
   assert.equal(await page.locator('#metadataKeywords').inputValue(), 'blue glass sphere, floating object, dark gradient, soft reflections, abstract background');
   assert.match(await page.locator('#trozalGeminiStatus').innerText(), /Selesai/);
+  await page.waitForFunction(() => document.getElementById('trozalGeminiContactSheetPanel')?.style.display === 'block');
+  const contactSheet = await page.locator('#trozalGeminiContactSheet').evaluate(node => {
+    const card = node.firstElementChild;
+    const image = card?.querySelector('img');
+    return {
+      columns: getComputedStyle(node).gridTemplateColumns,
+      holderWidth: node.clientWidth,
+      imageWidth: image?.getBoundingClientRect().width || 0,
+      cardWidth: card?.getBoundingClientRect().width || 0,
+      imageDisplay: image ? getComputedStyle(image).display : '',
+      imageMaxWidth: image ? getComputedStyle(image).maxWidth : ''
+    };
+  });
+  assert.ok(contactSheet.imageWidth <= contactSheet.cardWidth + 1, 'Visual evidence image must stay inside its own card: ' + JSON.stringify(contactSheet));
+  assert.equal(contactSheet.imageDisplay, 'block');
+  assert.equal(contactSheet.imageMaxWidth, '100%');
+
+  // A temporary Gemini 503 should retry with backoff and then complete normally.
+  vision503AttemptsRemaining = 2;
+  const visionCallsBeforeRetry = requests.filter(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.inline_data)).length;
+  await page.locator('#trozalGeminiAnalyzeBtn').click();
+  await page.waitForFunction(() => document.getElementById('trozalGeminiStatus')?.textContent.includes('Selesai'), null, { timeout: 30000 });
+  const visionCallsAfterRetry = requests.filter(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.inline_data)).length;
+  assert.equal(visionCallsAfterRetry - visionCallsBeforeRetry, 3, 'Two temporary 503 responses should be retried before success');
+  assert.match(await page.locator('#trozalVisionStatus').innerText(), /Analisis cloud selesai/);
 
   // A Gemini quota error must automatically fall back to a local, script-free SVG scene.
   failNextSceneGeneration = true;

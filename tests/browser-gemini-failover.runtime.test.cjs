@@ -21,7 +21,7 @@ const response = (status, payload = {}, headers = {}) => ({
 (async () => {
   let calls = 0;
   const retrySuccess = buildRequestJson(async () => ++calls === 1 ? response(503, { error: { message: 'temporary' } }) : response(200, { ok: true }));
-  assert.deepEqual(await retrySuccess('/test', {}, 3000), { ok: true });
+  assert.deepEqual(await retrySuccess('/test', {}, 10000), { ok: true });
   assert.equal(calls, 2, 'transient server error must retry and then succeed');
 
   calls = 0;
@@ -31,7 +31,7 @@ const response = (status, payload = {}, headers = {}) => ({
 
   calls = 0;
   const serverFailure = buildRequestJson(async () => { calls++; return response(503, { error: { message: 'offline' } }); });
-  await assert.rejects(() => serverFailure('/test', {}, 3000), /setelah 3 percobaan/i);
+  await assert.rejects(() => serverFailure('/test', {}, 12000), /setelah 3 percobaan/i);
   assert.equal(calls, 3, 'server failures must stop after three attempts');
 
   const caller = new AbortController();
