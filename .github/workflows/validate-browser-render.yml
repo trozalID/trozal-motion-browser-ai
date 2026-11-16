@@ -111,6 +111,8 @@ jobs:
         run: node tests/theme-catalogue-coverage.browser.cjs
       - name: Test floating render monitor interactions in Chromium
         run: node tests/floating-render-monitor.browser.cjs
+      - name: Validate scene intelligence beat planning and continuity guidance
+        run: node tests/scene-intelligence.test.cjs
       - name: Test Gemini Cloud-only Scene Composer and Browser Vision
         run: node tests/browser-cloud-ai.browser.cjs
       - name: Verify Preview height slider and Runtime Diagnostics controls
