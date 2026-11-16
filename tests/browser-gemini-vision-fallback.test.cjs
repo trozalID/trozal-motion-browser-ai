@@ -17,15 +17,15 @@ const functionSource = source.slice(start, end).trim();
 const fields = {
   visualMotionPrompt: { value: 'A red sports car drives through a neon city at night.' },
   svgAiPrompt: { value: 'Cinematic automotive commercial, reflections and light trails.' },
-  metadataCategory: { options: [{ text: 'Transportation' }, { text: 'Food' }, { text: 'Nature' }] }
+  metadataCategory: { options: [{ text: 'Automotive' }, { text: 'Food' }, { text: 'Nature' }] }
 };
 const builder = vm.runInNewContext('(' + functionSource.replace(/^function buildVisionFallbackMetadata/, 'function') + ')', {
   $: id => fields[id] || null,
   Set
 });
-const result = builder(['Transportation', 'Food', 'Nature']);
+const result = builder(['Automotive', 'Food', 'Nature']);
 assert.match(result.title, /red sports car/i);
-assert.equal(result.category, 'Transportation');
+assert.equal(result.category, 'Automotive');
 assert.ok(result.keywords.includes('automotive'));
 assert.deepEqual(Array.from(result.visible_objects), []);
 assert.match(result.visual_summary, /tidak tersedia/);
@@ -33,5 +33,5 @@ assert.match(result.confidence_notes, /Fallback tekstual saja/);
 
 fields.visualMotionPrompt.value = '';
 fields.svgAiPrompt.value = '';
-assert.throws(() => builder(['Transportation']), /membutuhkan brief/);
+assert.throws(() => builder(['Automotive']), /membutuhkan brief/);
 console.log('Gemini Vision Smart Template fallback regression checks passed.');
