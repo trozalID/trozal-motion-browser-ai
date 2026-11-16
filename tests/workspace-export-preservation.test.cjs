@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const html = fs.readFileSync('index.html', 'utf8');
 
 function countId(id) {
-  return (html.match(new RegExp('\\\\bid=["\\\\\\']' + id + '["\\\\\\']', 'g')) || []).length;
+  return (html.match(new RegExp('id="' + id + '"', 'g')) || []).length;
 }
 for (const id of ['stage', 'timelineTabs', 'multiTrackEditor', 'svgTerminalPanel', 'renderBtn', 'cancelRenderBtn', 'format', 'resolution', 'proresMode']) {
   assert.equal(countId(id), 1, 'Core workspace/export control must exist exactly once: #' + id);
