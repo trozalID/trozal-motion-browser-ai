@@ -125,6 +125,7 @@ const { chromium } = require('playwright');
   assert.equal(sceneRequest.body.contents[0].role, 'user');
   assert.match(sceneRequest.body.contents[0].parts[0].text, /perfume bottle/i);
   assert.match(sceneRequest.body.contents[0].parts[0].text, /Aspect ratio/);
+  assert.match(sceneRequest.body.systemInstruction?.parts?.[0]?.text || '', /motion-graphics art director/i, 'Gemini system instruction must be included in the API request');
 
   const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pKkAAAAASUVORK5CYII=', 'base64');
   await page.locator('#trozalVisionImages').setInputFiles({
