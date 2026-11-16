@@ -22,3 +22,9 @@ assert.match(html, /id=["']multiTrackEditor["']/, 'MultiTrack editor must remain
 assert.match(html, /id=["']svgTerminalPanel["']/, 'HTML terminal must remain in the document');
 assert.match(html, /id=["'](?:renderSyncAdvisorPanel|ollamaRenderAdvisor)["']/, 'Render performance advisor must remain in the document');
 console.log('Workspace and export preservation guard passed: center preview, timeline, MultiTrack, HTML terminal, performance advisor, 4K, MP4, ProRes 4444 Alpha and PNG Sequence.');
+
+assert.match(html, /data-ui-layout-choice=["']classic["']/, 'Classic layout switch must remain available');
+assert.match(html, /id=["']trozal-classic-layout-mode["']/, 'Classic mode must have a dedicated layout stylesheet');
+assert.match(html, /grid-template-areas:\s*["']left center["']\s*["']left dock["']/, 'Desktop Classic mode must dock the complete right control panel below the central workspace');
+assert.match(html, /\.app>\.sidebar\.right[\s\S]*?display:grid!important/, 'Classic mode must expose right-side controls in a docked panel grid');
+assert.match(html, /body\[data-ui-layout=["']classic["']\][\s\S]*?\.stagewrap/, 'Classic mode must visibly restyle the workspace and preview');
