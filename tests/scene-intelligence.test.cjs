@@ -38,4 +38,5 @@ const still=scene.inferMotion('A quiet blue room.');
 assert.match(still.path,/jangan mengarang arah/);assert.match(still.environment,/tetap stabil/);
 assert.match(scene.build('The character runs forward.',8),/POSE & SIKLUS GERAK/);
 assert.match(scene.build('The dancer spins clockwise.',8),/pivot/);
-\nconsole.log('PASS: beat timing, shot planning, interaction graph, causal order, object continuity');
+
+console.log('PASS: beat timing, shot planning, interaction graph, causal order, object continuity');
