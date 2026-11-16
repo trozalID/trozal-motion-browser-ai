@@ -151,6 +151,29 @@
   if(!parsed.querySelector('svg'))throw new Error('SVG tidak ditemukan setelah pemeriksaan HTML.');
   return code;
  }
+ function showSceneRecovery(message){
+  const statusNode=$('visualMotionAiStatus');
+  if(!statusNode)return;
+  let panel=$('trozalGeminiRecoveryPanel');
+  if(!panel){
+   panel=document.createElement('div');
+   panel.id='trozalGeminiRecoveryPanel';
+   panel.style.cssText='margin-top:8px;padding:10px;border:1px solid #9a7437;border-radius:8px;background:#2b2418;color:#f4dfb5;font-size:11px;';
+   const title=document.createElement('strong');title.textContent='GEMINI RECOVERY · MODE MANUAL';
+   const detail=document.createElement('div');detail.id='trozalGeminiRecoveryDetail';detail.style.margin='5px 0 8px';
+   const actions=document.createElement('div');actions.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
+   const copy=document.createElement('button');copy.type='button';copy.textContent='Salin brief lengkap';
+   copy.addEventListener('click',async()=>{
+    try{await navigator.clipboard.writeText(buildScenePrompt());copy.textContent='Brief tersalin';}
+    catch(_){const prompt=$('visualMotionPrompt');if(prompt){prompt.focus();prompt.select();copy.textContent='Brief dipilih · Ctrl+C';}}
+   });
+   const manual=document.createElement('button');manual.type='button';manual.textContent='Buka HTML Terminal';
+   manual.addEventListener('click',()=>{$('aiCodeTerminal')?.focus();$('aiCodeTerminal')?.scrollIntoView({behavior:'smooth',block:'center'});});
+   actions.append(copy,manual);panel.append(title,detail,actions);statusNode.insertAdjacentElement('afterend',panel);
+  }
+  $('trozalGeminiRecoveryDetail').textContent=String(message||'Gemini tidak tersedia. Brief tidak dihapus; editor, preview, dan render manual tetap bisa digunakan.');
+  panel.style.display='block';
+ }
  function buildScenePrompt(){
   const brief=String($('visualMotionPrompt')?.value||'').trim();
   if(!brief)throw new Error('Tulis brief visual terlebih dahulu.');
@@ -204,11 +227,13 @@
    $('visualMotionOutput').value=code;
    $('visualMotionPreview').srcdoc=code;
    if(typeof visualMotionPreviewSetRatio==='function')visualMotionPreviewSetRatio();
+   const recovery=$('trozalGeminiRecoveryPanel');if(recovery)recovery.style.display='none';
    status('visualMotionAiStatus','Selesai · HTML/SVG dibuat melalui Gemini Cloud ('+code.length.toLocaleString()+' karakter). Periksa Preview sebelum mengimpor.');
    status('visualMotionStatus','Gemini Cloud Scene Composer selesai. Klik “Kirim ke Preview TROZAL” untuk memasukkan hasil ke mesin motion utama.');
   }catch(error){
    const cancelled=controller.signal.aborted;
    status('visualMotionAiStatus',cancelled?'Generasi dibatalkan.':'Gagal membuat adegan: '+(error.message||String(error)),!cancelled);
+   if(!cancelled)showSceneRecovery(error.message||String(error));
   }finally{
    sceneController=null;
    if(button){button.disabled=false;button.textContent='✦ GENERATE ADEGAN DENGAN GEMINI';}
