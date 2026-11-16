@@ -83,7 +83,7 @@
   beats.forEach((line,index)=>{
    const plan=classify(line,index,beats.length),start=(index*slot).toFixed(1),end=(index===beats.length-1?seconds:(index+1)*slot).toFixed(1),relation=inferInteraction(line),motion=inferMotion(line);
    rows.push((index+1)+'. '+start+'–'+end+'s | '+plan.action+'\n   BRIEF: '+line+'\n   SHOT: '+plan.shot+'\n   KAMERA: '+plan.camera+'\n   STAGING: '+plan.staging);
-   rows.push('   POSE & SIKLUS GERAK: '+motion.pose+'\\n   TRAJEKTORI: '+motion.path+'\\n   PIVOT / ANCHOR: '+motion.pivot+'\\n   KONTAK: '+motion.interaction+'\\n   RESPONS LINGKUNGAN: '+motion.environment);
+   rows.push('   POSE & SIKLUS GERAK: '+motion.pose+'\n   TRAJEKTORI: '+motion.path+'\n   PIVOT / ANCHOR: '+motion.pivot+'\n   KONTAK: '+motion.interaction+'\n   RESPONS LINGKUNGAN: '+motion.environment);
    if(relation)relations.push((relations.length+1)+'. '+relation.type+' | AKTOR: '+relation.actor+' | AKSI: '+relation.verb+' | TARGET: '+relation.target+'\n   SEBAB / KONTAK: '+relation.cause+'\n   AKIBAT / RESPONS: '+relation.effect);
   });
   const interactionSection=relations.length?['GRAF INTERAKSI OBJEK (hubungan yang terdeteksi):',...relations,'URUTAN KAUSAL: pemicu/niat → pendekatan → kontak/aksi → reaksi target → keadaan akhir. Jangan tampilkan akibat sebelum penyebabnya.']:['GRAF INTERAKSI OBJEK: belum ada relasi aktor-target yang cukup eksplisit. Jangan mengarang interaksi; pertahankan aksi sesuai brief.'];
