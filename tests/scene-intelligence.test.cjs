@@ -1,0 +1,10 @@
+'use strict';
+const assert=require('node:assert/strict');
+const scene=require('../js/scene-intelligence.js');
+assert.deepEqual(scene.splitBeats('A sunrise opens. A train enters the valley. The camera follows.'),['A sunrise opens.','A train enters the valley.','The camera follows.']);
+assert.equal(scene.splitBeats('   ').length,0);
+const plan=scene.build('A diver descends into a blue cave. Bioluminescent fish circle the diver. The diver discovers a glowing arch.',15);
+assert.match(plan,/3 beat naratif/);assert.match(plan,/0.0–5.0s/);assert.match(plan,/5.0–10.0s/);assert.match(plan,/10.0–15.0s/);
+assert.match(plan,/KUNCI KONTINUITAS/);assert.match(plan,/jangan menambah peristiwa/);
+assert.match(scene.build('One continuous scene',8),/1 beat naratif/);
+console.log('PASS: scene beat segmentation, timing, continuity guidance, and empty brief handling');
