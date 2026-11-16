@@ -7,6 +7,7 @@ const { chromium } = require('playwright');
   const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
   const pageErrors = [];
   const requests = [];
+  let failNextSceneGeneration = false;
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
 
   await page.route('https://generativelanguage.googleapis.com/**', async route => {
@@ -43,6 +44,10 @@ const { chromium } = require('playwright');
     }
     if (/\/models\/[^/]+:generateContent$/.test(url.pathname)) {
       const body = request.postDataJSON();
+      if (failNextSceneGeneration && !body.contents?.[0]?.parts?.some(item => item.inline_data)) {
+        failNextSceneGeneration = false;
+        return route.fulfill({ status: 429, headers, body: JSON.stringify({ error: { message: 'test quota exceeded' } }) });
+      }
       const parts = body.contents?.[0]?.parts || [];
       const imageInput = parts.some(item => item.inline_data);
       const output = imageInput
@@ -71,6 +76,8 @@ const { chromium } = require('playwright');
   assert.equal(await page.locator('#browserGeminiCloudPanel').count(), 1, 'Gemini Cloud AI panel must exist');
   assert.equal(await page.locator('#trozalBrowserVisionCloudPanel').count(), 1, 'Gemini Cloud Vision panel must exist');
   assert.equal(await page.locator('#trozalGeminiApiKey').count(), 1, 'There must be exactly one shared API key field');
+  assert.equal(await page.locator('#trozalSceneEngine').inputValue(), 'auto', 'Scene Composer must default to Auto engine');
+  assert.equal(await page.locator('#trozalSceneAutoFallback').isChecked(), true, 'Automatic fallback must be enabled by default');
   // Regression guard: the central motion editor must never disappear when Cloud AI panels load.
   for (const selector of ['main.main', '.stagewrap', '#stage', '.timeline']) {
     const node = page.locator(selector).first();
@@ -118,6 +125,7 @@ const { chromium } = require('playwright');
   assert.equal(sceneRequest.body.contents[0].role, 'user');
   assert.match(sceneRequest.body.contents[0].parts[0].text, /perfume bottle/i);
   assert.match(sceneRequest.body.contents[0].parts[0].text, /Aspect ratio/);
+  assert.match(sceneRequest.body.systemInstruction?.parts?.[0]?.text || '', /motion-graphics art director/i, 'Gemini system instruction must be included in the API request');
 
   const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pKkAAAAASUVORK5CYII=', 'base64');
   await page.locator('#trozalVisionImages').setInputFiles({
@@ -128,6 +136,25 @@ const { chromium } = require('playwright');
   assert.equal(await page.locator('#metadataDescription').inputValue(), 'A polished blue glass sphere floats against a dark gradient background with soft reflected light.');
   assert.equal(await page.locator('#metadataKeywords').inputValue(), 'blue glass sphere, floating object, dark gradient, soft reflections, abstract background');
   assert.match(await page.locator('#trozalGeminiStatus').innerText(), /Selesai/);
+
+  // A Gemini quota error must automatically fall back to a local, script-free SVG scene.
+  failNextSceneGeneration = true;
+  await page.locator('#generateVisualMotionAiBtn').click();
+  await page.waitForFunction(() => document.getElementById('visualMotionOutput')?.value.includes('TROZAL Smart Scene'));
+  assert.match(await page.locator('#trozalSceneEngineStatus').innerText(), /Smart Template Composer mengambil alih/i);
+  assert.match(await page.locator('#visualMotionAiStatus').innerText(), /Fallback otomatis berhasil/i);
+  const fallbackCode = await page.locator('#visualMotionOutput').inputValue();
+  assert.match(fallbackCode, /id="main-subject"/);
+  assert.match(fallbackCode, /@keyframes/);
+  assert.doesNotMatch(fallbackCode, /<script\b|<iframe\\b/i);
+
+  // No API key should also use Auto fallback without making a network request.
+  await page.locator('#trozalGeminiApiKey').fill('');
+  const requestCountBeforeNoKey = requests.length;
+  await page.locator('#generateVisualMotionAiBtn').click();
+  await page.waitForFunction(() => document.getElementById('visualMotionOutput')?.value.includes('TROZAL Smart Scene'));
+  assert.match(await page.locator('#trozalSceneEngineStatus').innerText(), /API key belum tersedia/i);
+  assert.equal(requests.length, requestCountBeforeNoKey, 'No-key fallback must not call Gemini');
   const visionRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.inline_data));
   assert.ok(visionRequest, 'Vision should call Gemini generateContent with image input');
   assert.equal(visionRequest.body.contents[0].role, 'user');
