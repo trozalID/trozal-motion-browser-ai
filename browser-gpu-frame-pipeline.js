@@ -76,7 +76,7 @@
       console.warn('TROZAL GPU layer fallback to Canvas2D for this frame.',error);return null;
     }
   }
-  async function benchmark() {
+  async function benchmark(options={}) {
     if (!init()) throw new Error('WebGL2 tidak siap untuk benchmark');
     const sourceCanvas=document.createElement('canvas');
     sourceCanvas.width=512;sourceCanvas.height=512;
@@ -88,13 +88,14 @@
     const source=new Image();source.src=sourceCanvas.toDataURL('image/png');
     await new Promise((resolve,reject)=>{source.onload=resolve;source.onerror=()=>reject(new Error('Gagal membuat aset benchmark'));});
     const results=[];
-    for(const size of [{label:'1080p',width:1920,height:1080},{label:'4K',width:3840,height:2160}]){
+    const sizes=Array.isArray(options.sizes)&&options.sizes.length?options.sizes:[{label:'1080p',width:1920,height:1080},{label:'4K',width:3840,height:2160}];
+    const iterations=Math.max(2,Math.min(8,Number(options.iterations)||5));
+    for(const size of sizes){
       const baseline=document.createElement('canvas');baseline.width=size.width;baseline.height=size.height;
       const baselineContext=baseline.getContext('2d',{alpha:true});
       const composite=document.createElement('canvas');composite.width=size.width;composite.height=size.height;
       const compositeContext=composite.getContext('2d',{alpha:true});
       const canvasTimes=[],gpuTimes=[];
-      const iterations=5;
       for(let warm=0;warm<2;warm++){
         baselineContext.clearRect(0,0,size.width,size.height);baselineContext.drawImage(source,0,0,size.width,size.height);baselineContext.getImageData(0,0,1,1);
         const warmGpu=render(source,size.width,size.height);if(!warmGpu)throw new Error('GPU Assist gagal saat warm-up');
