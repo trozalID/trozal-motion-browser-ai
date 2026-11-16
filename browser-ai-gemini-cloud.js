@@ -254,7 +254,7 @@
     status('trozalSceneEngineStatus','Gemini Cloud menjadi mesin utama · fallback '+(fallback?'aktif':'nonaktif')+'.');
     status('visualMotionAiStatus','Mengirim brief ke Gemini Cloud ('+modelId()+')…');
     try{
-     const output=await createInteraction(buildScenePrompt(),{generationConfig:{temperature:0.35,maxOutputTokens:8192},signal:controller.signal,timeoutMs:120000});
+     const output=await createInteraction(buildScenePrompt(),{systemInstruction:'You are an expert motion-graphics art director and SVG animation engineer. Create a visually rich, concept-specific production-ready HTML/SVG animation. Follow all explicit visual requirements and preserve the entire requested concept. Return complete code only.',generationConfig:{temperature:0.35,maxOutputTokens:8192},signal:controller.signal,timeoutMs:120000});
      if(controller.signal.aborted)throw new Error('Permintaan dibatalkan.');
      applySceneCode(extractHtml(output),'Gemini Cloud');
      status('trozalSceneEngineStatus','Selesai · Gemini Cloud berhasil digunakan sebagai mesin utama.');
