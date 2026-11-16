@@ -90,8 +90,12 @@
     const results=[];
     const sizes=Array.isArray(options.sizes)&&options.sizes.length?options.sizes:[{label:'1080p',width:1920,height:1080},{label:'4K',width:3840,height:2160}];
     const iterations=Math.max(2,Math.min(8,Number(options.iterations)||5));
+    const maxTextureSize=gl.getParameter(gl.MAX_TEXTURE_SIZE)||0;
     for(const size of sizes){
-      const baseline=document.createElement('canvas');baseline.width=size.width;baseline.height=size.height;
+      const width=Math.floor(Number(size.width)),height=Math.floor(Number(size.height));
+      if(!Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1)throw new Error('Resolusi benchmark tidak valid.');
+      if(width>maxTextureSize||height>maxTextureSize)throw new Error((size.label||'Resolusi')+' tidak didukung GPU ini. Batas tekstur WebGL: '+maxTextureSize+' px; gunakan resolusi lebih rendah.');
+      const baseline=document.createElement('canvas');baseline.width=width;baseline.height=height;
       const baselineContext=baseline.getContext('2d',{alpha:true});
       const composite=document.createElement('canvas');composite.width=size.width;composite.height=size.height;
       const compositeContext=composite.getContext('2d',{alpha:true});
@@ -117,7 +121,7 @@
       baseline.width=baseline.height=1;composite.width=composite.height=1;
     }
     sourceCanvas.width=sourceCanvas.height=1;
-    return {benchmark:'synthetic static image scaling + final Canvas2D composite; median of 5 measured frames after 2 warm-ups; synchronous readback included',results};
+    return {benchmark:'synthetic static image scaling + final Canvas2D composite; median timing after 2 warm-ups; synchronous readback included',maxTextureSize,results};
   }
   window.TrozalGpuFramePipeline=Object.freeze({
     render,
