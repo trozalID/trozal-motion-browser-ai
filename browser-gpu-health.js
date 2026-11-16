@@ -81,7 +81,8 @@
       'Renderer frame saat ini: ' + state.renderer,
       enabled && stats?.available ? 'GPU frame: ' + stats.draws + ' draw · ' + stats.uploads + ' upload tekstur' : 'GPU assist belum aktif. Aktifkan hanya untuk menguji layer gambar statis.',
       'Catatan: mask, teks, efek, HTML Motion dan komposisi akhir tetap memakai Canvas2D. ProRes/MP4 encoding tetap melalui FFmpeg.wasm / MediaRecorder.'
-    ].join('\n');
+    ].join('
+');
     body.style.whiteSpace = 'pre-line';
     let assistButton = body.querySelector('#trozalGpuAssistToggle');
     if (!assistButton) {
@@ -100,7 +101,8 @@
     if (!state.webgl2) assistButton.title = 'WebGL2 tidak tersedia; ekspor akan memakai Canvas2D.';
   }
 
-  window.addEventListener('trozal:gpu-frame-assist-used', render);\n  window.trozalRefreshGpuHealth = detect;
+  window.addEventListener('trozal:gpu-frame-assist-used', render);
+  window.trozalRefreshGpuHealth = detect;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', detect, { once: true });
   else detect();
 })();
