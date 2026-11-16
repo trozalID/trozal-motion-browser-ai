@@ -4,12 +4,12 @@ Browser-based motion graphics editor with local FFmpeg.wasm processing. The inte
 
 ## What the workflow does
 
-On every push to `main` (or manual workflow dispatch), GitHub Actions:
+On relevant pull requests, GitHub Actions builds the same Pages asset bundle and runs browser-level MP4/ProRes smoke tests without publishing the site. On every push to `main` (or manual workflow dispatch), the same workflow also deploys the verified bundle to GitHub Pages:
 
 1. Copies the editor into a static Pages site.
 2. Vendors `@ffmpeg/ffmpeg@0.12.15` worker modules and JSZip into the same origin.
 3. Clones the FFmpeg.wasm v12.15 source.
-4. Adds explicit configure flags for `prores_ks`, PNG decode, image2 demuxing, MOV muxing, and the file protocol.
+4. Keeps the upstream `libx264` build and adds explicit configure flags for `prores_ks`, PNG decode, image2 demuxing, MOV muxing, and the file protocol.
 5. Builds the single-threaded WebAssembly core with Docker using `make prd`.
 6. Publishes the site and core to GitHub Pages.
 
@@ -17,9 +17,7 @@ On every push to `main` (or manual workflow dispatch), GitHub Actions:
 
 Open **Settings → Pages** and set **Build and deployment → Source** to **GitHub Actions**. Then push to `main` or run the workflow manually from **Actions → Build ProRes WASM and Deploy GitHub Pages**.
 
-Expected public site URL:
-
-`https://irzalbudiman2-cell.github.io/trozal-motion-web-prores/`
+The authoritative public URL is shown in this repository under **Settings → Pages** after GitHub Pages is enabled. This Browser AI repository must use its own Pages URL; do not use the separate Ollama repository's Pages URL.
 
 ## Export formats
 
@@ -28,7 +26,7 @@ Expected public site URL:
 - **MOV ProRes 4444 + Alpha** — custom local WASM core using `prores_ks`, profile 4, `yuva444p10le`, and `-alpha_bits 16`.
 - **PNG Sequence ZIP** — transparent PNG frames.
 
-The app only reports ProRes as successful after FFprobe verifies the codec, profile 4444, and alpha-capable pixel format. A successful workflow build alone is not proof that export works in every browser. Test first at 1280×720, 10 seconds, 30 FPS.
+The app only reports ProRes as successful after FFmpeg inspects the generated MOV and confirms the ProRes 4444 codec and alpha-capable `yuva444p10le` pixel format. A successful workflow build alone is not proof that export works in every browser. Test first at 1280×720, 10 seconds, 30 FPS.
 
 ## Resource notes
 

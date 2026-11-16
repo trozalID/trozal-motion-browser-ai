@@ -10,3 +10,7 @@ assert.match(source, /Aktifkan GPU Assist/);
 assert.doesNotMatch(source, /navigator\.gpu\.requestDevice/);
 assert.match(source, /ProRes\/MP4 encoding tetap melalui FFmpeg\.wasm \/ MediaRecorder/);
 console.log('Browser GPU capability monitor static checks passed.');
+
+assert.match(source, /CANVAS RENDER CONTROL/);
+assert.match(source, /ORIGINAL CONTENT & IP GUARDRAILS/);
+assert.match(source, /Gemini Cloud stays primary/);

@@ -144,6 +144,33 @@
     benchmarkResult.style.cssText='margin-top:6px;font-size:10px;white-space:pre-line;color:#c7d7e7;';
     benchmarkResult.textContent='Benchmark lokal belum dijalankan.';
     body.appendChild(benchmarkResult);
+    // Browser-only UI: Gemini Cloud stays primary; no Ollama or Bridge dependency.
+    if (!body.querySelector('#trozalCanvasControlUi')) {
+      const canvasUi=document.createElement('section');
+      canvasUi.id='trozalCanvasControlUi';
+      canvasUi.style.cssText='margin-top:10px;padding:9px;border:1px solid #397da2;border-radius:9px;background:linear-gradient(145deg,#12344a,#0b2232);color:#e6f5ff;';
+      canvasUi.innerHTML='<strong style="display:block;color:#bceaff;font-size:11px;letter-spacing:.05em">◈ CANVAS RENDER CONTROL</strong><div id="trozalCanvasUiMode" style="margin-top:7px;font-weight:700">Memeriksa renderer…</div><div id="trozalCanvasUiReason" style="margin-top:4px;font-size:10px;color:#b9d8e9">Hybrid Canvas otomatis · Balanced</div><div id="trozalCanvasUiBenchmark" style="margin-top:6px;font-size:10px;white-space:pre-line;color:#d5e9f4">Benchmark belum dijalankan.</div><button type="button" id="trozalCanvasUiRefresh" style="display:block;width:100%;margin-top:7px;padding:6px">↻ Perbarui status perangkat</button><button type="button" id="trozalCanvasUiSpeed" style="display:block;width:100%;margin-top:5px;padding:6px">⚡ Buka kecepatan render</button><p style="font-size:9px;color:#a9c9dc;margin:6px 0 0">GPU Assist hanya dipakai bila benchmark memenuhi ambang peningkatan; Canvas2D tetap fallback aman. Kontrol ini tidak mengubah resolusi/FPS.</p>';
+      body.appendChild(canvasUi);
+      const ipUi=document.createElement('section');
+      ipUi.id='trozalIpGuardrailUi';
+      ipUi.style.cssText='margin-top:8px;padding:9px;border:1px solid #8061ae;border-radius:9px;background:linear-gradient(145deg,#30234b,#1a1530);color:#f0eaff;';
+      ipUi.innerHTML='<strong style="display:block;color:#e4d2ff;font-size:11px;letter-spacing:.04em">◇ ORIGINAL CONTENT & IP GUARDRAILS</strong><div style="margin-top:7px;padding:7px;border:1px solid #7153a2;border-radius:7px;background:#1c1530;color:#d9c8ff;font-size:10px;font-weight:700">● PERLINDUNGAN PROMPT AKTIF · OTOMATIS</div><ul style="padding-left:17px;font-size:10px;line-height:1.5;color:#e0d6f2"><li>Hindari karakter, semesta fiksi, karya, dan desain pihak ketiga yang dilindungi.</li><li>Jangan tampilkan logo, merek dagang, watermark, tanda tangan, atau identitas perusahaan.</li><li>Gunakan subjek fiktif, objek generik tanpa merek, dan komposisi orisinal.</li><li>Jangan menyalin lirik, kutipan, screenshot, atau materi visual berhak cipta.</li></ul><p style="font-size:9px;color:#bdaed5;margin:5px 0 0">Pengaman diterapkan pada instruksi Gemini Cloud dan prompt adegan. Ini bukan jaminan hukum atau filter sempurna pada setiap keluaran.</p>';
+      body.appendChild(ipUi);
+      body.querySelector('#trozalCanvasUiRefresh').addEventListener('click',async()=>{
+        const button=body.querySelector('#trozalCanvasUiRefresh');button.disabled=true;
+        try{await detect();}finally{button.disabled=false;}
+      });
+      body.querySelector('#trozalCanvasUiSpeed').addEventListener('click',()=>{
+        const speed=document.getElementById('renderSpeedMode')||document.querySelector('[name="renderSpeedMode"]');
+        if(speed){speed.scrollIntoView({behavior:'smooth',block:'center'});speed.focus?.({preventScroll:true});}
+        else {const render=document.querySelector('#renderSettingsPanel,#renderPanel,[data-panel*="render"]');render?.scrollIntoView({behavior:'smooth',block:'center'});}
+      });
+    }
+    const hybrid=window.TrozalHybridCanvasRenderer?.getStatus?.()||window.__trozalHybridCanvasStatus||{};
+    const mode=body.querySelector('#trozalCanvasUiMode'),reason=body.querySelector('#trozalCanvasUiReason'),bench=body.querySelector('#trozalCanvasUiBenchmark');
+    if(mode)mode.textContent=hybrid.ready?(hybrid.strategy==='gpu-assist'?'GPU Assist · benchmark menang':'Canvas2D · fallback aktif'):'Hybrid Canvas · otomatis / menunggu benchmark';
+    if(reason)reason.textContent=hybrid.reason||'Strategi Balanced; keputusan berdasarkan benchmark lokal.';
+    if(bench){const rows=window.__trozalGpuBenchmarkLastResult?.results||hybrid.benchmark?.results||[];bench.textContent=rows.length?rows.map(item=>item.resolution+': Canvas2D '+item.canvas2dMedianMs+' ms · GPU Assist '+item.gpuAssistMedianMs+' ms · '+item.winner).join('\\n'):'Hasil benchmark 720p/1080p tampil setelah renderer mengukurnya.';}
   }
 
   window.addEventListener('trozal:gpu-frame-assist-used', render);
