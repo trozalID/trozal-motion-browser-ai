@@ -6,6 +6,6 @@ assert.match(source, /navigator\.gpu/);
 assert.match(source, /webgl2/);
 assert.match(source, /VideoEncoder\.isConfigSupported/);
 assert.match(source, /Renderer frame saat ini/);
-assert.match(source, /Jalur ekspor lama tetap dipertahankan/);
-assert.doesNotMatch(source, /navigator\.gpu\.requestDevice/);
+assert.match(source, /Canvas2D final composition/);\nassert.match(source, /Aktifkan GPU Assist/);
+assert.doesNotMatch(source, /navigator\.gpu\.requestDevice/);\nassert.match(source, /ProRes\\/MP4 encoding tetap melalui FFmpeg\\.wasm \\/ MediaRecorder/);
 console.log('Browser GPU capability monitor static checks passed.');
