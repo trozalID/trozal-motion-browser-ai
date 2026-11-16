@@ -195,7 +195,9 @@ jobs:
             await page.locator('#cameraPathRotation').fill('20');
             await page.locator('#cameraPathAddKey').click();
             await page.evaluate(() => { playhead = 5; renderAt(5); });
-            const keyTimes = await page.evaluate(() => getProject().cameraPathKeyframes.map(k => k.t));\n            assert.deepEqual(keyTimes, [0, 10], 'Camera keys should be stored at start and end times');\n            const transform = await page.locator('#object').evaluate(el => el.style.transform);
+            const keyTimes = await page.evaluate(() => getProject().cameraPathKeyframes.map(k => k.t));
+            assert.deepEqual(keyTimes, [0, 10], 'Camera keys should be stored at start and end times');
+            const transform = await page.locator('#object').evaluate(el => el.style.transform);
             assert.match(transform, /translate\(10%, 5%\)/, 'Camera X/Y should interpolate at midpoint');
             assert.match(transform, /rotate\(10deg\)/, 'Camera rotation should interpolate at midpoint');
             assert.match(transform, /scale\(1\.25\)/, 'Camera zoom should interpolate at midpoint');
