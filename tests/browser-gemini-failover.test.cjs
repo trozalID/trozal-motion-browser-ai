@@ -22,3 +22,10 @@ assert.match(source, /Buka HTML Terminal/, 'manual recovery must link to HTML Te
 assert.match(source, /Coba ulang Gemini/, 'manual recovery must allow a user-triggered retry');
 assert.match(source, /Periksa koneksi & model/, 'manual recovery must expose model connectivity check');
 console.log('Gemini failover policy and recovery static regression checks passed.');
+
+assert.match(source,/resizeDataUrl\(dataUrl,maxSide,quality\)/,'Vision resize must support an explicit JPEG quality');
+assert.match(source,/resizeDataUrl\(await fileAsDataUrl\(file\),960,0\.74\)/,'Uploaded evidence must be resized to 960px at balanced JPEG quality');
+assert.match(source,/resizeDataUrl\(canvas\.toDataURL\('image\/jpeg',0\.82\),960,0\.74\)/,'Preview evidence must use the balanced 960px profile');
+assert.match(source,/payloadBytes\(\)>3\.5\*1024\*1024/,'Large combined evidence payload must trigger compact fallback');
+assert.match(source,/resizeDataUrl\('data:'\+image\.mime_type\+';base64,'\+image\.data,768,0\.68\)/,'Large evidence must be recompressed to compact 768px images');
+assert.match(source,/Gemini belum merespons dalam/,'Timeout message must explain slow model/network and safe retry');
