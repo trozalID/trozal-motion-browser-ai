@@ -116,6 +116,8 @@ jobs:
         run: node tests/floating-render-monitor.browser.cjs
       - name: Validate scene intelligence beat planning and continuity guidance
         run: node tests/scene-intelligence.test.cjs
+      - name: Verify Scene Intelligence source asset and API
+        run: node tests/scene-intelligence-loading.test.cjs
       - name: Verify Scene Intelligence loads in Chromium workspace
         run: node tests/scene-intelligence-loading.browser.cjs
       - name: Test Gemini Cloud-only Scene Composer and Browser Vision
