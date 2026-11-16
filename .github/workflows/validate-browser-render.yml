@@ -188,13 +188,13 @@ jobs:
             await page.locator('#cameraPathZoom').fill('100');
             await page.locator('#cameraPathRotation').fill('0');
             await page.locator('#cameraPathAddKey').click();
-            await page.locator('#scrubber').evaluate(el => { el.value='1000'; el.dispatchEvent(new Event('input',{bubbles:true})); });
+            await page.evaluate(() => mtSetPlayhead(10));
             await page.locator('#cameraPathX').fill('20');
             await page.locator('#cameraPathY').fill('10');
             await page.locator('#cameraPathZoom').fill('150');
             await page.locator('#cameraPathRotation').fill('20');
             await page.locator('#cameraPathAddKey').click();
-            await page.locator('#scrubber').evaluate(el => { el.value='500'; el.dispatchEvent(new Event('input',{bubbles:true})); });
+            await page.evaluate(() => mtSetPlayhead(5));
             const transform = await page.locator('#object').evaluate(el => el.style.transform);
             assert.match(transform, /translate\(10%, 5%\)/, 'Camera X/Y should interpolate at midpoint');
             assert.match(transform, /rotate\(10deg\)/, 'Camera rotation should interpolate at midpoint');
