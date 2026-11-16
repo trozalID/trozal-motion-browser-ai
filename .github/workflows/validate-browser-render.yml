@@ -20,6 +20,7 @@ on:
       - fix/browser-pages-scene-intelligence-gemini-timeout-2026-11-16
       - feature/browser-hybrid-canvas-renderer-2026-11-16
       - feature/mp4-bitrate-ip-guardrails-2026-11-16
+      - integration/browser-bitrate-ip-hybrid-canvas-2026-11-16
   pull_request:
     branches: [main]
   workflow_dispatch:
