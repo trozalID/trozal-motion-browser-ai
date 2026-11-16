@@ -85,9 +85,9 @@ jobs:
           node tests/browser-gpu-health.test.cjs
           node tests/browser-gemini-failover.test.cjs
           node tests/browser-gemini-failover.runtime.test.cjs
-      - name: Verify checked-out test revision      - name: Guard central workspace and export capabilities
+      - name: Guard central workspace and export capabilities
         run: node tests/workspace-export-preservation.test.cjs
-
+      - name: Verify checked-out test revision
         run: |
           echo "GITHUB_SHA=$GITHUB_SHA"
           git rev-parse HEAD
