@@ -17,5 +17,5 @@ assert.match(request, /Retry-After/, 'server retry hints must be honored');
 assert.match(request, /HTTP 429[\s\S]*Retry otomatis dihentikan/, 'quota error must explain why retries stop');
 assert.match(source, /function showSceneRecovery\(/, 'manual recovery UI must exist');
 assert.match(source, /Salin brief lengkap/, 'manual recovery must preserve and expose the complete brief');
-assert.match(source, /Buka HTML Terminal/, 'manual recovery must link to HTML Terminal');
+assert.match(source, /Buka HTML Terminal/, 'manual recovery must link to HTML Terminal');\nassert.match(source, /Coba ulang Gemini/, 'manual recovery must allow a user-triggered retry');\nassert.match(source, /Periksa koneksi & model/, 'manual recovery must expose model connectivity check');
 console.log('Gemini failover policy and recovery static regression checks passed.');
