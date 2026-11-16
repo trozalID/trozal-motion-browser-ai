@@ -65,6 +65,11 @@
     }
     const body = panel.querySelector('#trozalGpuHealthBody');
     const yes = v => v ? 'Tersedia' : 'Tidak tersedia';
+    const enabled = window.__trozalGpuFrameAssistEnabled === true;
+    const stats = window.TrozalGpuFramePipeline?.getStats?.();
+    state.renderer = enabled && stats?.available
+      ? 'GPU-assisted static image scaling + Canvas2D final composition'
+      : 'Canvas2D (default / fallback)';
     body.textContent = [
       'WebGPU: ' + yes(state.webgpu),
       'WebGL 2: ' + yes(state.webgl2) + ' · WebGL: ' + yes(state.webgl),
@@ -74,9 +79,25 @@
       'RAM browser: ' + (state.memory ? state.memory + ' GB (estimasi API)' : 'Tidak dilaporkan'),
       'CPU threads: ' + safeText(state.cores),
       'Renderer frame saat ini: ' + state.renderer,
-      'Catatan: deteksi kemampuan bukan bukti bahwa ekspor ProRes/PNG memakai GPU. Jalur ekspor lama tetap dipertahankan.'
-    ].join('\n');
+      enabled && stats?.available ? 'GPU frame: ' + stats.draws + ' draw · ' + stats.uploads + ' upload tekstur' : 'GPU assist belum aktif. Aktifkan hanya untuk menguji layer gambar statis.',
+      'Catatan: mask, teks, efek, HTML Motion dan komposisi akhir tetap memakai Canvas2D. ProRes/MP4 encoding tetap melalui FFmpeg.wasm / MediaRecorder.'
+    ].join('\\n');
     body.style.whiteSpace = 'pre-line';
+    let assistButton = body.querySelector('#trozalGpuAssistToggle');
+    if (!assistButton) {
+      assistButton = document.createElement('button');
+      assistButton.id = 'trozalGpuAssistToggle';
+      assistButton.type = 'button';
+      assistButton.style.cssText = 'display:block;margin-top:8px;width:100%;padding:7px;border:1px solid #5d8bb4;border-radius:6px;background:#1d3850;color:#e5f4ff;cursor:pointer;';
+      assistButton.addEventListener('click', () => {
+        window.__trozalGpuFrameAssistEnabled = window.__trozalGpuFrameAssistEnabled !== true;
+        render();
+      });
+      body.appendChild(assistButton);
+    }
+    assistButton.textContent = enabled ? 'Matikan GPU Assist' : 'Aktifkan GPU Assist · Eksperimental';
+    assistButton.disabled = !state.webgl2 || !window.TrozalGpuFramePipeline;
+    if (!state.webgl2) assistButton.title = 'WebGL2 tidak tersedia; ekspor akan memakai Canvas2D.';
   }
 
   window.trozalRefreshGpuHealth = detect;
