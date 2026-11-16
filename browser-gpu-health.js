@@ -65,6 +65,11 @@
     }
     const body = panel.querySelector('#trozalGpuHealthBody');
     const yes = v => v ? 'Tersedia' : 'Tidak tersedia';
+    const enabled = window.__trozalGpuFrameAssistEnabled === true;
+    const stats = window.TrozalGpuFramePipeline?.getStats?.();
+    state.renderer = enabled && stats?.available
+      ? 'GPU-assisted static image scaling + Canvas2D final composition'
+      : 'Canvas2D (default / fallback)';
     body.textContent = [
       'WebGPU: ' + yes(state.webgpu),
       'WebGL 2: ' + yes(state.webgl2) + ' · WebGL: ' + yes(state.webgl),
@@ -74,11 +79,59 @@
       'RAM browser: ' + (state.memory ? state.memory + ' GB (estimasi API)' : 'Tidak dilaporkan'),
       'CPU threads: ' + safeText(state.cores),
       'Renderer frame saat ini: ' + state.renderer,
-      'Catatan: deteksi kemampuan bukan bukti bahwa ekspor ProRes/PNG memakai GPU. Jalur ekspor lama tetap dipertahankan.'
+      enabled && stats?.available ? 'GPU frame: ' + stats.draws + ' draw · ' + stats.uploads + ' upload tekstur · ' + stats.fallbacks + ' fallback' : 'GPU assist belum aktif. Aktifkan hanya untuk menguji layer gambar statis.',
+      'Catatan: mask, teks, efek, HTML Motion dan komposisi akhir tetap memakai Canvas2D. ProRes/MP4 encoding tetap melalui FFmpeg.wasm / MediaRecorder.'
     ].join('\n');
     body.style.whiteSpace = 'pre-line';
+    let assistButton = body.querySelector('#trozalGpuAssistToggle');
+    if (!assistButton) {
+      assistButton = document.createElement('button');
+      assistButton.id = 'trozalGpuAssistToggle';
+      assistButton.type = 'button';
+      assistButton.style.cssText = 'display:block;margin-top:8px;width:100%;padding:7px;border:1px solid #5d8bb4;border-radius:6px;background:#1d3850;color:#e5f4ff;cursor:pointer;';
+      assistButton.addEventListener('click', () => {
+        window.__trozalGpuFrameAssistEnabled = window.__trozalGpuFrameAssistEnabled !== true;
+        render();
+      });
+      body.appendChild(assistButton);
+    }
+    assistButton.textContent = enabled ? 'Matikan GPU Assist' : 'Aktifkan GPU Assist · Eksperimental';
+    assistButton.disabled = !state.webgl2 || !window.TrozalGpuFramePipeline;
+    if (!state.webgl2) assistButton.title = 'WebGL2 tidak tersedia; ekspor akan memakai Canvas2D.';
+
+    const benchmarkButton=document.createElement('button');
+    benchmarkButton.id='trozalGpuBenchmarkBtn';
+    benchmarkButton.type='button';
+    benchmarkButton.textContent='Uji benchmark 1080p + 4K';
+    benchmarkButton.style.cssText='display:block;margin-top:6px;width:100%;padding:7px;border:1px solid #687b91;border-radius:6px;background:#263342;color:#eef6ff;cursor:pointer;';
+    benchmarkButton.disabled=!state.webgl2 || !window.TrozalGpuFramePipeline?.benchmark;
+    benchmarkButton.addEventListener('click',async()=>{
+      benchmarkButton.disabled=true;benchmarkButton.textContent='Benchmark berjalan…';
+      const status=document.getElementById('trozalGpuBenchmarkResult');
+      if(status)status.textContent='Mengukur Canvas2D dan GPU Assist. Tunggu hingga selesai.';
+      try{
+        const report=await window.TrozalGpuFramePipeline.benchmark();
+        const lines=report.results.map(item=>item.resolution+': Canvas2D '+item.canvas2dMedianMs+' ms · GPU Assist '+item.gpuAssistMedianMs+' ms · '+(item.ratio<1?'GPU lebih cepat':'Canvas2D lebih cepat')+' ('+item.ratio+'×)');
+        const current=document.getElementById('trozalGpuBenchmarkResult');
+        if(current)current.textContent=lines.join('\n')+'\nCatatan: uji sintetis scaling gambar statis, bukan durasi ekspor video penuh.';
+        window.__trozalGpuBenchmarkLastResult=report;
+      }catch(error){
+        const current=document.getElementById('trozalGpuBenchmarkResult');
+        if(current)current.textContent='Benchmark tidak selesai: '+(error?.message||error);
+      }finally{
+        const currentButton=document.getElementById('trozalGpuBenchmarkBtn');
+        if(currentButton){currentButton.disabled=false;currentButton.textContent='Ulangi benchmark 1080p + 4K';}
+      }
+    });
+    body.appendChild(benchmarkButton);
+    const benchmarkResult=document.createElement('div');
+    benchmarkResult.id='trozalGpuBenchmarkResult';
+    benchmarkResult.style.cssText='margin-top:6px;font-size:10px;white-space:pre-line;color:#c7d7e7;';
+    benchmarkResult.textContent='Benchmark lokal belum dijalankan.';
+    body.appendChild(benchmarkResult);
   }
 
+  window.addEventListener('trozal:gpu-frame-assist-used', render);
   window.trozalRefreshGpuHealth = detect;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', detect, { once: true });
   else detect();

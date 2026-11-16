@@ -3102,7 +3102,7 @@ ctx.beginPath();ctx.rect(-baseW/2,-baseH/2,baseW*motion.revealX,baseH*motion.rev
 const shapeState=shapeMaskState(),motionBlurPx=trozalMotionBlurPixels(elapsed,baseW,baseH);
 try{
  const p=Math.max(0,Math.min(1,elapsed/Math.max(.001,d))),ph=elapsed*2*Math.PI*+$('speed').value;
- const drawContained=(source,dx=0,dy=0,rot=0,layerScale=1)=>{const sw=source.naturalWidth||source.width||1,sh=source.naturalHeight||source.height||1,fit=Math.min(ow/sw,oh/sh)*layerScale,dw=sw*fit,dh=sh*fit;ctx.save();if(motionBlurPx>0)ctx.filter='blur('+motionBlurPx.toFixed(2)+'px)';ctx.translate(dx,dy);ctx.rotate(rot*Math.PI/180);if($('shadow').checked){ctx.shadowColor='rgba(0,0,0,.22)';ctx.shadowBlur=Math.max(1,w/(turboMode?360:180));ctx.shadowOffsetY=Math.max(1,h/180)}ctx.drawImage(source,-dw/2,-dh/2,dw,dh);ctx.restore()};
+ const drawContained=(source,dx=0,dy=0,rot=0,layerScale=1)=>{const sw=source.naturalWidth||source.width||1,sh=source.naturalHeight||source.height||1,fit=Math.min(ow/sw,oh/sh)*layerScale;let dw=sw*fit,dh=sh*fit,drawable=source;if(window.__trozalGpuFrameAssistEnabled&&!htmlMotionSource&&window.TrozalGpuFramePipeline){const gw=Math.max(1,Math.round(dw)),gh=Math.max(1,Math.round(dh)),gpuFrame=window.TrozalGpuFramePipeline.render(source,gw,gh);if(gpuFrame){drawable=gpuFrame;dw=gw;dh=gh}}ctx.save();if(motionBlurPx>0)ctx.filter='blur('+motionBlurPx.toFixed(2)+'px)';ctx.translate(dx,dy);ctx.rotate(rot*Math.PI/180);if($('shadow').checked){ctx.shadowColor='rgba(0,0,0,.22)';ctx.shadowBlur=Math.max(1,w/(turboMode?360:180));ctx.shadowOffsetY=Math.max(1,h/180)}ctx.drawImage(drawable,-dw/2,-dh/2,dw,dh);ctx.restore()};
  if(htmlMotionSource){const htmlCanvas=await captureHtmlMotionAt(elapsed);drawContained(htmlCanvas)}
  else if(svgPieceImgs.length){svgPieceImgs.forEach((pi,i)=>{
   const visible=document.getElementById('autoLayerVisible'+i)?.checked!==false,solo=soloLayerIndex<0||soloLayerIndex===i;if(!visible||!solo)return;
@@ -5413,6 +5413,7 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
 
 </script>
 <script src="./browser-ai-gemini-cloud.js" defer></script>
+<script src="./browser-gpu-frame-pipeline.js" defer></script>
 <script src="./browser-gpu-health.js" defer></script>
 </body>
 </html>

@@ -24,48 +24,73 @@
   return 'Gemini Cloud HTTP '+response.status+': '+detail;
  }
  async function requestJson(url,options,timeoutMs){
-  const controller=options.signal?null:new AbortController();
-  const signal=options.signal||controller.signal;
-  const timer=controller?setTimeout(()=>controller.abort(),timeoutMs||90000):null;
+  options=options||{};
+  const externalSignal=options.signal||null;
+  const controller=new AbortController();
+  let timedOut=false;
+  const abortFromCaller=()=>controller.abort(externalSignal?.reason);
+  if(externalSignal?.aborted)abortFromCaller();
+  else externalSignal?.addEventListener('abort',abortFromCaller,{once:true});
+  const timeoutId=setTimeout(()=>{timedOut=true;controller.abort(new Error('Gemini request timeout'));},Math.max(1000,timeoutMs||90000));
+  const signal=controller.signal;
+  const requestOptions=Object.assign({},options,{signal});
   let lastError=null;
+  const waitForRetry=(delay)=>new Promise((resolve,reject)=>{
+   if(signal.aborted){reject(new Error('Permintaan dibatalkan.'));return;}
+   const timerId=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve();},delay);
+   const abort=()=>{clearTimeout(timerId);signal.removeEventListener('abort',abort);reject(new Error('Permintaan dibatalkan.'));};
+   signal.addEventListener('abort',abort,{once:true});
+  });
   try{
+   if(signal.aborted)throw new Error('Permintaan dibatalkan.');
    for(let attempt=0;attempt<3;attempt++){
+    let retryAfterMs=0;
     try{
-     const response=await fetch(url,Object.assign({},options,{signal}));
+     const response=await fetch(url,requestOptions);
      const payload=await response.json().catch(()=>({}));
      if(!response.ok){
       const error=new Error(friendlyApiError(response,payload));
       error.status=response.status;
       error.apiReason=String(payload?.error?.status||payload?.error?.details?.[0]?.reason||'');
-      // A quota-exhausted 429 will not be fixed by immediate retries.
       if(response.status===429||response.status===400||response.status===401||response.status===403||response.status===404)throw error;
       if(response.status<500&&response.status!==408&&response.status!==425)throw error;
+      const retryHeader=response.headers?.get?.('Retry-After');
+      if(retryHeader){
+       const seconds=Number(retryHeader);
+       const dateDelay=Date.parse(retryHeader)-Date.now();
+       retryAfterMs=Number.isFinite(seconds)?Math.max(0,seconds*1000):Math.max(0,Number.isFinite(dateDelay)?dateDelay:0);
+      }
       lastError=error;
      }else return payload;
     }catch(error){
-     if(signal.aborted||error?.name==='AbortError')throw new Error('Permintaan dibatalkan atau melewati batas waktu.');
-     if(error?.status)throw error;
-     lastError=error;
-     if(!/Failed to fetch|NetworkError|Load failed|network/i.test(error?.message||''))throw error;
+     if(signal.aborted)throw error;
+     if(error?.status&&error.status!==408&&error.status!==425&&error.status<500)throw error;
+     if(error?.status>=500||error?.status===408||error?.status===425){
+      lastError=error;
+     }else if(error instanceof TypeError||/Failed to fetch|NetworkError|Load failed|network/i.test(error?.message||'')){
+      lastError=error;
+     }else throw error;
     }
     if(attempt<2){
-     const delay=500*Math.pow(2,attempt);
-     await new Promise((resolve,reject)=>{
-      const timerId=setTimeout(resolve,delay);
-      if(signal)signal.addEventListener('abort',()=>{clearTimeout(timerId);reject(new Error('Permintaan dibatalkan.'));},{once:true});
-     });
+     const backoff=500*Math.pow(2,attempt);
+     const jitter=Math.floor(Math.random()*Math.min(250,backoff*.2));
+     await waitForRetry(Math.min(10000,Math.max(backoff+jitter,retryAfterMs)));
     }
    }
-   if(lastError&&lastError.status>=500)throw new Error('Gemini sedang mengalami gangguan server setelah 3 percobaan. Prompt dan editor tetap tersedia; coba lagi beberapa saat. Detail: '+lastError.message);
+   if(lastError?.status>=500)throw new Error('Gemini sedang mengalami gangguan server setelah 3 percobaan. Prompt dan editor tetap tersedia; coba lagi beberapa saat. Detail: '+lastError.message);
    throw new Error('Koneksi Gemini gagal setelah 3 percobaan. Periksa internet lalu coba lagi. Pekerjaan editor tidak dihapus.');
   }catch(error){
-   if(signal.aborted||error?.name==='AbortError')throw new Error('Permintaan dibatalkan atau melewati batas waktu.');
+   if(externalSignal?.aborted)throw new Error('Permintaan dibatalkan oleh pengguna. Brief dan pekerjaan editor tetap aman.');
+   if(timedOut||signal.aborted)throw new Error('Permintaan Gemini melewati batas waktu ('+Math.round((timeoutMs||90000)/1000)+' detik). Anda dapat mencoba lagi; brief dan pekerjaan editor tetap aman.');
    if(error?.status===429)throw new Error('Kuota / rate limit Gemini tercapai (HTTP 429). Retry otomatis dihentikan agar tidak menghabiskan percobaan. Periksa Google AI Studio / billing, tunggu reset kuota, atau pilih model lain yang API key Anda izinkan. Brief tetap tersedia untuk mode manual.');
    if(/Failed to fetch|NetworkError|Load failed/i.test(error?.message||'')){
     throw new Error('Tidak dapat menghubungi Gemini Cloud setelah retry otomatis. Periksa koneksi internet, izin jaringan browser, dan status layanan Google. Brief tetap tersedia untuk mode manual.');
    }
    throw error;
-  }finally{if(timer)clearTimeout(timer);}
+  }finally{
+   clearTimeout(timeoutId);
+   externalSignal?.removeEventListener('abort',abortFromCaller);
+  }
  }
  function requireKey(){
   const value=apiKey();
@@ -167,9 +192,13 @@
     try{await navigator.clipboard.writeText(buildScenePrompt());copy.textContent='Brief tersalin';}
     catch(_){const prompt=$('visualMotionPrompt');if(prompt){prompt.focus();prompt.select();copy.textContent='Brief dipilih · Ctrl+C';}}
    });
+   const retry=document.createElement('button');retry.type='button';retry.textContent='Coba ulang Gemini';
+   retry.addEventListener('click',()=>{if(!sceneController)generateScene();});
+   const check=document.createElement('button');check.type='button';check.textContent='Periksa koneksi & model';
+   check.addEventListener('click',()=>checkConnection());
    const manual=document.createElement('button');manual.type='button';manual.textContent='Buka HTML Terminal';
    manual.addEventListener('click',()=>{$('aiCodeTerminal')?.focus();$('aiCodeTerminal')?.scrollIntoView({behavior:'smooth',block:'center'});});
-   actions.append(copy,manual);panel.append(title,detail,actions);statusNode.insertAdjacentElement('afterend',panel);
+   actions.append(copy,retry,check,manual);panel.append(title,detail,actions);statusNode.insertAdjacentElement('afterend',panel);
   }
   $('trozalGeminiRecoveryDetail').textContent=String(message||'Gemini tidak tersedia. Brief tidak dihapus; editor, preview, dan render manual tetap bisa digunakan.');
   panel.style.display='block';

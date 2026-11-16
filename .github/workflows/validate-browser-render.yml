@@ -10,6 +10,7 @@ on:
       - browser-ai-theme-intelligence-2026-11-15
       - fix/browser-ai-gemini-cloud-only-2026-11-15
       - feature/browser-gpu-adaptive-gemini-failover-2026-11-16
+      - feature/browser-gpu-renderer-gemini-resilience-2026-11-16
   workflow_dispatch:
 
 permissions:
@@ -25,7 +26,7 @@ jobs:
           node-version: 20
       - name: Install Playwright Chromium
         run: |
-          npm install --no-save playwright
+          npm install --no-save playwright jszip
           npx playwright install --with-deps chromium
       - name: Start local preview server
         run: |
@@ -44,6 +45,7 @@ jobs:
           node --check render-sync-advisor.js
           node --check browser-ai-gemini-cloud.js
           node --check browser-gpu-health.js
+          node --check browser-gpu-frame-pipeline.js
           node <<'NODE'
           const fs = require('fs');
           const { spawnSync } = require('child_process');
@@ -82,12 +84,19 @@ jobs:
           node tests/browser-render-scheduler.test.cjs
           node tests/browser-gpu-health.test.cjs
           node tests/browser-gemini-failover.test.cjs
+          node tests/browser-gemini-failover.runtime.test.cjs
+      - name: Guard central workspace and export capabilities
+        run: node tests/workspace-export-preservation.test.cjs
       - name: Verify checked-out test revision
         run: |
           echo "GITHUB_SHA=$GITHUB_SHA"
           git rev-parse HEAD
           sha256sum tests/render-sync-advisor.browser.cjs render-sync-advisor.js
           grep -n "timeout: 12000\|snapshot=" tests/render-sync-advisor.browser.cjs
+      - name: Verify GPU frame pipeline in Chromium with safe fallback
+        run: node tests/browser-gpu-frame-pipeline.browser.cjs
+      - name: Verify Canvas2D export fallback when WebGL2 is unavailable
+        run: node tests/browser-gpu-canvas2d-fallback.browser.cjs
       - name: Exercise Render Sync Advisor in Chromium
         run: node tests/render-sync-advisor.browser.cjs
       - name: Compare render throughput with pointer over and away from progress panel
