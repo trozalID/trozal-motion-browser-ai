@@ -31,12 +31,26 @@ const { chromium } = require('playwright');
       await page.evaluate(() => {
         document.getElementById('resolution').value = '1280x720';
         document.getElementById('duration').value = '1';
-        document.getElementById('fps').value = '30';
+        const fps = document.getElementById('fps');\n        const fastOption = document.createElement('option'); fastOption.value = '1'; fastOption.textContent = '1'; fps.appendChild(fastOption); fps.value = '1';\n        window.__TROZAL_RENDER_DIAGNOSTICS = true;
         document.getElementById('format').value = 'webm';
         window.__trozalGpuFrameAssistEnabled = true;
       });
       await page.locator('#renderBtn').click();
-      await page.waitForFunction(() => { const value = document.getElementById('exportStatus')?.textContent || ''; return value.includes('Selesai:') || /dibatalkan|gagal|error|tidak tersedia|format tidak didukung/i.test(value); }, null, { timeout: 45000 });
+      try {
+        await page.waitForFunction(() => { const value = document.getElementById('exportStatus')?.textContent || ''; return value.includes('Selesai:') || /dibatalkan|gagal|error|tidak tersedia|format tidak didukung/i.test(value); }, null, { timeout: 20000 });
+      } catch (error) {
+        const snapshot = await page.evaluate(() => ({
+          exportStatus: document.getElementById('exportStatus')?.textContent,
+          status: document.getElementById('status')?.textContent,
+          renderButtonDisabled: document.getElementById('renderBtn')?.disabled,
+          progress: document.getElementById('renderProgressLabel')?.textContent,
+          metrics: window.__trozalRenderMetrics || null,
+          diagnostics: window.__TROZAL_RENDER_DIAG_STATE || null,
+          gpu: window.TrozalGpuFramePipeline?.getStats?.(),
+          hasSvg: !!document.querySelector('#object svg')
+        }));
+        throw new Error(error.message + ' · render snapshot=' + JSON.stringify(snapshot));
+      }
       const exportStatus = await page.locator('#exportStatus').textContent();
       assert.match(exportStatus, /Selesai:/, 'GPU export integration did not finish successfully: ' + exportStatus);
       const exportStats = await page.evaluate(() => window.TrozalGpuFramePipeline.getStats());
