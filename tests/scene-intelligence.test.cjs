@@ -11,4 +11,17 @@ assert.match(scene.build('A train travels through the city. A vehicle crashes. T
 assert.match(scene.build('A vehicle crashes into a barrier.',8),/DETAIL IMPACT/);
 assert.match(scene.build('One continuous scene',8),/1 beat naratif/);
 assert.equal(scene.classify('The camera follows a runner.',0,1).action,'PERGERAKAN / PERJALANAN');
-console.log('PASS: beat segmentation, timing, action classification, shot selection, camera motivation, continuity');
+const push=scene.inferInteraction('The robot pushes the red crate.');
+assert.equal(push.type,'KONTAK / MANIPULASI');assert.equal(push.actor,'The robot');assert.equal(push.target,'red crate');
+const handoff=scene.inferInteraction('Mira gives the blue key to Rafi.');
+assert.equal(handoff.type,'TRANSFER / PEMBERIAN');assert.match(handoff.target,/blue key to Rafi/);
+const trigger=scene.inferInteraction('The engineer activates the control panel.');
+assert.equal(trigger.type,'PEMICU / AKTIVASI');
+const gaze=scene.inferInteraction('The child looks at the glowing door.');
+assert.equal(gaze.type,'TATAPAN / PERHATIAN');
+const collision=scene.inferInteraction('The car crashes into the barrier.');
+assert.equal(collision.type,'BENTURAN / TABRAKAN');
+assert.match(scene.build('The robot pushes the red crate. The crate slides across the floor.',10),/GRAF INTERAKSI OBJEK/);
+assert.match(scene.build('The robot pushes the red crate.',8),/URUTAN KAUSAL/);
+assert.match(scene.build('A quiet blue room.',8),/belum ada relasi aktor-target/);
+console.log('PASS: beat timing, shot planning, interaction graph, causal order, object continuity');
