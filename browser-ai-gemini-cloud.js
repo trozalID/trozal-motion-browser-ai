@@ -27,15 +27,42 @@
   const controller=options.signal?null:new AbortController();
   const signal=options.signal||controller.signal;
   const timer=controller?setTimeout(()=>controller.abort(),timeoutMs||90000):null;
+  let lastError=null;
   try{
-   const response=await fetch(url,Object.assign({},options,{signal}));
-   const payload=await response.json().catch(()=>({}));
-   if(!response.ok)throw new Error(friendlyApiError(response,payload));
-   return payload;
+   for(let attempt=0;attempt<3;attempt++){
+    try{
+     const response=await fetch(url,Object.assign({},options,{signal}));
+     const payload=await response.json().catch(()=>({}));
+     if(!response.ok){
+      const error=new Error(friendlyApiError(response,payload));
+      error.status=response.status;
+      error.apiReason=String(payload?.error?.status||payload?.error?.details?.[0]?.reason||'');
+      // A quota-exhausted 429 will not be fixed by immediate retries.
+      if(response.status===429||response.status===400||response.status===401||response.status===403||response.status===404)throw error;
+      if(response.status<500&&response.status!==408&&response.status!==425)throw error;
+      lastError=error;
+     }else return payload;
+    }catch(error){
+     if(signal.aborted||error?.name==='AbortError')throw new Error('Permintaan dibatalkan atau melewati batas waktu.');
+     if(error?.status)throw error;
+     lastError=error;
+     if(!/Failed to fetch|NetworkError|Load failed|network/i.test(error?.message||''))throw error;
+    }
+    if(attempt<2){
+     const delay=500*Math.pow(2,attempt);
+     await new Promise((resolve,reject)=>{
+      const timerId=setTimeout(resolve,delay);
+      if(signal)signal.addEventListener('abort',()=>{clearTimeout(timerId);reject(new Error('Permintaan dibatalkan.'));},{once:true});
+     });
+    }
+   }
+   if(lastError&&lastError.status>=500)throw new Error('Gemini sedang mengalami gangguan server setelah 3 percobaan. Prompt dan editor tetap tersedia; coba lagi beberapa saat. Detail: '+lastError.message);
+   throw new Error('Koneksi Gemini gagal setelah 3 percobaan. Periksa internet lalu coba lagi. Pekerjaan editor tidak dihapus.');
   }catch(error){
-   if(error?.name==='AbortError')throw new Error('Permintaan dibatalkan atau melewati batas waktu.');
+   if(signal.aborted||error?.name==='AbortError')throw new Error('Permintaan dibatalkan atau melewati batas waktu.');
+   if(error?.status===429)throw new Error('Kuota / rate limit Gemini tercapai (HTTP 429). Retry otomatis dihentikan agar tidak menghabiskan percobaan. Periksa Google AI Studio / billing, tunggu reset kuota, atau pilih model lain yang API key Anda izinkan. Brief tetap tersedia untuk mode manual.');
    if(/Failed to fetch|NetworkError|Load failed/i.test(error?.message||'')){
-    throw new Error('Tidak dapat menghubungi Gemini Cloud. Periksa koneksi internet, izin jaringan browser, dan ketersediaan API Google.');
+    throw new Error('Tidak dapat menghubungi Gemini Cloud setelah retry otomatis. Periksa koneksi internet, izin jaringan browser, dan status layanan Google. Brief tetap tersedia untuk mode manual.');
    }
    throw error;
   }finally{if(timer)clearTimeout(timer);}
