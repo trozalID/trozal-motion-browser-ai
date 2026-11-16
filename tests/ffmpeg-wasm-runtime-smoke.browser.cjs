@@ -8,11 +8,11 @@ const assert = require('node:assert/strict');
     page.setDefaultTimeout(600000);
     const pageErrors = [];
     page.on('pageerror', error => pageErrors.push(error.message));
-    await page.goto('http://127.0.0.1:4173/__ffmpeg_smoke__.html', { waitUntil: 'domcontentloaded' });
+    await page.goto('http://127.0.0.1:4173/trozal-motion-browser-ai/__ffmpeg_smoke__.html', { waitUntil: 'domcontentloaded' });
 
     const result = await page.evaluate(async () => {
       const logs = [];
-      const packageRoot = new URL('/vendor/ffmpeg/', location.origin).href;
+      const packageRoot = new URL('./vendor/ffmpeg/', document.baseURI).href;
       const { FFmpeg } = await import(packageRoot + 'index.js');
       const ffmpeg = new FFmpeg();
       ffmpeg.on('log', ({ message }) => {
@@ -36,10 +36,10 @@ const assert = require('node:assert/strict');
       let coreUrl = '';
       let wasmUrl = '';
       try {
-        coreUrl = await fetchObjectUrl('/vendor/prores-core/ffmpeg-core.js', 'text/javascript');
-        wasmUrl = await fetchObjectUrl('/vendor/prores-core/ffmpeg-core.wasm', 'application/wasm');
+        coreUrl = await fetchObjectUrl('./vendor/prores-core/ffmpeg-core.js', 'text/javascript');
+        wasmUrl = await fetchObjectUrl('./vendor/prores-core/ffmpeg-core.wasm', 'application/wasm');
         await ffmpeg.load({
-          classWorkerURL: '/vendor/ffmpeg/worker.js',
+          classWorkerURL: new URL('./vendor/ffmpeg/worker.js', document.baseURI).href,
           coreURL: coreUrl,
           wasmURL: wasmUrl
         });
