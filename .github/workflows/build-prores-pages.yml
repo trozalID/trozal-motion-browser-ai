@@ -37,8 +37,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p site/vendor/ffmpeg site/vendor/prores-core
+          mkdir -p site/js site/vendor/ffmpeg site/vendor/prores-core
           cp index.html site/index.html
+          cp js/scene-intelligence.js site/js/scene-intelligence.js
           cp browser-ai.js site/browser-ai.js
           cp render-sync-advisor.js site/render-sync-advisor.js
           cp browser-ai-gemini-cloud.js site/browser-ai-gemini-cloud.js
@@ -165,6 +166,22 @@ jobs:
           set -euo pipefail
           grep -q -- '--enable-encoder=prores_ks' /tmp/ffmpeg-wasm/Dockerfile
           test -s site/index.html
+          test -s site/js/scene-intelligence.js
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const html = fs.readFileSync('site/index.html', 'utf8');
+          const refs = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi)].map(match => match[1]);
+          const root = path.resolve('site');
+          const missing = refs.filter(src => {
+            if (/^(?:[a-z]+:)?\/\//i.test(src) || /^(?:data:|blob:)/i.test(src)) return false;
+            const clean = decodeURIComponent(src.split(/[?#]/, 1)[0]);
+            const target = path.resolve(root, clean.replace(/^\.\//, ''));
+            return !target.startsWith(root + path.sep) || !fs.existsSync(target);
+          });
+          if (missing.length) throw new Error('Missing local script assets in Pages artifact: ' + missing.join(', '));
+          console.log('Verified ' + refs.length + ' script src asset(s) in Pages artifact.');
+          NODE
           test -s site/render-sync-advisor.js
           test -s site/browser-ai-gemini-cloud.js
           test -s site/vendor/ffmpeg/worker.js
