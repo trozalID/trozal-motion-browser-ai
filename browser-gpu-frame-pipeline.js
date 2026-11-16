@@ -5,7 +5,7 @@
   'use strict';
   if (window.TrozalGpuFramePipeline) return;
   let canvas = null, gl = null, program = null, buffer = null, textureLocation = null;
-  let failed = false, draws = 0, uploads = 0;
+  let failed = false, draws = 0, uploads = 0, activationReported = false;
   const cache = new WeakMap();
   const vertexSource = `#version 300 es
     in vec2 a_position; in vec2 a_texCoord; out vec2 v_texCoord;
@@ -67,7 +67,7 @@
       gl.useProgram(program);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
       gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
       if(gl.getError()!==gl.NO_ERROR)throw new Error('WebGL2 gagal menggambar tekstur');
-      draws++;return canvas;
+      draws++;\n      if(!activationReported){activationReported=true;window.dispatchEvent(new CustomEvent('trozal:gpu-frame-assist-used',{detail:{draws,uploads}}));}\n      return canvas;
     } catch(error) {
       failed=true;console.warn('TROZAL GPU frame assist failed; falling back to Canvas2D.',error);return null;
     }
