@@ -24,10 +24,8 @@ const policy = [
 for (const phrase of policy) {
   assert.ok(html.toLowerCase().includes(phrase.toLowerCase()), 'Missing IP policy phrase: ' + phrase);
 }
-if (fs.existsSync('browser-ai.js')) {
-  const ai = fs.readFileSync('browser-ai.js', 'utf8');
-  assert.ok(ai.includes('TROZAL_IP_SAFETY_POLICY'), 'Browser AI scene engine must include IP policy');
-  assert.ok((ai.match(/TROZAL_IP_SAFETY_POLICY/g) || []).length >= 3, 'Policy must be attached to both storyboard and scene-generation system prompts');
-}
+const gemini = fs.readFileSync('browser-ai-gemini-cloud.js', 'utf8');
+assert.ok(gemini.includes('INTELLECTUAL PROPERTY / ORIGINALITY POLICY'), 'Gemini Cloud Scene Composer must include IP policy');
+assert.ok(gemini.includes('Do not show real company or product logos'), 'Gemini system instruction must exclude logos and trademarks');
 
 console.log('MP4 bitrate and IP prompt guardrail regression checks passed.');
