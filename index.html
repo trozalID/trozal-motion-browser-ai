@@ -1163,9 +1163,13 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
    <label>Format video</label><select id="format"><option value="webm">WebM (ekspor langsung dari browser)</option><option value="mp4">MP4 / H.264</option><option value="mov" selected>MOV / QuickTime · ProRes 4444 + Alpha</option><option value="pngseq">PNG Sequence ZIP (transparansi / alpha)</option></select>
    
    <label>Preset kualitas</label><select id="quality"><option value="standard">Standar · file lebih kecil</option><option value="high" selected>Tinggi · detail tajam</option><option value="max">Maksimal · kualitas tertinggi</option></select>
-   <label>MP4 H.264 · CRF (kualitas kompresi)</label>
+   <label>Mode laju data MP4 H.264</label>
+   <select id="mp4RateMode"><option value="quality" selected>Otomatis · CRF (prioritas kualitas)</option><option value="target">Target Byte Rate · Mbps (prioritas ukuran data)</option></select>
+   <label>Target Byte Rate MP4</label>
+   <select id="mp4Bitrate"><option value="12">12 Mbps · 1080p ringan</option><option value="20">20 Mbps · 1080p tajam</option><option value="35" selected>35 Mbps · 4K 30fps standar tinggi</option><option value="50">50 Mbps · 4K 30fps detail tinggi</option><option value="70">70 Mbps · 4K kompleks / detail tinggi</option><option value="90">90 Mbps · 4K sangat tinggi</option></select>
+   <label>MP4 H.264 · CRF (mode Otomatis)</label>
    <select id="mp4Crf"><option value="23">CRF 23 · ukuran lebih kecil</option><option value="20">CRF 20 · seimbang</option><option value="18" selected>CRF 18 · kualitas tinggi</option><option value="16">CRF 16 · sangat tinggi</option><option value="14">CRF 14 · mendekati lossless, file besar</option><option value="auto">Otomatis mengikuti preset kualitas</option></select>
-   <p class="help">Semakin kecil angka CRF, semakin tinggi kualitas dan semakin besar ukuran file. CRF hanya berlaku untuk ekspor MP4 H.264.</p>
+   <p class="help">Mode Otomatis memakai CRF. Mode Target Byte Rate mengunci target laju data encoder (misalnya 35–50 Mbps untuk 4K 30fps) agar video tidak terlalu kecil/terkompresi. Ukuran akhir tetap bergantung pada durasi, gerakan, dan kompleksitas gambar.</p>
    <p class="help">MP4 memakai encoder H.264 berbasis frame untuk menghindari keterbatasan codec MP4 bawaan browser. Preset kualitas mengatur CRF dan bitrate sesuai resolusi. Proses ini membutuhkan koneksi internet saat pertama kali memuat FFmpeg.wasm.</p>
    <p class="help" id="renderSpeedHint">Normal: seluruh efek dekoratif diproses. TURBO: mengurangi partikel, kilau dekoratif, dan beban bayangan; resolusi, FPS, durasi, serta animasi utama tetap mengikuti pengaturan.</p>
    <p class="help">Versi Web ProRes: WebM direkam langsung oleh browser; MP4 H.264 dan MOV ProRes 4444 diproses dengan FFmpeg.wasm lokal dari website; PNG Sequence ZIP mempertahankan transparansi.</p>
@@ -2912,14 +2916,15 @@ async function encodeMovWithWasm(pngZip,totalFrames,fps,width,height,outputForma
     const quality=$('quality').value,crfChoice=$('mp4Crf')?.value||'auto',crf=crfChoice==='auto'?(quality==='max'?15:quality==='high'?18:22):Number(crfChoice);
     const pixelRate=width*height*fps;
     const maxRate=Math.max(8000000,Math.min(160000000,Math.round(pixelRate*(quality==='max'?.00085:quality==='high'?.00062:.00042))));
-    setExportStatus('Encoding MP4 H.264 · CRF '+crf+' · '+width+'×'+height+' · '+fps+' FPS');
+    const rateMode=$('mp4RateMode')?.value||'quality',targetMbps=Math.max(1,Math.min(100,Number($('mp4Bitrate')?.value)||35)),targetBps=Math.round(targetMbps*1000000);
+    const rateArgs=rateMode==='target'?['-b:v',String(targetBps),'-maxrate',String(Math.round(targetBps*1.15)),'-bufsize',String(targetBps*2)]:['-crf',String(crf),'-maxrate',String(maxRate),'-bufsize',String(maxRate*2)];
+    setExportStatus('Encoding MP4 H.264 · '+(rateMode==='target'?'Target '+targetMbps+' Mbps':'CRF '+crf)+' · '+width+'×'+height+' · '+fps+' FPS');
     code=await ffmpeg.exec([
      '-hide_banner','-y','-filter_threads','1','-filter_complex_threads','1',
      '-framerate',String(fps),'-start_number','0','-i','frame_%06d.png',
      '-frames:v',String(totalFrames),'-r',String(fps),'-an',
      '-c:v','libx264','-preset',($('renderSpeedMode')?.value==='turbo'?'veryfast':'medium'),
-     '-profile:v','high','-pix_fmt','yuv420p','-crf',String(crf),
-     '-maxrate',String(maxRate),'-bufsize',String(maxRate*2),
+     '-profile:v','high','-pix_fmt','yuv420p',...rateArgs,
      '-threads','1','-movflags','+faststart',output
     ]);
    }
@@ -5092,6 +5097,9 @@ $('svgAiDetails')?.addEventListener('input',()=>window.trozalUpdateThemeBrief())
 'Additional art direction: '+(details||'Use professional creative judgment and make the visual metaphor specific, original, and coherent.'),
 'THEME-SPECIFIC CREATIVE BLUEPRINT',
 themeBrief.prompt,
+'ORIGINAL CONTENT / IP SAFETY POLICY',
+'Create original fictional visual content only. Do not reproduce or reference copyrighted characters, franchises, recognizable mascots, protected signature designs, real company/product logos, trademarks, brand marks, or existing proprietary identities. Do not imitate a specific protected character or recreate a known logo. Use invented names, original silhouettes, original symbols, and generic non-branded objects. Broad genres and visual directions such as cinematic, futuristic, cyberpunk, premium, 3D, editorial, and commercial motion design are allowed when executed with original assets.',
+'If the selected theme or user details mention a protected IP, convert it into a distinct original concept that preserves only the broad mood or genre, not the protected identity or recognizable design.',
 'THEME- AND CATEGORY-SPECIFIC CREATIVE SPECIFICATION',
 'Preserve every domain-specific visual, material, composition, motion, and exclusion instruction above. The selected category changes visual execution only; it must not replace the main theme.',
 'USER DETAIL INTEGRATION RULE',
