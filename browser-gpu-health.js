@@ -100,7 +100,7 @@
     if (!state.webgl2) assistButton.title = 'WebGL2 tidak tersedia; ekspor akan memakai Canvas2D.';
   }
 
-  window.trozalRefreshGpuHealth = detect;
+  window.addEventListener('trozal:gpu-frame-assist-used', render);\n  window.trozalRefreshGpuHealth = detect;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', detect, { once: true });
   else detect();
 })();
