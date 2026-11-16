@@ -43,7 +43,7 @@ jobs:
           set -euo pipefail
           node --check render-sync-advisor.js
           node --check browser-ai-gemini-cloud.js
-          node --check browser-gpu-health.js
+          node --check browser-gpu-health.js\n          node --check browser-gpu-frame-pipeline.js
           node <<'NODE'
           const fs = require('fs');
           const { spawnSync } = require('child_process');
@@ -81,14 +81,14 @@ jobs:
           NODE
           node tests/browser-render-scheduler.test.cjs
           node tests/browser-gpu-health.test.cjs
-          node tests/browser-gemini-failover.test.cjs
+          node tests/browser-gemini-failover.test.cjs\n          node tests/browser-gemini-failover.runtime.test.cjs
       - name: Verify checked-out test revision
         run: |
           echo "GITHUB_SHA=$GITHUB_SHA"
           git rev-parse HEAD
           sha256sum tests/render-sync-advisor.browser.cjs render-sync-advisor.js
           grep -n "timeout: 12000\|snapshot=" tests/render-sync-advisor.browser.cjs
-      - name: Exercise Render Sync Advisor in Chromium
+      - name: Verify GPU frame pipeline in Chromium with safe fallback\n        run: node tests/browser-gpu-frame-pipeline.browser.cjs\n      - name: Exercise Render Sync Advisor in Chromium
         run: node tests/render-sync-advisor.browser.cjs
       - name: Compare render throughput with pointer over and away from progress panel
         run: node tests/render-pointer-independence.browser.cjs
