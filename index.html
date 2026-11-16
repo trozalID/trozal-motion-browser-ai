@@ -1165,7 +1165,11 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
    <label>Preset kualitas</label><select id="quality"><option value="standard">Standar · file lebih kecil</option><option value="high" selected>Tinggi · detail tajam</option><option value="max">Maksimal · kualitas tertinggi</option></select>
    <label>MP4 H.264 · CRF (kualitas kompresi)</label>
    <select id="mp4Crf"><option value="23">CRF 23 · ukuran lebih kecil</option><option value="20">CRF 20 · seimbang</option><option value="18" selected>CRF 18 · kualitas tinggi</option><option value="16">CRF 16 · sangat tinggi</option><option value="14">CRF 14 · mendekati lossless, file besar</option><option value="auto">Otomatis mengikuti preset kualitas</option></select>
-   <p class="help">Semakin kecil angka CRF, semakin tinggi kualitas dan semakin besar ukuran file. CRF hanya berlaku untuk ekspor MP4 H.264.</p>
+   <label>Bitrate MP4 H.264 · target Mbps</label>
+   <select id="mp4Bitrate"><option value="auto">Otomatis · CRF mengikuti preset</option><option value="12">12 Mbps · 1080p standar</option><option value="20">20 Mbps · 1080p tinggi / 2K</option><option value="35">35 Mbps · 4K hemat</option><option value="45" selected>45 Mbps · 4K 30 FPS kualitas tinggi</option><option value="60">60 Mbps · 4K detail tinggi</option><option value="80">80 Mbps · 4K sangat tinggi</option></select>
+   <p class="help">Bitrate manual mengatur target laju data encoder H.264 (Mbps, bukan MB/s). Pilih 45–60 Mbps sebagai titik awal untuk 4K/30 FPS. Mode Otomatis memakai CRF dan batas bitrate adaptif. Estimasi ukuran dihitung dari durasi dan target bitrate; ukuran aktual dapat berbeda.</p>
+   <p class="help" id="mp4BitrateEstimate" aria-live="polite">Estimasi ukuran MP4 akan tampil saat format MP4 dipilih.</p>
+   <p class="help">Semakin kecil angka CRF, semakin tinggi kualitas dan semakin besar ukuran file. CRF hanya berlaku untuk ekspor MP4 H.264 saat Bitrate Otomatis dipilih.</p>
    <p class="help">MP4 memakai encoder H.264 berbasis frame untuk menghindari keterbatasan codec MP4 bawaan browser. Preset kualitas mengatur CRF dan bitrate sesuai resolusi. Proses ini membutuhkan koneksi internet saat pertama kali memuat FFmpeg.wasm.</p>
    <p class="help" id="renderSpeedHint">Normal: seluruh efek dekoratif diproses. TURBO: mengurangi partikel, kilau dekoratif, dan beban bayangan; resolusi, FPS, durasi, serta animasi utama tetap mengikuti pengaturan.</p>
    <p class="help">Versi Web ProRes: WebM direkam langsung oleh browser; MP4 H.264 dan MOV ProRes 4444 diproses dengan FFmpeg.wasm lokal dari website; PNG Sequence ZIP mempertahankan transparansi.</p>
@@ -2910,16 +2914,20 @@ async function encodeMovWithWasm(pngZip,totalFrames,fps,width,height,outputForma
     ]);
    }else{
     const quality=$('quality').value,crfChoice=$('mp4Crf')?.value||'auto',crf=crfChoice==='auto'?(quality==='max'?15:quality==='high'?18:22):Number(crfChoice);
+    const bitrateChoice=$('mp4Bitrate')?.value||'auto';
     const pixelRate=width*height*fps;
     const maxRate=Math.max(8000000,Math.min(160000000,Math.round(pixelRate*(quality==='max'?.00085:quality==='high'?.00062:.00042))));
-    setExportStatus('Encoding MP4 H.264 · CRF '+crf+' · '+width+'×'+height+' · '+fps+' FPS');
+    const targetBitrate=bitrateChoice==='auto'?0:Number(bitrateChoice)*1000000;
+    const rateControlArgs=targetBitrate>0
+     ?['-b:v',String(targetBitrate),'-minrate',String(Math.round(targetBitrate*.9)),'-maxrate',String(Math.round(targetBitrate*1.1)),'-bufsize',String(targetBitrate*2)]
+     :['-crf',String(crf),'-maxrate',String(maxRate),'-bufsize',String(maxRate*2)];
+    setExportStatus('Encoding MP4 H.264 · '+(targetBitrate?Number(bitrateChoice)+' Mbps target':'CRF '+crf)+' · '+width+'×'+height+' · '+fps+' FPS');
     code=await ffmpeg.exec([
      '-hide_banner','-y','-filter_threads','1','-filter_complex_threads','1',
      '-framerate',String(fps),'-start_number','0','-i','frame_%06d.png',
      '-frames:v',String(totalFrames),'-r',String(fps),'-an',
      '-c:v','libx264','-preset',($('renderSpeedMode')?.value==='turbo'?'veryfast':'medium'),
-     '-profile:v','high','-pix_fmt','yuv420p','-crf',String(crf),
-     '-maxrate',String(maxRate),'-bufsize',String(maxRate*2),
+     '-profile:v','high','-pix_fmt','yuv420p',...rateControlArgs,
      '-threads','1','-movflags','+faststart',output
     ]);
    }
@@ -3249,8 +3257,19 @@ $('exportFrames').onclick=exportCurrentFramePng;
   effects.addEventListener('change',()=>{main.value=effects.value;});
  }
 })();
+function updateMp4BitrateEstimate(){
+ const output=$('mp4BitrateEstimate'),choice=$('mp4Bitrate')?.value||'auto';
+ if(!output)return;
+ if($('format')?.value!=='mp4'){output.textContent='Pilih format MP4 untuk melihat estimasi ukuran berdasarkan bitrate.';return;}
+ if(choice==='auto'){output.textContent='Mode Otomatis aktif · CRF dan batas bitrate mengikuti preset kualitas/resolusi. Ukuran aktual bergantung kompleksitas gambar.';return;}
+ const mbps=Number(choice),seconds=Math.max(.1,Number($('duration')?.value)||10);
+ const bytes=mbps*1000000*seconds/8,mib=bytes/1048576;
+ output.textContent='Estimasi target: '+mbps+' Mbps × '+seconds.toFixed(1)+' dtk ≈ '+(mib>=1024?(mib/1024).toFixed(2)+' GB':mib.toFixed(1)+' MB')+' (belum termasuk overhead container/audio).';
+}
+['mp4Bitrate','duration','fps','resolution','format'].forEach(id=>$(id)?.addEventListener('change',updateMp4BitrateEstimate));
+updateMp4BitrateEstimate();
 function getProject(){
- const ids=['shapeMaskType','shapeMaskMode','shapeMaskSize','shapeMaskRotation','shapeMaskX','shapeMaskY','shapePathColor','shapePathWidth','shapePathData','objectName','duration','fps','resolution','proresMode','animation','speed','intensity','scale','posX','posY','rotation','opacity','bgMode','customBg','effectPreset','effectIntensity','effectColor','particleCount','particleSpeed','format','quality','mp4Crf','renderSpeedMode','motionBlurAmount','textLayerContent','textLayerFont','textLayerWeight','textLayerSize','textLayerColor','textLayerAlign','textLayerTracking','textLayerX','textLayerY','textLayerStart','textLayerDuration','textLayerAnimation','visualMotionPrompt','visualMotionRatio','visualMotionDuration','visualMotionStyle','visualMotionCamera','visualMotionTransition','visualMotionAccent','metadataPlatform','metadataSubject','metadataTitle','metadataDescription','metadataCategory','metadataKeywords'];
+ const ids=['shapeMaskType','shapeMaskMode','shapeMaskSize','shapeMaskRotation','shapeMaskX','shapeMaskY','shapePathColor','shapePathWidth','shapePathData','objectName','duration','fps','resolution','proresMode','animation','speed','intensity','scale','posX','posY','rotation','opacity','bgMode','customBg','effectPreset','effectIntensity','effectColor','particleCount','particleSpeed','format','quality','mp4Crf','mp4Bitrate','renderSpeedMode','motionBlurAmount','textLayerContent','textLayerFont','textLayerWeight','textLayerSize','textLayerColor','textLayerAlign','textLayerTracking','textLayerX','textLayerY','textLayerStart','textLayerDuration','textLayerAnimation','visualMotionPrompt','visualMotionRatio','visualMotionDuration','visualMotionStyle','visualMotionCamera','visualMotionTransition','visualMotionAccent','metadataPlatform','metadataSubject','metadataTitle','metadataDescription','metadataCategory','metadataKeywords'];
  const checks=['motionBlurEnabled','shapeMaskEnabled','shapePathReveal','transparentBg','sparkles','shadow','loop','effectOn','textLayerEnabled','visualMotionParticles','visualMotionDepth'];
  const controls={};ids.forEach(k=>{if($(k))controls[k]=$(k).value});
  checks.forEach(k=>{if($(k))controls[k]=$(k).checked});
@@ -5093,6 +5112,11 @@ $('svgAiDetails')?.addEventListener('input',()=>window.trozalUpdateThemeBrief())
 'THEME-SPECIFIC CREATIVE BLUEPRINT',
 themeBrief.prompt,
 'THEME- AND CATEGORY-SPECIFIC CREATIVE SPECIFICATION',
+'INTELLECTUAL PROPERTY & ORIGINALITY POLICY',
+'Create only original visual content. Do not depict, name, reproduce, trace, imitate, or closely evoke copyrighted characters, fictional universes, celebrity likenesses, signature costumes, protected artwork, proprietary designs, or recognizable third-party intellectual property.',
+'Do not show real company or product logos, brand marks, trademarks, watermarks, signatures, or recognizable corporate identities. Do not invent a logo or wordmark; for branding/logo themes use abstract non-identifying geometry only, with no logo, brand name, or trademark.',
+'Use original fictional subjects, generic non-branded objects, fresh compositions, and independently created visual language. If the brief requests protected IP, transform it into a distinct original alternative using only broad, unprotected mood or genre attributes; never copy distinctive protected elements.',
+'Do not include copyrighted lyrics, quotations, source artwork, screenshots, or copied text.',
 'Preserve every domain-specific visual, material, composition, motion, and exclusion instruction above. The selected category changes visual execution only; it must not replace the main theme.',
 'USER DETAIL INTEGRATION RULE',
 'Additional art direction is additive. Combine every user-provided detail with the full automatic theme/category specification. Do not discard, simplify, or overwrite either set of requirements.',
