@@ -45,5 +45,13 @@ const response = (status, payload = {}, headers = {}) => ({
   await assert.rejects(() => pending, /dibatalkan oleh pengguna/i);
   assert.equal(abortedCalls, 1, 'caller cancellation must stop the request immediately');
 
+  let timeoutCalls = 0;
+  const timeoutRequest = buildRequestJson((_url, options) => new Promise((resolve, reject) => {
+    timeoutCalls++;
+    options.signal.addEventListener('abort', () => reject(new Error('timed out')), { once: true });
+  }));
+  await assert.rejects(() => timeoutRequest('/test', {}, 1000), /melewati batas waktu/i);
+  assert.equal(timeoutCalls, 1, 'request timeout must abort without retrying');
+
   console.log('Gemini failover runtime regression checks passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
