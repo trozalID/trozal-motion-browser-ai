@@ -164,6 +164,7 @@ const { chromium } = require('playwright');
     'Active HTML Motion source must be restored to Terminal before the second analysis');
 
   await page.locator('#trozalGeminiAnalyzeBtn').click();
+  await page.waitForFunction(() => document.getElementById('trozalGeminiStatus')?.textContent.includes('Selesai'));
   await page.waitForFunction(() => document.getElementById('metadataTitle')?.value.includes('Blue Glass Sphere'));
   assert.equal(await page.locator('#metadataDescription').inputValue(), 'A polished blue glass sphere floats against a dark gradient background with soft reflected light.');
   assert.equal(await page.locator('#metadataKeywords').inputValue(), 'blue glass sphere, floating object, dark gradient, soft reflections, abstract background');
