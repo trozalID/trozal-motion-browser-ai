@@ -67,7 +67,9 @@
       gl.useProgram(program);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
       gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
       if(gl.getError()!==gl.NO_ERROR)throw new Error('WebGL2 gagal menggambar tekstur');
-      draws++;\n      if(!activationReported){activationReported=true;window.dispatchEvent(new CustomEvent('trozal:gpu-frame-assist-used',{detail:{draws,uploads}}));}\n      return canvas;
+      draws++;
+      if(!activationReported){activationReported=true;window.dispatchEvent(new CustomEvent('trozal:gpu-frame-assist-used',{detail:{draws,uploads}}));}
+      return canvas;
     } catch(error) {
       failed=true;console.warn('TROZAL GPU frame assist failed; falling back to Canvas2D.',error);return null;
     }
