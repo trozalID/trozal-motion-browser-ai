@@ -80,22 +80,22 @@
  function inferMultiCharacterRelations(line){
   const raw=String(line||'').trim(),out=[];
   const add=(kind,a,b,roles,gaze,blocking)=>out.push({kind,characters:[a,b],roles,gaze,blocking,confidence:'explicit-text'});
-  let m=raw.match(/^([A-Z][a-zÀ-ÿ0-9_-]{1,24})\\s+(?:gives|hands|passes|menyerahkan|memberikan|mengoper)\\s+(?:the\\s+|a\\s+|an\\s+)?(.+?)\\s+(?:to|kepada|ke)\\s+([A-Z][a-zÀ-ÿ0-9_-]{1,24})[.!?]*$/i);
+  let m=raw.match(/^([A-Z][a-zÀ-ÿ0-9_-]{1,24})\s+(?:gives|hands|passes|menyerahkan|memberikan|mengoper)\s+(?:the\s+|a\s+|an\s+)?(.+?)\s+(?:to|kepada|ke)\s+([A-Z][a-zÀ-ÿ0-9_-]{1,24})[.!?]*$/i);
   if(m){add('HANDOFF',m[1],m[3],m[1]+' = pemberi; '+m[3]+' = penerima','penerima melihat objek; pemberi menjaga kontak sampai transfer selesai','kedua karakter harus terlihat; objek bergerak kontinu dari tangan pemberi ke penerima');return out;}
-  m=raw.match(/^([A-Z][a-zÀ-ÿ0-9_-]{1,24})\\s+(?:looks at|stares at|watches|menatap|melihat|memperhatikan)\\s+(?:the\\s+|a\\s+|an\\s+)?([A-Z][a-zÀ-ÿ0-9_-]{1,24})[.!?]*$/i);
+  m=raw.match(/^([A-Z][a-zÀ-ÿ0-9_-]{1,24})\s+(?:looks at|stares at|watches|menatap|melihat|memperhatikan)\s+(?:the\s+|a\s+|an\s+)?([A-Z][a-zÀ-ÿ0-9_-]{1,24})[.!?]*$/i);
   if(m){add('GAZE / ATTENTION',m[1],m[2],m[1]+' = pengamat; '+m[2]+' = fokus perhatian',m[1]+' mengarahkan eyeline ke '+m[2],'jaga eyeline dan screen position; jangan memindahkan karakter yang diam');return out;}
-  m=raw.match(/^([A-Z][a-zÀ-ÿ0-9_-]{1,24})\\s+(?:follows|chases|mengejar|mengikuti)\\s+([A-Z][a-zÀ-ÿ0-9_-]{1,24})[.!?]*$/i);
+  m=raw.match(/^([A-Z][a-zÀ-ÿ0-9_-]{1,24})\s+(?:follows|chases|mengejar|mengikuti)\s+([A-Z][a-zÀ-ÿ0-9_-]{1,24})[.!?]*$/i);
   if(m){add('FOLLOW / PURSUIT',m[1],m[2],m[1]+' = pengikut; '+m[2]+' = pemimpin',m[1]+' mempertahankan perhatian ke arah '+m[2],'pertahankan urutan depan-belakang, jarak relatif, dan arah gerak yang sama');return out;}
-  m=raw.match(/^([A-Z][a-zÀ-ÿ0-9_-]{1,24})\\s+and\\s+([A-Z][a-zÀ-ÿ0-9_-]{1,24})\\s+(?:face each other|look at each other|berhadapan|saling menatap)[.!?]*$/i);
+  m=raw.match(/^([A-Z][a-zÀ-ÿ0-9_-]{1,24})\s+and\s+([A-Z][a-zÀ-ÿ0-9_-]{1,24})\s+(?:face each other|look at each other|berhadapan|saling menatap)[.!?]*$/i);
   if(m){add('MUTUAL INTERACTION',m[1],m[2],'kedua karakter = pihak setara dalam interaksi','eyeline saling bertemu','jaga jarak dan orientasi berhadapan; gunakan two-shot agar relasi terbaca');return out;}
-  m=raw.match(/^([A-Z][a-zÀ-ÿ0-9_-]{1,24})\\s+(?:stands?|waits?|moves?|walks?|runs?)\\s+(?:behind|beside|in front of|next to|di belakang|di samping|di depan)\\s+([A-Z][a-zÀ-ÿ0-9_-]{1,24})[.!?]*$/i);
+  m=raw.match(/^([A-Z][a-zÀ-ÿ0-9_-]{1,24})\s+(?:stands?|waits?|moves?|walks?|runs?)\s+(?:behind|beside|in front of|next to|di belakang|di samping|di depan)\s+([A-Z][a-zÀ-ÿ0-9_-]{1,24})[.!?]*$/i);
   if(m){const relation=/behind|di belakang/i.test(raw)?'belakang':/in front of|di depan/i.test(raw)?'depan':'samping';add('SPATIAL BLOCKING',m[1],m[2],m[1]+' = posisi '+relation+' relatif terhadap '+m[2],'arah pandang mengikuti aksi yang dinyatakan','kunci posisi relatif '+relation+'; jangan menukar sisi layar tanpa perpindahan yang terlihat');return out;}
   return out;
  }
  function buildMultiCharacterMap(beats){
   const rows=[];
   beats.forEach((line,index)=>inferMultiCharacterRelations(line).forEach(rel=>{
-   rows.push((index+1)+'. '+rel.kind+' | TOKOH: '+rel.characters.join(' ↔ ')+'\\n   PERAN: '+rel.roles+'\\n   EYELINE: '+rel.gaze+'\\n   BLOCKING: '+rel.blocking);
+   rows.push((index+1)+'. '+rel.kind+' | TOKOH: '+rel.characters.join(' ↔ ')+'\n   PERAN: '+rel.roles+'\n   EYELINE: '+rel.gaze+'\n   BLOCKING: '+rel.blocking);
   }));
   return rows.length?['PETA INTERAKSI MULTI-KARAKTER:',...rows,'KONTINUITAS KARAKTER: pertahankan identitas, kostum, skala, posisi relatif, eyeline, dan arah hadap tiap tokoh antar-shot. Gunakan two-shot/over-shoulder saat relasi dua pihak penting.','BATAS DETEKSI: hanya relasi yang dinyatakan eksplisit yang dipetakan; jangan menambah tokoh, peran, kontak, atau perpindahan yang tidak disebut.']:['PETA INTERAKSI MULTI-KARAKTER: tidak ada relasi eksplisit antar tokoh yang terdeteksi; pertahankan staging sesuai brief tanpa mengarang karakter tambahan.'];
  }
