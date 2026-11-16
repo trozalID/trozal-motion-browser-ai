@@ -54,9 +54,24 @@
       panel = document.createElement('section');
       panel.id = 'trozalGpuHealthPanel';
       panel.className = 'panel';
-      panel.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9998;width:min(340px,calc(100vw - 28px));max-height:45vh;overflow:auto;box-shadow:0 12px 38px #0008;border-color:#46627d;';
-      panel.innerHTML = '<div style="display:flex;align-items:center;gap:8px"><strong style="color:#9fd0ff">GPU & PERFORMANCE HEALTH</strong><button type="button" id="trozalGpuHealthToggle" style="margin-left:auto;padding:3px 7px">Sembunyikan</button></div><div id="trozalGpuHealthBody" style="margin-top:8px;font-size:11px;line-height:1.65"></div>';
+      panel.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9998;width:min(340px,calc(100vw - 28px));max-height:45vh;overflow:auto;box-shadow:0 12px 38px #0008;border:1px solid rgba(105,177,220,.55);border-radius:12px;background:rgba(11,27,39,.72);backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);';
+      panel.innerHTML = '<div class="trozal-gpu-drag-head" style="display:flex;align-items:center;gap:8px;padding:9px 10px"><strong style="color:#9fd0ff">GPU & PERFORMANCE HEALTH · GESER</strong><button type="button" id="trozalGpuHealthToggle" style="margin-left:auto;padding:3px 7px">Sembunyikan</button></div><div id="trozalGpuHealthBody" style="margin:0 10px 10px;font-size:11px;line-height:1.65"></div>';
       document.body.appendChild(panel);
+      // Movable glass panel: drag only its title bar, never its controls.
+      const dragHead=panel.querySelector('.trozal-gpu-drag-head');let dragState=null;
+      dragHead.addEventListener('pointerdown',e=>{
+        if(e.button!==0||e.target.closest('button'))return;
+        const rect=panel.getBoundingClientRect();dragState={dx:e.clientX-rect.left,dy:e.clientY-rect.top};
+        panel.classList.add('is-dragging');dragHead.setPointerCapture?.(e.pointerId);e.preventDefault();
+      });
+      dragHead.addEventListener('pointermove',e=>{
+        if(!dragState)return;
+        const left=Math.max(0,Math.min(window.innerWidth-panel.offsetWidth,e.clientX-dragState.dx));
+        const top=Math.max(0,Math.min(window.innerHeight-panel.offsetHeight,e.clientY-dragState.dy));
+        panel.style.left=left+'px';panel.style.top=top+'px';panel.style.right='auto';panel.style.bottom='auto';
+      });
+      const stopDrag=()=>{dragState=null;panel.classList.remove('is-dragging');};
+      dragHead.addEventListener('pointerup',stopDrag);dragHead.addEventListener('pointercancel',stopDrag);
       panel.querySelector('#trozalGpuHealthToggle').addEventListener('click', () => {
         const body = panel.querySelector('#trozalGpuHealthBody');
         const hidden = body.hidden = !body.hidden;
