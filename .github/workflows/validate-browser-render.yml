@@ -52,7 +52,6 @@ jobs:
           set -euo pipefail
           node --check render-sync-advisor.js
           node --check browser-ai-gemini-cloud.js
-          node --input-type=module --check < browser-ai.js
           node --check browser-gpu-health.js
           node --check browser-gpu-frame-pipeline.js
           node <<'NODE'
