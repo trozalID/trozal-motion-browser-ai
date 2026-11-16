@@ -111,7 +111,7 @@
   });
   const body={
    contents:[{role:'user',parts}],
-   generationConfig:Object.assign({temperature:0.3,maxOutputTokens:8192},options.generationConfig||{})
+   generationConfig:Object.assign({temperature:0.3,maxOutputTokens:8192},options.generationConfig||{}),\n   ...(options.systemInstruction?{systemInstruction:{parts:[{text:String(options.systemInstruction)}]}}:{})
   };
   const payload=await requestJson(API+'/models/'+encodeURIComponent(modelId())+':generateContent',{
    method:'POST',
@@ -184,7 +184,7 @@
    panel=document.createElement('div');
    panel.id='trozalGeminiRecoveryPanel';
    panel.style.cssText='margin-top:8px;padding:10px;border:1px solid #9a7437;border-radius:8px;background:#2b2418;color:#f4dfb5;font-size:11px;';
-   const title=document.createElement('strong');title.textContent='GEMINI RECOVERY · MODE MANUAL';
+   const title=document.createElement('strong');title.textContent='GEMINI RECOVERY · FALLBACK AKTIF';
    const detail=document.createElement('div');detail.id='trozalGeminiRecoveryDetail';detail.style.margin='5px 0 8px';
    const actions=document.createElement('div');actions.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
    const copy=document.createElement('button');copy.type='button';copy.textContent='Salin brief lengkap';
