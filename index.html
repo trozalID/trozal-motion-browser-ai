@@ -5438,7 +5438,46 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
   const app=document.querySelector('.app'),main=app?.querySelector('.main');
   if(!app||!main||document.getElementById('trozalCenterControls'))return;
   const stageWrap=main.querySelector('.stagewrap');
-  if(!stageWrap)return;
+  const stageInfo=main.querySelector('.stageinfo');
+  if(!stageWrap||!stageInfo)return;
+  const resizeGrip=document.createElement('button');
+  resizeGrip.type='button';resizeGrip.id='trozalPreviewResizeGrip';resizeGrip.className='trozal-preview-resize-grip';
+  resizeGrip.setAttribute('role','separator');resizeGrip.setAttribute('aria-orientation','horizontal');
+  resizeGrip.setAttribute('aria-label','Geser atas atau bawah untuk mengubah tinggi Live Preview');
+  resizeGrip.setAttribute('aria-valuemin','280');resizeGrip.setAttribute('aria-valuemax',String(Math.round(window.innerHeight*.76)));
+  resizeGrip.setAttribute('aria-valuenow',String(Math.round(stageWrap.getBoundingClientRect().height)));
+  resizeGrip.title='Geser ke atas/bawah untuk memperbesar atau memperkecil Live Preview';
+  stageInfo.prepend(resizeGrip);
+  const applyPreviewPixels=pixels=>{
+   const max=Math.max(320,Math.round(window.innerHeight*.76));
+   const px=Math.max(280,Math.min(max,Math.round(pixels)));
+   stageWrap.style.flex='0 0 '+px+'px';stageWrap.style.height=px+'px';stageWrap.style.minHeight='280px';
+   stageWrap.style.maxHeight='none';main.style.overflowY='auto';
+   resizeGrip.setAttribute('aria-valuenow',String(px));
+   const slider=main.querySelector('#trozalCenterHeight'),output=main.querySelector('#trozalCenterHeightValue');
+   if(slider){slider.value=String(Math.max(30,Math.min(76,Math.round(px/window.innerHeight*100))));}
+   if(output)output.textContent=Math.round(px/window.innerHeight*100)+'vh';
+  };
+  let dragStartY=0,dragStartHeight=0;
+  resizeGrip.addEventListener('pointerdown',event=>{
+   if(event.button!==0&&event.pointerType==='mouse')return;
+   event.preventDefault();dragStartY=event.clientY;dragStartHeight=stageWrap.getBoundingClientRect().height;
+   resizeGrip.setPointerCapture(event.pointerId);resizeGrip.classList.add('is-dragging');
+  });
+  resizeGrip.addEventListener('pointermove',event=>{
+   if(!resizeGrip.hasPointerCapture(event.pointerId))return;
+   applyPreviewPixels(dragStartHeight+(dragStartY-event.clientY));
+  });
+  const finishResize=event=>{
+   if(resizeGrip.hasPointerCapture(event.pointerId))resizeGrip.releasePointerCapture(event.pointerId);
+   resizeGrip.classList.remove('is-dragging');
+  };
+  resizeGrip.addEventListener('pointerup',finishResize);resizeGrip.addEventListener('pointercancel',finishResize);
+  resizeGrip.addEventListener('keydown',event=>{
+   if(!['ArrowUp','ArrowDown','Home','End'].includes(event.key))return;
+   event.preventDefault();const current=stageWrap.getBoundingClientRect().height;
+   applyPreviewPixels(event.key==='Home'?280:event.key==='End'?window.innerHeight*.76:current+(event.key==='ArrowUp'?24:-24));
+  });
   const bar=document.createElement('div');bar.id='trozalCenterControls';
   bar.innerHTML='<label>Lebar panel tengah <input id="trozalCenterWidth" type="range" min="0" max="100" value="50"><output id="trozalCenterWidthValue">50%</output></label><label>Tinggi Preview <input id="trozalCenterHeight" type="range" min="30" max="76" value="48"><output id="trozalCenterHeightValue">48vh</output></label><button type="button" id="trozalCenterReset" title="Reset ukuran panel tengah">Reset</button>';
   main.insertBefore(bar,main.firstChild);
@@ -5472,6 +5511,13 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
 </script>
 
 <style id="trozal-browser-diagnostics-style">
+.stageinfo{position:relative;padding-top:17px!important;min-height:34px}
+.trozal-preview-resize-grip{position:absolute;z-index:8;top:0;left:50%;transform:translateX(-50%);width:min(220px,42%);height:14px;padding:0;border:0;border-radius:0 0 8px 8px;background:linear-gradient(180deg,rgba(13,24,33,.98),rgba(37,56,68,.94));border-bottom:2px solid rgba(119,207,170,.9);cursor:ns-resize;touch-action:none;user-select:none;display:flex;align-items:center;justify-content:center}
+.trozal-preview-resize-grip:before{content:"";display:block;width:64px;height:4px;border-top:1px solid #9ce7c1;border-bottom:1px solid #9ce7c1;opacity:.9}
+.trozal-preview-resize-grip:hover,.trozal-preview-resize-grip.is-dragging{background:rgba(42,104,83,.98);border-bottom-color:#b7f5d4;box-shadow:0 0 0 2px rgba(104,218,165,.22)}
+.trozal-preview-resize-grip:focus-visible{outline:2px solid #a4f0c7;outline-offset:2px}
+@media(max-width:720px){.trozal-preview-resize-grip{display:none}}
+
 #trozalDebugFab{position:fixed;z-index:100000;right:14px;bottom:14px;border:1px solid rgba(255,190,90,.75);background:rgba(40,31,20,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#ffe0a0;border-radius:999px;padding:9px 13px;font-size:11px;font-weight:800;box-shadow:0 5px 18px #0009}
 #trozalDebugFab .count{display:inline-block;min-width:17px;margin-left:5px;padding:1px 5px;border-radius:9px;background:#8d3038;color:#fff}
 #trozalDebugPanel{position:fixed;z-index:100001;left:10px;right:10px;bottom:58px;width:min(520px,calc(100vw - 20px));max-height:min(58vh,440px);display:none;flex-direction:column;border:1px solid rgba(125,150,180,.7);border-radius:11px;background:rgba(16,21,30,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#e8eef8;box-shadow:0 12px 40px #000c;overflow:hidden}
