@@ -36,7 +36,7 @@ const { chromium } = require('playwright');
         window.__trozalGpuFrameAssistEnabled = true;
       });
       await page.locator('#renderBtn').click();
-      await page.waitForFunction(() => { const value = document.getElementById('exportStatus')?.textContent || ''; return value.includes('Selesai:') || /gagal|error|tidak tersedia/i.test(value); }, null, { timeout: 45000 });
+      await page.waitForFunction(() => { const value = document.getElementById('exportStatus')?.textContent || ''; return value.includes('Selesai:') || /dibatalkan|gagal|error|tidak tersedia|format tidak didukung/i.test(value); }, null, { timeout: 45000 });
       const exportStatus = await page.locator('#exportStatus').textContent();
       assert.match(exportStatus, /Selesai:/, 'GPU export integration did not finish successfully: ' + exportStatus);
       const exportStats = await page.evaluate(() => window.TrozalGpuFramePipeline.getStats());
