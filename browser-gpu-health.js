@@ -98,6 +98,38 @@
     assistButton.textContent = enabled ? 'Matikan GPU Assist' : 'Aktifkan GPU Assist · Eksperimental';
     assistButton.disabled = !state.webgl2 || !window.TrozalGpuFramePipeline;
     if (!state.webgl2) assistButton.title = 'WebGL2 tidak tersedia; ekspor akan memakai Canvas2D.';
+
+    const benchmarkButton=document.createElement('button');
+    benchmarkButton.id='trozalGpuBenchmarkBtn';
+    benchmarkButton.type='button';
+    benchmarkButton.textContent='Uji benchmark 1080p + 4K';
+    benchmarkButton.style.cssText='display:block;margin-top:6px;width:100%;padding:7px;border:1px solid #687b91;border-radius:6px;background:#263342;color:#eef6ff;cursor:pointer;';
+    benchmarkButton.disabled=!state.webgl2 || !window.TrozalGpuFramePipeline?.benchmark;
+    benchmarkButton.addEventListener('click',async()=>{
+      benchmarkButton.disabled=true;benchmarkButton.textContent='Benchmark berjalan…';
+      const status=document.getElementById('trozalGpuBenchmarkResult');
+      if(status)status.textContent='Mengukur Canvas2D dan GPU Assist. Tunggu hingga selesai.';
+      try{
+        window.__trozalGpuFrameAssistEnabled=true;
+        const report=await window.TrozalGpuFramePipeline.benchmark();
+        const lines=report.results.map(item=>item.resolution+': Canvas2D '+item.canvas2dMedianMs+' ms · GPU Assist '+item.gpuAssistMedianMs+' ms · '+(item.ratio<1?'GPU lebih cepat':'Canvas2D lebih cepat')+' ('+item.ratio+'×)');
+        const current=document.getElementById('trozalGpuBenchmarkResult');
+        if(current)current.textContent=lines.join('\\n')+'\\nCatatan: uji sintetis scaling gambar statis, bukan durasi ekspor video penuh.';
+        window.__trozalGpuBenchmarkLastResult=report;
+      }catch(error){
+        const current=document.getElementById('trozalGpuBenchmarkResult');
+        if(current)current.textContent='Benchmark tidak selesai: '+(error?.message||error);
+      }finally{
+        const currentButton=document.getElementById('trozalGpuBenchmarkBtn');
+        if(currentButton){currentButton.disabled=false;currentButton.textContent='Ulangi benchmark 1080p + 4K';}
+      }
+    });
+    body.appendChild(benchmarkButton);
+    const benchmarkResult=document.createElement('div');
+    benchmarkResult.id='trozalGpuBenchmarkResult';
+    benchmarkResult.style.cssText='margin-top:6px;font-size:10px;white-space:pre-line;color:#c7d7e7;';
+    benchmarkResult.textContent='Benchmark lokal belum dijalankan.';
+    body.appendChild(benchmarkResult);
   }
 
   window.addEventListener('trozal:gpu-frame-assist-used', render);
