@@ -31,7 +31,9 @@ const { chromium } = require('playwright');
       await page.evaluate(() => {
         document.getElementById('resolution').value = '1280x720';
         document.getElementById('duration').value = '1';
-        const fps = document.getElementById('fps');\n        const fastOption = document.createElement('option'); fastOption.value = '1'; fastOption.textContent = '1'; fps.appendChild(fastOption); fps.value = '1';\n        window.__TROZAL_RENDER_DIAGNOSTICS = true;
+        const fps = document.getElementById('fps');
+        const fastOption = document.createElement('option'); fastOption.value = '1'; fastOption.textContent = '1'; fps.appendChild(fastOption); fps.value = '1';
+        window.__TROZAL_RENDER_DIAGNOSTICS = true;
         document.getElementById('format').value = 'webm';
         window.__trozalGpuFrameAssistEnabled = true;
       });
