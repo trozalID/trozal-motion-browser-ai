@@ -1,0 +1,16 @@
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+const html = fs.readFileSync('index.html', 'utf8');
+const gemini = fs.readFileSync('browser-ai-gemini-cloud.js', 'utf8');
+assert.match(html, /id="mp4RateMode"/);
+assert.match(html, /id="mp4Bitrate"/);
+assert.match(html, /value="35"/);
+assert.match(html, /value="50"/);
+assert.match(html, /rateMode==='target'\?\['-b:v'/);
+assert.match(html, /\.\.\.rateArgs/);
+assert.match(html, /'-crf',String\(crf\)/);
+assert.match(html, /ORIGINAL CONTENT \/ IP SAFETY POLICY/);
+assert.match(html, /copyrighted characters, franchises/);
+assert.match(gemini, /ORIGINAL CONTENT \/ IP SAFETY POLICY/);
+assert.match(gemini, /real company\/product logos, trademarks/);
+console.log('PASS: MP4 target bitrate is wired to libx264 and original-content policy is present in theme and Gemini prompts.');
