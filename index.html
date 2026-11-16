@@ -3965,7 +3965,7 @@ function buildVisualMotionHtml(){
   const app=document.querySelector('.app'),main=app?.querySelector('.main');
   if(!app||!main||document.getElementById('trozalCenterControls'))return;
   const bar=document.createElement('div');bar.id='trozalCenterControls';
-  bar.innerHTML='<label>Lebar panel tengah <input id="trozalCenterWidth" type="range" min="0" max="100" value="50"><output id="trozalCenterWidthValue">50%</output></label><label>Tinggi Preview <input id="trozalCenterHeight" type="range" min="300" max="76" value="48"><output id="trozalCenterHeightValue">48vh</output></label><button type="button" id="trozalCenterReset" title="Reset ukuran panel tengah">Reset</button>';
+  bar.innerHTML='<label>Lebar panel tengah <input id="trozalCenterWidth" type="range" min="0" max="100" value="50"><output id="trozalCenterWidthValue">50%</output></label><label>Tinggi Preview <input id="trozalCenterHeight" type="range" min="30" max="76" value="48"><output id="trozalCenterHeightValue">48vh</output></label><button type="button" id="trozalCenterReset" title="Reset ukuran panel tengah">Reset</button>';
   main.insertBefore(bar,main.firstChild);
   const width=bar.querySelector('#trozalCenterWidth'),height=bar.querySelector('#trozalCenterHeight');
   const setWidth=v=>{const n=Number(v);const side=290-(n-50)*1.35;app.style.setProperty('--trozal-left',Math.round(Math.max(210,Math.min(350,side)))+'px');app.style.setProperty('--trozal-right',Math.round(Math.max(210,Math.min(350,side)))+'px');bar.querySelector('#trozalCenterWidthValue').textContent=n+'%';};
