@@ -1238,7 +1238,7 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
    <div id="metadataPlatformValidation" class="metadata-evidence">Pilih platform untuk melihat pemeriksaan judul dan keyword.</div>
    <section class="metadata-evidence" id="trozalMetadataSourcePanel" style="margin:12px 0;border:1px solid #b18aff;background:rgba(125,78,190,.09)">
     <div style="font-weight:800;color:#c9a7ff;margin-bottom:6px">✦ TROZAL METADATA · PILIH SUMBER HASIL</div>
-    <p class="help">Pilih sumber HTML Motion atau Scene AI. TROZAL akan memuat sumber tersebut ke Preview utama, mengambil frame yang benar-benar tampil, lalu menganalisisnya dengan Gemini Cloud Vision.</p>
+    <p class="help">Pilih HTML Motion dari Terminal atau Preview HTML yang sudah aktif, atau pilih hasil Scene AI. TROZAL memuat sumber yang dipilih ke Preview utama, mengambil frame yang benar-benar tampil, lalu menganalisisnya dengan Gemini Cloud Vision.</p>
     <div class="row" style="gap:8px;flex-wrap:wrap">
      <button type="button" class="primary" id="metadataFromHtmlMotionBtn" style="flex:1">① METADATA HTML MOTION</button>
      <button type="button" class="primary" id="metadataFromSceneAiBtn" style="flex:1">② METADATA SCENE AI</button>
@@ -5446,6 +5446,14 @@ async function generateMotionSvgLocally(){
   setStatus('HTML-to-Motion aktif. Preview dan render memakai komposisi HTML asli; efek CSS dipertahankan.');
  }catch(err){const message='HTML-to-Motion gagal: '+(err?.message||String(err));setAiStatus(message);setStatus(message);setRenderProgress(0,'HTML tidak dapat dimuat','error');console.error(message,err);}
 }
+// Expose the currently loaded HTML Motion source to Browser Vision without
+// making the renderer's private iframe or lexical state a UI dependency.
+window.trozalGetHtmlMotionMetadataSource=function(){
+ return {
+  code:String(htmlMotionSource||''),
+  loaded:Boolean(sourceType==='text/html'&&htmlMotionIframe&&htmlMotionIframe.contentDocument)
+ };
+};
 $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
 
 </script>
