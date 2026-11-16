@@ -2840,7 +2840,7 @@ async function encodeMovWithWasm(pngZip,totalFrames,fps,width,height,outputForma
    try{
     activeCdn=cdn.name;
     setExportStatus('Memuat pustaka FFmpeg.wasm dari '+cdn.name+'…');
-    const mod=await timeout(import(cdn.pkg+'/index.js'),60000,'Import pustaka FFmpeg.wasm');
+    const mod=await timeout(import(cdn.pkg+'index.js'),60000,'Import pustaka FFmpeg.wasm');
     const FFmpeg=mod.FFmpeg;if(!FFmpeg)throw new Error('Class FFmpeg tidak ditemukan pada paket '+cdn.name);
     ffmpeg=new FFmpeg();
     workerBlobUrl=cdn.pkg+'worker.js';
