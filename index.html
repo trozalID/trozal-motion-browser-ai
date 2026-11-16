@@ -565,8 +565,8 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 /* Render preflight panel · amber technical theme */
 #renderPreflightPanel{background:linear-gradient(145deg,#49351a,#2a2117 62%,#382718);border:1px solid #c28c3c;box-shadow:0 8px 22px #140d05aa}#renderPreflightPanel h3{color:#ffe0a5}#renderPreflightPanel .help{color:#f1d9b4}#renderPreflightPanel button.primary{background:linear-gradient(135deg,#ffe0a0,#d49a42);color:#291a07}.render-preflight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}.render-preflight-grid>div{padding:7px;border:1px solid #8f682e;border-radius:7px;background:#241a10}.render-preflight-grid b{display:block;color:#f6c976;font-size:9px;text-transform:uppercase}.render-preflight-grid span{display:block;color:#fff0d3;font-size:11px;margin-top:3px}
 
-#trozalFloatingRender{position:fixed;right:18px;bottom:18px;z-index:10050;width:min(390px,calc(100vw - 28px));background:linear-gradient(145deg,#18232c,#101820);color:#edf5fb;border:1px solid rgba(245,190,75,.8);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.48);font:12px/1.45 Inter,Segoe UI,Arial,sans-serif;display:none;overflow:hidden}
-#trozalFloatingRender.is-visible{display:block}#trozalFloatingRender .tfr-head{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(255,190,65,.09);cursor:grab;user-select:none}
+#trozalFloatingRender{position:fixed;right:18px;bottom:18px;z-index:10050;width:min(390px,calc(100vw - 28px));background:rgba(16,24,32,.76);backdrop-filter:blur(14px) saturate(125%);-webkit-backdrop-filter:blur(14px) saturate(125%);color:#edf5fb;border:1px solid rgba(245,190,75,.65);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.48);font:12px/1.45 Inter,Segoe UI,Arial,sans-serif;display:none;overflow:hidden}
+#trozalFloatingRender.is-visible{display:block}#trozalFloatingRender .tfr-head{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(255,190,65,.07);cursor:grab;user-select:none;touch-action:none}
 #trozalFloatingRender .tfr-title{font-weight:900;letter-spacing:.6px;flex:1}#trozalFloatingRender button{padding:5px 9px;border-radius:7px;font-size:11px}
 #trozalFloatingRender .tfr-body{padding:12px}#trozalFloatingRender .tfr-main{display:flex;align-items:end;justify-content:space-between;gap:10px;margin-bottom:8px}
 #trozalFloatingRender .tfr-pct{font-size:27px;font-weight:900;color:#67e4a0}#trozalFloatingRender .tfr-speed{font-size:17px;font-weight:800;text-align:right}
@@ -3946,7 +3946,39 @@ function buildVisualMotionHtml(){
  '@keyframes heroFloat{0%{transform:translate3d(-1.2%,1.2%,0) rotate(-1deg)}100%{transform:translate3d(1.8%,-2%,0) rotate(1.5deg)}}@keyframes cloudDrift{from{translate:-3% 0}to{translate:5% 0}}@keyframes twinkle{from{opacity:.18}to{opacity:1}}@keyframes waveDrift{from{transform:translateY(9px)}to{transform:translateY(-12px)}}@keyframes wheelSpin{to{transform:rotate(360deg)}}@keyframes snowFall{from{transform:translateY(-30px)}to{transform:translateY(40px)}}@keyframes floatParticle{0%{opacity:0;transform:translateY(24px)}45%{opacity:.8}100%{opacity:0;transform:translateY(-34px)}}'+camCss+
  kfBlocks+'@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-delay:0ms!important}}'+
  '</style></head><body><main class="stage">'+sceneMarkup+'</main>\n'+
- '</body></html>';
+ '
+<style id="trozal-center-controls-style">
+#trozalCenterControls{position:sticky;top:0;z-index:80;display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:7px 10px;margin:0 0 8px;border:1px solid rgba(117,210,169,.35);border-radius:9px;background:rgba(13,30,25,.66);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#d9f5e4;font-size:10px}
+#trozalCenterControls label{display:flex;align-items:center;gap:7px;flex:1;min-width:180px}
+#trozalCenterControls input{width:100%;min-width:70px;accent-color:#83e4ae}
+#trozalCenterControls output{min-width:42px;text-align:right;color:#a7efc5;font-variant-numeric:tabular-nums}
+#trozalGpuHealthPanel{background:rgba(11,27,39,.72)!important;backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);border-color:rgba(105,177,220,.55)!important;border-radius:12px!important;touch-action:pan-y}
+#trozalGpuHealthPanel .trozal-gpu-drag-head{cursor:grab;touch-action:none;user-select:none}
+#trozalGpuHealthPanel.is-dragging .trozal-gpu-drag-head{cursor:grabbing}
+#trozalFloatingRender{background:rgba(16,24,32,.76)!important;backdrop-filter:blur(14px) saturate(125%);-webkit-backdrop-filter:blur(14px) saturate(125%)}
+@media(max-width:760px){#trozalCenterControls{position:relative}#trozalCenterControls label{min-width:140px}}
+</style>
+<script id="trozal-center-controls-script">
+(function(){
+ 'use strict';
+ function init(){
+  const app=document.querySelector('.app'),main=app?.querySelector('.main');
+  if(!app||!main||document.getElementById('trozalCenterControls'))return;
+  const bar=document.createElement('div');bar.id='trozalCenterControls';
+  bar.innerHTML='<label>Lebar panel tengah <input id="trozalCenterWidth" type="range" min="0" max="100" value="50"><output id="trozalCenterWidthValue">50%</output></label><label>Tinggi Preview <input id="trozalCenterHeight" type="range" min="300" max="76" value="48"><output id="trozalCenterHeightValue">48vh</output></label><button type="button" id="trozalCenterReset" title="Reset ukuran panel tengah">Reset</button>';
+  main.insertBefore(bar,main.firstChild);
+  const width=bar.querySelector('#trozalCenterWidth'),height=bar.querySelector('#trozalCenterHeight');
+  const setWidth=v=>{const n=Number(v);const side=290-(n-50)*1.35;app.style.setProperty('--trozal-left',Math.round(Math.max(210,Math.min(350,side)))+'px');app.style.setProperty('--trozal-right',Math.round(Math.max(210,Math.min(350,side)))+'px');bar.querySelector('#trozalCenterWidthValue').textContent=n+'%';};
+  const setHeight=v=>{const n=Number(v);main.style.setProperty('--trozal-preview-height',n+'vh');bar.querySelector('#trozalCenterHeightValue').textContent=n+'vh';};
+  width.addEventListener('input',()=>setWidth(width.value));height.addEventListener('input',()=>setHeight(height.value));
+  bar.querySelector('#trozalCenterReset').addEventListener('click',()=>{width.value='50';height.value='48';setWidth(50);setHeight(48);});
+  setWidth(50);setHeight(48);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+
+</body></html>';
  return {html,scenes:items.length,duration:total,ratio};
 }
 $('generateVisualMotionBtn').addEventListener('click',()=>{
