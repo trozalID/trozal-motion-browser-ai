@@ -95,6 +95,8 @@ jobs:
           grep -n "timeout: 12000\|snapshot=" tests/render-sync-advisor.browser.cjs
       - name: Verify GPU frame pipeline in Chromium with safe fallback
         run: node tests/browser-gpu-frame-pipeline.browser.cjs
+      - name: Verify Canvas2D export fallback when WebGL2 is unavailable
+        run: node tests/browser-gpu-canvas2d-fallback.browser.cjs
       - name: Exercise Render Sync Advisor in Chromium
         run: node tests/render-sync-advisor.browser.cjs
       - name: Compare render throughput with pointer over and away from progress panel
