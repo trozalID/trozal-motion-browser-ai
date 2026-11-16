@@ -67,6 +67,16 @@ const { chromium } = require('playwright');
       assert.ok(Number.isFinite(benchmark.results[0].canvas2dMedianMs), 'Canvas2D benchmark timing should be numeric');
       assert.ok(Number.isFinite(benchmark.results[0].gpuAssistMedianMs), 'GPU benchmark timing should be numeric');
       assert.equal(benchmark.results[0].iterations, 2);
+      const unsupported = await page.evaluate(async (limit) => {
+        try { await window.TrozalGpuFramePipeline.benchmark({ sizes: [{ label: 'oversize', width: limit + 1, height: 32 }], iterations: 2 }); return ''; }
+        catch (error) { return error.message; }
+      }, benchmark.maxTextureSize);
+      assert.match(unsupported, /tidak didukung GPU ini/, 'Benchmark must reject sizes beyond GPU texture capability before allocating canvases');
+      const invalid = await page.evaluate(async () => {
+        try { await window.TrozalGpuFramePipeline.benchmark({ sizes: [{ label: 'invalid', width: -1, height: 32 }], iterations: 2 }); return ''; }
+        catch (error) { return error.message; }
+      });
+      assert.match(invalid, /Resolusi benchmark tidak valid/, 'Benchmark must reject invalid dimensions');
       assert.equal(await page.locator('#trozalGpuBenchmarkBtn').count(), 1, 'GPU health panel should expose the local benchmark action');
       console.log('GPU benchmark diagnostic test passed:', JSON.stringify(benchmark));
     } else {
