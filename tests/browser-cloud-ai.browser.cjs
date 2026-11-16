@@ -6,7 +6,8 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
   const pageErrors = [];
-  const requests = [];\n  let failNextSceneGeneration = false;
+  const requests = [];
+  let failNextSceneGeneration = false;
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
 
   await page.route('https://generativelanguage.googleapis.com/**', async route => {
