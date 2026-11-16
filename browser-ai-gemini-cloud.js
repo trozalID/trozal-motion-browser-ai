@@ -83,7 +83,7 @@
    throw new Error('Koneksi Gemini gagal setelah 3 percobaan. Periksa internet lalu coba lagi. Pekerjaan editor tidak dihapus.');
   }catch(error){
    if(externalSignal?.aborted)throw new Error('Permintaan dibatalkan oleh pengguna. Brief dan pekerjaan editor tetap aman.');
-   if(timedOut||signal.aborted)throw new Error('Gemini belum merespons dalam '+Math.round((timeoutMs||90000)/1000)+' detik. Model atau koneksi mungkin sedang lambat. Bukti visual dan pekerjaan editor tetap aman; coba lagi, atau gunakan model Gemini Flash yang tersedia pada API key Anda.');
+   if(timedOut||signal.aborted)throw new Error('Permintaan Gemini melewati batas waktu ('+Math.round((timeoutMs||90000)/1000)+' detik). Anda dapat mencoba lagi; brief dan pekerjaan editor tetap aman.');
    if(error?.status===429)throw new Error('Kuota / rate limit Gemini tercapai (HTTP 429). Retry otomatis dihentikan agar tidak menghabiskan percobaan. Periksa Google AI Studio / billing, tunggu reset kuota, atau pilih model lain yang API key Anda izinkan. Brief tetap tersedia untuk mode manual.');
    if(/Failed to fetch|NetworkError|Load failed/i.test(error?.message||'')){
     throw new Error('Tidak dapat menghubungi Gemini Cloud setelah retry otomatis. Periksa koneksi internet, izin jaringan browser, dan status layanan Google. Brief tetap tersedia untuk mode manual.');
@@ -324,7 +324,7 @@
    reader.readAsDataURL(file);
   });
  }
- async function resizeDataUrl(dataUrl,maxSide,quality){
+ async function resizeDataUrl(dataUrl,maxSide){
   const image=new Image();
   image.src=dataUrl;
   await image.decode();
@@ -335,7 +335,7 @@
   const context=canvas.getContext('2d');
   if(!context)throw new Error('Canvas gambar tidak tersedia.');
   context.drawImage(image,0,0,canvas.width,canvas.height);
-  return canvas.toDataURL('image/jpeg',Math.max(0.55,Math.min(0.9,Number(quality)||0.74)));
+  return canvas.toDataURL('image/jpeg',0.86);
  }
  async function capturePreviewFrames(){
   if(typeof renderAt!=='function'||typeof ensureHtmlToImage!=='function')throw new Error('Renderer Preview belum siap.');
@@ -361,7 +361,7 @@
      const renderer=await ensureHtmlToImage();
      canvas=await renderer.toCanvas($('stage'),{pixelRatio:1,cacheBust:true,skipFonts:false});
     }
-    const jpeg=await resizeDataUrl(canvas.toDataURL('image/jpeg',0.82),960,0.74);
+    const jpeg=await resizeDataUrl(canvas.toDataURL('image/jpeg',0.86),1280);
     const image=splitDataUrl(jpeg);
     image.time=time;
     frames.push(image);
@@ -475,7 +475,7 @@
    if(selected.length){
     for(const file of selected){
      if(file.size>12*1024*1024)throw new Error('File '+file.name+' melebihi 12 MB. Kecilkan file terlebih dahulu.');
-     const dataUrl=await resizeDataUrl(await fileAsDataUrl(file),960,0.74);
+     const dataUrl=await resizeDataUrl(await fileAsDataUrl(file),1280);
      images.push(splitDataUrl(dataUrl));
     }
    }else{
@@ -483,16 +483,6 @@
     images.push(...await capturePreviewFrames());
    }
    if(!images.length)throw new Error('Tidak ada gambar untuk dianalisis.');
-   // Batasi payload Vision agar tiga frame besar tidak menghabiskan waktu unggah.
-   const payloadBytes=()=>images.reduce((sum,image)=>sum+Math.floor(image.data.length*0.75),0);
-   if(payloadBytes()>3.5*1024*1024){
-    status('trozalGeminiStatus','Mengoptimalkan ukuran bukti visual agar analisis Gemini lebih cepat…');
-    const compact=await Promise.all(images.map(async image=>{
-     const dataUrl=await resizeDataUrl('data:'+image.mime_type+';base64,'+image.data,768,0.68);
-     return splitDataUrl(dataUrl);
-    }));
-    images.splice(0,images.length,...compact);
-   }
    renderContactSheet(images);
    const allowed=[...$('metadataCategory').options].map(option=>option.text);
    const prompt=[

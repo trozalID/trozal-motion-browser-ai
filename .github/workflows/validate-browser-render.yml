@@ -16,7 +16,6 @@ on:
       - fix/browser-preview-height-runtime-diagnostics-2026-11-16
       - fix/browser-preview-drag-resizer-2026-11-16
       - fix/browser-gemini-vision-contact-sheet-2026-11-16
-      - fix/browser-gemini-vision-timeout-2026-11-16
       - feature/browser-scene-composer-scene-intelligence-2026-11-16
   workflow_dispatch:
 
