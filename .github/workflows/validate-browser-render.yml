@@ -81,6 +81,7 @@ jobs:
           NODE
           node tests/browser-render-scheduler.test.cjs
           node tests/browser-gpu-health.test.cjs
+          node tests/browser-gemini-failover.test.cjs
       - name: Verify checked-out test revision
         run: |
           echo "GITHUB_SHA=$GITHUB_SHA"
