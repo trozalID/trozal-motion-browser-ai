@@ -32,14 +32,14 @@ const { chromium } = require('playwright');
         document.getElementById('resolution').value = '1280x720';
         document.getElementById('duration').value = '1';
         document.getElementById('fps').value = '30';
-        document.getElementById('format').value = 'pngseq';
+        document.getElementById('format').value = 'webm';
         window.__trozalGpuFrameAssistEnabled = true;
       });
       await page.locator('#renderBtn').click();
-      await page.waitForFunction(() => (document.getElementById('exportStatus')?.textContent || '').includes('PNG Sequence selesai'), null, { timeout: 45000 });
+      await page.waitForFunction(() => (document.getElementById('exportStatus')?.textContent || '').includes('Selesai:'), null, { timeout: 45000 });
       const exportStats = await page.evaluate(() => window.TrozalGpuFramePipeline.getStats());
-      assert.ok(exportStats.draws > result.stats.draws, 'PNG Sequence export must call the GPU layer rasterizer when GPU Assist is enabled');
-      console.log('GPU-assisted PNG Sequence export integration passed:', JSON.stringify(exportStats));
+      assert.ok(exportStats.draws > result.stats.draws, 'WebM export must call the GPU layer rasterizer when GPU Assist is enabled');
+      console.log('GPU-assisted WebM export integration passed:', JSON.stringify(exportStats));
     } else {
       console.log('GPU frame pipeline unavailable in this browser; verified safe Canvas2D fallback:', JSON.stringify(result.stats));
     }
