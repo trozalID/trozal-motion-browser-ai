@@ -18,6 +18,7 @@ on:
       - fix/browser-gemini-vision-contact-sheet-2026-11-16
       - feature/browser-scene-composer-scene-intelligence-2026-11-16
       - fix/browser-pages-scene-intelligence-gemini-timeout-2026-11-16
+      - feature/mp4-bitrate-ip-guardrails-2026-11-16
   workflow_dispatch:
 
 permissions:
@@ -92,6 +93,7 @@ jobs:
           node tests/browser-gpu-health.test.cjs
           node tests/browser-gemini-failover.test.cjs
           node tests/browser-gemini-failover.runtime.test.cjs
+          node tests/mp4-bitrate-ip-guardrails.test.cjs
       - name: Guard central workspace and export capabilities
         run: node tests/workspace-export-preservation.test.cjs
       - name: Verify checked-out test revision
