@@ -111,6 +111,39 @@ jobs:
         run: node tests/floating-render-monitor.browser.cjs
       - name: Test Gemini Cloud-only Scene Composer and Browser Vision
         run: node tests/browser-cloud-ai.browser.cjs
+      - name: Verify Preview height slider and Runtime Diagnostics controls
+        run: |
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          const assert = require('node:assert/strict');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+            const errors = [];
+            page.on('pageerror', e => errors.push(e.message));
+            await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
+            await page.waitForSelector('#trozalCenterHeight');
+            await page.locator('#trozalCenterHeight').evaluate(el => {
+              el.value = '70';
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+            const preview = await page.locator('.main .stagewrap').evaluate(el => ({
+              height: el.style.height,
+              flex: el.style.flex
+            }));
+            assert.equal(preview.height, '70vh', 'Preview height slider must resize the actual stage wrapper');
+            assert.match(preview.flex, /70vh/, 'Preview flex-basis must follow the selected height');
+            await page.waitForSelector('#trozalDebugFab');
+            await page.locator('#trozalDebugFab').click();
+            await page.waitForFunction(() => document.getElementById('trozalDebugPanel')?.classList.contains('open'));
+            await page.locator('#trozalDebugPanel .debug-minimize').click();
+            await page.waitForFunction(() => document.getElementById('trozalDebugPanel')?.classList.contains('minimized'));
+            await page.locator('#trozalDebugPanel .debug-minimize').click();
+            await page.waitForFunction(() => !document.getElementById('trozalDebugPanel')?.classList.contains('minimized'));
+            assert.deepEqual(errors, [], 'Unexpected browser page errors');
+            await browser.close();
+          })().catch(e => { console.error(e); process.exit(1); });
+          NODE
       - name: Stop local preview server
         if: always()
         run: if [ -f /tmp/browser-ai-http.pid ]; then kill "$(cat /tmp/browser-ai-http.pid)" || true; fi
