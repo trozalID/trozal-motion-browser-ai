@@ -3,10 +3,10 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('browser-ai-gemini-cloud.js', 'utf8');
 
-assert.match(source, /function buildVisionFallbackMetadata\\(allowed\\)/);
-assert.match(source, /fillMetadata\\(fallback,'Smart Template · fallback tekstual'\\)/);
+assert.ok(source.includes('function buildVisionFallbackMetadata(allowed){'));
+assert.ok(source.includes("fillMetadata(fallback,'Smart Template · fallback tekstual')"));
 assert.ok(source.includes('bukan dari analisis piksel'));
-assert.match(source, /visible_objects:\\s*\\[\\]/);
+assert.ok(source.includes('visible_objects:[]'));
 assert.ok(source.includes('Jangan menganggap objek, warna, komposisi, atau gerakan telah dikenali dari piksel'));
 assert.ok(source.includes("metadataSource==='Gemini Cloud'"));
 
