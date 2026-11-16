@@ -72,9 +72,11 @@
      }else throw error;
     }
     if(attempt<2){
-     const backoff=500*Math.pow(2,attempt);
-     const jitter=Math.floor(Math.random()*Math.min(250,backoff*.2));
-     await waitForRetry(Math.min(10000,Math.max(backoff+jitter,retryAfterMs)));
+     // 503/5xx dari Gemini biasanya sementara. Beri jeda eksponensial yang
+     // cukup, dan hormati Retry-After hingga batas aman 30 detik.
+     const backoff=2200*Math.pow(2,attempt);
+     const jitter=Math.floor(Math.random()*Math.min(900,backoff*.15));
+     await waitForRetry(Math.min(30000,Math.max(backoff+jitter,retryAfterMs)));
     }
    }
    if(lastError?.status>=500)throw new Error('Gemini sedang mengalami gangguan server setelah 3 percobaan. Prompt dan editor tetap tersedia; coba lagi beberapa saat. Detail: '+lastError.message);
@@ -371,14 +373,45 @@
   const panel=$('trozalGeminiContactSheetPanel');
   const holder=$('trozalGeminiContactSheet');
   if(!panel||!holder)return;
+  // Batasi seluruh konten ke lebar panel. Gambar hasil capture dapat
+  // berukuran 1280px; tanpa aturan ini intrinsic width mendorong grid melebar.
+  panel.style.boxSizing='border-box';
+  panel.style.width='100%';
+  panel.style.maxWidth='100%';
+  holder.style.display='grid';
+  holder.style.gridTemplateColumns='repeat(auto-fit,minmax(min(100%,150px),1fr))';
+  holder.style.gap='8px';
+  holder.style.width='100%';
+  holder.style.maxWidth='100%';
+  holder.style.minWidth='0';
+  holder.style.boxSizing='border-box';
+  holder.style.alignItems='start';
   holder.replaceChildren();
   images.forEach((item,index)=>{
    const wrapper=document.createElement('div');
+   wrapper.style.minWidth='0';
+   wrapper.style.maxWidth='100%';
+   wrapper.style.overflow='hidden';
+   wrapper.style.boxSizing='border-box';
+   wrapper.style.border='1px solid rgba(115,225,192,.25)';
+   wrapper.style.borderRadius='7px';
+   wrapper.style.padding='5px';
    const image=document.createElement('img');
    image.alt='Bukti frame '+(index+1);
    image.src='data:'+item.mime_type+';base64,'+item.data;
+   image.style.display='block';
+   image.style.width='100%';
+   image.style.maxWidth='100%';
+   image.style.height='auto';
+   image.style.maxHeight='190px';
+   image.style.objectFit='contain';
+   image.style.objectPosition='center';
+   image.style.borderRadius='4px';
    const label=document.createElement('div');
    label.className='help';
+   label.style.maxWidth='100%';
+   label.style.overflowWrap='anywhere';
+   label.style.textAlign='center';
    label.textContent=Number.isFinite(item.time)?'Frame '+(index+1)+' · '+item.time.toFixed(2)+'s':'Gambar '+(index+1);
    wrapper.append(image,label);
    holder.append(wrapper);
@@ -477,7 +510,11 @@
   }catch(error){
    const cancelled=controller.signal.aborted;
    status('trozalGeminiStatus',cancelled?'Analisis dibatalkan.':'Analisis Gemini gagal: '+(error.message||String(error)),!cancelled);
-   status('trozalVisionStatus',cancelled?'Analisis dibatalkan.':(error.message||String(error)),!cancelled);
+   status('trozalVisionStatus',cancelled
+    ?'Analisis dibatalkan.'
+    :(/HTTP 503|HTTP 502|HTTP 500|gangguan server/i.test(error.message||'')
+      ?'Layanan Gemini sedang bermasalah. Bukti visual tetap ditampilkan; coba analisis lagi beberapa saat.'
+      :'Analisis belum selesai. Bukti visual tetap tersedia untuk diperiksa.'),!cancelled);
   }finally{
    visionController=null;
    if(button){button.disabled=false;button.textContent='✦ ANALISIS VISUAL DENGAN GEMINI CLOUD';}
