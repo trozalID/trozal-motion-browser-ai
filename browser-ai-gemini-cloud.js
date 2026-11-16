@@ -239,6 +239,9 @@
   const scenePlan=window.TROZAL_SCENE_INTELLIGENCE?.build(brief,duration)||'Gunakan brief lengkap sebagai satu adegan koheren.';
   return [
    'VISUAL BRIEF:\n'+brief,
+   'ORIGINAL CONTENT / IP SAFETY POLICY:',
+   'Create original fictional visual content only. Do not reproduce or reference copyrighted characters, franchises, recognizable mascots, protected signature designs, real company/product logos, trademarks, brand marks, or existing proprietary identities. Do not imitate a specific protected character or recreate a known logo. Use invented names, original silhouettes, original symbols, and generic non-branded objects. Broad genres and visual directions such as cinematic, futuristic, cyberpunk, premium, 3D, editorial, and commercial motion design are allowed when executed with original assets.',
+   'If the brief or theme details mention protected IP, transform it into a distinct original concept preserving only broad mood or genre, never the protected identity or recognizable design.',
    'SCENE INTELLIGENCE / BEAT PLAN:\n'+scenePlan,
    themePrompt?'THEME INTELLIGENCE / DETAIL TEMA:\n'+themePrompt:'',
    'OUTPUT REQUIREMENTS:',
@@ -280,7 +283,7 @@
     status('trozalSceneEngineStatus','Gemini Cloud menjadi mesin utama · fallback '+(fallback?'aktif':'nonaktif')+'.');
     status('visualMotionAiStatus','Mengirim brief ke Gemini Cloud ('+modelId()+')…');
     try{
-     const output=await createInteraction(buildScenePrompt(),{systemInstruction:'You are an expert motion-graphics art director and SVG animation engineer. Create a visually rich, concept-specific production-ready HTML/SVG animation. Follow all explicit visual requirements and preserve the entire requested concept. Return complete code only.',generationConfig:{temperature:0.35,maxOutputTokens:8192},signal:controller.signal,timeoutMs:120000});
+     const output=await createInteraction(buildScenePrompt(),{systemInstruction:'You are an expert motion-graphics art director and SVG animation engineer. Create a visually rich, concept-specific production-ready HTML/SVG animation. Follow all explicit visual requirements and preserve the entire requested concept. ORIGINAL CONTENT / IP SAFETY POLICY: create original fictional content only; do not reproduce copyrighted characters, franchises, recognizable mascots, protected signature designs, real company/product logos, trademarks, brand marks, or existing proprietary identities. Use invented names, original silhouettes and symbols, and generic non-branded objects. Broad visual genres are allowed when executed with original assets. If the brief names protected IP, transform it into a distinct original concept preserving only broad mood or genre, never the protected identity or recognizable design. Return complete code only.',generationConfig:{temperature:0.35,maxOutputTokens:8192},signal:controller.signal,timeoutMs:120000});
      if(controller.signal.aborted)throw new Error('Permintaan dibatalkan.');
      applySceneCode(extractHtml(output),'Gemini Cloud');
      status('trozalSceneEngineStatus','Selesai · Gemini Cloud berhasil digunakan sebagai mesin utama.');
