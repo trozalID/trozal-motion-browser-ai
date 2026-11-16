@@ -236,7 +236,8 @@
    'Atmospheric particles: '+(includeParticles?'Use only when relevant to the brief.':'Do not add decorative particles.'),
    'Depth layers: '+(includeDepth?'Use visible foreground, middle ground and background depth.':'Prefer a flatter composition.')
   ].filter(Boolean).join('\n\n');
- }async function generateScene(){
+ }
+  async function generateScene(){
    const button=$('generateVisualMotionAiBtn'),cancel=$('cancelBrowserAiGenerationBtn');
    if(sceneController)return;
    const controller=new AbortController();sceneController=controller;
@@ -253,7 +254,7 @@
     status('trozalSceneEngineStatus','Gemini Cloud menjadi mesin utama · fallback '+(fallback?'aktif':'nonaktif')+'.');
     status('visualMotionAiStatus','Mengirim brief ke Gemini Cloud ('+modelId()+')…');
     try{
-     const output=await createInteraction(buildScenePrompt(),{generationConfig:{temperature:0.35,maxOutputTokens:8192},signal:controller.signal,timeoutMs:240000});
+     const output=await createInteraction(buildScenePrompt(),{generationConfig:{temperature:0.35,maxOutputTokens:8192},signal:controller.signal,timeoutMs:120000});
      if(controller.signal.aborted)throw new Error('Permintaan dibatalkan.');
      applySceneCode(extractHtml(output),'Gemini Cloud');
      status('trozalSceneEngineStatus','Selesai · Gemini Cloud berhasil digunakan sebagai mesin utama.');
