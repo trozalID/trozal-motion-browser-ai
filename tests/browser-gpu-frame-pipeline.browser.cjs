@@ -62,6 +62,13 @@ const { chromium } = require('playwright');
       const exportStats = await page.evaluate(() => window.TrozalGpuFramePipeline.getStats());
       assert.ok(exportStats.draws > result.stats.draws, 'PNG Sequence export must call the GPU layer rasterizer when GPU Assist is enabled');
       console.log('GPU-assisted PNG Sequence export integration passed:', JSON.stringify(exportStats));
+      const benchmark = await page.evaluate(async () => window.TrozalGpuFramePipeline.benchmark({ sizes: [{ label: 'test', width: 320, height: 180 }], iterations: 2 }));
+      assert.equal(benchmark.results.length, 1, 'Benchmark should return one requested test size');
+      assert.ok(Number.isFinite(benchmark.results[0].canvas2dMedianMs), 'Canvas2D benchmark timing should be numeric');
+      assert.ok(Number.isFinite(benchmark.results[0].gpuAssistMedianMs), 'GPU benchmark timing should be numeric');
+      assert.equal(benchmark.results[0].iterations, 2);
+      assert.equal(await page.locator('#trozalGpuBenchmarkBtn').count(), 1, 'GPU health panel should expose the local benchmark action');
+      console.log('GPU benchmark diagnostic test passed:', JSON.stringify(benchmark));
     } else {
       console.log('GPU frame pipeline unavailable in this browser; verified safe Canvas2D fallback:', JSON.stringify(result.stats));
     }
