@@ -27,6 +27,19 @@ const { chromium } = require('playwright');
       assert.equal(result.stats.draws, 1);
       assert.equal(result.stats.uploads, 1);
       console.log('GPU frame pipeline browser test passed:', JSON.stringify(result));
+      await page.locator('#demoBtn').click();
+      await page.evaluate(() => {
+        document.getElementById('resolution').value = '1280x720';
+        document.getElementById('duration').value = '1';
+        document.getElementById('fps').value = '30';
+        document.getElementById('format').value = 'pngseq';
+        window.__trozalGpuFrameAssistEnabled = true;
+      });
+      await page.locator('#renderBtn').click();
+      await page.waitForFunction(() => (document.getElementById('exportStatus')?.textContent || '').includes('PNG Sequence selesai'), null, { timeout: 45000 });
+      const exportStats = await page.evaluate(() => window.TrozalGpuFramePipeline.getStats());
+      assert.ok(exportStats.draws > result.stats.draws, 'PNG Sequence export must call the GPU layer rasterizer when GPU Assist is enabled');
+      console.log('GPU-assisted PNG Sequence export integration passed:', JSON.stringify(exportStats));
     } else {
       console.log('GPU frame pipeline unavailable in this browser; verified safe Canvas2D fallback:', JSON.stringify(result.stats));
     }
