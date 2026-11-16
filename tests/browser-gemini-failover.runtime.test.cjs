@@ -50,7 +50,7 @@ const response = (status, payload = {}, headers = {}) => ({
     timeoutCalls++;
     options.signal.addEventListener('abort', () => reject(new Error('timed out')), { once: true });
   }));
-  await assert.rejects(() => timeoutRequest('/test', {}, 1000), /melewati batas waktu|belum merespons/i);
+  await assert.rejects(() => timeoutRequest('/test', {}, 1000), /melewati batas waktu/i);
   assert.equal(timeoutCalls, 1, 'request timeout must abort without retrying');
 
   console.log('Gemini failover runtime regression checks passed.');
