@@ -13,6 +13,7 @@ on:
       - feature/browser-gpu-renderer-gemini-resilience-2026-11-16
       - feature/browser-transparent-draggable-panels-center-sliders-2026-11-16
       - fix/browser-preview-height-runtime-diagnostics-2026-11-16
+      - fix/browser-preview-drag-resizer-2026-11-16
   workflow_dispatch:
 
 permissions:
@@ -144,6 +145,31 @@ jobs:
             await browser.close();
           })().catch(e => { console.error(e); process.exit(1); });
           NODE
+      - name: Verify draggable vertical Live Preview resize handle
+        run: |
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          const assert = require('node:assert/strict');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+            await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
+            const grip = page.locator('#trozalPreviewResizeGrip');
+            await grip.waitFor();
+            const preview = page.locator('.main .stagewrap');
+            const before = await preview.evaluate(el => el.getBoundingClientRect().height);
+            const box = await grip.boundingBox();
+            await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+            await page.mouse.down();
+            await page.mouse.move(box.x + box.width / 2, box.y - 95, { steps: 8 });
+            await page.mouse.up();
+            const after = await preview.evaluate(el => el.getBoundingClientRect().height);
+            assert.ok(after > before + 60, 'Dragging the divider upward must enlarge Live Preview');
+            await page.keyboard.press('Tab');
+            await browser.close();
+          })().catch(e => { console.error(e); process.exit(1); });
+          NODE
+
       - name: Stop local preview server
         if: always()
         run: if [ -f /tmp/browser-ai-http.pid ]; then kill "$(cat /tmp/browser-ai-http.pid)" || true; fi
