@@ -143,7 +143,7 @@ const TROZAL_IP_SAFETY_POLICY = [
   "Do not show real company/product logos, brand marks, trademarks, watermarks, signatures, or recognizable corporate identities. Do not invent a logo or wordmark; for branding/logo themes use abstract non-identifying geometry only, with no logo, brand name, or trademark.",
   "Use original fictional subjects, generic non-branded objects, fresh compositions, and independently created visual language. If the brief requests protected IP, transform it into a distinct original alternative using only broad, unprotected mood or genre attributes; never copy distinctive protected elements.",
   "Do not include copyrighted lyrics, quotations, source artwork, screenshots, or copied text."
-].join("\\n");
+].join("\n");
 async function planVisualScenesWithBrowserAI(brief, preferredCount = 4) {
   const text = String(brief || "").trim();
   if (!text) throw new Error("Prompt cerita masih kosong.");
