@@ -144,7 +144,7 @@ const { chromium } = require('playwright');
   const fallbackCode = await page.locator('#visualMotionOutput').inputValue();
   assert.match(fallbackCode, /id="main-subject"/);
   assert.match(fallbackCode, /@keyframes/);
-  assert.doesNotMatch(fallbackCode, /<script\\b|<iframe\\b/i);
+  assert.doesNotMatch(fallbackCode, /<script\b|<iframe\\b/i);
 
   // No API key should also use Auto fallback without making a network request.
   await page.locator('#trozalGeminiApiKey').fill('');
