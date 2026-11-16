@@ -216,13 +216,19 @@
   const includeParticles=$('visualMotionParticles')?.checked!==false;
   const includeDepth=$('visualMotionDepth')?.checked!==false;
   const themePrompt=String($('svgAiPrompt')?.value||'').trim();
+  const scenePlan=window.TROZAL_SCENE_INTELLIGENCE?.build(brief,duration)||'Gunakan brief lengkap sebagai satu adegan koheren.';
   return [
    'VISUAL BRIEF:\n'+brief,
+   'SCENE INTELLIGENCE / BEAT PLAN:\n'+scenePlan,
    themePrompt?'THEME INTELLIGENCE / DETAIL TEMA:\n'+themePrompt:'',
    'OUTPUT REQUIREMENTS:',
    'Return only one complete standalone HTML5 document with one polished, detailed SVG motion-graphics composition.',
    'Use at least five semantic SVG groups with unique descriptive IDs: background, environment, main subject, secondary objects, foreground or atmosphere.',
    'Animate at least three appropriate SVG groups independently using inline CSS @keyframes, smooth easing, and deliberate timing.',
+   'Represent every planned beat in order. Treat the beat plan as the narrative spine, not optional inspiration.',
+   'Keep the main subject recognizably identical across beats: preserve silhouette, costume/material, palette, scale, and screen direction unless the brief explicitly changes them.',
+   'For each beat, stage a readable action pose and cause/effect; use foreground, midground, and background to clarify spatial relationships.',
+   'Choose shot size and camera movement to serve the action (establish, follow, reveal, hold); do not add random camera motion or unrelated events.',
    'Represent the requested subject faithfully. Do not substitute generic placeholder icons. Use layered vector forms, gradients, highlights, shadows, light and depth.',
    'Keep every important subject within the viewBox and create a coherent balanced composition.',
    'No JavaScript, script elements, event-handler attributes, iframe, canvas, external image, external font, external CSS, remote URL or external dependency.',
