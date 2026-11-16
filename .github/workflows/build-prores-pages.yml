@@ -213,20 +213,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          printf '<!doctype html><meta charset="utf-8"><title>TROZAL FFmpeg smoke</title>' > site/__ffmpeg_smoke__.html
+          mkdir -p site/trozal-motion-browser-ai
+          cp -R site/vendor site/trozal-motion-browser-ai/vendor
+          printf '<!doctype html><meta charset="utf-8"><title>TROZAL FFmpeg smoke</title>' > site/trozal-motion-browser-ai/__ffmpeg_smoke__.html
           python3 -m http.server 4173 --bind 127.0.0.1 --directory site > /tmp/trozal-pages-smoke.log 2>&1 &
           echo $! > /tmp/trozal-pages-smoke.pid
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:4173/__ffmpeg_smoke__.html >/dev/null; then break; fi
+            if curl -fsS http://127.0.0.1:4173/trozal-motion-browser-ai/__ffmpeg_smoke__.html >/dev/null; then break; fi
             sleep 1
           done
-          curl -fsS http://127.0.0.1:4173/vendor/ffmpeg/index.js >/dev/null
-          curl -fsS http://127.0.0.1:4173/vendor/ffmpeg/worker.js >/dev/null
-          curl -fsS http://127.0.0.1:4173/vendor/prores-core/ffmpeg-core.js >/dev/null
-          curl -fsS http://127.0.0.1:4173/vendor/prores-core/ffmpeg-core.wasm >/dev/null
+          curl -fsS http://127.0.0.1:4173/trozal-motion-browser-ai/vendor/ffmpeg/index.js >/dev/null
+          curl -fsS http://127.0.0.1:4173/trozal-motion-browser-ai/vendor/ffmpeg/worker.js >/dev/null
+          curl -fsS http://127.0.0.1:4173/trozal-motion-browser-ai/vendor/prores-core/ffmpeg-core.js >/dev/null
+          curl -fsS http://127.0.0.1:4173/trozal-motion-browser-ai/vendor/prores-core/ffmpeg-core.wasm >/dev/null
           node tests/ffmpeg-wasm-runtime-smoke.browser.cjs
           kill "$(cat /tmp/trozal-pages-smoke.pid)" || true
-          rm -f site/__ffmpeg_smoke__.html
+          rm -rf site/trozal-motion-browser-ai
 
       - name: Configure GitHub Pages
         if: github.event_name != 'pull_request'
