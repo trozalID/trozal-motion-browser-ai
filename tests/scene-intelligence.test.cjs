@@ -1,4 +1,5 @@
 'use strict';
+// Stage: Character & Object Motion Intelligence regression coverage.
 const assert=require('node:assert/strict');
 const scene=require('../js/scene-intelligence.js');
 assert.deepEqual(scene.splitBeats('A sunrise opens. A train enters the valley. The camera follows.'),['A sunrise opens.','A train enters the valley.','The camera follows.']);
