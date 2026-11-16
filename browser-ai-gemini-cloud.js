@@ -588,22 +588,61 @@
   status('visualMotionAiStatus','Siap menggunakan Gemini Cloud.');
   status('visualMotionStatus','Brief dan hasil Scene Composer telah dibersihkan.');
  }
- function bindMetadataSource(buttonId,source){
+ function bindMetadataSource(buttonId){
   const button=$(buttonId);
   if(!button)return;
-  button.addEventListener('click',async()=>{
+  // Determine source from the concrete button ID, not a caller-supplied flag.
+  // This prevents the HTML and Scene AI actions from being accidentally crossed.
+  const source=button.id==='metadataFromHtmlMotionBtn'?'html':button.id==='metadataFromSceneAiBtn'?'scene':null;
+  if(!source||button.dataset.metadataSourceBound==='true')return;
+  button.dataset.metadataSource=source;
+  button.dataset.metadataSourceBound='true';
+  button.addEventListener('click',async(event)=>{
+   event.preventDefault();
+   event.stopPropagation();
+   if(button.disabled)return;
+   const other=$(source==='html'?'metadataFromSceneAiBtn':'metadataFromHtmlMotionBtn');
+   button.disabled=true;
+   if(other)other.disabled=true;
+   button.setAttribute('aria-busy','true');
+   const label=source==='html'?'HTML Motion':'Scene AI';
    try{
+    status('trozalMetadataSourceStatus','Menyiapkan sumber '+label+'…');
     if(source==='scene'){
      const code=String($('visualMotionOutput')?.value||'').trim();
      if(!code)throw new Error('Belum ada hasil Scene Composer. Generate adegan terlebih dahulu.');
      $('aiCodeTerminal').value=code;
-    }else if(!$('aiCodeTerminal')?.value?.trim()){
-     throw new Error('Belum ada HTML Motion pada Terminal.');
+    }else{
+     const terminalCode=String($('aiCodeTerminal')?.value||'').trim();
+     const active=window.trozalGetHtmlMotionMetadataSource?.()||{};
+     const activeCode=active.loaded?String(active.code||'').trim():'';
+     const code=terminalCode||activeCode;
+     if(!code)throw new Error('Belum ada HTML Motion. Tempel dokumen HTML pada Terminal Kode HTML, atau terapkan HTML ke Preview terlebih dahulu.');
+     if(!terminalCode)$('aiCodeTerminal').value=code;
     }
+    status('trozalMetadataSourceStatus','Memuat '+label+' ke Preview utama…');
     await generateMotionSvgLocally();
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    if(source==='html'){
+     const active=window.trozalGetHtmlMotionMetadataSource?.()||{};
+     if(!active.loaded)throw new Error('HTML Motion belum berhasil dimuat ke Preview. Periksa HTML di Terminal, lalu tekan Terapkan HTML ke Preview.');
+    }
+    status('trozalMetadataSourceStatus','Preview siap · mengambil frame aktual untuk '+label+'…');
     await analyzeVision();
+    const visionStatus=String($('trozalGeminiStatus')?.textContent||'');
+    if(/Analisis Gemini gagal|Analisis dibatalkan/i.test(visionStatus)){
+     status('trozalMetadataSourceStatus','GAGAL · '+visionStatus,true);
+    }else if(/Selesai/i.test(visionStatus)){
+     status('trozalMetadataSourceStatus','SELESAI · Metadata '+label+' dibuat dari bukti frame Preview melalui Gemini Cloud. Periksa seluruh kolom sebelum digunakan.');
+    }else{
+     status('trozalMetadataSourceStatus','Analisis '+label+' selesai dipanggil. Periksa status Gemini Cloud dan bukti frame.');
+    }
    }catch(error){
-    status('trozalMetadataSourceStatus','Tidak dapat menyiapkan sumber metadata: '+(error.message||String(error)),true);
+    status('trozalMetadataSourceStatus','GAGAL · '+(error.message||String(error)),true);
+   }finally{
+    button.disabled=false;
+    button.removeAttribute('aria-busy');
+    if(other)other.disabled=false;
    }
   });
  }
@@ -623,8 +662,8 @@
   $('copyVisualMotionBtn')?.addEventListener('click',copyOutput);
   $('previewVisualMotionBtn')?.addEventListener('click',previewOutput);
   $('resetVisualMotionBtn')?.addEventListener('click',resetComposer);
-  bindMetadataSource('metadataFromHtmlMotionBtn','html');
-  bindMetadataSource('metadataFromSceneAiBtn','scene');
+  bindMetadataSource('metadataFromHtmlMotionBtn');
+  bindMetadataSource('metadataFromSceneAiBtn');
   $('trozalVisionImages')?.addEventListener('change',()=>{
    const count=$('trozalVisionImages').files?.length||0;
    if(count>3)status('trozalGeminiStatus','Maksimal tiga gambar. Pilih ulang maksimal tiga file.',true);
