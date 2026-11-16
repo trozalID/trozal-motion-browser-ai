@@ -14,6 +14,7 @@ on:
       - feature/browser-transparent-draggable-panels-center-sliders-2026-11-16
       - fix/browser-preview-height-runtime-diagnostics-2026-11-16
       - fix/browser-preview-drag-resizer-2026-11-16
+      - feature/browser-camera-path-editor-2026-11-16
   workflow_dispatch:
 
 permissions:
@@ -166,6 +167,47 @@ jobs:
             const after = await preview.evaluate(el => el.getBoundingClientRect().height);
             assert.ok(after > before + 60, 'Dragging the divider upward must enlarge Live Preview');
             await page.keyboard.press('Tab');
+            await browser.close();
+          })().catch(e => { console.error(e); process.exit(1); });
+          NODE
+
+      - name: Verify Camera Path keyframes, interpolation and project persistence
+        run: |
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          const assert = require('node:assert/strict');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+            const errors = [];
+            page.on('pageerror', e => errors.push(e.message));
+            await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
+            await page.waitForSelector('#cameraPathAddKey');
+            await page.locator('#cameraPathX').fill('0');
+            await page.locator('#cameraPathY').fill('0');
+            await page.locator('#cameraPathZoom').fill('100');
+            await page.locator('#cameraPathRotation').fill('0');
+            await page.locator('#cameraPathAddKey').click();
+            await page.evaluate(() => { playhead = 10; renderAt(10); });
+            await page.locator('#cameraPathX').fill('20');
+            await page.locator('#cameraPathY').fill('10');
+            await page.locator('#cameraPathZoom').fill('150');
+            await page.locator('#cameraPathRotation').fill('20');
+            await page.locator('#cameraPathAddKey').click();
+            await page.evaluate(() => { playhead = 5; renderAt(5); });
+            const keyTimes = await page.evaluate(() => getProject().cameraPathKeyframes.map(k => k.t));
+            assert.deepEqual(keyTimes, [0, 10], 'Camera keys should be stored at start and end times');
+            const debug = await page.evaluate(() => ({ camera: trozalCameraPathAt(5), transform: document.getElementById('object').style.transform }));
+            const transform = debug.transform;
+            assert.deepEqual(debug.camera, { x: 10, y: 5, zoom: 125, rotation: 10 }, 'Camera path interpolation should return midpoint values');
+            assert.match(transform, /translate\(10%, 5%\)/, 'Camera X/Y should interpolate at midpoint');
+            assert.match(transform, /rotate\(10deg\)/, 'Camera rotation should interpolate at midpoint');
+            assert.match(transform, /scale\(1\.25\)/, 'Camera zoom should interpolate at midpoint');
+            const project = await page.evaluate(() => getProject());
+            assert.equal(project.cameraPathKeyframes.length, 2, 'Camera path should be saved in project data');
+            await page.locator('#cameraPathClear').click();
+            assert.equal(await page.locator('#cameraPathKeyList').locator('button').count(), 0, 'Reset should clear camera keyframes');
+            assert.deepEqual(errors, [], 'Unexpected browser page errors');
             await browser.close();
           })().catch(e => { console.error(e); process.exit(1); });
           NODE

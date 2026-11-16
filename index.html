@@ -985,7 +985,18 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
   <div class="stagewrap"><div class="stage" id="stage"><div class="stage-badge"><span>TROZAL MOTION</span><b>LIVE PREVIEW</b></div>
   <canvas id="previewFx" class="preview-fx"></canvas><svg id="motionPathOverlay" class="motion-path-overlay" aria-hidden="true"></svg><div id="nativeTextPreview" aria-hidden="true"></div><div id="object"><div class="demo" id="demo"></div></div></div></div>
   <div class="stageinfo"><span>Resolusi: <b id="resolutionInfo">4K UHD (3840×2160)</b></span><span>Durasi: <b id="durationInfo">10.0s</b></span><span>FPS: <b id="fpsInfo">30</b></span><span>Total frame: <b id="frameInfo">300</b></span></div>
-  <div class="timeline"><div class="timelinehead"><strong>Timeline & Preview</strong><button id="playBtn">▶ Putar</button><button id="stopBtn">■ Stop</button><button id="prevFrame">◀ Frame</button><button id="nextFrame">Frame ▶</button><span class="muted" id="timeReadout">00:00.0</span></div><input type="range" id="scrubber" min="0" max="1000" value="0"><div class="track"><div class="trackfill" id="trackfill"></div></div><div class="parts" id="timelineTabs" role="tablist" aria-label="Kontrol timeline"><button type="button" class="part active" data-editor-tab="masuk" role="tab" aria-selected="true">01 · Masuk</button><button type="button" class="part" data-editor-tab="gerakan" role="tab" aria-selected="false">02 · Gerakan</button><button type="button" class="part" data-editor-tab="efek" role="tab" aria-selected="false">03 · Efek</button><button type="button" class="part" data-editor-tab="keluar" role="tab" aria-selected="false">04 · Keluar</button><button type="button" class="part" data-editor-tab="loop" role="tab" aria-selected="false">05 · Loop</button><button type="button" class="part" data-editor-tab="ekspor" role="tab" aria-selected="false">06 · Ekspor</button></div><div class="timeline-tab-hint" id="timelineTabHint">Pilih bagian untuk melompat ke waktu preview dan membuka kontrol yang sesuai.</div>
+  <div class="timeline"><div class="timelinehead"><strong>Timeline & Preview</strong><button id="playBtn">▶ Putar</button><button id="stopBtn">■ Stop</button><button id="prevFrame">◀ Frame</button><button id="nextFrame">Frame ▶</button><span class="muted" id="timeReadout">00:00.0</span></div>
+  <section id="trozalCameraPathEditor" class="camera-path-editor" aria-label="Camera Path Editor">
+   <div class="camera-path-title"><strong>◉ CAMERA PATH EDITOR</strong><span class="muted">Gerak kamera global · Preview & Render</span></div>
+   <div class="camera-path-controls">
+    <label>Camera X (%) <input id="cameraPathX" type="number" min="-40" max="40" step="1" value="0"></label>
+    <label>Camera Y (%) <input id="cameraPathY" type="number" min="-40" max="40" step="1" value="0"></label>
+    <label>Zoom (%) <input id="cameraPathZoom" type="number" min="50" max="200" step="1" value="100"></label>
+    <label>Rotation (°) <input id="cameraPathRotation" type="number" min="-180" max="180" step="1" value="0"></label>
+   </div>
+   <div class="camera-path-actions"><button type="button" id="cameraPathAddKey" class="primary">◆ Keyframe Kamera</button><button type="button" id="cameraPathDeleteKey">Hapus di Playhead</button><button type="button" id="cameraPathClear">Reset Path</button><span id="cameraPathStatus" class="muted" aria-live="polite">Belum ada keyframe kamera.</span></div>
+   <div id="cameraPathKeyList" class="camera-path-key-list"></div>
+  </section><input type="range" id="scrubber" min="0" max="1000" value="0"><div class="track"><div class="trackfill" id="trackfill"></div></div><div class="parts" id="timelineTabs" role="tablist" aria-label="Kontrol timeline"><button type="button" class="part active" data-editor-tab="masuk" role="tab" aria-selected="true">01 · Masuk</button><button type="button" class="part" data-editor-tab="gerakan" role="tab" aria-selected="false">02 · Gerakan</button><button type="button" class="part" data-editor-tab="efek" role="tab" aria-selected="false">03 · Efek</button><button type="button" class="part" data-editor-tab="keluar" role="tab" aria-selected="false">04 · Keluar</button><button type="button" class="part" data-editor-tab="loop" role="tab" aria-selected="false">05 · Loop</button><button type="button" class="part" data-editor-tab="ekspor" role="tab" aria-selected="false">06 · Ekspor</button></div><div class="timeline-tab-hint" id="timelineTabHint">Pilih bagian untuk melompat ke waktu preview dan membuka kontrol yang sesuai.</div>
   <section class="multi-track-editor" id="multiTrackEditor" aria-label="Multi-track timeline editor">
    <div class="mt-toolbar">
     <div><strong>Multi-Track Timeline</strong><small id="mtTrackSummary">Komposisi utama · 1 track</small></div>
@@ -2745,6 +2756,47 @@ const motionQualityPresets={cinematic:{speed:.65,intensity:72,label:'Smooth Cine
 document.querySelectorAll('[data-motion-quality]').forEach(button=>button.addEventListener('click',()=>{const preset=motionQualityPresets[button.dataset.motionQuality];if(!preset)return;$('speed').value=String(preset.speed);$('intensity').value=String(preset.intensity);$('speed').dispatchEvent(new Event('input',{bubbles:true}));$('intensity').dispatchEvent(new Event('input',{bubbles:true}));document.querySelectorAll('[data-motion-quality]').forEach(x=>x.classList.toggle('active',x===button));const readout=$('motionQualityReadout');if(readout)readout.textContent='Preset aktif: '+preset.label+' · Kecepatan '+preset.speed.toFixed(2)+'× · Intensitas '+preset.intensity+'%';renderAt(playhead);}));
 ['speed','intensity'].forEach(id=>$(id)?.addEventListener('input',()=>{const readout=$('motionQualityReadout');if(readout)readout.textContent='Preset aktif: Custom · Kecepatan '+(+$('speed').value).toFixed(2)+'× · Intensitas '+$('intensity').value+'%';document.querySelectorAll('[data-motion-quality]').forEach(x=>x.classList.remove('active'));}));
 
+let trozalCameraPathKeyframes=[];
+function trozalCameraPathAt(time){
+ const keys=trozalCameraPathKeyframes.slice().sort((a,b)=>a.t-b.t);
+ if(!keys.length)return {x:0,y:0,zoom:100,rotation:0};
+ if(time<=keys[0].t)return {...keys[0]};
+ if(time>=keys[keys.length-1].t)return {...keys[keys.length-1]};
+ let right=keys.findIndex(k=>k.t>=time),a=keys[right-1],b=keys[right],p=(time-a.t)/Math.max(.001,b.t-a.t);
+ return {x:a.x+(b.x-a.x)*p,y:a.y+(b.y-a.y)*p,zoom:a.zoom+(b.zoom-a.zoom)*p,rotation:a.rotation+(b.rotation-a.rotation)*p};
+}
+function renderCameraPathEditor(){
+ const host=$('cameraPathKeyList');if(!host)return;
+ const keys=trozalCameraPathKeyframes.slice().sort((a,b)=>a.t-b.t);
+ host.innerHTML=keys.map((k,i)=>'<button type="button" class="camera-path-key" data-camera-key="'+i+'" aria-current="false">'+k.t.toFixed(2)+'s · X '+k.x+' · Y '+k.y+' · Z '+k.zoom+'%</button>').join('');
+ const status=$('cameraPathStatus');if(status)status.textContent=keys.length+' keyframe kamera · interpolasi linear';
+ host.querySelectorAll('[data-camera-key]').forEach(btn=>btn.addEventListener('click',()=>{
+  const k=keys[Number(btn.dataset.cameraKey)];if(!k)return;
+  $('cameraPathX').value=k.x;$('cameraPathY').value=k.y;$('cameraPathZoom').value=k.zoom;$('cameraPathRotation').value=k.rotation;
+  mtSetPlayhead(k.t);renderCameraPathEditor();
+ }));
+}
+function cameraPathAddKey(){
+ const t=Number(playhead.toFixed(3)),key={t,x:Math.max(-40,Math.min(40,Number($('cameraPathX').value)||0)),y:Math.max(-40,Math.min(40,Number($('cameraPathY').value)||0)),zoom:Math.max(50,Math.min(200,Number($('cameraPathZoom').value)||100)),rotation:Math.max(-180,Math.min(180,Number($('cameraPathRotation').value)||0))};
+ const existing=trozalCameraPathKeyframes.findIndex(k=>Math.abs(k.t-t)<.001);if(existing>=0)trozalCameraPathKeyframes[existing]=key;else trozalCameraPathKeyframes.push(key);
+ trozalCameraPathKeyframes.sort((a,b)=>a.t-b.t);renderCameraPathEditor();renderAt(playhead);scheduleAutosave();
+}
+$('cameraPathAddKey')?.addEventListener('click',cameraPathAddKey);
+$('cameraPathDeleteKey')?.addEventListener('click',()=>{
+ const before=trozalCameraPathKeyframes.length;trozalCameraPathKeyframes=trozalCameraPathKeyframes.filter(k=>Math.abs(k.t-playhead)>.025);
+ renderCameraPathEditor();renderAt(playhead);scheduleAutosave();
+ if(before===trozalCameraPathKeyframes.length&&$('cameraPathStatus'))$('cameraPathStatus').textContent='Tidak ada keyframe pada posisi playhead.';
+});
+$('cameraPathClear')?.addEventListener('click',()=>{
+ trozalCameraPathKeyframes=[];$('cameraPathX').value=0;$('cameraPathY').value=0;$('cameraPathZoom').value=100;$('cameraPathRotation').value=0;
+ renderCameraPathEditor();renderAt(playhead);scheduleAutosave();
+});
+['cameraPathX','cameraPathY','cameraPathZoom','cameraPathRotation'].forEach(id=>$(id)?.addEventListener('change',()=>{
+ const value=trozalCameraPathAt(playhead);value.x=Number($('cameraPathX').value)||0;value.y=Number($('cameraPathY').value)||0;value.zoom=Number($('cameraPathZoom').value)||100;value.rotation=Number($('cameraPathRotation').value)||0;
+ const existing=trozalCameraPathKeyframes.find(k=>Math.abs(k.t-playhead)<.025);
+ if(existing){Object.assign(existing,value,{t:existing.t});trozalCameraPathKeyframes.sort((a,b)=>a.t-b.t);renderCameraPathEditor();scheduleAutosave();}
+ renderAt(playhead);
+}));
 function renderAt(t,syncPreview=true,updateStage=true){
  playhead=Math.max(0,Math.min(+$('duration').value,t));
  if(!updateStage)return;
@@ -2762,7 +2814,8 @@ function renderAt(t,syncPreview=true,updateStage=true){
    htmlMotionIframe.style.width=htmlMotionWidth+'px';htmlMotionIframe.style.height=htmlMotionHeight+'px';
    htmlMotionIframe.style.transform='translate(-50%,-50%) scale('+fitScale+')';
   }else{$('object').style.width=$('scale').value+'%';$('object').style.height=(+$('scale').value*1.35)+'%';$('object').style.transformOrigin='center center';}
- $('object').style.transform=`translate(${tx+m.x}%,${ty+m.y}%) rotate(${ang+m.rotate}deg) scale(${m.scaleX},${m.scaleY}) skewY(${m.skew}deg)`;
+ const camera=trozalCameraPathAt(playhead);
+ $('object').style.transform=`translate(${camera.x}%,${camera.y}%) rotate(${camera.rotation}deg) scale(${camera.zoom/100}) translate(${tx+m.x}%,${ty+m.y}%) rotate(${ang+m.rotate}deg) scale(${m.scaleX},${m.scaleY}) skewY(${m.skew}deg)`;
  $('object').style.opacity=opacity*m.alpha;
  $('object').style.clipPath=(m.revealX<.999||m.revealY<.999)?`inset(0 ${(1-m.revealX)*100}% ${(1-m.revealY)*100}% 0)`:'none';
  let ef=$('effectOn').checked?$('effectPreset').value:'none',ei=+$('effectIntensity').value/100,ec=$('effectColor').value,filters=[];
@@ -3216,7 +3269,8 @@ async function exportCurrentFramePng(){
   const motion=getMotionState(t),baseW=w*(+$('scale').value/100),baseH=h*(+$('scale').value*1.35/100);
   const cx=w/2+((+$('posX').value+motion.x)/100*baseW),cy=h/2+((+$('posY').value+motion.y)/100*baseH);
   const fit=Math.min(baseW/(image.naturalWidth||w),baseH/(image.naturalHeight||h))*motion.scaleX;
-  ctx.save();ctx.translate(cx,cy);ctx.rotate((+$('rotation').value+motion.rotate)*Math.PI/180);ctx.globalAlpha=(+$('opacity').value/100)*motion.alpha;
+  const camera=trozalCameraPathAt(t);
+  ctx.save();ctx.translate(w/2+camera.x/100*w,h/2+camera.y/100*h);ctx.rotate(camera.rotation*Math.PI/180);ctx.scale(camera.zoom/100,camera.zoom/100);ctx.translate(cx-w/2,cy-h/2);ctx.rotate((+$('rotation').value+motion.rotate)*Math.PI/180);ctx.globalAlpha=(+$('opacity').value/100)*motion.alpha;
   ctx.beginPath();ctx.rect(-baseW/2,-baseH/2,baseW*motion.revealX,baseH*motion.revealY);ctx.clip();
   ctx.drawImage(image,-(image.naturalWidth*fit)/2,-(image.naturalHeight*fit)/2,image.naturalWidth*fit,image.naturalHeight*fit);ctx.restore();
   if($('sparkles').checked||$('effectOn').checked)drawPreviewEffects(t,motion);
@@ -3244,7 +3298,7 @@ function getProject(){
  const controls={};ids.forEach(k=>{if($(k))controls[k]=$(k).value});
  checks.forEach(k=>{if($(k))controls[k]=$(k).checked});
  const layers=svgPieces.map((piece,i)=>{const l={svg:piece,name:svgLayerNames[i]||('Layer '+(i+1))};['Visible','On','In','Out','Loop','Delay','Start','End','Duration','Speed','Intensity','Scale','Rotation','Direction'].forEach(k=>{const el=$('autoLayer'+k+i);if(el)l[k.toLowerCase()]=el.type==='checkbox'?el.checked:el.value});if(timelineGroupSoloSnapshot&&Object.prototype.hasOwnProperty.call(timelineGroupSoloSnapshot,i))l.visible=timelineGroupSoloSnapshot[i];l.autoKey=!!$('kfAuto'+i)?.checked;return l});
- saveActiveTextLayer();syncActiveMaskFromControls();return {app:'ANIMOVE',version:12,stage:15,visualSceneSequence:Array.isArray(visualSceneSequence)?visualSceneSequence.map(x=>({...x})):[],shapeMaskLayers:shapeMaskLayers.map(x=>({...x})),activeShapeMask,nativeTextLayers:nativeTextLayers.map(x=>({...x})),selectedTextLayerId,timelineSnapEnabled,savedAt:new Date().toISOString(),controls,currentColor,playhead,sourceSvg,sourceType,sourceName:$('objectName').value,svgWasSplit,svgPieces:[...svgPieces],svgLayerNames:[...svgLayerNames],svgLayerHints:[...svgLayerHints],layerKeyframes:layerKeyframes.map(a=>(a||[]).map(k=>({...k}))),timelineMarkers:timelineMarkers.map(m=>({...m})),timelineTrackLocks:{...timelineTrackLocks},timelineLayerGroups:{...timelineLayerGroups},timelineGroupParents:{...timelineGroupParents},layers};
+ saveActiveTextLayer();syncActiveMaskFromControls();return {app:'ANIMOVE',version:12,stage:15,visualSceneSequence:Array.isArray(visualSceneSequence)?visualSceneSequence.map(x=>({...x})):[],shapeMaskLayers:shapeMaskLayers.map(x=>({...x})),activeShapeMask,nativeTextLayers:nativeTextLayers.map(x=>({...x})),selectedTextLayerId,timelineSnapEnabled,savedAt:new Date().toISOString(),controls,currentColor,playhead,sourceSvg,sourceType,sourceName:$('objectName').value,svgWasSplit,svgPieces:[...svgPieces],svgLayerNames:[...svgLayerNames],svgLayerHints:[...svgLayerHints],layerKeyframes:layerKeyframes.map(a=>(a||[]).map(k=>({...k}))),timelineMarkers:timelineMarkers.map(m=>({...m})),cameraPathKeyframes:trozalCameraPathKeyframes.map(k=>({...k})),timelineTrackLocks:{...timelineTrackLocks},timelineLayerGroups:{...timelineLayerGroups},timelineGroupParents:{...timelineGroupParents},layers};
 }
 function applyProject(p){
  timelineGroupSoloSnapshot=null;if($('mtSoloGroup'))$('mtSoloGroup').textContent='◎ Solo Grup';
@@ -3266,7 +3320,7 @@ function applyProject(p){
  layerKeyframes=Array.isArray(p.layerKeyframes)?p.layerKeyframes.map(a=>Array.isArray(a)?a.map(k=>({...k})):[]):[];
  svgLayerHints=Array.isArray(p.svgLayerHints)?p.svgLayerHints.slice():svgPieces.map((piece,i)=>{try{const d=new DOMParser().parseFromString(piece,'image/svg+xml');const n=[...d.documentElement.children].find(x=>!['defs','style','title','desc','metadata'].includes(x.localName));return n?analyzeSvgLayer({node:n,ancestors:[]},i,svgPieces.length):{kind:'detail',entrance:0,loop:0,intensity:0,reason:'Layer dipulihkan; gerakan tetap statis.'}}catch(e){return {kind:'detail',entrance:0,loop:0,intensity:0,reason:'Layer dipulihkan; gerakan tetap statis.'}}});
  svgWasSplit=!!p.svgWasSplit&&svgPieces.length>0;
- timelineMarkers=Array.isArray(p.timelineMarkers)?p.timelineMarkers.map(m=>({id:String(m.id||('marker-'+Date.now())),t:Math.max(0,Number(m.t)||0),label:String(m.label||'Marker')})):[];
+ timelineMarkers=Array.isArray(p.timelineMarkers)?p.timelineMarkers.map(m=>({id:String(m.id||('marker-'+Date.now())),t:Math.max(0,Number(m.t)||0),label:String(m.label||'Marker')})):[];trozalCameraPathKeyframes=Array.isArray(p.cameraPathKeyframes)?p.cameraPathKeyframes.filter(k=>Number.isFinite(Number(k.t))).map(k=>({t:Math.max(0,Number(k.t)),x:Math.max(-40,Math.min(40,Number(k.x)||0)),y:Math.max(-40,Math.min(40,Number(k.y)||0)),zoom:Math.max(50,Math.min(200,Number(k.zoom)||100)),rotation:Math.max(-180,Math.min(180,Number(k.rotation)||0))})).sort((a,b)=>a.t-b.t):[];renderCameraPathEditor();
  timelineTrackLocks=p.timelineTrackLocks&&typeof p.timelineTrackLocks==='object'?{...p.timelineTrackLocks}:{};
  // Restore named layer groups from saved projects; discard invalid indexes and empty names.
  timelineLayerGroups={};if(p.timelineLayerGroups&&typeof p.timelineLayerGroups==='object'&&!Array.isArray(p.timelineLayerGroups)){Object.entries(p.timelineLayerGroups).forEach(([key,value])=>{const index=Number(key),name=String(value||'').trim();if(Number.isInteger(index)&&index>=0&&index<(Array.isArray(p.svgPieces)?p.svgPieces.length:0)&&name)timelineLayerGroups[index]=name.slice(0,28);});}
@@ -5519,6 +5573,13 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
 .trozal-preview-resize-grip:before{content:"";display:block;width:64px;height:4px;border-top:1px solid #9ce7c1;border-bottom:1px solid #9ce7c1;opacity:.9}
 .trozal-preview-resize-grip:hover,.trozal-preview-resize-grip.is-dragging{background:rgba(42,104,83,.98);border-bottom-color:#b7f5d4;box-shadow:0 0 0 2px rgba(104,218,165,.22)}
 .trozal-preview-resize-grip:focus-visible{outline:2px solid #a4f0c7;outline-offset:2px}
+.camera-path-editor{margin:8px 10px;padding:10px;border:1px solid #5d7f9a;border-radius:9px;background:linear-gradient(135deg,rgba(20,43,57,.96),rgba(24,31,46,.96));display:grid;gap:8px}
+.camera-path-title,.camera-path-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.camera-path-title strong{color:#bde8ff;font-size:11px;letter-spacing:.06em}
+.camera-path-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.camera-path-controls label{display:grid;gap:4px;color:#c7dce9;font-size:10px}.camera-path-controls input{width:100%;min-width:0;background:#081b26;color:#e9f7ff;border:1px solid #41677f;border-radius:5px;padding:6px}
+.camera-path-key-list{display:flex;gap:6px;flex-wrap:wrap}.camera-path-key{font-size:10px;padding:5px 8px;border:1px solid #4d829e;border-radius:6px;background:#102b3a;color:#d8f0ff;cursor:pointer}
+.camera-path-key[aria-current=true]{background:#28617a;border-color:#9bdcff}
+@media(max-width:720px){.camera-path-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 @media(max-width:720px){.trozal-preview-resize-grip{display:none}}
 
 #trozalDebugFab{position:fixed;z-index:100000;right:14px;bottom:14px;border:1px solid rgba(255,190,90,.75);background:rgba(40,31,20,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#ffe0a0;border-radius:999px;padding:9px 13px;font-size:11px;font-weight:800;box-shadow:0 5px 18px #0009}
