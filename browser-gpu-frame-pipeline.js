@@ -91,13 +91,14 @@
     const sizes=Array.isArray(options.sizes)&&options.sizes.length?options.sizes:[{label:'1080p',width:1920,height:1080},{label:'4K',width:3840,height:2160}];
     const iterations=Math.max(2,Math.min(8,Number(options.iterations)||5));
     const maxTextureSize=gl.getParameter(gl.MAX_TEXTURE_SIZE)||0;
+    const maxViewport=gl.getParameter(gl.MAX_VIEWPORT_DIMS)||[0,0];
     for(const size of sizes){
       const width=Math.floor(Number(size.width)),height=Math.floor(Number(size.height));
       if(!Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1)throw new Error('Resolusi benchmark tidak valid.');
-      if(width>maxTextureSize||height>maxTextureSize)throw new Error((size.label||'Resolusi')+' tidak didukung GPU ini. Batas tekstur WebGL: '+maxTextureSize+' px; gunakan resolusi lebih rendah.');
+      if(width>maxTextureSize||height>maxTextureSize||width>maxViewport[0]||height>maxViewport[1])throw new Error((size.label||'Resolusi')+' tidak didukung GPU ini. Batas tekstur WebGL '+maxTextureSize+' px; batas viewport '+maxViewport[0]+'×'+maxViewport[1]+' px.');
       const baseline=document.createElement('canvas');baseline.width=width;baseline.height=height;
       const baselineContext=baseline.getContext('2d',{alpha:true});
-      const composite=document.createElement('canvas');composite.width=size.width;composite.height=size.height;
+      const composite=document.createElement('canvas');composite.width=width;composite.height=height;
       const compositeContext=composite.getContext('2d',{alpha:true});
       const canvasTimes=[],gpuTimes=[];
       for(let warm=0;warm<2;warm++){
@@ -117,7 +118,7 @@
       }
       const median=values=>{const sorted=[...values].sort((a,b)=>a-b);return sorted[Math.floor(sorted.length/2)];};
       const canvasMedian=median(canvasTimes),gpuMedian=median(gpuTimes);
-      results.push({resolution:size.label,width:size.width,height:size.height,iterations,canvas2dMedianMs:Number(canvasMedian.toFixed(2)),gpuAssistMedianMs:Number(gpuMedian.toFixed(2)),ratio:Number((gpuMedian/canvasMedian).toFixed(2)),winner:gpuMedian<canvasMedian?'GPU Assist':'Canvas2D'});
+      results.push({resolution:size.label,width,height,iterations,canvas2dMedianMs:Number(canvasMedian.toFixed(2)),gpuAssistMedianMs:Number(gpuMedian.toFixed(2)),ratio:Number((gpuMedian/canvasMedian).toFixed(2)),winner:gpuMedian<canvasMedian?'GPU Assist':'Canvas2D'});
       baseline.width=baseline.height=1;composite.width=composite.height=1;
     }
     sourceCanvas.width=sourceCanvas.height=1;
