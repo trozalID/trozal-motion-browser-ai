@@ -8,13 +8,13 @@ function countId(id) {
 for (const id of ['stage', 'timelineTabs', 'multiTrackEditor', 'svgTerminalPanel', 'renderBtn', 'cancelRenderBtn', 'format', 'resolution', 'proresMode']) {
   assert.equal(countId(id), 1, 'Core workspace/export control must exist exactly once: #' + id);
 }
-assert.match(html, /id=["']format["'][^>]*>[\\s\\S]*?value=["']webm["'][\\s\\S]*?value=["']mp4["'][\\s\\S]*?value=["']mov["'][\\s\\S]*?value=["']pngseq["']/i,
+assert.match(html, /id=["']format["'][^>]*>[\s\S]*?value=["']webm["'][\s\S]*?value=["']mp4["'][\s\S]*?value=["']mov["'][\s\S]*?value=["']pngseq["']/i,
   'WebM, MP4/H.264, MOV/ProRes 4444 Alpha and PNG Sequence exports must remain available');
-assert.match(html, /id=["']resolution["'][^>]*>[\\s\\S]*?value=["']3840x2160["']/i,
+assert.match(html, /id=["']resolution["'][^>]*>[\s\S]*?value=["']3840x2160["']/i,
   '4K UHD 3840x2160 output option must remain available');
-assert.match(html, /id=["']proresMode["'][^>]*>[\\s\\S]*?ProRes 4444/i,
+assert.match(html, /id=["']proresMode["'][^>]*>[\s\S]*?ProRes 4444/i,
   'Transparent ProRes 4444 mode must remain available');
-assert.match(html, /id=["']proresMode["'][^>]*>[\\s\\S]*?PNG Sequence ZIP/i,
+assert.match(html, /id=["']proresMode["'][^>]*>[\s\S]*?PNG Sequence ZIP/i,
   'Transparent PNG Sequence mode must remain available');
 assert.match(html, /id=["']stage["']/, 'Central preview stage must remain in the document');
 assert.match(html, /class=["'][^"']*timeline[^"']*["']/, 'Timeline must remain in the document');
