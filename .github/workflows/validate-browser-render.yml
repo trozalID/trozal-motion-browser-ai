@@ -15,6 +15,7 @@ on:
       - feature/browser-transparent-draggable-panels-center-sliders-2026-11-16
       - fix/browser-preview-height-runtime-diagnostics-2026-11-16
       - fix/browser-preview-drag-resizer-2026-11-16
+      - fix/browser-gemini-vision-contact-sheet-2026-11-16
   workflow_dispatch:
 
 permissions:
