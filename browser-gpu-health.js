@@ -79,7 +79,7 @@
       'RAM browser: ' + (state.memory ? state.memory + ' GB (estimasi API)' : 'Tidak dilaporkan'),
       'CPU threads: ' + safeText(state.cores),
       'Renderer frame saat ini: ' + state.renderer,
-      enabled && stats?.available ? 'GPU frame: ' + stats.draws + ' draw · ' + stats.uploads + ' upload tekstur' : 'GPU assist belum aktif. Aktifkan hanya untuk menguji layer gambar statis.',
+      enabled && stats?.available ? 'GPU frame: ' + stats.draws + ' draw · ' + stats.uploads + ' upload tekstur · ' + stats.fallbacks + ' fallback' : 'GPU assist belum aktif. Aktifkan hanya untuk menguji layer gambar statis.',
       'Catatan: mask, teks, efek, HTML Motion dan komposisi akhir tetap memakai Canvas2D. ProRes/MP4 encoding tetap melalui FFmpeg.wasm / MediaRecorder.'
     ].join('\n');
     body.style.whiteSpace = 'pre-line';
