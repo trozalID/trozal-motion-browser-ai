@@ -197,7 +197,10 @@ jobs:
             await page.evaluate(() => { playhead = 5; renderAt(5); });
             const keyTimes = await page.evaluate(() => getProject().cameraPathKeyframes.map(k => k.t));
             assert.deepEqual(keyTimes, [0, 10], 'Camera keys should be stored at start and end times');
-            const transform = await page.locator('#object').evaluate(el => el.style.transform);
+            const debug = await page.evaluate(() => ({ playhead, camera: trozalCameraPathAt(5), transform: document.getElementById('object').style.transform }));
+            console.log('CAMERA_DEBUG '+JSON.stringify(debug));
+            const transform = debug.transform;
+            assert.deepEqual(debug.camera, { x: 10, y: 5, zoom: 125, rotation: 10 }, 'Camera path interpolation should return midpoint values');
             assert.match(transform, /translate\(10%, 5%\)/, 'Camera X/Y should interpolate at midpoint');
             assert.match(transform, /rotate\(10deg\)/, 'Camera rotation should interpolate at midpoint');
             assert.match(transform, /scale\(1\.25\)/, 'Camera zoom should interpolate at midpoint');
