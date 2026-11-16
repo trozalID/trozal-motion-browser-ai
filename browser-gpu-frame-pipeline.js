@@ -76,8 +76,51 @@
       console.warn('TROZAL GPU layer fallback to Canvas2D for this frame.',error);return null;
     }
   }
+  async function benchmark() {
+    if (!init()) throw new Error('WebGL2 tidak siap untuk benchmark');
+    const sourceCanvas=document.createElement('canvas');
+    sourceCanvas.width=512;sourceCanvas.height=512;
+    const sourceContext=sourceCanvas.getContext('2d');
+    const gradient=sourceContext.createLinearGradient(0,0,512,512);
+    gradient.addColorStop(0,'#e94b65');gradient.addColorStop(.5,'#37a6d9');gradient.addColorStop(1,'#f2c14e');
+    sourceContext.fillStyle=gradient;sourceContext.fillRect(0,0,512,512);
+    for(let y=0;y<512;y+=32)for(let x=0;x<512;x+=32){sourceContext.fillStyle=((x+y)/32)%2?'rgba(255,255,255,.12)':'rgba(0,0,0,.10)';sourceContext.fillRect(x,y,32,32);}
+    const source=new Image();source.src=sourceCanvas.toDataURL('image/png');
+    await new Promise((resolve,reject)=>{source.onload=resolve;source.onerror=()=>reject(new Error('Gagal membuat aset benchmark'));});
+    const results=[];
+    for(const size of [{label:'1080p',width:1920,height:1080},{label:'4K',width:3840,height:2160}]){
+      const baseline=document.createElement('canvas');baseline.width=size.width;baseline.height=size.height;
+      const baselineContext=baseline.getContext('2d',{alpha:true});
+      const composite=document.createElement('canvas');composite.width=size.width;composite.height=size.height;
+      const compositeContext=composite.getContext('2d',{alpha:true});
+      const canvasTimes=[],gpuTimes=[];
+      const iterations=5;
+      for(let warm=0;warm<2;warm++){
+        baselineContext.clearRect(0,0,size.width,size.height);baselineContext.drawImage(source,0,0,size.width,size.height);baselineContext.getImageData(0,0,1,1);
+        const warmGpu=render(source,size.width,size.height);if(!warmGpu)throw new Error('GPU Assist gagal saat warm-up');
+        compositeContext.clearRect(0,0,size.width,size.height);compositeContext.drawImage(warmGpu,0,0);gl.finish();compositeContext.getImageData(0,0,1,1);
+      }
+      for(let i=0;i<iterations;i++){
+        let start=performance.now();
+        baselineContext.clearRect(0,0,size.width,size.height);baselineContext.drawImage(source,0,0,size.width,size.height);baselineContext.getImageData(0,0,1,1);
+        canvasTimes.push(performance.now()-start);
+        start=performance.now();
+        const gpuOutput=render(source,size.width,size.height);if(!gpuOutput)throw new Error('GPU Assist fallback terjadi saat benchmark');
+        compositeContext.clearRect(0,0,size.width,size.height);compositeContext.drawImage(gpuOutput,0,0);gl.finish();compositeContext.getImageData(0,0,1,1);
+        gpuTimes.push(performance.now()-start);
+        await new Promise(resolve=>setTimeout(resolve,0));
+      }
+      const median=values=>{const sorted=[...values].sort((a,b)=>a-b);return sorted[Math.floor(sorted.length/2)];};
+      const canvasMedian=median(canvasTimes),gpuMedian=median(gpuTimes);
+      results.push({resolution:size.label,width:size.width,height:size.height,iterations,canvas2dMedianMs:Number(canvasMedian.toFixed(2)),gpuAssistMedianMs:Number(gpuMedian.toFixed(2)),ratio:Number((gpuMedian/canvasMedian).toFixed(2)),winner:gpuMedian<canvasMedian?'GPU Assist':'Canvas2D'});
+      baseline.width=baseline.height=1;composite.width=composite.height=1;
+    }
+    sourceCanvas.width=sourceCanvas.height=1;
+    return {benchmark:'synthetic static image scaling + final Canvas2D composite; median of 5 measured frames after 2 warm-ups; synchronous readback included',results};
+  }
   window.TrozalGpuFramePipeline=Object.freeze({
     render,
+    benchmark,
     getStats:()=>({available:!!gl&&!failed,failed,draws,uploads,fallbacks,mode:'GPU image texture scaling + Canvas2D scene composition'})
   });
 })();
