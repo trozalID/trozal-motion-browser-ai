@@ -2760,8 +2760,8 @@ let trozalCameraPathKeyframes=[];
 function trozalCameraPathAt(time){
  const keys=trozalCameraPathKeyframes.slice().sort((a,b)=>a.t-b.t);
  if(!keys.length)return {x:0,y:0,zoom:100,rotation:0};
- if(time<=keys[0].t)return keys[0];
- if(time>=keys[keys.length-1].t)return keys[keys.length-1];
+ if(time<=keys[0].t)return {...keys[0]};
+ if(time>=keys[keys.length-1].t)return {...keys[keys.length-1]};
  let right=keys.findIndex(k=>k.t>=time),a=keys[right-1],b=keys[right],p=(time-a.t)/Math.max(.001,b.t-a.t);
  return {x:a.x+(b.x-a.x)*p,y:a.y+(b.y-a.y)*p,zoom:a.zoom+(b.zoom-a.zoom)*p,rotation:a.rotation+(b.rotation-a.rotation)*p};
 }
