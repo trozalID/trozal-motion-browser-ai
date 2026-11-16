@@ -613,8 +613,14 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 #trozalDebugPanel{position:fixed;z-index:99999;left:10px;right:10px;bottom:55px;max-height:min(58vh,440px);display:none;flex-direction:column;border:1px solid #66748b;border-radius:11px;background:#10151e;color:#e8eef8;box-shadow:0 12px 40px #000c;overflow:hidden}
 #trozalDebugPanel.open{display:flex}
 #trozalDebugPanel .debug-head{display:flex;align-items:center;gap:7px;padding:9px;background:#202a39;border-bottom:1px solid #46536a}
-#trozalDebugPanel .debug-head strong{font-size:11px;color:#ffd17a;flex:1}
+#trozalDebugPanel .debug-head strong{font-size:11px;color:#ffd17a;flex:1;min-width:0}
 #trozalDebugPanel button{font-size:10px;padding:6px 9px}
+#trozalDebugPanel.minimized{left:auto;right:14px;bottom:58px;width:min(300px,calc(100vw - 28px));max-height:none;height:auto;overflow:hidden;border-radius:999px}
+#trozalDebugPanel.minimized .debug-head{gap:6px;padding:6px 9px;border:0;background:rgba(32,42,57,.96)}
+#trozalDebugPanel.minimized .debug-head strong{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#trozalDebugPanel.minimized #trozalDebugLog{display:none}
+#trozalDebugPanel.minimized .debug-head button:not(.debug-minimize){display:none!important}
+#trozalDebugPanel.minimized .debug-minimize{flex:0 0 auto;padding:5px 9px;border-radius:999px}
 #trozalDebugLog{margin:0;padding:9px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:10px/1.5 ui-monospace,monospace;min-height:120px}
 #trozalDebugLog .err{color:#ff858b}#trozalDebugLog .warn{color:#ffd17a}#trozalDebugLog .info{color:#a8d5ff}
 @media(min-width:700px){#trozalDebugPanel{left:auto;width:520px;right:14px;bottom:58px}}
@@ -5439,8 +5445,10 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
   const width=bar.querySelector('#trozalCenterWidth'),height=bar.querySelector('#trozalCenterHeight');
   const setWidth=v=>{
    const n=Number(v),side=290-(n-50)*1.35;
-   app.style.setProperty('--trozal-left',Math.round(Math.max(210,Math.min(350,side)))+'px');
-   app.style.setProperty('--trozal-right',Math.round(Math.max(210,Math.min(350,side)))+'px');
+   const column=Math.round(Math.max(210,Math.min(350,side)));
+   app.style.setProperty('--trozal-left',column+'px');
+   app.style.setProperty('--trozal-right',column+'px');
+   app.style.gridTemplateColumns=column+'px minmax(380px,1fr) '+column+'px';
    bar.querySelector('#trozalCenterWidthValue').textContent=n+'%';
   };
   const setHeight=v=>{
@@ -5505,12 +5513,12 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
   const title=document.createElement('strong');title.textContent='RUNTIME DIAGNOSTICS · BROWSER AI';
   const copy=document.createElement('button');copy.type='button';copy.textContent='Salin log';
   const clear=document.createElement('button');clear.type='button';clear.textContent='Bersihkan';
-  const minimize=document.createElement('button');minimize.type='button';minimize.textContent='Tutup';
+  const minimize=document.createElement('button');minimize.type='button';minimize.className='debug-minimize';minimize.textContent='Minimize';
   const close=document.createElement('button');close.type='button';close.textContent='×';
   logNode=document.createElement('pre');logNode.id='trozalDebugLog';
   head.append(title,copy,clear,minimize,close);panel.append(head,logNode);document.body.append(fab,panel);
   fab.addEventListener('click',()=>panel.classList.toggle('open'));
-  minimize.addEventListener('click',()=>panel.classList.remove('open'));
+  minimize.addEventListener('click',()=>{const minimized=panel.classList.toggle('minimized');minimize.textContent=minimized?'Perbesar':'Minimize';minimize.setAttribute('aria-expanded',String(!minimized));});
   close.addEventListener('click',()=>panel.classList.remove('open'));
   clear.addEventListener('click',()=>{entries.length=0;add('info','Log dibersihkan.','SYSTEM');});
   copy.addEventListener('click',()=>{
