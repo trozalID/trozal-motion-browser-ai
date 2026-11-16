@@ -869,8 +869,14 @@ body[data-ui-layout="professional"] .panel textarea:focus-visible{
     <p class="help" style="margin:7px 0 0">API key hanya ditahan di field halaman aktif dan tidak disimpan ke localStorage atau sessionStorage oleh TROZAL. Brief dan gambar Vision dikirim ke Google Gemini Cloud. Jangan kirim materi rahasia atau sensitif. Kuota dan biaya mengikuti ketentuan akun Google AI Anda.</p>
    </section>
    <div class="metadata-evidence" style="margin:10px 0;border:1px solid #36b98a;background:#10291f;border-radius:10px;padding:10px">
-    <div style="font-weight:800;color:#83e8b2">GENERASI SCENE · GEMINI CLOUD</div>
-    <div id="visualMotionAiStatus" class="help" aria-live="polite">Siap menggunakan Gemini Cloud setelah koneksi diperiksa.</div>
+    <div style="font-weight:800;color:#83e8b2">SCENE COMPOSER · AUTO ENGINE</div>
+    <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0">
+     <label for="trozalSceneEngine" style="margin:0">Mesin</label>
+     <select id="trozalSceneEngine" style="flex:1;min-width:170px"><option value="auto" selected>Auto · Gemini utama</option><option value="template">Smart Template · tanpa API</option></select>
+     <label class="inline-check" style="margin:0"><input type="checkbox" id="trozalSceneAutoFallback" checked> Fallback otomatis</label>
+    </div>
+    <div id="trozalSceneEngineStatus" class="help" aria-live="polite">AUTO aktif · Gemini Cloud menjadi mesin utama. Jika API tidak tersedia, Smart Template Composer mengambil alih tanpa menghapus brief.</div>
+    <div id="visualMotionAiStatus" class="help" aria-live="polite" style="margin-top:6px">Siap menggunakan Gemini Cloud setelah koneksi diperiksa.</div>
     <button type="button" class="primary" id="generateVisualMotionAiBtn" style="width:100%;margin-top:8px">✦ GENERATE ADEGAN DENGAN GEMINI</button>
     <button type="button" id="cancelBrowserAiGenerationBtn" style="display:none;width:100%;margin-top:6px">Batalkan Generasi</button>
    </div>
