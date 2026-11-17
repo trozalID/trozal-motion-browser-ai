@@ -539,7 +539,7 @@
    keywords,
    visual_summary:'Analisis visual cloud tidak tersedia. Metadata sementara disusun dari brief, tema, kategori, subtema, dan detail editor yang tersedia; isi frame belum diverifikasi oleh AI.',
    visible_objects:[],
-   confidence_notes:'Fallback tekstual saja. Bukti visual tetap tersimpan, tetapi objek, warna, komposisi, dan gerakan tidak diklaim telah dikenali dari piksel.'
+   confidence_notes:'Fallback tekstual saja. Jangan menganggap objek, warna, komposisi, atau gerakan telah dikenali dari piksel. Bukti visual tetap tersimpan untuk diperiksa.'
   };
  }
  async function analyzeVision(){
