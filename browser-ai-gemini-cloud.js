@@ -651,7 +651,6 @@
   $('trozalGeminiCheckBtn')?.addEventListener('click',checkConnection);
   $('generateVisualMotionAiBtn')?.addEventListener('click',generateScene);
   $('cancelBrowserAiGenerationBtn')?.addEventListener('click',cancelScene);
-  $('trozalGeminiAnalyzeBtn')?.addEventListener('click',analyzeVision);
   $('cancelGeminiVisionBtn')?.addEventListener('click',cancelVision);
   $('trozalVisionClearImagesBtn')?.addEventListener('click',()=>{
    $('trozalVisionImages').value='';
@@ -662,8 +661,6 @@
   $('copyVisualMotionBtn')?.addEventListener('click',copyOutput);
   $('previewVisualMotionBtn')?.addEventListener('click',previewOutput);
   $('resetVisualMotionBtn')?.addEventListener('click',resetComposer);
-  bindMetadataSource('metadataFromHtmlMotionBtn');
-  bindMetadataSource('metadataFromSceneAiBtn');
   $('trozalVisionImages')?.addEventListener('change',()=>{
    const count=$('trozalVisionImages').files?.length||0;
    if(count>3)status('trozalGeminiStatus','Maksimal tiga gambar. Pilih ulang maksimal tiga file.',true);
