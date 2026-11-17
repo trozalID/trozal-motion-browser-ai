@@ -56,6 +56,7 @@ jobs:
           set -euo pipefail
           node --check render-sync-advisor.js
           node --check browser-ai-gemini-cloud.js
+          node --check browser-ai-webgpu-local.js
           node --check browser-gpu-health.js
           node --check browser-gpu-frame-pipeline.js
           node <<'NODE'
@@ -99,6 +100,7 @@ jobs:
           node tests/mp4-bitrate-ip-guardrails.test.cjs
           node tests/browser-gemini-failover.test.cjs
           node tests/browser-gemini-failover.runtime.test.cjs
+          node tests/browser-webgpu-local.test.cjs
       - name: Guard central workspace and export capabilities
         run: node tests/workspace-export-preservation.test.cjs
       - name: Verify checked-out test revision
