@@ -136,6 +136,12 @@
   else if(provider==='openai'){url='https://api.openai.com/v1/responses';headers.Authorization='Bearer '+key;const content=items.map(x=>x.type==='text'?{type:'input_text',text:x.text}:{type:'input_image',image_url:'data:'+x.mime_type+';base64,'+x.data,detail:'high'});payload={model,input:[{role:'user',content}],max_output_tokens:options.generationConfig?.maxOutputTokens||8192,instructions:options.systemInstruction||undefined};}
   else if(provider==='anthropic'){url='https://api.anthropic.com/v1/messages';headers['x-api-key']=key;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true';const content=items.map(x=>x.type==='text'?{type:'text',text:x.text}:{type:'image',source:{type:'base64',media_type:x.mime_type,data:x.data}});payload={model,max_tokens:options.generationConfig?.maxOutputTokens||8192,system:options.systemInstruction||undefined,messages:[{role:'user',content}]};}
   else{url=provider==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://api.mistral.ai/v1/chat/completions';headers.Authorization='Bearer '+key;const content=items.map(x=>x.type==='text'?{type:'text',text:x.text}:{type:'image_url',image_url:{url:'data:'+x.mime_type+';base64,'+x.data}});payload={model,messages:[...(options.systemInstruction?[{role:'system',content:options.systemInstruction}]:[]),{role:'user',content}],max_tokens:options.generationConfig?.maxOutputTokens||8192,temperature:options.generationConfig?.temperature??0.3};}
+  if(provider==='gemini'){
+   const data=await requestJson(url,{method:'POST',mode:'cors',credentials:'omit',headers,body:JSON.stringify(payload),signal:options.signal},options.timeoutMs||180000);
+   const output=interactionText(data);
+   if(!output)throw new Error('Gemini menyelesaikan permintaan tetapi tidak mengembalikan teks. Coba ulangi atau pilih model lain.');
+   return output;
+  }
   const timeoutMs=Math.max(1000,Math.min(Number(options.timeoutMs)||180000,180000));
   const controller=new AbortController();let timedOut=false;
   const abortFromCaller=()=>controller.abort(options.signal?.reason);
@@ -146,7 +152,7 @@
   catch(error){if(options.signal?.aborted)throw new Error('Permintaan dibatalkan oleh pengguna.');if(timedOut)throw new Error(providerName()+' melewati batas waktu '+Math.round(timeoutMs/1000)+' detik.');throw error;}
   finally{clearTimeout(timer);options.signal?.removeEventListener('abort',abortFromCaller);}
   if(!response.ok)throw new Error(providerName()+' HTTP '+response.status+': '+String(data?.error?.message||data?.message||response.statusText));
-  let output='';if(provider==='gemini')output=interactionText(data);else if(provider==='openai')output=(data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\n');else if(provider==='anthropic')output=(data.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\n');else output=String(data.choices?.[0]?.message?.content||'');
+  let output='';if(provider==='openai')output=(data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\\n');else if(provider==='anthropic')output=(data.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\\n');else output=String(data.choices?.[0]?.message?.content||'');
   if(!output)throw new Error(providerName()+' tidak mengembalikan teks.');return output;
  }
  async function checkConnection(){
