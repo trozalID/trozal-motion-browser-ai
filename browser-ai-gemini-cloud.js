@@ -460,7 +460,8 @@
   try{return JSON.parse(text.slice(start,end+1));}
   catch(error){throw new Error('Format JSON dari Gemini tidak valid: '+error.message);}
  }
- function fillMetadata(data){
+ function fillMetadata(data,source){
+  const metadataSource=String(source||'Gemini Cloud');
   const title=String(data.title||'').trim();
   const description=String(data.description||'').trim();
   const keywords=Array.isArray(data.keywords)?data.keywords.map(value=>String(value).trim()).filter(Boolean):[];
@@ -479,7 +480,33 @@
   status('trozalGeminiVisualSummary',data.visual_summary?'Ringkasan visual: '+String(data.visual_summary):'');
   const objects=Array.isArray(data.visible_objects)?data.visible_objects.join(', '):'';
   status('trozalGeminiVisibleObjects',objects?'Objek yang terlihat: '+objects:'');
-  status('metadataStatus','Draf metadata dibuat dari piksel frame melalui Gemini Cloud. Periksa semua kolom sebelum digunakan.');
+  status('metadataStatus',metadataSource==='Gemini Cloud'?'Draf metadata dibuat dari piksel frame melalui Gemini Cloud. Periksa semua kolom sebelum digunakan.':'Draf metadata Smart Template dibuat dari brief/teks yang tersedia, bukan pengenalan piksel. Periksa dan koreksi semua kolom sebelum digunakan.');
+ }
+ function buildVisionFallbackMetadata(allowed){
+  const brief=String($('visualMotionPrompt')?.value||'').trim();
+  const theme=String($('svgAiPrompt')?.value||'').trim();
+  const sourceText=(brief+' '+theme).replace(/\s+/g,' ').trim();
+  if(!sourceText)throw new Error('Fallback metadata membutuhkan brief atau detail tema. Bukti visual tetap tersedia; isi brief lalu coba lagi.');
+  const titleSeed=(brief||theme).split(/[.!?\n]/)[0].trim();
+  const title=(titleSeed||'Motion graphics concept').slice(0,100);
+  const description=(brief||theme).slice(0,360);
+  const words=sourceText.toLowerCase().match(/[a-z0-9]{3,}/g)||[];
+  const stop=new Set(['the','and','for','with','from','into','that','this','then','than','when','where','while','your','you','are','was','were','have','has','its','use','using','create','make','show','motion','graphics','visual','scene','style','design','yang','dan','untuk','dengan','dari','pada','dalam','agar','atau','ini','itu','sebuah','buat','membuat','tampilkan','adegan','gerak']);
+  const keywords=[...new Set(words.filter(word=>!stop.has(word)))].slice(0,47);
+  const categoryScores=(allowed||[]).map(label=>{
+   const terms=String(label).toLowerCase().match(/[a-z0-9]{3,}/g)||[];
+   return {label,score:terms.reduce((sum,term)=>sum+(words.includes(term)?1:0),0)};
+  }).sort((a,b)=>b.score-a.score);
+  const category=categoryScores[0]?.score>0?categoryScores[0].label:'';
+  return {
+   title,
+   description,
+   category,
+   keywords,
+   visual_summary:'Analisis visual Gemini tidak tersedia. Metadata sementara disusun dari brief dan detail tema; isi frame belum diverifikasi oleh AI.',
+   visible_objects:[],
+   confidence_notes:'Fallback tekstual saja. Jangan menganggap objek, warna, komposisi, atau gerakan telah dikenali dari piksel.'
+  };
  }
  async function analyzeVision(){
   const button=$('trozalGeminiAnalyzeBtn');
@@ -539,12 +566,21 @@
    status('trozalVisionStatus','Analisis cloud selesai · '+images.length+' frame · model '+modelId()+'.');
   }catch(error){
    const cancelled=controller.signal.aborted;
-   status('trozalGeminiStatus',cancelled?'Analisis dibatalkan.':'Analisis Gemini gagal: '+(error.message||String(error)),!cancelled);
-   status('trozalVisionStatus',cancelled
-    ?'Analisis dibatalkan.'
-    :(/HTTP 503|HTTP 502|HTTP 500|gangguan server/i.test(error.message||'')
-      ?'Layanan Gemini sedang bermasalah. Bukti visual tetap ditampilkan; coba analisis lagi beberapa saat.'
-      :'Analisis belum selesai. Bukti visual tetap tersedia untuk diperiksa.'),!cancelled);
+   if(cancelled){
+    status('trozalGeminiStatus','Analisis dibatalkan. Bukti visual tetap tersedia.');
+    status('trozalVisionStatus','Analisis dibatalkan.');
+   }else{
+    try{
+     const allowed=[...$('metadataCategory').options].map(option=>option.text);
+     const fallback=buildVisionFallbackMetadata(allowed);
+     fillMetadata(fallback,'Smart Template · fallback tekstual');
+     status('trozalGeminiStatus','Gemini Cloud tidak berhasil ('+(error.message||String(error))+'). Smart Template fallback aktif · metadata sementara dibuat dari brief, bukan dari analisis piksel. Bukti visual tetap tersedia.');
+     status('trozalVisionStatus','Fallback tekstual aktif · objek dan detail visual tidak diklaim telah dikenali. Coba ulang Gemini setelah layanan pulih.');
+    }catch(fallbackError){
+     status('trozalGeminiStatus','Gemini gagal: '+(error.message||String(error))+' · fallback belum dapat dibuat: '+(fallbackError.message||String(fallbackError)),true);
+     status('trozalVisionStatus','Analisis belum selesai. Bukti visual tetap tersedia untuk diperiksa.',true);
+    }
+   }
   }finally{
    visionController=null;
    if(button){button.disabled=false;button.textContent='✦ ANALISIS VISUAL DENGAN GEMINI CLOUD';}
