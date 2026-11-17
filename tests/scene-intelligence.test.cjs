@@ -40,3 +40,21 @@ assert.match(scene.build('The character runs forward.',8),/POSE & SIKLUS GERAK/)
 assert.match(scene.build('The dancer spins clockwise.',8),/pivot/);
 
 console.log('PASS: beat timing, shot planning, interaction graph, causal order, object continuity');
+
+const handoffPair=scene.inferMultiCharacterRelations('Mira gives the blue key to Rafi.');
+assert.equal(handoffPair[0].kind,'HANDOFF');
+assert.deepEqual(handoffPair[0].characters,['Mira','Rafi']);
+assert.match(handoffPair[0].blocking,/kontinu/);
+const gazePair=scene.inferMultiCharacterRelations('Mira looks at Rafi.');
+assert.equal(gazePair[0].kind,'GAZE / ATTENTION');
+assert.match(gazePair[0].gaze,/eyeline/);
+const chasePair=scene.inferMultiCharacterRelations('Rafi follows Mira.');
+assert.equal(chasePair[0].kind,'FOLLOW / PURSUIT');
+const facePair=scene.inferMultiCharacterRelations('Mira and Rafi face each other.');
+assert.equal(facePair[0].kind,'MUTUAL INTERACTION');
+const blockingPair=scene.inferMultiCharacterRelations('Mira stands behind Rafi.');
+assert.equal(blockingPair[0].kind,'SPATIAL BLOCKING');
+assert.equal(scene.inferMultiCharacterRelations('A quiet blue room.').length,0);
+assert.match(scene.build('Mira looks at Rafi. Rafi follows Mira.',10),/PETA INTERAKSI MULTI-KARAKTER/);
+assert.match(scene.build('Mira gives the blue key to Rafi.',8),/EYELINE/);
+console.log('PASS: multi-character roles, gaze, handoff, pursuit and spatial blocking');
