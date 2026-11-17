@@ -518,16 +518,16 @@
   // Generated prompt is a last-resort source only; avoid treating boilerplate
   // instructions as visual evidence when structured theme fields are available.
   if(!parts.length&&visualPrompt)parts.push('Theme prompt: '+visualPrompt.slice(0,1800));
-  const sourceText=parts.join(' · ').replace(/\\s+/g,' ').trim();
+  const sourceText=parts.join(' · ').replace(/\s+/g,' ').trim();
   const fallbackSource=sourceText||'Original motion graphic concept';
-  const titleSeed=(brief||specific||theme||subject||category||visualPrompt||'Original motion graphic concept').split(/[.!?\\n]/)[0].trim();
+  const titleSeed=(brief||specific||theme||subject||category||visualPrompt||'Original motion graphic concept').split(/[.!?\n]/)[0].trim();
   const title=(titleSeed||'Original motion graphic concept').slice(0,100);
   const description=fallbackSource.slice(0,360);
-  const words=fallbackSource.toLowerCase().match(/[a-z0-9]{3,}\\b/g)||[];
+  const words=fallbackSource.toLowerCase().match(/[a-z0-9]{3,}\b/g)||[];
   const stop=new Set(['the','and','for','with','from','into','that','this','then','than','when','where','while','your','you','are','was','were','have','has','its','use','using','create','make','show','motion','graphics','visual','scene','style','design','yang','dan','untuk','dengan','dari','pada','dalam','agar','atau','ini','itu','sebuah','buat','membuat','tampilkan','adegan','gerak','main','theme','category','specific','direction','additional','details','automatic','specifications','brief']);
   const keywords=[...new Set(words.filter(word=>!stop.has(word)))].slice(0,47);
   const categoryScores=(allowed||[]).map(label=>{
-   const terms=String(label).toLowerCase().match(/[a-z0-9]{3,}\\b/g)||[];
+   const terms=String(label).toLowerCase().match(/[a-z0-9]{3,}\b/g)||[];
    return {label,score:terms.reduce((sum,term)=>sum+(words.includes(term)?1:0),0)};
   }).sort((a,b)=>b.score-a.score);
   const selectedCategory=(allowed||[]).find(label=>String(label).toLowerCase()===category.toLowerCase());
