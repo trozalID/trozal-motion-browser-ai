@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const html=fs.readFileSync('index.html','utf8');
+const panel=fs.readFileSync('ip-guardrails-panel.js','utf8');
+assert.ok(html.includes('./ip-guardrails-panel.js'),'IP guardrails panel script must load');
+assert.ok(html.includes('id="visualMotionPrompt"'),'Scene Composer brief field missing');
+for(const term of ['ORIGINAL CONTENT & IP GUARDRAILS','logo','merek dagang','watermark','karakter','alternatif orisinal']) assert.ok(panel.toLowerCase().includes(term.toLowerCase()),'Missing visible policy: '+term);
+assert.ok(panel.includes('selalu disertakan')||panel.includes('Selalu disertakan'));
+assert.ok(panel.includes('Tidak ada opsi untuk menonaktifkannya'));
+process.stdout.write('PASS: always-on IP guardrails panel is wired and lists required original-content restrictions.\\n');
