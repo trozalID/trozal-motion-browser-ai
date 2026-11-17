@@ -124,7 +124,7 @@
  function interactionText(payload){
   const parts=payload?.candidates?.[0]?.content?.parts;
   if(!Array.isArray(parts))return '';
-  return parts.filter(part=>typeof part?.text==='string'&&!part.thought).map(part=>part.text).join('\\n').trim();
+  return parts.filter(part=>typeof part?.text==='string'&&!part.thought).map(part=>part.text).join('\n').trim();
  }
  async function createInteraction(input,options){
   options=options||{};
@@ -152,7 +152,7 @@
   catch(error){if(options.signal?.aborted)throw new Error('Permintaan dibatalkan oleh pengguna.');if(timedOut)throw new Error(providerName()+' melewati batas waktu '+Math.round(timeoutMs/1000)+' detik.');throw error;}
   finally{clearTimeout(timer);options.signal?.removeEventListener('abort',abortFromCaller);}
   if(!response.ok)throw new Error(providerName()+' HTTP '+response.status+': '+String(data?.error?.message||data?.message||response.statusText));
-  let output='';if(provider==='openai')output=(data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\\n');else if(provider==='anthropic')output=(data.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\\n');else output=String(data.choices?.[0]?.message?.content||'');
+  let output='';if(provider==='openai')output=(data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\n');else if(provider==='anthropic')output=(data.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\n');else output=String(data.choices?.[0]?.message?.content||'');
   if(!output)throw new Error(providerName()+' tidak mengembalikan teks.');return output;
  }
  async function checkConnection(){
@@ -550,7 +550,7 @@
     'visible_objects: array of clearly visible objects only.',
     'confidence_notes: note uncertainty or return an empty string.',
     'Do not invent objects or motion that the supplied frames do not prove.'
-   ].join('\\n');
+   ].join('\n');
    const input=[{type:'text',text:prompt}];
    images.forEach(image=>input.push({type:'image',data:image.data,mime_type:image.mime_type}));
    status('trozalGeminiStatus','Mengirim '+images.length+' gambar ke '+modelId()+' · '+providerName()+' Cloud…');
