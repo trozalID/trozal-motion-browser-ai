@@ -149,7 +149,7 @@ function testProgressStopAndExportWiring() {
   assert.match(html, /async function draw\(\)\{\s*if\(trozalRenderCancelRequested\)return/, 'Queued frame callback must stop after cancellation');
   assert.match(html, /if\(stream\)stream\.getTracks\(\)\.forEach\(track=>track\.stop\(\)\)/, 'Stop/finalization must release capture stream tracks');
   assert.match(drawBody, /canvas\.toBlob/, 'PNG sequence must encode each frame as PNG');
-  assert.match(drawBody, /frame\+\+;setTimeout\(\(\)=>trozalScheduleRenderTask\(draw\),0\)/, 'PNG frame loop must yield to the browser between frames instead of immediately chaining MessageChannel tasks');
+  assert.match(drawBody, /frame\+\+;scheduleCanvasRenderFrame\(\(\)=>trozalScheduleRenderTask\(draw\)\)/, 'PNG frame loop must use the selected Canvas batch/yield profile while preserving the FIFO scheduler');
   assert.match(html, /encodeMovWithWasm\(pngZip,totalFrames,fps,w,h,'prores'\)/, 'ProRes export path must remain wired');
 }
 
