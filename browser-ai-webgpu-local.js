@@ -5,6 +5,13 @@
 (function(){
  'use strict';
  const MODEL='Llama-3.2-1B-Instruct-q4f16_1-MLC';
+ const IP_POLICY=[
+  'Create only original visual content.',
+  'Do not depict, name, reproduce, trace, imitate, or closely evoke copyrighted characters, fictional universes, celebrity likenesses, signature costumes, protected artwork, proprietary designs, or recognizable third-party intellectual property.',
+  'Do not show real company or product logos, brand marks, trademarks, watermarks, signatures, or recognizable corporate identities. For branding/logo themes use abstract non-identifying geometry only, with no logo, brand name, or trademark.',
+  'Use original fictional subjects, generic non-branded objects, fresh compositions, and independently created visual language. If the brief requests protected IP, transform it into a distinct original alternative using only broad, unprotected mood or genre attributes.',
+  'Do not include copyrighted lyrics, quotations, source artwork, screenshots, or copied text.'
+ ].join('\n');
  const CDN='https://esm.run/@mlc-ai/web-llm';
  let engine=null,loading=null,webllm=null;
  const $=id=>document.getElementById(id);
@@ -35,7 +42,8 @@
   const active=await ensureEngine();
   if(options.signal?.aborted)throw new Error('Permintaan dibatalkan.');
   const messages=[];
-  if(options.systemInstruction)messages.push({role:'system',content:String(options.systemInstruction)});
+  const systemInstruction=[String(options.systemInstruction||'').trim(),IP_POLICY].filter(Boolean).join('\n\n');
+  messages.push({role:'system',content:systemInstruction});
   messages.push({role:'user',content:text});
   status('Local WebGPU sedang menyusun adegan…');
   const response=await active.chat.completions.create({messages,temperature:Number(options.generationConfig?.temperature??0.35),max_tokens:Math.min(4096,Number(options.generationConfig?.maxOutputTokens||4096))});
