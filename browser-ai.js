@@ -500,6 +500,12 @@ function applyBrowserMetadata(parsed, captions, evidenceLabel, visualEvidence = 
   $("metadataDescription").value = description;
   $("metadataCategory").value = category;
   $("metadataKeywords").value = keywords.join(", ");
+  // Keep the visible 0/47 counter synchronized even when metadata is filled programmatically.
+  const keywordCount = [...new Set(keywords.map(value => String(value || "").trim().toLowerCase()).filter(Boolean))].length;
+  const keywordCounter = $("metadataKeywordCount");
+  if (keywordCounter) keywordCounter.textContent = keywordCount + " / 47 maks.";
+  $("metadataKeywords").dispatchEvent(new Event("input", { bubbles: true }));
+  if (keywordCounter) keywordCounter.textContent = keywordCount + " / 47 maks.";
   if ($("metadataEvidence")) {
     const objectSummary = detectedLabels.length ? " Deteksi objek: " + detectedLabels.join(", ") + "." : " Tidak ada objek terdeteksi pada ambang keyakinan.";
     const changeSummary = typeof visualEvidence.averageChange === "number" ? " Perubahan piksel antar-frame rata-rata " + visualEvidence.averageChange + "% (bukan label aksi)." : "";
