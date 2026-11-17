@@ -8,6 +8,7 @@ on:
     paths:
       - 'index.html'
       - 'browser-ai-gemini-cloud.js'
+      - 'browser-ai-webgpu-local.js'
       - 'hybrid-canvas-renderer.js'
       - 'browser-gpu-health.js'
       - 'browser-gpu-frame-pipeline.js'
@@ -57,6 +58,7 @@ jobs:
           cp browser-ai.js site/browser-ai.js
           cp render-sync-advisor.js site/render-sync-advisor.js
           cp browser-ai-gemini-cloud.js site/browser-ai-gemini-cloud.js
+          cp browser-ai-webgpu-local.js site/browser-ai-webgpu-local.js
           cp hybrid-canvas-renderer.js site/hybrid-canvas-renderer.js
           cp browser-gpu-health.js site/browser-gpu-health.js
           cp browser-gpu-frame-pipeline.js site/browser-gpu-frame-pipeline.js
@@ -200,6 +202,7 @@ jobs:
           test -s site/metadata-quality-delivery.js
           test -s site/render-sync-advisor.js
           test -s site/browser-ai-gemini-cloud.js
+          test -s site/browser-ai-webgpu-local.js
           test -s site/vendor/ffmpeg/worker.js
           test -s site/vendor/prores-core/ffmpeg-core.js
           test -s site/vendor/prores-core/ffmpeg-core.wasm
