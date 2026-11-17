@@ -136,7 +136,15 @@
   else if(provider==='openai'){url='https://api.openai.com/v1/responses';headers.Authorization='Bearer '+key;const content=items.map(x=>x.type==='text'?{type:'input_text',text:x.text}:{type:'input_image',image_url:'data:'+x.mime_type+';base64,'+x.data,detail:'high'});payload={model,input:[{role:'user',content}],max_output_tokens:options.generationConfig?.maxOutputTokens||8192,instructions:options.systemInstruction||undefined};}
   else if(provider==='anthropic'){url='https://api.anthropic.com/v1/messages';headers['x-api-key']=key;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true';const content=items.map(x=>x.type==='text'?{type:'text',text:x.text}:{type:'image',source:{type:'base64',media_type:x.mime_type,data:x.data}});payload={model,max_tokens:options.generationConfig?.maxOutputTokens||8192,system:options.systemInstruction||undefined,messages:[{role:'user',content}]};}
   else{url=provider==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://api.mistral.ai/v1/chat/completions';headers.Authorization='Bearer '+key;const content=items.map(x=>x.type==='text'?{type:'text',text:x.text}:{type:'image_url',image_url:{url:'data:'+x.mime_type+';base64,'+x.data}});payload={model,messages:[...(options.systemInstruction?[{role:'system',content:options.systemInstruction}]:[]),{role:'user',content}],max_tokens:options.generationConfig?.maxOutputTokens||8192,temperature:options.generationConfig?.temperature??0.3};}
-  const response=await fetch(url,{method:'POST',mode:'cors',credentials:'omit',headers,body:JSON.stringify(payload),signal:options.signal});let data={};try{data=await response.json();}catch(_){}
+  const timeoutMs=Math.max(1000,Math.min(Number(options.timeoutMs)||180000,180000));
+  const controller=new AbortController();let timedOut=false;
+  const abortFromCaller=()=>controller.abort(options.signal?.reason);
+  if(options.signal?.aborted)abortFromCaller();else options.signal?.addEventListener('abort',abortFromCaller,{once:true});
+  const timer=setTimeout(()=>{timedOut=true;controller.abort();},timeoutMs);
+  let response,data={};
+  try{response=await fetch(url,{method:'POST',mode:'cors',credentials:'omit',headers,body:JSON.stringify(payload),signal:controller.signal});data=await response.json().catch(()=>({}));}
+  catch(error){if(options.signal?.aborted)throw new Error('Permintaan dibatalkan oleh pengguna.');if(timedOut)throw new Error(providerName()+' melewati batas waktu '+Math.round(timeoutMs/1000)+' detik.');throw error;}
+  finally{clearTimeout(timer);options.signal?.removeEventListener('abort',abortFromCaller);}
   if(!response.ok)throw new Error(providerName()+' HTTP '+response.status+': '+String(data?.error?.message||data?.message||response.statusText));
   let output='';if(provider==='gemini')output=interactionText(data);else if(provider==='openai')output=(data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\n');else if(provider==='anthropic')output=(data.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\n');else output=String(data.choices?.[0]?.message?.content||'');
   if(!output)throw new Error(providerName()+' tidak mengembalikan teks.');return output;
@@ -144,7 +152,16 @@
  async function checkConnection(){
   const button=$('trozalProviderCheckBtn')||$('trozalGeminiCheckBtn');if(button)button.disabled=true;
   const message='Menguji koneksi '+providerName()+' · '+modelId()+'…';status('trozalGeminiConnectionStatus',message);status('trozalProviderStatus',message);
-  try{const output=await createInteraction('Reply with exactly: TROZAL CONNECTION OK',{generationConfig:{temperature:0,maxOutputTokens:24},timeoutMs:30000});
+  try{
+   if(providerId()==='gemini'){
+    const data=await requestJson(API+'/models?pageSize=1000',{method:'GET',mode:'cors',credentials:'omit',headers:{'x-goog-api-key':requireKey()}},30000);
+    const available=(Array.isArray(data.models)?data.models:[]).filter(item=>Array.isArray(item.supportedGenerationMethods)&&item.supportedGenerationMethods.includes('generateContent'));
+    const names=available.map(item=>String(item.name||'').replace(/^models\\//,''));
+    if(names.length&&!names.includes(modelId()))throw new Error('API key terhubung, tetapi model '+modelId()+' tidak tersedia untuk generateContent pada key ini.');
+    const msg='TERHUBUNG · '+names.length+' model mendukung generateContent · Pilihan: '+modelId()+' · Gemini Cloud aktif.';
+    status('trozalGeminiConnectionStatus',msg);status('trozalProviderStatus',msg);status('trozalVisionConnection','Gemini Cloud aktif · '+modelId());return true;
+   }
+   const output=await createInteraction('Reply with exactly: TROZAL CONNECTION OK',{generationConfig:{temperature:0,maxOutputTokens:24},timeoutMs:30000});
    const success=/TROZAL CONNECTION OK/i.test(output);const msg=success?'TERHUBUNG · '+providerName()+' / '+modelId()+' siap untuk Scene Composer dan Vision.':'Provider merespons, tetapi hasil uji tidak sesuai.';
    status('trozalGeminiConnectionStatus',msg,!success);status('trozalProviderStatus',msg,!success);status('trozalVisionConnection',providerName()+' Cloud aktif · '+modelId());return success;
   }catch(error){const msg=(error.message||String(error));status('trozalGeminiConnectionStatus',msg,true);status('trozalProviderStatus',msg,true);return false;}finally{if(button)button.disabled=false;}
