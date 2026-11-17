@@ -524,7 +524,7 @@
   const title=(titleSeed||'Original motion graphic concept').slice(0,100);
   const description=fallbackSource.slice(0,360);
   const words=fallbackSource.toLowerCase().match(/[a-z0-9]{3,}\b/g)||[];
-  const stop=new Set(['the','and','for','with','from','into','that','this','then','than','when','where','while','your','you','are','was','were','have','has','its','use','using','create','make','show','motion','graphics','visual','scene','style','design','yang','dan','untuk','dengan','dari','pada','dalam','agar','atau','ini','itu','sebuah','buat','membuat','tampilkan','adegan','gerak','main','theme','category','specific','direction','additional','details','automatic','specifications','brief']);
+  const stop=new Set(['the','and','for','with','from','into','that','this','then','than','when','where','while','your','you','are','was','were','have','has','its','use','using','create','make','show','motion','graphics','visual','scene','style','design','yang','dan','untuk','dengan','dari','pada','dalam','agar','atau','ini','itu','sebuah','buat','membuat','tampilkan','adegan','gerak','main','theme','category','specific','direction','additional','details','automatic','specifications','brief','original','graphic','concept']);
   const keywords=[...new Set(words.filter(word=>!stop.has(word)))].slice(0,47);
   const categoryScores=(allowed||[]).map(label=>{
    const terms=String(label).toLowerCase().match(/[a-z0-9]{3,}\b/g)||[];
