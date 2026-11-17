@@ -22,6 +22,7 @@ on:
       - feature/mp4-bitrate-ip-guardrails-2026-11-16
       - integration/browser-bitrate-ip-hybrid-canvas-2026-11-16
       - feature/canvas-render-speed-control-2026-11-17
+      - fix/metadata-copy-clear-actions-2026-11-18
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -56,6 +57,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check render-sync-advisor.js
+          node --check metadata-actions.js
           node --check browser-ai-gemini-cloud.js
           node --check browser-ai-webgpu-local.js
           node --check browser-gpu-health.js
@@ -95,6 +97,7 @@ jobs:
           }
           console.log('Validated standalone Advisor syntax and render scheduler wiring.');
           NODE
+          node tests/metadata-actions.test.cjs
           node tests/browser-render-scheduler.test.cjs
           node tests/canvas-render-speed.test.cjs
           node tests/browser-gpu-health.test.cjs
