@@ -142,32 +142,12 @@
   if(!output)throw new Error(providerName()+' tidak mengembalikan teks.');return output;
  }
  async function checkConnection(){
-  const button=$('trozalGeminiCheckBtn');
-  if(button)button.disabled=true;
-  status('trozalGeminiConnectionStatus','Memeriksa model Gemini yang mendukung generateContent…');
-  try{
-   const data=await requestJson(API+'/models?pageSize=1000',{
-    method:'GET',
-    mode:'cors',
-    credentials:'omit',
-    headers:{'x-goog-api-key':requireKey()}
-   },30000);
-   const available=(Array.isArray(data.models)?data.models:[]).filter(item=>
-    Array.isArray(item.supportedGenerationMethods)&&item.supportedGenerationMethods.includes('generateContent')
-   );
-   const names=available.map(item=>String(item.name||'').replace(/^models\//,''));
-   const selected=modelId();
-   if(names.length&&!names.includes(selected)){
-    status('trozalGeminiConnectionStatus','API key terhubung, tetapi model '+selected+' tidak tersedia untuk generateContent pada key ini. Pilih salah satu model yang mendukung generateContent.',true);
-    return false;
-   }
-   status('trozalGeminiConnectionStatus','TERHUBUNG · '+names.length+' model mendukung generateContent · Pilihan: '+selected+' · Gemini Cloud aktif.');
-   status('trozalVisionConnection','Gemini Cloud aktif. Browser Vision memakai API key dan model yang sama.');
-   return true;
-  }catch(error){
-   status('trozalGeminiConnectionStatus',error.message||String(error),true);
-   return false;
-  }finally{if(button)button.disabled=false;}
+  const button=$('trozalProviderCheckBtn')||$('trozalGeminiCheckBtn');if(button)button.disabled=true;
+  const message='Menguji koneksi '+providerName()+' · '+modelId()+'…';status('trozalGeminiConnectionStatus',message);status('trozalProviderStatus',message);
+  try{const output=await createInteraction('Reply with exactly: TROZAL CONNECTION OK',{generationConfig:{temperature:0,maxOutputTokens:24},timeoutMs:30000});
+   const success=/TROZAL CONNECTION OK/i.test(output);const msg=success?'TERHUBUNG · '+providerName()+' / '+modelId()+' siap untuk Scene Composer dan Vision.':'Provider merespons, tetapi hasil uji tidak sesuai.';
+   status('trozalGeminiConnectionStatus',msg,!success);status('trozalProviderStatus',msg,!success);status('trozalVisionConnection',providerName()+' Cloud aktif · '+modelId());return success;
+  }catch(error){const msg=(error.message||String(error));status('trozalGeminiConnectionStatus',msg,true);status('trozalProviderStatus',msg,true);return false;}finally{if(button)button.disabled=false;}
  }
  function extractHtml(raw){
   let code=String(raw||'').trim();
@@ -647,6 +627,11 @@
  function init(){
   status('trozalVisionConnection','Browser Vision menggunakan Gemini Cloud API dan API key bersama. Tidak ada model gambar lokal.');
   $('trozalGeminiCheckBtn')?.addEventListener('click',checkConnection);
+  $('trozalProviderCheckBtn')?.addEventListener('click',checkConnection);
+  $('trozalAiProvider')?.addEventListener('change',syncProviderUi);
+  $('trozalAiProviderModel')?.addEventListener('change',()=>{if(providerId()==='gemini'&&$('trozalBrowserAiModel'))$('trozalBrowserAiModel').value=modelId();});
+  $('trozalProviderClearBtn')?.addEventListener('click',()=>{['trozalOpenAiKey','trozalAnthropicKey','trozalGroqKey','trozalMistralKey'].forEach(id=>{if($(id))$(id).value='';});status('trozalProviderStatus','Semua API key alternatif dihapus dari halaman aktif.');});
+  syncProviderUi();
   $('generateVisualMotionAiBtn')?.addEventListener('click',generateScene);
   $('cancelBrowserAiGenerationBtn')?.addEventListener('click',cancelScene);
   $('cancelGeminiVisionBtn')?.addEventListener('click',cancelVision);
