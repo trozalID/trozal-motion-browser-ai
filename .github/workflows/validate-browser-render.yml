@@ -101,6 +101,7 @@ jobs:
           node tests/browser-gemini-failover.test.cjs
           node tests/browser-gemini-failover.runtime.test.cjs
           node tests/browser-webgpu-local.test.cjs
+          node tests/browser-gemini-vision-fallback.test.cjs
       - name: Guard central workspace and export capabilities
         run: node tests/workspace-export-preservation.test.cjs
       - name: Verify checked-out test revision
