@@ -152,7 +152,7 @@
   catch(error){if(options.signal?.aborted)throw new Error('Permintaan dibatalkan oleh pengguna.');if(timedOut)throw new Error(providerName()+' melewati batas waktu '+Math.round(timeoutMs/1000)+' detik.');throw error;}
   finally{clearTimeout(timer);options.signal?.removeEventListener('abort',abortFromCaller);}
   if(!response.ok)throw new Error(providerName()+' HTTP '+response.status+': '+String(data?.error?.message||data?.message||response.statusText));
-  let output='';if(provider==='openai')output=(data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\\n');else if(provider==='anthropic')output=(data.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\\n');else output=String(data.choices?.[0]?.message?.content||'');
+  let output='';if(provider==='openai')output=(data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\n');else if(provider==='anthropic')output=(data.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\n');else output=String(data.choices?.[0]?.message?.content||'');
   if(!output)throw new Error(providerName()+' tidak mengembalikan teks.');return output;
  }
  async function checkConnection(){
@@ -487,16 +487,16 @@
  function buildVisionFallbackMetadata(allowed){
   const brief=String($('visualMotionPrompt')?.value||'').trim();
   const theme=String($('svgAiPrompt')?.value||'').trim();
-  const sourceText=(brief+' '+theme).replace(/\\s+/g,' ').trim();
+  const sourceText=(brief+' '+theme).replace(/\s+/g,' ').trim();
   if(!sourceText)throw new Error('Fallback metadata membutuhkan brief atau detail tema. Bukti visual tetap tersedia; isi brief lalu coba lagi.');
-  const titleSeed=(brief||theme).split(/[.!?\\n]/)[0].trim();
+  const titleSeed=(brief||theme).split(/[.!?\n]/)[0].trim();
   const title=(titleSeed||'Motion graphics concept').slice(0,100);
   const description=(brief||theme).slice(0,360);
-  const words=sourceText.toLowerCase().match(/[a-z0-9]{3,}\\b/g)||[];
+  const words=sourceText.toLowerCase().match(/[a-z0-9]{3,}\b/g)||[];
   const stop=new Set(['the','and','for','with','from','into','that','this','then','than','when','where','while','your','you','are','was','were','have','has','its','use','using','create','make','show','motion','graphics','visual','scene','style','design','yang','dan','untuk','dengan','dari','pada','dalam','agar','atau','ini','itu','sebuah','buat','membuat','tampilkan','adegan','gerak']);
   const keywords=[...new Set(words.filter(word=>!stop.has(word)))].slice(0,47);
   const categoryScores=(allowed||[]).map(label=>{
-   const terms=String(label).toLowerCase().match(/[a-z0-9]{3,}\\b/g)||[];
+   const terms=String(label).toLowerCase().match(/[a-z0-9]{3,}\b/g)||[];
    return {label,score:terms.reduce((sum,term)=>sum+(words.includes(term)?1:0),0)};
   }).sort((a,b)=>b.score-a.score);
   const category=categoryScores[0]?.score>0?categoryScores[0].label:'';
