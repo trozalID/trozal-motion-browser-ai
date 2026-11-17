@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const html=fs.readFileSync('index.html','utf8');
+const script=fs.readFileSync('metadata-actions.js','utf8');
+for(const id of ['metadataTitle','metadataDescription','metadataCategory','metadataKeywords','clearMetadataBtn','copyAllMetadataBtn','metadataStatus']) assert.ok(html.includes('id="'+id+'"'),'Missing metadata UI '+id);
+for(const id of ['metadataTitle','metadataDescription','metadataCategory','metadataKeywords']) assert.ok(html.includes('data-copy-meta="'+id+'"'),'Missing copy control '+id);
+assert.ok(html.includes('./metadata-actions.js'),'Metadata actions script must load');
+assert.match(script,/navigator\.clipboard\.writeText/);
+assert.match(script,/document\.execCommand\('copy'\)/,'Clipboard fallback must support restricted contexts');
+assert.match(script,/function clearAll\(\)/);
+assert.match(script,/el\.selectedIndex=0/);
+assert.match(script,/trozalRefreshMetadataQuality/);
+assert.match(script,/addEventListener\('click'/);
+process.stdout.write('PASS: metadata clear, individual/all copy, clipboard fallback, and quality refresh wiring.\n');
