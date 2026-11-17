@@ -13,6 +13,7 @@ on:
       - 'browser-gpu-frame-pipeline.js'
       - 'render-sync-advisor.js'
       - 'js/scene-intelligence.js'
+      - 'metadata-quality-delivery.js'
       - '.github/workflows/build-prores-pages.yml'
       - 'tests/ffmpeg-wasm-runtime-smoke.browser.cjs'
   workflow_dispatch:
@@ -52,6 +53,7 @@ jobs:
           mkdir -p site/js site/vendor/ffmpeg site/vendor/prores-core
           cp index.html site/index.html
           cp js/scene-intelligence.js site/js/scene-intelligence.js
+          cp metadata-quality-delivery.js site/metadata-quality-delivery.js
           cp browser-ai.js site/browser-ai.js
           cp render-sync-advisor.js site/render-sync-advisor.js
           cp browser-ai-gemini-cloud.js site/browser-ai-gemini-cloud.js
@@ -195,6 +197,7 @@ jobs:
           if (missing.length) throw new Error('Missing local script assets in Pages artifact: ' + missing.join(', '));
           console.log('Verified ' + refs.length + ' script src asset(s) in Pages artifact.');
           NODE
+          test -s site/metadata-quality-delivery.js
           test -s site/render-sync-advisor.js
           test -s site/browser-ai-gemini-cloud.js
           test -s site/vendor/ffmpeg/worker.js
