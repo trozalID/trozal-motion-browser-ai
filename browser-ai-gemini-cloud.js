@@ -472,8 +472,11 @@
   const match=[...category.options].find(option=>option.text.trim().toLowerCase()===String(data.category||'').trim().toLowerCase());
   if(match)category.value=match.value;
   if(keywords.length){
-   $('metadataKeywords').value=[...new Set(keywords)].slice(0,47).join(', ');
+   const uniqueKeywords=[...new Set(keywords)].slice(0,47);
+   $('metadataKeywords').value=uniqueKeywords.join(', ');
    $('metadataKeywords').dispatchEvent(new Event('input',{bubbles:true}));
+   const counter=$('metadataKeywordCount');
+   if(counter)counter.textContent=uniqueKeywords.length+' / 47 maks.';
   }
   status('trozalGeminiVisualSummary',data.visual_summary?'Ringkasan visual: '+String(data.visual_summary):'');
   const objects=Array.isArray(data.visible_objects)?data.visible_objects.join(', '):'';
@@ -652,6 +655,9 @@
   $('generateVisualMotionAiBtn')?.addEventListener('click',generateScene);
   $('cancelBrowserAiGenerationBtn')?.addEventListener('click',cancelScene);
   $('cancelGeminiVisionBtn')?.addEventListener('click',cancelVision);
+  $('trozalGeminiAnalyzeBtn')?.addEventListener('click',analyzeVision);
+  bindMetadataSource('metadataFromHtmlMotionBtn');
+  bindMetadataSource('metadataFromSceneAiBtn');
   $('trozalVisionClearImagesBtn')?.addEventListener('click',()=>{
    $('trozalVisionImages').value='';
    $('trozalGeminiContactSheetPanel').style.display='none';
