@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const provider=fs.readFileSync('browser-ai-gemini-cloud.js','utf8');
+const local=fs.readFileSync('browser-ai-webgpu-local.js','utf8');
+const html=fs.readFileSync('index.html','utf8');
+assert.match(provider,/provider==='webgpu'/);
+assert.match(provider,/window\.trozalWebGpuGenerate/);
+assert.match(provider,/providerId\(\)!=='webgpu'&&!apiKey\(\)/);
+assert.match(html,/<option value="webgpu">Local WebGPU/);
+assert.match(html,/browser-ai-webgpu-local\.js/);
+assert.match(local,/Llama-3\.2-1B-Instruct-q4f16_1-MLC/);
+assert.match(local,/https:\/\/esm\.run\/@mlc-ai\/web-llm/);
+assert.match(local,/navigator\.gpu/);
+assert.match(local,/chat\.completions\.create/);
+assert.match(local,/No API key, Ollama, localhost bridge, or server proxy/);
+console.log('Browser Local WebGPU integration guards passed.');
