@@ -15,6 +15,8 @@ on:
       - 'render-sync-advisor.js'
       - 'js/scene-intelligence.js'
       - 'metadata-quality-delivery.js'
+      - 'metadata-actions.js'
+      - 'ip-guardrails-panel.js'
       - '.github/workflows/build-prores-pages.yml'
       - 'tests/ffmpeg-wasm-runtime-smoke.browser.cjs'
   workflow_dispatch:
@@ -55,6 +57,8 @@ jobs:
           cp index.html site/index.html
           cp js/scene-intelligence.js site/js/scene-intelligence.js
           cp metadata-quality-delivery.js site/metadata-quality-delivery.js
+          cp metadata-actions.js site/metadata-actions.js
+          cp ip-guardrails-panel.js site/ip-guardrails-panel.js
           cp browser-ai.js site/browser-ai.js
           cp render-sync-advisor.js site/render-sync-advisor.js
           cp browser-ai-gemini-cloud.js site/browser-ai-gemini-cloud.js
