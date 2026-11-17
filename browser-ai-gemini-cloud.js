@@ -156,7 +156,7 @@
    if(providerId()==='gemini'){
     const data=await requestJson(API+'/models?pageSize=1000',{method:'GET',mode:'cors',credentials:'omit',headers:{'x-goog-api-key':requireKey()}},30000);
     const available=(Array.isArray(data.models)?data.models:[]).filter(item=>Array.isArray(item.supportedGenerationMethods)&&item.supportedGenerationMethods.includes('generateContent'));
-    const names=available.map(item=>String(item.name||'').replace(/^models\\//,''));
+    const names=available.map(item=>(String(item.name||'').startsWith('models/')?String(item.name).slice(7):String(item.name||'')));
     if(names.length&&!names.includes(modelId()))throw new Error('API key terhubung, tetapi model '+modelId()+' tidak tersedia untuk generateContent pada key ini.');
     const msg='TERHUBUNG · '+names.length+' model mendukung generateContent · Pilihan: '+modelId()+' · Gemini Cloud aktif.';
     status('trozalGeminiConnectionStatus',msg);status('trozalProviderStatus',msg);status('trozalVisionConnection','Gemini Cloud aktif · '+modelId());return true;
