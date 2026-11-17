@@ -7,7 +7,7 @@
   const ids = ['metadataTitle','metadataDescription','metadataCategory','metadataKeywords','metadataSubject','metadataEvidence','metadataPlatform'];
   const state = { approved: new Set(), keywords: [], lastSignature: '' };
   const text = id => String($(id)?.value ?? $(id)?.textContent ?? '').trim();
-  const splitKeywords = () => text('metadataKeywords').split(/[,;\\n]+/).map(x => x.trim()).filter(Boolean);
+  const splitKeywords = () => text('metadataKeywords').split(/[,;\n]+/).map(x => x.trim()).filter(Boolean);
   const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const evidenceText = () => [text('metadataSubject'), text('metadataEvidence')].join(' ').toLowerCase();
   const tokens = value => new Set((String(value).toLowerCase().match(/[a-z0-9][a-z0-9-]{2,}/g) || []).filter(x => !['the','and','with','from','this','that','into','over','under','for','are','has','its'].includes(x)));
@@ -88,7 +88,7 @@
   function exportCsv() {
     const result=audit();
     const rows=[['Field','Value'],['Title',text('metadataTitle')],['Description',text('metadataDescription')],['Category',text('metadataCategory')],['Keywords',result.keywords.join(', ')],['Keyword count',String(result.keywords.length)],['Quality score',String(result.score)],['Evidence',text('metadataSubject')],['Platform',platformRules()]];
-    const csv=rows.map(row=>row.map(value=>'"'+String(value).replace(/"/g,'""')+'"').join(',')).join('\\r\\n');
+    const csv=rows.map(row=>row.map(value=>'"'+String(value).replace(/"/g,'""')+'"').join(',')).join('\r\n');
     const blob=new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');
     a.href=url;a.download='trozal-metadata-quality.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
