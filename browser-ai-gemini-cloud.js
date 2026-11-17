@@ -497,29 +497,49 @@
    :'Draf metadata dibuat dari bukti piksel melalui '+metadataSource+'. Periksa semua kolom sebelum digunakan.');
  }
  function buildVisionFallbackMetadata(allowed){
-  const brief=String($('visualMotionPrompt')?.value||'').trim();
-  const theme=String($('svgAiPrompt')?.value||'').trim();
-  const sourceText=(brief+' '+theme).replace(/\s+/g,' ').trim();
-  if(!sourceText)throw new Error('Fallback metadata membutuhkan brief atau detail tema. Bukti visual tetap tersedia; isi brief lalu coba lagi.');
-  const titleSeed=(brief||theme).split(/[.!?\n]/)[0].trim();
-  const title=(titleSeed||'Motion graphics concept').slice(0,100);
-  const description=(brief||theme).slice(0,360);
-  const words=sourceText.toLowerCase().match(/[a-z0-9]{3,}\b/g)||[];
-  const stop=new Set(['the','and','for','with','from','into','that','this','then','than','when','where','while','your','you','are','was','were','have','has','its','use','using','create','make','show','motion','graphics','visual','scene','style','design','yang','dan','untuk','dengan','dari','pada','dalam','agar','atau','ini','itu','sebuah','buat','membuat','tampilkan','adegan','gerak']);
+  const read=id=>String($(id)?.value||'').trim();
+  const brief=read('visualMotionPrompt');
+  const theme=read('svgAiTheme');
+  const visualPrompt=read('svgAiPrompt');
+  const category=read('svgAiCategory');
+  const specific=read('svgAiSpecific');
+  const details=read('svgAiDetails');
+  const themeBrief=read('svgAiThemeBrief');
+  const subject=read('metadataSubject');
+  const parts=[
+   brief&&'Visual brief: '+brief,
+   theme&&'Main theme: '+theme,
+   category&&'Visual category: '+category,
+   specific&&'Specific direction: '+specific,
+   details&&'Additional details: '+details,
+   themeBrief&&'Automatic theme specifications: '+themeBrief,
+   subject&&'Metadata subject: '+subject
+  ].filter(Boolean);
+  // Generated prompt is a last-resort source only; avoid treating boilerplate
+  // instructions as visual evidence when structured theme fields are available.
+  if(!parts.length&&visualPrompt)parts.push('Theme prompt: '+visualPrompt.slice(0,1800));
+  const sourceText=parts.join(' · ').replace(/\s+/g,' ').trim();
+  const fallbackSource=sourceText||'Original motion graphic concept';
+  const titleSeed=(brief||specific||theme||subject||category||visualPrompt||'Original motion graphic concept').split(/[.!?\n]/)[0].trim();
+  const title=(titleSeed||'Original motion graphic concept').slice(0,100);
+  const description=fallbackSource.slice(0,360);
+  const words=fallbackSource.toLowerCase().match(/[a-z0-9]{3,}\b/g)||[];
+  const stop=new Set(['the','and','for','with','from','into','that','this','then','than','when','where','while','your','you','are','was','were','have','has','its','use','using','create','make','show','motion','graphics','visual','scene','style','design','yang','dan','untuk','dengan','dari','pada','dalam','agar','atau','ini','itu','sebuah','buat','membuat','tampilkan','adegan','gerak','main','theme','category','specific','direction','additional','details','automatic','specifications','brief','original','graphic','concept']);
   const keywords=[...new Set(words.filter(word=>!stop.has(word)))].slice(0,47);
   const categoryScores=(allowed||[]).map(label=>{
    const terms=String(label).toLowerCase().match(/[a-z0-9]{3,}\b/g)||[];
    return {label,score:terms.reduce((sum,term)=>sum+(words.includes(term)?1:0),0)};
   }).sort((a,b)=>b.score-a.score);
-  const category=categoryScores[0]?.score>0?categoryScores[0].label:'';
+  const selectedCategory=(allowed||[]).find(label=>String(label).toLowerCase()===category.toLowerCase());
+  const bestCategory=categoryScores[0]?.score>0?categoryScores[0].label:'';
   return {
    title,
    description,
-   category,
+   category:selectedCategory||bestCategory||'',
    keywords,
-   visual_summary:'Analisis visual cloud tidak tersedia. Metadata sementara disusun dari brief dan detail tema; isi frame belum diverifikasi oleh AI.',
+   visual_summary:'Analisis visual cloud tidak tersedia. Metadata sementara disusun dari brief, tema, kategori, subtema, dan detail editor yang tersedia; isi frame belum diverifikasi oleh AI.',
    visible_objects:[],
-   confidence_notes:'Fallback tekstual saja. Jangan menganggap objek, warna, komposisi, atau gerakan telah dikenali dari piksel.'
+   confidence_notes:'Fallback tekstual saja. Jangan menganggap objek, warna, komposisi, atau gerakan telah dikenali dari piksel. Bukti visual tetap tersimpan untuk diperiksa.'
   };
  }
  async function analyzeVision(){
