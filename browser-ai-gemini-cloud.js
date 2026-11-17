@@ -12,7 +12,7 @@
  function apiKey(){return providerKey();}
  function modelId(){return String($('trozalAiProviderModel')?.value||$('trozalBrowserAiModel')?.value||'gemini-3.8-flash');}
  function providerName(){return ({gemini:'Gemini',openai:'OpenAI',anthropic:'Claude',groq:'Groq',mistral:'Mistral',webgpu:'Local WebGPU'})[providerId()]||'Gemini';}
- function syncProviderUi(){const p=providerId(),s=$('trozalAiProviderModel');const m={webgpu:[['Llama-3.2-1B-Instruct-q4f16_1-MLC','Llama 3.2 1B · Q4 · Local']],gemini:[['gemini-3.8-flash','Gemini 3.8 Flash'],['gemini-4-hydrogen','Gemini 4 Hydrogen'],['gemini-3.5-flash-lite','Gemini 3.5 Flash-Lite']],openai:[['gpt-4.1','GPT-4.1']],anthropic:[['claude-sonnet-4-5','Claude Sonnet 4.5'],['claude-opus-4-1','Claude Opus 4.1']],groq:[['qwen/qwen3.8-27b','Qwen 3.8 27B Vision']],mistral:[['mistral-large-2512','Mistral Large 3'],['mistral-medium-2508','Mistral Medium 3.1'],['mistral-small-2506','Mistral Small 3.2']]};if(s)s.innerHTML=(m[p]||m.gemini).map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('');status('trozalProviderStatus',providerName()+' dipilih · masukkan API key lalu periksa koneksi.');}
+ function syncProviderUi(){const p=providerId(),s=$('trozalAiProviderModel');const m={webgpu:[['Llama-3.2-1B-Instruct-q4f16_1-MLC','Llama 3.2 1B · Q4 · Local']],gemini:[['gemini-3.8-flash','Gemini 3.8 Flash'],['gemini-4-hydrogen','Gemini 4 Hydrogen'],['gemini-3.5-flash-lite','Gemini 3.5 Flash-Lite']],openai:[['gpt-4.1','GPT-4.1']],anthropic:[['claude-sonnet-4-5','Claude Sonnet 4.5'],['claude-opus-4-1','Claude Opus 4.1']],groq:[['qwen/qwen3.8-27b','Qwen 3.8 27B Vision']],mistral:[['mistral-large-2512','Mistral Large 3'],['mistral-medium-2508','Mistral Medium 3.1'],['mistral-small-2506','Mistral Small 3.2']]};if(s)s.innerHTML=(m[p]||m.gemini).map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('');const keyFields=$('trozalProviderKeyFields');if(keyFields)keyFields.style.display=p==='webgpu'?'none':'grid';status('trozalProviderStatus',p==='webgpu'?'Local WebGPU dipilih · tanpa API key. Muat model lokal terlebih dahulu.':providerName()+' dipilih · masukkan API key lalu periksa koneksi.');}
  function status(id,message,isError){
   const node=$(id);
   if(!node)return;
@@ -494,6 +494,7 @@
   status('metadataStatus','Draf metadata dibuat dari piksel frame melalui Gemini Cloud. Periksa semua kolom sebelum digunakan.');
  }
  async function analyzeVision(){
+  if(providerId()==='webgpu')throw new Error('Local WebGPU saat ini hanya mendukung Scene Composer berbasis teks. Untuk analisis gambar/frame, pilih Gemini, OpenAI, Claude, Groq, atau Mistral.');
   const button=$('trozalGeminiAnalyzeBtn');
   const cancel=$('cancelGeminiVisionBtn');
   if(visionController)return;
