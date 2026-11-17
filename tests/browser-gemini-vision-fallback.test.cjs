@@ -55,3 +55,5 @@ assert.match(emptyFallback.title, /Original motion graphic concept/);
 assert.equal(emptyFallback.category, '');
 assert.deepEqual(Array.from(emptyFallback.keywords), []);
 console.log('Browser Vision metadata fallback regression checks passed.');
+
+// Regression coverage: editor theme context is sufficient for a text-only fallback.
