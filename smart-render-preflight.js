@@ -14,11 +14,15 @@
     return fallback;
   };
   function estimate(options = {}) {
-    const width = Math.round(Number(options.width) || numberFrom(['#renderWidth','#outputWidth','#width','#resolutionWidth'], 1920));
-    const height = Math.round(Number(options.height) || numberFrom(['#renderHeight','#outputHeight','#height','#resolutionHeight'], 1080));
+    const resolutionValue = String(document.querySelector('#resolution')?.value || '');
+    const resolutionMatch = resolutionValue.match(/(\\d{2,5})\\s*[x×]\\s*(\\d{2,5})/i);
+    const width = Math.round(Number(options.width) || (resolutionMatch ? Number(resolutionMatch[1]) : numberFrom(['#renderWidth','#outputWidth','#width','#resolutionWidth'], 1920)));
+    const height = Math.round(Number(options.height) || (resolutionMatch ? Number(resolutionMatch[2]) : numberFrom(['#renderHeight','#outputHeight','#height','#resolutionHeight'], 1080)));
     const fps = Number(options.fps) || numberFrom(['#fps','#renderFps','#outputFps'], 30);
     const duration = Number(options.duration) || numberFrom(['#duration','#renderDuration','#outputDuration'], 10);
-    const batchFrames = clamp(Math.round(Number(options.batchFrames) || 2), 1, 8);
+    const speed = String(document.querySelector('#canvasRenderSpeed')?.value || 'balanced');
+    const speedBatch = speed === 'stable' ? 1 : speed === 'fast' ? 4 : 2;
+    const batchFrames = clamp(Math.round(Number(options.batchFrames) || speedBatch), 1, 8);
     const valid = [width,height,fps,duration].every(Number.isFinite) && width > 0 && height > 0 && fps > 0 && duration > 0 && width <= 16384 && height <= 16384 && fps <= 240 && duration <= 86400;
     if (!valid) throw new Error('Parameter render tidak valid atau di luar batas aman.');
     const pixels = width * height;
