@@ -3,12 +3,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-function load(deviceMemory = 16, hardwareConcurrency = 12) {
+function load(deviceMemory = 16, hardwareConcurrency = 12, controls = {}) {
   const window = {};
   const document = {
     readyState: 'loading',
     addEventListener() {},
-    querySelector() { return null; }
+    querySelector(selector) { return Object.prototype.hasOwnProperty.call(controls, selector) ? { value: controls[selector] } : null; }
   };
   const navigator = { deviceMemory, hardwareConcurrency };
   vm.runInNewContext(fs.readFileSync('smart-render-preflight.js', 'utf8'), {
@@ -38,4 +38,20 @@ test('rejects invalid or excessive render dimensions', () => {
   const api = load();
   assert.throws(() => api.estimate({ width: 20000, height: 1080 }), /tidak valid/);
   assert.throws(() => api.estimate({ width: 0, height: 1080 }), /tidak valid/);
+});
+
+test('reads the selected output resolution, FPS, duration and canvas batch speed', () => {
+  const api = load(16, 12, {
+    '#resolution': '3840x2160',
+    '#fps': '60',
+    '#duration': '12',
+    '#canvasRenderSpeed': 'fast'
+  });
+  const result = api.estimate();
+  assert.equal(result.width, 3840);
+  assert.equal(result.height, 2160);
+  assert.equal(result.fps, 60);
+  assert.equal(result.duration, 12);
+  assert.equal(result.totalFrames, 720);
+  assert.equal(result.batchFrames, 4);
 });

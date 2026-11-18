@@ -103,6 +103,7 @@ jobs:
           node tests/ip-guardrails-panel.test.cjs
           node tests/browser-render-scheduler.test.cjs
           node tests/canvas-render-speed.test.cjs
+          node tests/smart-render-preflight.test.cjs
           node tests/browser-gpu-health.test.cjs
           node tests/hybrid-canvas-renderer.test.cjs
           node tests/mp4-bitrate-ip-guardrails.test.cjs
