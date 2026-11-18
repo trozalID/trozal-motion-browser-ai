@@ -16,10 +16,10 @@
   function estimate(options = {}) {
     const resolutionValue = String(document.querySelector('#resolution')?.value || '');
     const resolutionMatch = resolutionValue.match(/(\\d{2,5})\\s*[x×]\\s*(\\d{2,5})/i);
-    const width = Math.round(Number(options.width) || (resolutionMatch ? Number(resolutionMatch[1]) : numberFrom(['#renderWidth','#outputWidth','#width','#resolutionWidth'], 1920)));
-    const height = Math.round(Number(options.height) || (resolutionMatch ? Number(resolutionMatch[2]) : numberFrom(['#renderHeight','#outputHeight','#height','#resolutionHeight'], 1080)));
-    const fps = Number(options.fps) || numberFrom(['#fps','#renderFps','#outputFps'], 30);
-    const duration = Number(options.duration) || numberFrom(['#duration','#renderDuration','#outputDuration'], 10);
+    const width = Math.round(options.width == null ? (resolutionMatch ? Number(resolutionMatch[1]) : numberFrom(['#renderWidth','#outputWidth','#width','#resolutionWidth'], 1920)) : Number(options.width));
+    const height = Math.round(options.height == null ? (resolutionMatch ? Number(resolutionMatch[2]) : numberFrom(['#renderHeight','#outputHeight','#height','#resolutionHeight'], 1080)) : Number(options.height));
+    const fps = options.fps == null ? numberFrom(['#fps','#renderFps','#outputFps'], 30) : Number(options.fps);
+    const duration = options.duration == null ? numberFrom(['#duration','#renderDuration','#outputDuration'], 10) : Number(options.duration);
     const speed = String(document.querySelector('#canvasRenderSpeed')?.value || 'balanced');
     const speedBatch = speed === 'stable' ? 1 : speed === 'fast' ? 4 : 2;
     const batchFrames = clamp(Math.round(Number(options.batchFrames) || speedBatch), 1, 8);
