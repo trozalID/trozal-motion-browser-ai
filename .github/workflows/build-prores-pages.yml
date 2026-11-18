@@ -19,6 +19,8 @@ on:
       - 'ip-guardrails-panel.js'
       - 'smart-render-preflight.js'
       - 'preview-proxy.js'
+      - 'render-memory-manager.js'
+      - 'tests/render-memory-manager.test.cjs'
       - '.github/workflows/build-prores-pages.yml'
       - 'tests/ffmpeg-wasm-runtime-smoke.browser.cjs'
   workflow_dispatch:
@@ -63,6 +65,7 @@ jobs:
           cp ip-guardrails-panel.js site/ip-guardrails-panel.js
           cp smart-render-preflight.js site/smart-render-preflight.js
           cp preview-proxy.js site/preview-proxy.js
+          cp render-memory-manager.js site/render-memory-manager.js
           cp browser-ai.js site/browser-ai.js
           cp render-sync-advisor.js site/render-sync-advisor.js
           cp browser-ai-gemini-cloud.js site/browser-ai-gemini-cloud.js
