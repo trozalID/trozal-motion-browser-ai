@@ -110,6 +110,7 @@ jobs:
           node tests/preview-proxy.test.cjs
           node --check render-memory-manager.js
           node tests/render-memory-manager.test.cjs
+          node tests/render-frame-store.test.cjs
           node tests/browser-gpu-health.test.cjs
           node tests/hybrid-canvas-renderer.test.cjs
           node tests/mp4-bitrate-ip-guardrails.test.cjs
