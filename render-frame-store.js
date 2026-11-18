@@ -21,10 +21,13 @@
     const writer=await handle.createWritable();
     try{await writer.write(blob);await writer.close()}catch(error){try{await writer.abort()}catch(_){}throw error}
    },
-   async readFrame(index){
+   async getFrameFile(index){
     if(closed)throw new Error('Penyimpanan frame sudah ditutup.');
     const handle=await directory.getFileHandle(frameName(index));
-    const file=await handle.getFile();
+    return handle.getFile();
+   },
+   async readFrame(index){
+    const file=await this.getFrameFile(index);
     return new Uint8Array(await file.arrayBuffer());
    },
    async deleteFrame(index){
