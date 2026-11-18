@@ -12,7 +12,7 @@
     if (allowed.has(saved)) scale = saved;
   } catch (_) {}
   if (select) {
-    if (allowed.has(select.value)) scale = select.value;
+    if (!allowed.has(scale) && allowed.has(select.value)) scale = select.value;
     select.value = scale;
     select.addEventListener('change', () => {
       const next = String(select.value);
