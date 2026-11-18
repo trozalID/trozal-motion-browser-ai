@@ -1106,6 +1106,7 @@ body[data-ui-layout="classic"] .app>.sidebar.right{background:#1d2c3c!important}
    <div class="control"><label>Resolusi output</label><select id="resolution"><option value="1280x720">HD 720p</option><option value="1920x1080">Full HD 1080p</option><option value="2560x1440">2K QHD</option><option value="3840x2160" selected>4K UHD</option><option value="7680x4320">8K UHD (butuh RAM/GPU besar)</option><option value="1080x1920">Vertical 1080×1920</option><option value="1080x1080">Square 1080×1080</option></select></div>
    <div class="control"><label>Kecepatan render</label><select id="renderSpeedMode"><option value="normal" selected>Normal · kualitas efek penuh</option><option value="turbo">⚡ TURBO · render lebih ringan</option></select><small class="target-hint">TURBO mempertahankan resolusi dan FPS pilihan, mengurangi jumlah elemen dekoratif, dan memakai preset encoder lebih cepat. Normal memakai efek penuh dan preset encoder medium.</small></div>
    <div class="control"><label for="canvasRenderSpeed">Kecepatan Canvas saat render</label><select id="canvasRenderSpeed"><option value="stable">Stabil · jeda setiap frame</option><option value="balanced" selected>Seimbang · 2 frame per batch</option><option value="fast">⚡ Cepat · 4 frame per batch</option></select><small class="target-hint">Mengatur frekuensi jeda antar-batch frame agar proses MP4, MOV, dan PNG Sequence lebih efisien. Tidak mengubah resolusi, FPS, durasi, atau kualitas frame. WebM tetap mengikuti cadence FPS MediaRecorder.</small></div>
+   <div class="control"><label for="previewProxyScale">Kualitas Preview Proxy</label><select id="previewProxyScale"><option value="1">Penuh · 100%</option><option value="0.5" selected>Seimbang · 50%</option><option value="0.25">Ringan · 25%</option></select><small class="target-hint">Mengurangi resolusi internal canvas efek pratinjau saja. Tampilan HTML/SVG tetap utuh; resolusi, FPS, bitrate, alpha, dan kualitas ekspor tidak berubah.</small></div>
    <div class="control" id="transparentExportMode"><label for="proresMode">Mode ekspor transparan</label><select id="proresMode"><option value="unlimited" selected>ProRes 4444 · tanpa batas ukuran file</option><option value="pngUnlimited">PNG Sequence ZIP · tanpa batas ukuran file</option></select><small class="target-hint" id="proresModeHint">ProRes 4444 + alpha melalui encoder web. Pilih PNG Sequence ZIP untuk ekspor frame transparan.</small></div>
    <div class="render render-with-progress"><button class="green" id="renderBtn">▶ Render</button><button type="button" id="cancelRenderBtn" style="display:none;width:100%;margin-top:8px;background:#9f3038;color:#fff;border:1px solid #d75c65">■ BATALKAN RENDER</button></div>
   </div>
@@ -2508,8 +2509,10 @@ function getMotionState(t){
 function drawPreviewEffects(elapsed,motion){
  const canvas=$('previewFx'),stage=$('stage'); if(!canvas||!stage)return;
  const w=Math.max(1,Math.round(stage.clientWidth)),h=Math.max(1,Math.round(stage.clientHeight));
- if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
- const c=canvas.getContext('2d');c.clearRect(0,0,w,h);
+ const proxyScale=window.TrozalPreviewProxy?.getScale?.()||1;
+ const backingW=Math.max(1,Math.round(w*proxyScale)),backingH=Math.max(1,Math.round(h*proxyScale));
+ if(canvas.width!==backingW||canvas.height!==backingH){canvas.width=backingW;canvas.height=backingH}
+ const c=canvas.getContext('2d');c.setTransform(proxyScale,0,0,proxyScale,0,0);c.clearRect(0,0,w,h);
  const enabled=$('effectOn').checked,ep=enabled?$('effectPreset').value:'none',ei=+$('effectIntensity').value/100,ec=$('effectColor').value;
  const baseW=htmlMotionSource?w:w*(+$('scale').value/100),baseH=htmlMotionSource?h:h*(+$('scale').value*1.35/100);
  const cx=w/2+((+$('posX').value+motion.x)/100*baseW),cy=h/2+((+$('posY').value+motion.y)/100*baseH);
@@ -5783,6 +5786,7 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
 <script src="./js/scene-intelligence.js" defer></script>
 <script src="./metadata-actions.js" defer></script>
 <script src="./ip-guardrails-panel.js" defer></script>
+<script src="./preview-proxy.js" defer></script>
 <script src="./smart-render-preflight.js" defer></script>
 </body>
 </html>
