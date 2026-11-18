@@ -62,6 +62,7 @@ jobs:
           cp metadata-actions.js site/metadata-actions.js
           cp ip-guardrails-panel.js site/ip-guardrails-panel.js
           cp smart-render-preflight.js site/smart-render-preflight.js
+          cp preview-proxy.js site/preview-proxy.js
           cp browser-ai.js site/browser-ai.js
           cp render-sync-advisor.js site/render-sync-advisor.js
           cp browser-ai-gemini-cloud.js site/browser-ai-gemini-cloud.js
