@@ -145,9 +145,9 @@ jobs:
         run: node tests/scene-intelligence-loading.browser.cjs
       - name: Test Gemini Cloud-only Scene Composer and Browser Vision
         run: node tests/browser-cloud-ai.browser.cjs
-      - name: Verify Preview height slider and Runtime Diagnostics controls
       - name: Verify Preview Proxy changes only preview canvas resolution
         run: node tests/preview-proxy.browser.cjs
+      - name: Verify Preview height slider and Runtime Diagnostics controls
         run: |
           node <<'NODE'
           const { chromium } = require('playwright');
