@@ -6,22 +6,13 @@ const vm = require('node:vm');
 function load(saved = null, initial = '0.5') {
   const listeners = {};
   const values = {};
-  const select = {
-    value: initial,
-    addEventListener(name, fn) { listeners[name] = fn; }
-  };
+  const select = { value: initial, addEventListener(name, fn) { listeners[name] = fn; } };
   const window = {
-    localStorage: {
-      getItem() { return saved; },
-      setItem(key, value) { values[key] = value; }
-    },
+    localStorage: { getItem() { return saved; }, setItem(key, value) { values[key] = value; } },
     dispatchEvent(event) { window.lastEvent = event; }
   };
   const document = { getElementById(id) { return id === 'previewProxyScale' ? select : null; } };
-  const context = {
-    window, document,
-    CustomEvent: function(name, options) { this.type = name; this.detail = options.detail; }
-  };
+  const context = { window, document, CustomEvent: function(name, options) { this.type = name; this.detail = options.detail; } };
   vm.runInNewContext(fs.readFileSync('preview-proxy.js', 'utf8'), context);
   return { api: window.TrozalPreviewProxy, select, listeners, values, window };
 }
