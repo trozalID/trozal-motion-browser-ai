@@ -25,6 +25,7 @@ on:
       - fix/metadata-copy-clear-actions-2026-11-18
       - feature/original-content-ip-panel-2026-11-18
       - feature/preview-proxy-canvas-2026-11-18
+      - feature/adaptive-render-memory-manager-2026-11-18
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -107,6 +108,8 @@ jobs:
           node tests/smart-render-preflight.test.cjs
           node --check preview-proxy.js
           node tests/preview-proxy.test.cjs
+          node --check render-memory-manager.js
+          node tests/render-memory-manager.test.cjs
           node tests/browser-gpu-health.test.cjs
           node tests/hybrid-canvas-renderer.test.cjs
           node tests/mp4-bitrate-ip-guardrails.test.cjs
