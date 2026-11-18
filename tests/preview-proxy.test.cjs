@@ -41,3 +41,10 @@ test('ignores invalid persisted and selected scales', () => {
   listeners.change();
   assert.equal(api.getScale(), 0.5);
 });
+
+test('keeps preview scaling out of export frame rendering', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /function drawPreviewEffects\(elapsed,motion,forceFullResolution=false\)/);
+  assert.match(html, /forceFullResolution\?1:\(window\.TrozalPreviewProxy\?\.getScale\?\.\(\)\|\|1\)/);
+  assert.match(html, /drawPreviewEffects\(t,motion,true\)/, 'Export frame path must force full backing resolution');
+});
