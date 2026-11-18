@@ -2506,10 +2506,10 @@ function getMotionState(t){
  if(!loopOn&&p>.85&&anim==='none')alpha*=Math.max(0,(1-p)/.15);
  return {x,y,rotate,scaleX,scaleY,alpha,skew,revealX,revealY,glow,shine,radar,glitch};
 }
-function drawPreviewEffects(elapsed,motion){
+function drawPreviewEffects(elapsed,motion,forceFullResolution=false){
  const canvas=$('previewFx'),stage=$('stage'); if(!canvas||!stage)return;
  const w=Math.max(1,Math.round(stage.clientWidth)),h=Math.max(1,Math.round(stage.clientHeight));
- const proxyScale=window.TrozalPreviewProxy?.getScale?.()||1;
+ const proxyScale=forceFullResolution?1:(window.TrozalPreviewProxy?.getScale?.()||1);
  const backingW=Math.max(1,Math.round(w*proxyScale)),backingH=Math.max(1,Math.round(h*proxyScale));
  if(canvas.width!==backingW||canvas.height!==backingH){canvas.width=backingW;canvas.height=backingH}
  const c=canvas.getContext('2d');c.setTransform(proxyScale,0,0,proxyScale,0,0);c.clearRect(0,0,w,h);
@@ -3358,7 +3358,7 @@ async function exportCurrentFramePng(){
   ctx.save();ctx.translate(cx,cy);ctx.rotate((+$('rotation').value+motion.rotate)*Math.PI/180);ctx.globalAlpha=(+$('opacity').value/100)*motion.alpha;
   ctx.beginPath();ctx.rect(-baseW/2,-baseH/2,baseW*motion.revealX,baseH*motion.revealY);ctx.clip();
   ctx.drawImage(image,-(image.naturalWidth*fit)/2,-(image.naturalHeight*fit)/2,image.naturalWidth*fit,image.naturalHeight*fit);ctx.restore();
-  if($('sparkles').checked||$('effectOn').checked)drawPreviewEffects(t,motion);
+  if($('sparkles').checked||$('effectOn').checked)drawPreviewEffects(t,motion,true);
   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
   if(!blob)throw new Error('Browser gagal membuat PNG.');
   const a=document.createElement('a'),outUrl=URL.createObjectURL(blob);a.href=outUrl;a.download=(($('objectName').value||'animove-frame').replace(/[^\\w-]+/g,'_'))+'_frame_'+t.toFixed(2).replace('.','_')+'s.png';a.click();setTimeout(()=>URL.revokeObjectURL(outUrl),30000);
