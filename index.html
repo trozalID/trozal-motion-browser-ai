@@ -3038,10 +3038,12 @@ async function encodeMovWithWasm(pngZip,totalFrames,fps,width,height,outputForma
     const name='frame_'+String(idx).padStart(6,'0')+'.png';
     const entry=pngZip.file(name);
     if(!entry)throw new Error('Frame PNG hilang: '+name);
-    const bytes=await entry.async('uint8array');
+    let bytes=await entry.async('uint8array');
     await ffmpeg.writeFile(name,bytes);
     inputNames.push(name);
     pngZip.remove(name);
+    // FFmpeg now owns its MEMFS copy; release the temporary JavaScript frame buffer.
+    bytes=null;
     if((idx+1)%4===0||idx===totalFrames-1){
      setExportStatus('Menyiapkan input FFmpeg: '+(idx+1)+'/'+totalFrames+' frame');
      await new Promise(resolve=>setTimeout(resolve,0));
@@ -3094,9 +3096,9 @@ async function encodeMovWithWasm(pngZip,totalFrames,fps,width,height,outputForma
     }
    }
    setExportStatus('Membaca hasil video…');
-   const data=await ffmpeg.readFile(output);
+   let data=await ffmpeg.readFile(output);
    if(data.length<1024||String.fromCharCode(...data.slice(4,8))!=='ftyp')throw new Error('Header QuickTime MOV tidak valid.');
-   const blob=new Blob([data],{type:outputFormat==='mp4'?'video/mp4':'video/quicktime'});lastBlob=blob;lastDownloadName=output;
+   const blob=new Blob([data],{type:outputFormat==='mp4'?'video/mp4':'video/quicktime'});data=null;lastBlob=blob;lastDownloadName=output;
    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=output;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
    $('downloadVideo').disabled=false;
    if(outputFormat==='prores'){
