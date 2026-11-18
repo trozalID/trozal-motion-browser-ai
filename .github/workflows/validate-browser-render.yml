@@ -24,6 +24,7 @@ on:
       - feature/canvas-render-speed-control-2026-11-17
       - fix/metadata-copy-clear-actions-2026-11-18
       - feature/original-content-ip-panel-2026-11-18
+      - feature/preview-proxy-canvas-2026-11-18
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -104,6 +105,8 @@ jobs:
           node tests/browser-render-scheduler.test.cjs
           node tests/canvas-render-speed.test.cjs
           node tests/smart-render-preflight.test.cjs
+          node --check preview-proxy.js
+          node tests/preview-proxy.test.cjs
           node tests/browser-gpu-health.test.cjs
           node tests/hybrid-canvas-renderer.test.cjs
           node tests/mp4-bitrate-ip-guardrails.test.cjs
@@ -143,6 +146,8 @@ jobs:
         run: node tests/scene-intelligence-loading.browser.cjs
       - name: Test Gemini Cloud-only Scene Composer and Browser Vision
         run: node tests/browser-cloud-ai.browser.cjs
+      - name: Verify Preview Proxy changes only preview canvas resolution
+        run: node tests/preview-proxy.browser.cjs
       - name: Verify Preview height slider and Runtime Diagnostics controls
         run: |
           node <<'NODE'

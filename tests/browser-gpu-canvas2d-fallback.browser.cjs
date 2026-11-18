@@ -46,7 +46,7 @@ const { chromium } = require('playwright');
       document.getElementById('format').value = 'pngseq';
       window.__trozalGpuFrameAssistEnabled = true;
     });
-    await page.locator('#renderBtn').click();
+    await page.locator('#renderBtn').evaluate(button => button.click());
     await page.waitForFunction(() => {
       const status = document.getElementById('exportStatus')?.textContent || '';
       return status.includes('PNG Sequence selesai') || /gagal|error|dibatalkan/i.test(status);
