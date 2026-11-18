@@ -41,7 +41,7 @@ const { chromium } = require('playwright');
         document.getElementById('format').value = 'pngseq';
         window.__trozalGpuFrameAssistEnabled = true;
       });
-      await page.locator('#renderBtn').click({ force: true });
+      await page.locator('#renderBtn').evaluate(button => button.click());
       try {
         await page.waitForFunction(() => { const value = document.getElementById('exportStatus')?.textContent || ''; return value.includes('PNG Sequence selesai') || /dibatalkan|gagal|error|tidak tersedia|format tidak didukung/i.test(value); }, null, { timeout: 20000 });
       } catch (error) {
