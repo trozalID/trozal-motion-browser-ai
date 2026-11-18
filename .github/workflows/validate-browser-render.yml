@@ -24,6 +24,7 @@ on:
       - feature/canvas-render-speed-control-2026-11-17
       - fix/metadata-copy-clear-actions-2026-11-18
       - feature/original-content-ip-panel-2026-11-18
+      - feature/preview-proxy-canvas-2026-11-18
   pull_request:
     branches: [main]
   workflow_dispatch:
