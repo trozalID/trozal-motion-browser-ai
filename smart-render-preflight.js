@@ -15,7 +15,7 @@
   };
   function estimate(options = {}) {
     const resolutionValue = String(document.querySelector('#resolution')?.value || '');
-    const resolutionMatch = resolutionValue.match(/(\\d{2,5})\\s*[x×]\\s*(\\d{2,5})/i);
+    const resolutionMatch = resolutionValue.match(/(\d{2,5})\s*[x×]\s*(\d{2,5})/i);
     const width = Math.round(options.width == null ? (resolutionMatch ? Number(resolutionMatch[1]) : numberFrom(['#renderWidth','#outputWidth','#width','#resolutionWidth'], 1920)) : Number(options.width));
     const height = Math.round(options.height == null ? (resolutionMatch ? Number(resolutionMatch[2]) : numberFrom(['#renderHeight','#outputHeight','#height','#resolutionHeight'], 1080)) : Number(options.height));
     const fps = options.fps == null ? numberFrom(['#fps','#renderFps','#outputFps'], 30) : Number(options.fps);
