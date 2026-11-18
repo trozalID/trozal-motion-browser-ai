@@ -3227,8 +3227,9 @@ if(wanted==='pngseq'){
   try{
    activeRenderBaseName=pngRenderBaseName;
    setExportStatus('Membuka PNG Sequence ZIP untuk konversi ProRes 4444 + Alpha…');
-   const conversionZip=await JSZip.loadAsync(zipBlob);
-   await encodeMovWithWasm(conversionZip,totalFrames,fps,w,h,'prores');
+   // Reuse the existing in-memory frame archive. Reloading the downloaded ZIP
+   // would inflate a second full copy of every PNG frame and spike browser RAM.
+   await encodeMovWithWasm(pngZip,totalFrames,fps,w,h,'prores');
    convertButton.textContent='MOV ProRes 4444 berhasil dibuat';
    convertButton.disabled=true;
   }catch(convertError){
