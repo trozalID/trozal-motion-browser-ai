@@ -18,6 +18,7 @@ on:
       - 'metadata-actions.js'
       - 'ip-guardrails-panel.js'
       - 'smart-render-preflight.js'
+      - 'preview-proxy.js'
       - '.github/workflows/build-prores-pages.yml'
       - 'tests/ffmpeg-wasm-runtime-smoke.browser.cjs'
   workflow_dispatch:
