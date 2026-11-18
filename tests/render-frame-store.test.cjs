@@ -10,14 +10,17 @@ class FakeDirectory{
  async *entries(){for(const [name,value] of this.files)yield[name,value]}
 }
 test('frameName keeps a stable six-digit sequence',()=>assert.equal(frameName(12),'frame_000012.png'));
-test('OPFS frame store writes, reads, deletes and cleans its files',async()=>{
+test('OPFS frame store exposes disk-backed File objects for WORKERFS without reading bytes',async()=>{
  const directory=new FakeDirectory();
  const root={async getDirectoryHandle(){return directory},async removeEntry(){directory.files.clear()}};
  const store=await create({storage:{async getDirectory(){return root}}});
  await store.writeFrame(0,new Blob([new Uint8Array([1,2,3])]));
+ const file=await store.getFrameFile(0);
+ assert.ok(file instanceof Blob);
+ assert.equal(file.size,3);
  assert.deepEqual([...await store.readFrame(0)],[1,2,3]);
  await store.deleteFrame(0);
- await assert.rejects(()=>store.readFrame(0),{name:'NotFoundError'});
+ await assert.rejects(()=>store.getFrameFile(0),{name:'NotFoundError'});
  await store.writeFrame(1,new Blob([new Uint8Array([4,5])]));
  await store.cleanup();
  assert.equal(directory.files.size,0);

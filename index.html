@@ -3031,27 +3031,49 @@ async function encodeMovWithWasm(frameSource,totalFrames,fps,width,height,output
   const listCode=await timeout(ffmpeg.exec(['-hide_banner','-encoders']),30000,'Pemeriksaan encoder');
   if(listCode!==0||!new RegExp(requiredEncoder).test(encoderLog))throw new Error('Encoder '+requiredEncoder+' tidak tersedia pada custom FFmpeg core.');
   const inputNames=[];
+  let mountedFrameInput=false,inputPattern='frame_%06d.png';
   try{
-   // Move the PNG sequence into FFmpeg's virtual FS one frame at a time.
-   // Do not keep a second in-memory copy in JSZip after FFmpeg owns the bytes.
-   for(let idx=0;idx<totalFrames;idx++){
-    const name='frame_'+String(idx).padStart(6,'0')+'.png';
-    let bytes;
-    if(frameSource&&typeof frameSource.readFrame==='function')bytes=await frameSource.readFrame(idx);
-    else{
-     const entry=frameSource&&frameSource.file(name);
-     if(!entry)throw new Error('Frame PNG hilang: '+name);
-     bytes=await entry.async('uint8array');
+   // OPFS File objects are mounted through Emscripten WORKERFS. FFmpeg reads
+   // each PNG lazily from disk instead of copying every frame into MEMFS.
+   if(frameSource&&typeof frameSource.getFrameFile==='function'&&typeof ffmpeg.mount==='function'&&typeof ffmpeg.unmount==='function'){
+    const frameFiles=[];
+    for(let idx=0;idx<totalFrames;idx++){
+     const file=await frameSource.getFrameFile(idx);
+     const expected='frame_'+String(idx).padStart(6,'0')+'.png';
+     if(!file||file.name!==expected)throw new Error('Nama frame OPFS tidak sesuai: '+expected);
+     frameFiles.push(file);
+     if((idx+1)%32===0||idx===totalFrames-1){
+      setExportStatus('Menyiapkan indeks frame disk: '+(idx+1)+'/'+totalFrames);
+      await new Promise(resolve=>setTimeout(resolve,0));
+     }
     }
-    await ffmpeg.writeFile(name,bytes);
-    if(frameSource&&typeof frameSource.remove==='function')frameSource.remove(name);
-    inputNames.push(name);
-    if(frameSource&&typeof frameSource.deleteFrame==='function')await frameSource.deleteFrame(idx);
-    // FFmpeg owns its MEMFS copy; release the temporary JavaScript frame buffer.
-    bytes=null;
-    if((idx+1)%4===0||idx===totalFrames-1){
-     setExportStatus('Menyiapkan input FFmpeg: '+(idx+1)+'/'+totalFrames+' frame');
-     await new Promise(resolve=>setTimeout(resolve,0));
+    await ffmpeg.createDir('/trozal_frames');
+    const mounted=await ffmpeg.mount('WORKERFS',{files:frameFiles},'/trozal_frames');
+    if(!mounted)throw new Error('FFmpeg WORKERFS tidak dapat dipasang.');
+    mountedFrameInput=true;
+    inputPattern='/trozal_frames/frame_%06d.png';
+    setExportStatus('Frame OPFS terpasang langsung ke FFmpeg WORKERFS · '+totalFrames+' frame');
+   }else{
+    // Compatibility fallback for browsers without OPFS/WORKERFS support.
+    // This retains the previous MEMFS path but does not affect export settings.
+    for(let idx=0;idx<totalFrames;idx++){
+     const name='frame_'+String(idx).padStart(6,'0')+'.png';
+     let bytes;
+     if(frameSource&&typeof frameSource.readFrame==='function')bytes=await frameSource.readFrame(idx);
+     else{
+      const entry=frameSource&&frameSource.file(name);
+      if(!entry)throw new Error('Frame PNG hilang: '+name);
+      bytes=await entry.async('uint8array');
+     }
+     await ffmpeg.writeFile(name,bytes);
+     if(frameSource&&typeof frameSource.remove==='function')frameSource.remove(name);
+     inputNames.push(name);
+     if(frameSource&&typeof frameSource.deleteFrame==='function')await frameSource.deleteFrame(idx);
+     bytes=null;
+     if((idx+1)%4===0||idx===totalFrames-1){
+      setExportStatus('Menyiapkan input FFmpeg: '+(idx+1)+'/'+totalFrames+' frame');
+      await new Promise(resolve=>setTimeout(resolve,0));
+     }
     }
    }
    const isProRes=outputFormat==='prores';
@@ -3061,7 +3083,7 @@ async function encodeMovWithWasm(frameSource,totalFrames,fps,width,height,output
     setExportStatus('Encoding QuickTime ProRes 4444 + Alpha · '+width+'×'+height+' · '+fps+' FPS · '+totalFrames+' frame');
     code=await ffmpeg.exec([
      '-hide_banner','-y','-filter_threads','1','-filter_complex_threads','1',
-     '-framerate',String(fps),'-start_number','0','-i','frame_%06d.png',
+     '-framerate',String(fps),'-start_number','0','-i',inputPattern,
      '-frames:v',String(totalFrames),'-r',String(fps),'-an',
      '-c:v','prores_ks','-profile:v','4','-pix_fmt','yuva444p10le',
      '-alpha_bits','16','-vendor','apl0','-threads','1',output
@@ -3078,7 +3100,7 @@ async function encodeMovWithWasm(frameSource,totalFrames,fps,width,height,output
     setExportStatus('Encoding MP4 H.264 · '+(targetBitrate?Number(bitrateChoice)+' Mbps target':'CRF '+crf)+' · '+width+'×'+height+' · '+fps+' FPS');
     code=await ffmpeg.exec([
      '-hide_banner','-y','-filter_threads','1','-filter_complex_threads','1',
-     '-framerate',String(fps),'-start_number','0','-i','frame_%06d.png',
+     '-framerate',String(fps),'-start_number','0','-i',inputPattern,
      '-frames:v',String(totalFrames),'-r',String(fps),'-an',
      '-c:v','libx264','-preset',($('renderSpeedMode')?.value==='turbo'?'veryfast':'medium'),
      '-profile:v','high','-pix_fmt','yuv420p',...rateControlArgs,
@@ -3116,7 +3138,11 @@ async function encodeMovWithWasm(frameSource,totalFrames,fps,width,height,output
     setRenderProgress(100,'MP4 berhasil','success');setStatus('MP4 H.264 berhasil dibuat dengan encoder FFmpeg.');
    }
   }finally{
-   // Remove all input files even after a failed encode; terminate releases the WASM heap.
+   // Unmount disk-backed frames after FFmpeg stops reading them.
+   if(mountedFrameInput){
+    try{await ffmpeg.unmount('/trozal_frames')}catch(_){}
+    try{await ffmpeg.deleteDir('/trozal_frames')}catch(_){}
+   }
    for(const name of inputNames){try{await ffmpeg.deleteFile(name)}catch(_){}}
   }
  }finally{

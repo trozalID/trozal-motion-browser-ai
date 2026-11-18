@@ -64,15 +64,20 @@ const assert = require('node:assert/strict');
           canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Canvas PNG creation failed')), 'image/png');
         });
         const pngBytes = new Uint8Array(await pngBlob.arrayBuffer());
-        for (let i = 0; i < 30; i++) {
-          const name = 'frame_' + String(i).padStart(6, '0') + '.png';
-          await ffmpeg.writeFile(name, new Uint8Array(pngBytes));
-        }
+        await ffmpeg.createDir('/smoke_frames');
+        const frameFiles = Array.from({ length: 30 }, (_, i) => new File(
+          [pngBytes],
+          'frame_' + String(i).padStart(6, '0') + '.png',
+          { type: 'image/png' }
+        ));
+        const mounted = await ffmpeg.mount('WORKERFS', { files: frameFiles }, '/smoke_frames');
+        if (!mounted) throw new Error('FFmpeg WORKERFS mount failed');
+        const inputPattern = '/smoke_frames/frame_%06d.png';
 
         logs.length = 0;
         const mp4ExitCode = await ffmpeg.exec([
           '-hide_banner', '-y', '-filter_threads', '1', '-filter_complex_threads', '1',
-          '-framerate', '30', '-start_number', '0', '-i', 'frame_%06d.png',
+          '-framerate', '30', '-start_number', '0', '-i', inputPattern,
           '-frames:v', '30', '-r', '30', '-an',
           '-c:v', 'libx264', '-preset', 'veryfast', '-profile:v', 'high',
           '-pix_fmt', 'yuv420p', '-b:v', '3000000', '-minrate', '2700000',
@@ -90,7 +95,7 @@ const assert = require('node:assert/strict');
         logs.length = 0;
         const movExitCode = await ffmpeg.exec([
           '-hide_banner', '-y', '-filter_threads', '1', '-filter_complex_threads', '1',
-          '-framerate', '30', '-start_number', '0', '-i', 'frame_%06d.png',
+          '-framerate', '30', '-start_number', '0', '-i', inputPattern,
           '-frames:v', '30', '-r', '30', '-an',
           '-c:v', 'prores_ks', '-profile:v', '4', '-pix_fmt', 'yuva444p10le',
           '-alpha_bits', '16', '-vendor', 'apl0', '-threads', '1', 'smoke.mov'
@@ -108,7 +113,11 @@ const assert = require('node:assert/strict');
           throw new Error('MOV metadata did not confirm ProRes 4444 + alpha: ' + movMetadata.text.slice(-1200));
         }
 
+        await ffmpeg.unmount('/smoke_frames');
+        await ffmpeg.deleteDir('/smoke_frames');
+
         return {
+          inputFilesystem: 'WORKERFS',
           encoders: ['libx264', 'prores_ks'],
           mp4Bytes: mp4Bytes.length,
           mp4Metadata: mp4Metadata.text.slice(-1200),
