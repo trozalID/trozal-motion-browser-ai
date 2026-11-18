@@ -17,6 +17,7 @@ on:
       - 'metadata-quality-delivery.js'
       - 'metadata-actions.js'
       - 'ip-guardrails-panel.js'
+      - 'smart-render-preflight.js'
       - '.github/workflows/build-prores-pages.yml'
       - 'tests/ffmpeg-wasm-runtime-smoke.browser.cjs'
   workflow_dispatch:
@@ -59,6 +60,7 @@ jobs:
           cp metadata-quality-delivery.js site/metadata-quality-delivery.js
           cp metadata-actions.js site/metadata-actions.js
           cp ip-guardrails-panel.js site/ip-guardrails-panel.js
+          cp smart-render-preflight.js site/smart-render-preflight.js
           cp browser-ai.js site/browser-ai.js
           cp render-sync-advisor.js site/render-sync-advisor.js
           cp browser-ai-gemini-cloud.js site/browser-ai-gemini-cloud.js
