@@ -9,7 +9,7 @@ const assert = require('node:assert/strict');
   await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#previewProxyScale');
   await page.waitForFunction(() => !!window.TrozalPreviewProxy);
-  const before = await page.locator('#stage').boundingBox();
+  const before = await page.locator('#stage').evaluate(el => ({ width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height, clientWidth: el.clientWidth, clientHeight: el.clientHeight }));
   const exportBefore = await page.evaluate(() => ({
     resolution: document.getElementById('resolution')?.value,
     fps: document.getElementById('fps')?.value
@@ -26,9 +26,9 @@ const assert = require('node:assert/strict');
     height: el.height,
     cssWidth: getComputedStyle(el).width
   }));
-  const after = await page.locator('#stage').boundingBox();
-  assert.ok(Math.abs(proxy.width - Math.round(before.width * 0.25)) <= 1, 'Preview effect canvas backing width should be quarter scale');
-  assert.ok(Math.abs(proxy.height - Math.round(before.height * 0.25)) <= 1, 'Preview effect canvas backing height should be quarter scale');
+  const after = await page.locator('#stage').evaluate(el => ({ width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height }));
+  assert.ok(Math.abs(proxy.width - Math.round(before.clientWidth * 0.25)) <= 1, 'Preview effect canvas backing width should be quarter scale');
+  assert.ok(Math.abs(proxy.height - Math.round(before.clientHeight * 0.25)) <= 1, 'Preview effect canvas backing height should be quarter scale');
   assert.equal(after.width, before.width, 'Stage layout dimensions must not change');
   assert.equal(after.height, before.height, 'Stage layout dimensions must not change');
   const exportAfter = await page.evaluate(() => ({
