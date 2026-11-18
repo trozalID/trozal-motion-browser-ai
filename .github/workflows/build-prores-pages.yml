@@ -20,6 +20,8 @@ on:
       - 'smart-render-preflight.js'
       - 'preview-proxy.js'
       - 'render-memory-manager.js'
+      - 'render-frame-store.js'
+      - 'tests/render-frame-store.test.cjs'
       - 'tests/render-memory-manager.test.cjs'
       - '.github/workflows/build-prores-pages.yml'
       - 'tests/ffmpeg-wasm-runtime-smoke.browser.cjs'
@@ -66,6 +68,7 @@ jobs:
           cp smart-render-preflight.js site/smart-render-preflight.js
           cp preview-proxy.js site/preview-proxy.js
           cp render-memory-manager.js site/render-memory-manager.js
+          cp render-frame-store.js site/render-frame-store.js
           cp browser-ai.js site/browser-ai.js
           cp render-sync-advisor.js site/render-sync-advisor.js
           cp browser-ai-gemini-cloud.js site/browser-ai-gemini-cloud.js
@@ -194,6 +197,7 @@ jobs:
           set -euo pipefail
           grep -q -- '--enable-encoder=prores_ks' /tmp/ffmpeg-wasm/Dockerfile
           test -s site/index.html
+          test -s site/render-frame-store.js
           test -s site/js/scene-intelligence.js
           node <<'NODE'
           const fs = require('fs');
