@@ -7,7 +7,7 @@ const context = vm.createContext({
   window: {},
   navigator: { deviceMemory: 8 },
   performance: { memory: { usedJSHeapSize: 100, jsHeapSizeLimit: 1000 } },
-  document: { getElementById: () => null, createElement: () => ({}) }
+  document: { readyState: 'loading', addEventListener: () => {}, getElementById: () => null, createElement: () => ({}) }
 });
 vm.runInContext(source, context);
 const manager = context.window.TrozalRenderMemoryManager;
