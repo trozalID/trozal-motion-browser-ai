@@ -812,6 +812,62 @@ body[data-ui-layout="classic"] .app>.sidebar.right{background:#1d2c3c!important}
 @media(max-width:1050px){body[data-ui-layout="classic"] .app>.sidebar.right{background:#1d2c3c!important}}
 </style>
 
+
+<style id="trozal-responsive-mode-fix-2026-11-19">
+/* Classic mobile is a distinct docked-editor skin, not a recolored Professional card stack. */
+@media (max-width:720px) {
+ body[data-ui-layout="classic"] .topbar{background:#182637!important;border-bottom:2px solid #d8b66e!important;box-shadow:none!important}
+ body[data-ui-layout="classic"] .ui-layout-switcher{background:#101c29!important;border:1px solid #8b7449!important;border-radius:3px!important}
+ body[data-ui-layout="classic"] .ui-layout-btn{border-radius:2px!important;background:#293b4e!important;color:#e4ebf3!important;box-shadow:none!important}
+ body[data-ui-layout="classic"] .ui-layout-btn[aria-pressed="true"]{background:#d8b66e!important;color:#172331!important;border:1px solid #f0d79e!important}
+ body[data-ui-layout="classic"] .app{display:flex!important;flex-direction:column!important;gap:0!important}
+ body[data-ui-layout="classic"] .app>.main{order:0!important;min-height:0!important;background:#172331!important}
+ body[data-ui-layout="classic"] .app>.sidebar:not(.right){order:1!important;background:#1d2c3c!important;border-top:2px solid #52677d!important}
+ body[data-ui-layout="classic"] .app>.sidebar.right{order:2!important;background:#1d2c3c!important;border-top:2px solid #d8b66e!important}
+ body[data-ui-layout="classic"] .panel,body[data-ui-layout="classic"] .panel[class*="panel-tone-"]{background:#26384b!important;border:1px solid #617991!important;border-left:4px solid #d8b66e!important;border-radius:3px!important;box-shadow:none!important;margin:0 0 9px!important}
+ body[data-ui-layout="classic"] .panel h3{color:#f0d18a!important;border-bottom:1px solid #617991!important;padding-bottom:7px!important;text-transform:uppercase;letter-spacing:.06em}
+ body[data-ui-layout="classic"] .tabs{background:#172637!important;border:1px solid #52677d!important;border-radius:2px!important}
+ body[data-ui-layout="classic"] .tabs button{border-radius:2px!important}
+ body[data-ui-layout="classic"] .tabs .active{background:#d8b66e!important;color:#172331!important}
+ body[data-ui-layout="classic"] .topcontrols{background:#223246!important;border:1px solid #52677d!important;border-radius:2px!important}
+ body[data-ui-layout="classic"] .stagewrap{background:#223246!important;border:1px solid #52677d!important;border-radius:2px!important}
+ body[data-ui-layout="classic"] .stage{background:#fff!important;border:1px solid #9aafc3!important;border-radius:0!important;box-shadow:none!important}
+ body[data-ui-layout="classic"] button:not(.ui-layout-btn){border-radius:2px!important;box-shadow:none!important}
+}
+@media (min-width:721px) and (max-width:1050px) {
+ body[data-ui-layout="classic"] .app{display:grid!important;grid-template-columns:minmax(190px,22vw) minmax(0,1fr) minmax(190px,22vw)!important;grid-template-areas:"left center right"!important;gap:6px!important;overflow:hidden!important}
+ body[data-ui-layout="classic"] .app>.sidebar:not(.right){grid-area:left!important;display:block!important;min-width:0!important;overflow:auto!important}
+ body[data-ui-layout="classic"] .app>.main{grid-area:center!important;min-width:0!important;overflow:auto!important}
+ body[data-ui-layout="classic"] .app>.sidebar.right{grid-area:right!important;display:block!important;min-width:0!important;overflow:auto!important}
+}
+/* Detect browser-level Request Desktop Site and restore the full three-column studio even on phones. */
+body[data-ui-viewport="desktop"]{min-width:1080px!important;overflow-x:auto!important}
+body[data-ui-viewport="desktop"] .topbar{min-width:1080px!important;flex-wrap:nowrap!important}
+body[data-ui-viewport="desktop"] .app{display:grid!important;grid-template-columns:minmax(210px,20vw) minmax(520px,1fr) minmax(210px,20vw)!important;grid-template-areas:"left center right"!important;width:100%!important;min-width:1080px!important;height:calc(100vh - 54px)!important;min-height:0!important;overflow:hidden!important}
+body[data-ui-viewport="desktop"] .app>.sidebar:not(.right){grid-area:left!important;display:block!important;min-width:0!important;height:100%!important;max-height:none!important;overflow:auto!important}
+body[data-ui-viewport="desktop"] .app>.main{grid-area:center!important;display:flex!important;min-width:0!important;height:100%!important;min-height:0!important;overflow:auto!important}
+body[data-ui-viewport="desktop"] .app>.sidebar.right{grid-area:right!important;display:block!important;min-width:0!important;height:100%!important;max-height:none!important;overflow:auto!important}
+</style>
+<script id="trozal-desktop-site-detection-2026-11-19">
+(function(){
+ 'use strict';
+ function update(){
+  const ua=navigator.userAgent||'';
+  const touchPoints=Number(navigator.maxTouchPoints||0);
+  const screenWidth=Math.min(Number(screen.width||innerWidth),Number(screen.height||innerHeight));
+  const uaMobile=/Android|iPhone|iPad|iPod/i.test(ua);
+  const iosDesktop=/Macintosh|Mac OS X/i.test(ua)&&touchPoints>1;
+  const uaDataDesktop=!!(navigator.userAgentData&&navigator.userAgentData.mobile===false);
+  const expandedViewport=innerWidth>=720&&screenWidth<=600&&innerWidth>screenWidth*1.35;
+  const desktopRequested=iosDesktop||expandedViewport||(uaDataDesktop&&screenWidth<=600);
+  document.body&&document.body.setAttribute('data-ui-viewport',desktopRequested?'desktop':'auto');
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',update,{once:true});else update();
+ window.addEventListener('resize',update,{passive:true});
+ window.addEventListener('orientationchange',()=>setTimeout(update,150),{passive:true});
+})();
+</script>
+
 </head>
 <body>
 <script>
