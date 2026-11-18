@@ -3342,6 +3342,7 @@ async function draw(){
  if(trozalRenderCancelRequested)return;
  try{await drawUnsafe()}
  catch(err){
+  if(frameStore){const staged=frameStore;frameStore=null;staged.cleanup().catch(error=>console.warn('Frame staging cleanup failed:',error));}
   window.TrozalRenderMemoryManager?.recordAllocationFailure?.(err?.message||String(err));
   // A frame failure must never fall through to MediaRecorder.onstop as a successful partial export.
   recorderFailed=true;trozalRenderCancelRequested=true;trozalRenderCancelHandler=null;if(frameStore){const staged=frameStore;frameStore=null;staged.cleanup().catch(error=>console.warn('Frame staging cleanup failed:',error));}
