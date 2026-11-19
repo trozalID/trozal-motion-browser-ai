@@ -26,6 +26,31 @@ const fs = require('node:fs');
           null, { timeout: 30000 }
         );
 
+        if (format === 'mp4') {
+          const manualPrompt = page.locator('#trozalJsAiPrompt');
+          await manualPrompt.fill('Buat intro logo 5 detik dengan partikel emas dan headline TROZAL MOTION.');
+          await page.locator('#trozalJsBuildPrompt').click();
+          await page.waitForFunction(() =>
+            (document.querySelector('#trozalJsAiFullPrompt')?.value || '').includes('partikel emas')
+          );
+          await page.locator('#trozalJsPromptDuration').selectOption('5');
+          assert.equal(await page.locator('#trozalJsMotionDuration').inputValue(), '5',
+            '5-second prompt duration must also set the Canvas 2D preview duration');
+          assert.equal(await page.locator('#trozalJsMotionTime').getAttribute('max'), '5',
+            'Preview scrubber must expose the selected five-second range');
+          assert.equal(await page.locator('#trozalJsTimelineScrub').getAttribute('max'), '5',
+            'Timeline scrubber must expose the selected five-second range');
+          await page.locator('#trozalJsMotionPlay').click();
+          await page.waitForFunction(() => {
+            const state = window.TROZAL_JS_MOTION?.getPlaybackState?.();
+            return state && state.playing && state.time > 0.1;
+          }, null, { timeout: 15000 });
+          await page.waitForFunction(() => {
+            const state = window.TROZAL_JS_MOTION?.getPlaybackState?.();
+            return state && !state.playing && state.time >= 4.9;
+          }, null, { timeout: 20000 });
+        }
+
         await page.locator('#trozalJsExportResolution').selectOption('1280x720');
         if (format === 'mov') {
           const bgMode = page.locator('#bgMode');
