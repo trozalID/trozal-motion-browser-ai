@@ -718,6 +718,7 @@
    }
   });
  }
+ window.trozalBrowserAI=Object.freeze({generateText:createInteraction,provider:providerName,model:modelId});
  function init(){
   status('trozalVisionConnection','Vision cloud memakai provider terpilih. Local WebGPU saat ini untuk Scene Composer teks; analisis frame tetap memerlukan provider Vision cloud.');
   $('trozalGeminiCheckBtn')?.addEventListener('click',checkConnection);
