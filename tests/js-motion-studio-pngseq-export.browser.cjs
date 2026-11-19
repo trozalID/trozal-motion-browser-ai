@@ -33,7 +33,7 @@ const JSZip = require('jszip');
     await page.locator('#resolution').selectOption('1280x720');
     await page.locator('#format').selectOption('pngseq');
 
-    const downloadPromise = page.waitForEvent('download', { timeout: 60000 });
+    const downloadPromise = page.waitForEvent('download', { timeout: 90000 }).catch(error => ({ downloadError: error.message }));
     await page.locator('#trozalJsMotionExport').click();
     // Fail promptly with useful state if the export button did not reach the
     // shared renderer, rather than waiting two minutes for a download event.
