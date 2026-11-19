@@ -155,10 +155,14 @@ jobs:
         run: node tests/js-motion-studio-timeline.test.cjs
       - name: Test AI Prompt-to-JavaScript concepts and editor integration
         run: node tests/js-motion-studio-ai-prompt.browser.cjs
+      - name: Test JavaScript Studio full Professional theme catalogue and prompt builder
+        run: node tests/js-motion-studio-theme-prompt.browser.cjs
       - name: Export JavaScript Studio animation to PNG Sequence ZIP
         run: node tests/js-motion-studio-pngseq-export.browser.cjs
       - name: Test JavaScript Studio PNG, MP4 and ProRes export test panel
         run: node tests/js-motion-studio-export-test-panel.browser.cjs
+      - name: Test JavaScript Studio play, pause, resume and frame queue stability
+        run: node tests/js-motion-studio-playback.browser.cjs
       - name: Test direct Canvas transform gizmo in Chromium
         run: node tests/js-motion-studio-transform.browser.cjs
       - name: Verify Preview Proxy changes only preview canvas resolution
