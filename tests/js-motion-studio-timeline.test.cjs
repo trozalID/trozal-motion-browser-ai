@@ -9,4 +9,5 @@ for (const token of ['function valueAt(t)','getScenes:','setScenes:','anim.x','a
 }
 assert.match(source, /new Function\("ctx","t","w","h","anim",d\.code\)/, 'Canvas user code must receive interpolated anim values');
 assert.match(source, /draw\(ctx,d\.time,c\.width,c\.height,d\.anim\|\|\{\}\)/, 'Frame runtime must pass interpolated animation values');
+assert.match(source, /code\.addEventListener\('input',\(\)=>\{currentScene\(\)\.code=code\.value\}\)/, 'Scene code must persist as the editor changes');
 console.log('JavaScript Studio timeline, scene manager, and keyframe wiring checks passed.');
