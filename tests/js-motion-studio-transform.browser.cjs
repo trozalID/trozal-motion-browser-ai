@@ -1,0 +1,30 @@
+const { chromium } = require('playwright');
+const assert = require('node:assert/strict');
+
+(async () => {
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#trozalJsMotionBtn');
+  await page.waitForFunction(() => !!window.TROZAL_JS_MOTION);
+  await page.locator('#trozalJsMotionBtn').click();
+  const canvas = page.frameLocator('#trozalJsMotionFrame').locator('canvas');
+  await canvas.waitFor();
+  const box = await canvas.boundingBox();
+  assert.ok(box && box.width > 0, 'JavaScript Studio preview canvas must be visible');
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + 64, y + 32, { steps: 5 });
+  await page.mouse.up();
+  await page.waitForFunction(() => window.TROZAL_JS_MOTION.getScenes()[0].keyframes.length === 1);
+  const scene = await page.evaluate(() => window.TROZAL_JS_MOTION.getScenes()[0]);
+  assert.equal(scene.keyframes.length, 1, 'Dragging the preview must commit one transform keyframe');
+  assert.ok(scene.keyframes[0].values.x > 0, 'Horizontal drag must update X');
+  assert.ok(scene.keyframes[0].values.y > 0, 'Vertical drag must update Y');
+  assert.deepEqual(errors, [], 'Unexpected JavaScript Studio browser errors');
+  await browser.close();
+})().catch(error => { console.error(error); process.exit(1); });
