@@ -23,7 +23,7 @@ const fs = require('node:fs');
         await page.locator('#trozalJsMotionRun').click();
         await page.waitForFunction(() =>
           (document.querySelector('#trozalJsMotionStatus')?.textContent || '').includes('Frame siap'),
-          { timeout: 30000 }
+          null, { timeout: 30000 }
         );
 
         await page.locator('#trozalJsExportResolution').selectOption('1280x720');
@@ -34,7 +34,7 @@ const fs = require('node:fs');
           if (await transparent.count() && !(await transparent.isChecked())) await transparent.check();
         }
 
-        const downloadPromise = page.waitForEvent('download', { timeout: 300000 });
+        const downloadPromise = page.waitForEvent('download', null, { timeout: 300000 });
         await page.locator('[data-jsm-export-test="' + format + '"]').click();
         const download = await downloadPromise;
         const filename = download.suggestedFilename();
