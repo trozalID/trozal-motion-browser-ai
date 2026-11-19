@@ -34,11 +34,11 @@ const fs = require('node:fs');
           if (await transparent.count() && !(await transparent.isChecked())) await transparent.check();
         }
 
-        const downloadPromise = page.waitForEvent('download', null, { timeout: 300000 });
+        const downloadPromise = page.waitForEvent('download', { timeout: 300000 });
         await page.locator('[data-jsm-export-test="' + format + '"]').click();
         const download = await downloadPromise;
         const filename = download.suggestedFilename();
-        assert.match(filename, format === 'mp4' ? /\\.mp4$/i : /\\.mov$/i,
+        assert.match(filename, format === 'mp4' ? /\.mp4$/i : /\.mov$/i,
           format.toUpperCase() + ' export must produce the expected file extension');
 
         const filePath = await download.path();
@@ -57,7 +57,7 @@ const fs = require('node:fs');
         }
 
         await page.waitForFunction(() => window.__TROZAL_JS_MOTION_EXPORT_ACTIVE === false,
-          { timeout: 300000 });
+          null, { timeout: 300000 });
         assert.deepEqual(pageErrors, [], format + ' export must not raise uncaught browser errors');
         results.push({ format, filename, bytes: bytes.length });
       } catch (error) {
