@@ -2,11 +2,21 @@ const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
+// Keep this matrix serial: FFmpeg WASM is memory-intensive, especially at 4K.
+const scenarios = [
+  { format: 'mp4', resolution: '1280x720', fps: '24', duration: '3' },
+  { format: 'mov', resolution: '1280x720', fps: '24', duration: '3' },
+  { format: 'mp4', resolution: '1920x1080', fps: '24', duration: '1' },
+  { format: 'mp4', resolution: '2560x1440', fps: '24', duration: '1' },
+  { format: 'mp4', resolution: '3840x2160', fps: '24', duration: '1' }
+];
+
 (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
   const results = [];
   try {
-    for (const format of ['mp4', 'mov']) {
+    for (const scenario of scenarios) {
+      const { format, resolution, fps, duration } = scenario;
       const page = await browser.newPage({
         viewport: { width: 1440, height: 1000 },
         acceptDownloads: true
@@ -26,7 +36,10 @@ const fs = require('node:fs');
           null, { timeout: 30000 }
         );
 
-        await page.locator('#trozalJsExportResolution').selectOption('1280x720');
+        await page.locator('#trozalJsExportResolution').selectOption(resolution);
+        await page.locator('#trozalJsExportFps').selectOption(fps);
+        await page.locator('#trozalJsExportDuration').selectOption(duration);
+
         if (format === 'mov') {
           const bgMode = page.locator('#bgMode');
           if (await bgMode.count()) await bgMode.selectOption('transparent');
@@ -58,16 +71,27 @@ const fs = require('node:fs');
 
         await page.waitForFunction(() => window.__TROZAL_JS_MOTION_EXPORT_ACTIVE === false,
           null, { timeout: 300000 });
-        assert.deepEqual(pageErrors, [], format + ' export must not raise uncaught browser errors');
-        results.push({ format, filename, bytes: bytes.length });
+        assert.deepEqual(pageErrors, [],
+          format + ' ' + resolution + ' ' + duration + 's export must not raise uncaught browser errors');
+        results.push({
+          format,
+          resolution,
+          fps: Number(fps),
+          duration: Number(duration),
+          filename,
+          bytes: bytes.length
+        });
       } catch (error) {
         const status = await page.locator('#trozalJsExportTestStatus').textContent().catch(() => 'status unavailable');
-        throw new Error(format.toUpperCase() + ' real export failed: ' + error.message + ' | panel: ' + status);
+        throw new Error(
+          format.toUpperCase() + ' ' + resolution + ' ' + duration +
+          's real export failed: ' + error.message + ' | panel: ' + status
+        );
       } finally {
         await page.close();
       }
     }
-    console.log('JavaScript Studio real video export passed: ' + JSON.stringify(results));
+    console.log('JavaScript Studio real video export matrix passed: ' + JSON.stringify(results));
   } finally {
     await browser.close();
   }
