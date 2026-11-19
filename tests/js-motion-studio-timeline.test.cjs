@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const source = fs.readFileSync('js-motion-engine.js', 'utf8');
 
 for (const id of [
+  'trozalJsObjectManager','trozalJsObjectSelect','trozalJsObjectAdd',
+  'trozalJsObjectDuplicate','trozalJsObjectDelete','trozalJsObjectVisible',
   'trozalJsSceneManager','trozalJsSceneSelect','trozalJsSceneAdd',
   'trozalJsSceneDelete','trozalJsTimeline','trozalJsTimelineScrub',
   'trozalJsKeyAdd','trozalJsKeyRemove','trozalJsKeyTracks'
@@ -17,18 +19,23 @@ for (const token of [
 ]) {
   assert.ok(source.includes(token), 'Missing timeline/keyframe capability: ' + token);
 }
-assert.match(source, /new Function\("ctx","t","w","h","anim",d\.code\)/,
-  'Canvas user code must receive interpolated anim values');
+assert.ok(source.includes('new Function("ctx","t","w","h","anim",o.code)'),
+  'Each Canvas object must receive interpolated anim values');
 assert.match(source, /const a=d\.anim\|\|\{\}/,
   'Frame runtime must read interpolated animation values from the message');
-assert.match(source, /draw\(ctx,d\.time,c\.width,c\.height,a\)/,
-  'Frame runtime must pass interpolated animation values into user code');
-assert.match(source, /code\.addEventListener\('input',\(\)=>\{currentScene\(\)\.code=code\.value\}\)/,
-  'Scene code must persist as the editor changes');
+assert.ok(source.includes('item.draw(ctx,d.time,c.width,c.height,a)'),
+  'Frame runtime must pass interpolated animation values into each object');
+assert.ok(source.includes("code.addEventListener('input',()=>{currentScene().code=code.value;currentObject().code=code.value})"),
+  'Active object code must persist as the editor changes');
 
 assert.ok(source.includes('gizmo-start'), 'Preview canvas must expose direct transform drag');
 assert.ok(source.includes("d.type==='gizmo-drag'"), 'Parent must consume canvas transform drag');
 assert.ok(source.includes('dragOverride.x+=Number(d.dx)||0'), 'Canvas drag must update X transform');
 assert.ok(source.includes('dragOverride.y+=Number(d.dy)||0'), 'Canvas drag must update Y transform');
 assert.ok(source.includes("d.type==='gizmo-end'"), 'Dragging must commit a transform keyframe');
-console.log('JavaScript Studio timeline, scene manager, and canvas transform gizmo checks passed.');
+assert.ok(source.includes('const ensureObjects=s=>'), 'Scenes must own independent object layers');
+assert.ok(source.includes('getObjects:'), 'Object layers must be exposed through the Studio API');
+assert.ok(source.includes("d.objects||[{code:d.code,visible:true}]"), 'Sandbox runtime must compile multiple object layers');
+assert.ok(source.includes("$('trozalJsObjectDuplicate').addEventListener('click'"), 'Object duplication control must work');
+assert.ok(source.includes("$('trozalJsObjectVisible').addEventListener('change'"), 'Object visibility control must work');
+console.log('JavaScript Studio timeline, scene manager, and canvas transform gizmo and object manager checks passed.');
