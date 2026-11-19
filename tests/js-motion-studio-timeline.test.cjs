@@ -19,14 +19,14 @@ for (const token of [
 ]) {
   assert.ok(source.includes(token), 'Missing timeline/keyframe capability: ' + token);
 }
-assert.match(source, /new Function\("ctx","t","w","h","anim",d\.code\)/,
-  'Canvas user code must receive interpolated anim values');
+assert.ok(source.includes('new Function("ctx","t","w","h","anim",o.code)'),
+  'Each Canvas object must receive interpolated anim values');
 assert.match(source, /const a=d\.anim\|\|\{\}/,
   'Frame runtime must read interpolated animation values from the message');
-assert.match(source, /draw\(ctx,d\.time,c\.width,c\.height,a\)/,
-  'Frame runtime must pass interpolated animation values into user code');
-assert.match(source, /code\.addEventListener\('input',\(\)=>\{currentScene\(\)\.code=code\.value\}\)/,
-  'Scene code must persist as the editor changes');
+assert.ok(source.includes('item.draw(ctx,d.time,c.width,c.height,a)'),
+  'Frame runtime must pass interpolated animation values into each object');
+assert.ok(source.includes("code.addEventListener('input',()=>{currentScene().code=code.value;currentObject().code=code.value})"),
+  'Active object code must persist as the editor changes');
 
 assert.ok(source.includes('gizmo-start'), 'Preview canvas must expose direct transform drag');
 assert.ok(source.includes("d.type==='gizmo-drag'"), 'Parent must consume canvas transform drag');
