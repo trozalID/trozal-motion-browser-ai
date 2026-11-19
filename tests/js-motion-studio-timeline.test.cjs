@@ -10,9 +10,6 @@ for (const id of [
   assert.ok(source.includes(id), 'Missing JavaScript Studio control: ' + id);
 }
 
-// The runtime passes an animation object named "a" into the sandboxed
-// Canvas draw function. Assert the actual contract rather than requiring
-// the user-facing example spelling "anim.x".
 for (const token of [
   'function valueAt(t)', 'getScenes:', 'setScenes:',
   'x:0,y:0,scale:1,rotation:0,opacity:1',
@@ -22,13 +19,13 @@ for (const token of [
 }
 assert.match(source, /new Function\("ctx","t","w","h","anim",d\.code\)/,
   'Canvas user code must receive interpolated anim values');
-assert.match(source, /draw\(ctx,d\.time,c\.width,c\.height,d\.anim\|\|\{\}\)/,
-  'Frame runtime must pass interpolated animation values');
+assert.match(source, /const a=d\.anim\|\|\{\}/,
+  'Frame runtime must read interpolated animation values from the message');
+assert.match(source, /draw\(ctx,d\.time,c\.width,c\.height,a\)/,
+  'Frame runtime must pass interpolated animation values into user code');
 assert.match(source, /code\.addEventListener\('input',\(\)=>\{currentScene\(\)\.code=code\.value\}\)/,
   'Scene code must persist as the editor changes');
 
-// The preview iframe posts pointer drag events; the parent applies the delta
-// to the current scene transform and commits the result as a keyframe.
 assert.ok(source.includes('type:\\\"gizmo-start\\\"'), 'Preview canvas must expose direct transform drag');
 assert.ok(source.includes("d.type==='gizmo-drag'"), 'Parent must consume canvas transform drag');
 assert.ok(source.includes('dragOverride.x+=Number(d.dx)||0'), 'Canvas drag must update X transform');
