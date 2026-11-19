@@ -17,6 +17,8 @@ const assert = require('node:assert/strict');
       ['2560x1440', '2K'],
       ['3840x2160', '4K']
     ];
+    const fpsValues = ['24', '25', '30', '50', '60'];
+    let fpsIndex = 0;
     for (const [kind, proresMode, label] of formats) {
       for (const [size, sizeLabel] of resolutions) {
         // Use a fresh document for each format/resolution pair to isolate renderer state.
@@ -27,6 +29,9 @@ const assert = require('node:assert/strict');
         await page.waitForFunction(() => (document.querySelector('#trozalJsMotionStatus')?.textContent || '').includes('Frame siap'));
         assert.equal(await page.locator('#trozalJsExportTestPanel').count(), 1);
         assert.equal(await page.locator('#trozalJsExportResolution option').count(), 4);
+        assert.equal(await page.locator('#trozalJsExportFps option').count(), 5);
+        const selectedFps = fpsValues[fpsIndex++ % fpsValues.length];
+        await page.locator('#trozalJsExportFps').selectOption(selectedFps);
         await page.locator('#trozalJsExportResolution').selectOption(size);
         const testButton = page.locator('[data-jsm-export-test="' + kind + '"]');
         assert.equal(await testButton.getAttribute('data-jsm-export-test'), kind);
@@ -36,7 +41,8 @@ const assert = require('node:assert/strict');
         await page.waitForFunction(() => window.__jsmTestRenderClicked === true);
         assert.equal(await page.locator('#format').inputValue(), kind, 'format selection for ' + label);
         assert.equal(await page.locator('#resolution').inputValue(), size, sizeLabel + ' resolution for ' + label);
-        assert.equal(await page.locator('#fps').inputValue(), '24');
+        assert.equal(await page.locator('#fps').inputValue(), selectedFps, 'selected FPS for ' + label);
+        assert.ok((await page.locator('#trozalJsExportTestStatus').textContent()).includes(selectedFps + ' FPS'));
         assert.equal(await page.locator('#duration').inputValue(), '1');
         assert.equal(await page.locator('#proresMode').inputValue(), proresMode);
         assert.ok((await page.locator('#trozalJsExportTestStatus').textContent()).includes(size.replace('x','×')));
@@ -44,6 +50,6 @@ const assert = require('node:assert/strict');
       }
     }
     assert.deepEqual(errors, []);
-    console.log('JavaScript Studio export panel passed: 3 formats × 4 resolutions (720p, 1080p, 2K, 4K).');
+    console.log('JavaScript Studio export panel passed: 3 formats × 4 resolutions and 5 FPS choices (24, 25, 30, 50, 60).');
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exit(1); });
