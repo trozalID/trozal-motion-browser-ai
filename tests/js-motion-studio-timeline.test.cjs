@@ -33,7 +33,7 @@ assert.ok(source.includes("d.type==='gizmo-drag'"), 'Parent must consume canvas 
 assert.ok(source.includes('dragOverride.x+=Number(d.dx)||0'), 'Canvas drag must update X transform');
 assert.ok(source.includes('dragOverride.y+=Number(d.dy)||0'), 'Canvas drag must update Y transform');
 assert.ok(source.includes("d.type==='gizmo-end'"), 'Dragging must commit a transform keyframe');
-assert.ok(source.includes('function ensureObjects(s)'), 'Scenes must own independent object layers');
+assert.ok(source.includes('const ensureObjects=s=>'), 'Scenes must own independent object layers');
 assert.ok(source.includes('getObjects:'), 'Object layers must be exposed through the Studio API');
 assert.ok(source.includes("d.objects||[{code:d.code,visible:true}]"), 'Sandbox runtime must compile multiple object layers');
 assert.ok(source.includes("$('trozalJsObjectDuplicate').addEventListener('click'"), 'Object duplication control must work');
