@@ -3358,16 +3358,17 @@ async function drawUnsafe(){
   diag.lastAt=diagNow;diag.count++;
  }
  let elapsed=frame/fps;if(window.__TROZAL_JS_MOTION_EXPORT_ACTIVE!==true)renderAt(elapsed,false,false);let bg=$('bgMode').value;if(bg==='transparent'&&$('transparentBg').checked){ctx.clearRect(0,0,w,h)}else{ctx.fillStyle=bg==='black'?'#08090c':bg==='dark'?'#141820':bg==='greenbg'?'#075b3b':bg==='bluebg'?'#1264b0':bg==='custom'?$('customBg').value:'#ffffff';ctx.fillRect(0,0,w,h)}
+let motion=getMotionState(elapsed),baseW=w,baseH=h,cx=w/2,cy=h/2;
 if(window.__TROZAL_JS_MOTION_EXPORT_ACTIVE===true){
  const frameData=await window.TROZAL_JS_MOTION?.renderFrame(elapsed);
  if(!frameData)throw new Error('JavaScript Studio tidak menghasilkan frame pada '+elapsed.toFixed(3)+'s.');
  const frameImage=await new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('Gagal membaca frame JavaScript Studio.'));image.src=frameData});
  ctx.drawImage(frameImage,0,0,w,h);
 }else{
- let obj=$('object'),motion=getMotionState(elapsed);
+ let obj=$('object');
 // Match CSS preview geometry: width relative to stage width, height relative to stage height.
-const baseW=htmlMotionSource?w:w*(+$('scale').value/100),baseH=htmlMotionSource?h:h*(+$('scale').value*1.35/100);
-const cx=w/2+((+$('posX').value+motion.x)/100*baseW),cy=h/2+((+$('posY').value+motion.y)/100*baseH);
+baseW=htmlMotionSource?w:w*(+$('scale').value/100);baseH=htmlMotionSource?h:h*(+$('scale').value*1.35/100);
+cx=w/2+((+$('posX').value+motion.x)/100*baseW);cy=h/2+((+$('posY').value+motion.y)/100*baseH);
 const ow=baseW*motion.scaleX,oh=baseH*motion.scaleY;
 ctx.save();ctx.translate(cx,cy);ctx.rotate((+$('rotation').value+motion.rotate)*Math.PI/180);ctx.transform(1,Math.tan(motion.skew*Math.PI/180),0,1,0,0);ctx.globalAlpha=(+$('opacity').value/100)*motion.alpha;
 ctx.beginPath();ctx.rect(-baseW/2,-baseH/2,baseW*motion.revealX,baseH*motion.revealY);ctx.clip();
