@@ -10,4 +10,8 @@ for (const token of ['function valueAt(t)','getScenes:','setScenes:','anim.x','a
 assert.match(source, /new Function\("ctx","t","w","h","anim",d\.code\)/, 'Canvas user code must receive interpolated anim values');
 assert.match(source, /draw\(ctx,d\.time,c\.width,c\.height,d\.anim\|\|\{\}\)/, 'Frame runtime must pass interpolated animation values');
 assert.match(source, /code\.addEventListener\('input',\(\)=>\{currentScene\(\)\.code=code\.value\}\)/, 'Scene code must persist as the editor changes');
-console.log('JavaScript Studio timeline, scene manager, and keyframe wiring checks passed.');
+assert.match(source, /type:\"gizmo-start\"/, 'Preview canvas must expose direct transform drag');
+assert.match(source, /type===\'gizmo-drag\'/, 'Parent must consume canvas transform drag');
+assert.match(source, /ctx\.translate\(c\.width\/2\+\(Number\(a\.x\)/, 'Scene transform must be applied to the rendered canvas');
+assert.match(source, /type===\'gizmo-end\'/, 'Dragging must commit a transform keyframe');
+console.log('JavaScript Studio timeline, scene manager, and canvas transform gizmo checks passed.');
