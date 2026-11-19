@@ -34,7 +34,7 @@ const assert = require('node:assert/strict');
   await page.locator('#trozalJsAiApply').click();
   await page.waitForFunction(() => window.TROZAL_JS_MOTION.getCode().includes('globalAlpha=.5'));
   assert.match(await page.evaluate(() => window.TROZAL_JS_MOTION.getCode()), /globalAlpha/);
-  assert.equal(await page.locator('#trozalJsAiStatus').textContent().includes('diterapkan'), true);
+  assert.match(await page.locator('#trozalJsAiStatus').textContent(), /diterapkan/);
   assert.deepEqual(errors, [], 'Unexpected JavaScript Studio browser errors');
   await browser.close();
 })().catch(error => { console.error(error); process.exit(1); });
