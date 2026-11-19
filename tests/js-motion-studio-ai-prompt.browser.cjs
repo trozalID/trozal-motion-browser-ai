@@ -30,7 +30,7 @@ const assert = require('node:assert/strict');
   assert.equal(await page.locator('#trozalJsAiConcept option').nth(0).textContent(), '1. Neon Orbit');
   assert.equal(await page.locator('#trozalJsAiConcept option').nth(1).textContent(), '2. Glass Pulse');
   await page.locator('#trozalJsAiConcept').selectOption('1');
-  assert.match(await page.locator('#trozalJsAiDescription').textContent(), /Neon Orbit/);
+  assert.match(await page.locator('#trozalJsAiDescription').textContent(), /Glass Pulse/);
   await page.locator('#trozalJsAiApply').click();
   await page.waitForFunction(() => window.TROZAL_JS_MOTION.getCode().includes('globalAlpha=.5'));
   assert.match(await page.evaluate(() => window.TROZAL_JS_MOTION.getCode()), /globalAlpha/);
