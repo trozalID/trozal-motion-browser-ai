@@ -153,6 +153,8 @@ jobs:
         run: node tests/browser-cloud-ai.browser.cjs
       - name: Test JavaScript Studio scenes and keyframe timeline
         run: node tests/js-motion-studio-timeline.test.cjs
+      - name: Test direct Canvas transform gizmo in Chromium
+        run: node tests/js-motion-studio-transform.browser.cjs
       - name: Verify Preview Proxy changes only preview canvas resolution
         run: node tests/preview-proxy.browser.cjs
       - name: Verify Preview height slider and Runtime Diagnostics controls
