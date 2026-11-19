@@ -26,6 +26,7 @@ on:
       - 'tests/render-memory-manager.test.cjs'
       - '.github/workflows/build-prores-pages.yml'
       - 'tests/ffmpeg-wasm-runtime-smoke.browser.cjs'
+      - 'tests/js-motion-studio-real-video-export.browser.cjs'
   workflow_dispatch:
 
 permissions:
@@ -251,6 +252,7 @@ jobs:
           curl -fsS http://127.0.0.1:4173/trozal-motion-browser-ai/vendor/prores-core/ffmpeg-core.js >/dev/null
           curl -fsS http://127.0.0.1:4173/trozal-motion-browser-ai/vendor/prores-core/ffmpeg-core.wasm >/dev/null
           node tests/ffmpeg-wasm-runtime-smoke.browser.cjs
+          node tests/js-motion-studio-real-video-export.browser.cjs
           kill "$(cat /tmp/trozal-pages-smoke.pid)" || true
           rm -rf site/trozal-motion-browser-ai
 
