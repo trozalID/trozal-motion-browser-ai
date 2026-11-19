@@ -6,35 +6,32 @@ const assert = require('node:assert/strict');
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   try {
-    await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
-    await page.locator('#trozalJsMotionBtn').click();
-    await page.waitForFunction(() => !!window.TROZAL_JS_MOTION?.renderFrame);
-    await page.locator('#trozalJsMotionRun').click();
-    await page.waitForFunction(() => (document.querySelector('#trozalJsMotionStatus')?.textContent || '').includes('Frame siap'));
-    assert.equal(await page.locator('#trozalJsExportTestPanel').count(), 1);
-    await page.locator('#renderBtn').evaluate(el => { el.click = () => { window.__jsmTestRenderClicked = true; }; });
     const cases = [
       ['pngseq', 'pngUnlimited', 'PNG Sequence ZIP'],
       ['mp4', 'unlimited', 'MP4 / H.264'],
       ['mov', 'unlimited', 'MOV / ProRes 4444 Alpha']
     ];
     for (const [kind, proresMode, label] of cases) {
-      // Each export intentionally closes the Studio overlay to expose the main renderer.
-      // Reopen it before testing the next format button.
-      if (!(await page.locator('#trozalJsMotionOverlay').evaluate(el => getComputedStyle(el).display !== 'none'))) {
-        await page.locator('#trozalJsMotionBtn').click();
-        await page.waitForFunction(() => getComputedStyle(document.querySelector('#trozalJsMotionOverlay')).display !== 'none');
-        await page.waitForFunction(() => (document.querySelector('#trozalJsMotionStatus')?.textContent || '').includes('Frame siap'));
-      }
+      // Isolate each format in a fresh document so renderer state from a prior
+      // format cannot leak into the next test.
+      await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
+      await page.locator('#trozalJsMotionBtn').click();
+      await page.waitForFunction(() => !!window.TROZAL_JS_MOTION?.renderFrame);
+      await page.locator('#trozalJsMotionRun').click();
+      await page.waitForFunction(() => (document.querySelector('#trozalJsMotionStatus')?.textContent || '').includes('Frame siap'));
+      assert.equal(await page.locator('#trozalJsExportTestPanel').count(), 1);
+      const testButton = page.locator('[data-jsm-export-test="' + kind + '"]');
+      assert.equal(await testButton.getAttribute('data-jsm-export-test'), kind);
+      await page.locator('#renderBtn').evaluate(el => { el.click = () => { window.__jsmTestRenderClicked = true; }; });
       await page.evaluate(() => { window.__jsmTestRenderClicked = false; });
-      await page.locator('[data-jsm-export-test="' + kind + '"]').click();
+      await testButton.click();
       await page.waitForFunction(() => window.__jsmTestRenderClicked === true);
-      assert.equal(await page.locator('#format').inputValue(), kind);
+      assert.equal(await page.locator('#format').inputValue(), kind, 'format selection for ' + label);
       assert.equal(await page.locator('#resolution').inputValue(), '1280x720');
       assert.equal(await page.locator('#fps').inputValue(), '24');
       assert.equal(await page.locator('#duration').inputValue(), '1');
       assert.equal(await page.locator('#proresMode').inputValue(), proresMode);
-      assert.match(await page.locator('#trozalJsExportTestStatus').textContent(), new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+      assert.match(await page.locator('#trozalJsExportTestStatus').textContent(), new RegExp(label.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')));
     }
     assert.deepEqual(errors, []);
     console.log('JavaScript Studio export test panel passed: PNG Sequence, MP4/H.264 and ProRes 4444 Alpha correctly configure the shared renderer.');
