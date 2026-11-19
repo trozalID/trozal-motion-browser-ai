@@ -19,6 +19,13 @@ const assert = require('node:assert/strict');
       ['mov', 'unlimited', 'MOV / ProRes 4444 Alpha']
     ];
     for (const [kind, proresMode, label] of cases) {
+      // Each export intentionally closes the Studio overlay to expose the main renderer.
+      // Reopen it before testing the next format button.
+      if (!(await page.locator('#trozalJsMotionOverlay').evaluate(el => getComputedStyle(el).display !== 'none'))) {
+        await page.locator('#trozalJsMotionBtn').click();
+        await page.waitForFunction(() => getComputedStyle(document.querySelector('#trozalJsMotionOverlay')).display !== 'none');
+        await page.waitForFunction(() => (document.querySelector('#trozalJsMotionStatus')?.textContent || '').includes('Frame siap'));
+      }
       await page.evaluate(() => { window.__jsmTestRenderClicked = false; });
       await page.locator('[data-jsm-export-test="' + kind + '"]').click();
       await page.waitForFunction(() => window.__jsmTestRenderClicked === true);
