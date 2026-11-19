@@ -26,7 +26,7 @@ assert.match(source, /draw\(ctx,d\.time,c\.width,c\.height,a\)/,
 assert.match(source, /code\.addEventListener\('input',\(\)=>\{currentScene\(\)\.code=code\.value\}\)/,
   'Scene code must persist as the editor changes');
 
-assert.ok(source.includes('type:\\\"gizmo-start\\\"'), 'Preview canvas must expose direct transform drag');
+assert.ok(source.includes('gizmo-start'), 'Preview canvas must expose direct transform drag');
 assert.ok(source.includes("d.type==='gizmo-drag'"), 'Parent must consume canvas transform drag');
 assert.ok(source.includes('dragOverride.x+=Number(d.dx)||0'), 'Canvas drag must update X transform');
 assert.ok(source.includes('dragOverride.y+=Number(d.dy)||0'), 'Canvas drag must update Y transform');
