@@ -60,6 +60,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check render-sync-advisor.js
+          node --check js-motion-engine.js
           node --check metadata-actions.js
           node --check browser-ai-gemini-cloud.js
           node --check browser-ai-webgpu-local.js
