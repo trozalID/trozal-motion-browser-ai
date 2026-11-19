@@ -43,7 +43,7 @@ const assert = require('node:assert/strict');
       'Mapped theme domain:',
       'Domain motion grammar:',
       'ADDITIONAL USER DETAILS',
-      'emerald and gold',
+      'emerald dan gold',
       'cinematic product reveal',
       'Motion choreography:',
       'TARGET VIDEO:'
@@ -58,7 +58,7 @@ const assert = require('node:assert/strict');
     assert.ok(!hrSubthemes.some(x => /Christmas tree ornament|gift box reveal/i.test(x)));
     const hrPrompt = await page.evaluate(() => window.TROZAL_JS_MOTION.buildPrompt());
     assert.ok(hrPrompt.includes('MAIN THEME: Career & Recruitment'));
-    assert.ok(hrPrompt.includes('emerald and gold'), 'Additional details must remain additive when theme changes');
+    assert.ok(hrPrompt.includes('emerald dan gold'), 'Additional details must remain additive when theme changes');
 
     // The search control must find themes from the shared catalogue.
     await page.locator('#trozalJsThemeSearch').fill('Cybersecurity');
