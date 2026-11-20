@@ -55,11 +55,11 @@ const assert = require('node:assert/strict');
     await page.waitForFunction(() => {
       const s = window.TROZAL_JS_MOTION?.getPlaybackState();
       return s && s.appliedCodeRevision === s.codeRevision && s.codeRevision > 0;
-    }, { timeout: 10000 });
+    }, null, { timeout: 10000 });
     const prompt = await page.evaluate(() => window.TROZAL_JS_MOTION.buildPrompt());
     assert.match(prompt, /ORIGINALITY & IP GUARDRAILS/,
       'Generated prompt must contain explicit IP/originality guardrails');
-    assert.equal(typeof window.trozalBrowserAI?.analyzeImageDataUrl, 'function',
+    assert.equal(await page.evaluate(() => typeof window.trozalBrowserAI?.analyzeImageDataUrl), 'function',
       'Canvas 2D must expose a handoff to the existing Vision metadata generator');
     assert.deepEqual(errors, [], 'No uncaught browser errors are expected');
     console.log('JavaScript Studio dynamic preview passed: provider key persistence, 1-hour duration, slider sync, speed, latest code apply, IP prompt guardrails and metadata handoff.');
