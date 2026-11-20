@@ -24,7 +24,7 @@ const assert = require('node:assert/strict');
     };
   });
   await page.locator('#trozalJsMotionBtn').click();
-  await page.locator('#trozalJsAiPrompt').fill('cinematic product reveal');
+  await page.locator('#trozalJsDetails').fill('cinematic product reveal');
   await page.locator('#trozalJsAiGenerate').click();
   await page.waitForFunction(() => document.querySelectorAll('#trozalJsAiConcept option').length === 2);
   assert.equal(await page.locator('#trozalJsAiConcept option').nth(0).textContent(), '1. Neon Orbit');
