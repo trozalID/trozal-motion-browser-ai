@@ -85,6 +85,13 @@ const { chromium } = require('playwright');
   assert.equal(await page.locator('#browserGeminiCloudPanel').count(), 1, 'Gemini Cloud AI panel must exist');
   assert.equal(await page.locator('#trozalBrowserVisionCloudPanel').count(), 1, 'Gemini Cloud Vision panel must exist');
   assert.equal(await page.locator('#trozalGeminiApiKey').count(), 1, 'There must be exactly one shared API key field');
+  await page.locator('#trozalAiProvider').selectOption('gemini');
+  const providerGeminiModels = await page.locator('#trozalAiProviderModel option').evaluateAll(nodes => nodes.map(node => ({ value: node.value, label: node.textContent })));
+  assert.ok(providerGeminiModels.some(model => model.value === 'gemini-3.1-pro-preview'),
+    'Gemini provider model choices must include Gemini 3.1 Pro Preview');
+  await page.locator('#trozalAiProviderModel').selectOption('gemini-3.1-pro-preview');
+  assert.equal(await page.locator('#trozalBrowserAiModel').inputValue(), 'gemini-3.1-pro-preview',
+    'Selecting Gemini 3.1 Pro in provider model list must sync the Gemini Cloud model selector');
   assert.equal(await page.locator('#trozalSceneEngine').inputValue(), 'auto', 'Scene Composer must default to Auto engine');
   assert.equal(await page.locator('#trozalSceneAutoFallback').isChecked(), true, 'Automatic fallback must be enabled by default');
   // Regression guard: the central motion editor must never disappear when Cloud AI panels load.
@@ -130,7 +137,7 @@ const { chromium } = require('playwright');
   assert.doesNotMatch(output, /(?:href|src)\s*=\s*['"]https?:\/\//i, 'Returned HTML/SVG must not reference external assets');
   const sceneRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && typeof item.body?.contents?.[0]?.parts?.[0]?.text === 'string');
   assert.ok(sceneRequest, 'Scene generation should call Gemini generateContent with a text brief');
-  assert.equal(sceneRequest.path, '/v1beta/models/gemini-3.8-flash:generateContent');
+  assert.equal(sceneRequest.path, '/v1beta/models/gemini-3.1-pro-preview:generateContent', 'Scene Composer must use the selected Gemini 3.1 Pro model');
   assert.equal(sceneRequest.body.contents[0].role, 'user');
   assert.match(sceneRequest.body.contents[0].parts[0].text, /perfume bottle/i);
   assert.match(sceneRequest.body.contents[0].parts[0].text, /Aspect ratio/);
