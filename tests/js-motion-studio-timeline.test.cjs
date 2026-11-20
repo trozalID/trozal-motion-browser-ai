@@ -25,8 +25,10 @@ assert.match(source, /const a=d\.anim\|\|\{\}/,
   'Frame runtime must read interpolated animation values from the message');
 assert.ok(source.includes('item.draw(ctx,d.time,c.width,c.height,a)'),
   'Frame runtime must pass interpolated animation values into each object');
-assert.ok(source.includes("code.addEventListener('input',()=>{currentScene().code=code.value;currentObject().code=code.value})"),
+assert.ok(source.includes("code.addEventListener('input',()=>{currentScene().code=code.value;currentObject().code=code.value;"),
   'Active object code must persist as the editor changes');
+assert.ok(source.includes("calibration.textContent='Belum dikalibrasi'"),
+  'Editing JavaScript must invalidate the preview calibration state');
 
 assert.ok(source.includes('gizmo-start'), 'Preview canvas must expose direct transform drag');
 assert.ok(source.includes("d.type==='gizmo-drag'"), 'Parent must consume canvas transform drag');

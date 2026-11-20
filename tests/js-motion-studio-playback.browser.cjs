@@ -17,24 +17,55 @@ const assert = require('node:assert/strict');
     // Wait for both the initial iframe load and the explicit Run action to drain before playback.
     await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().pendingMessages === 0);
 
-    // Manual Canvas 2D prompt must populate the JavaScript editor without applying it to Preview.
+    // The manual prompt is a separate panel and must not be coupled to the Theme Studio.
+    assert.equal(await page.locator('#trozalJsAiComposer #trozalJsManualPromptPanel').count(), 0,
+      'Manual prompt must be a standalone panel outside Theme Studio');
+    assert.equal(await page.locator('#trozalJsManualPromptPanel').count(), 1);
     const frameBeforeManualGenerate = await page.evaluate(() => window.TROZAL_JS_MOTION.getLastFrame());
-    await page.locator('#trozalJsAiPrompt').fill('Buat animasi produk futuristik dengan cincin cahaya dan teks kinetik.');
+    const manualText = 'Buat animasi produk futuristik dengan cincin cahaya dan teks kinetik.';
+    await page.locator('#trozalJsAiPrompt').fill(manualText);
     await page.evaluate(() => {
+      window.__manualPromptCalls = [];
+      window.trozalBuildThemeCreativeBrief = () => { throw new Error('Manual prompt must not call the theme brief builder'); };
       window.trozalBrowserAI = {
         provider: () => 'Gemini test',
         model: () => 'gemini-3.8-flash',
-        generateText: async () => JSON.stringify({ concepts: [{ title: 'Manual Prompt Test', description: 'Generated code for editor.', code: "ctx.fillStyle='#ffcc33';ctx.fillRect(20,20,120,80);" }] })
+        generateText: async prompt => {
+          window.__manualPromptCalls.push(prompt);
+          return JSON.stringify({ concepts: [{ title: 'Manual Prompt Test', description: 'Generated code for editor.', code: "ctx.fillStyle='#ffcc33';ctx.fillRect(20,20,120,80);" }] });
+        }
       };
     });
     await page.locator('#trozalJsBuildPrompt').click();
     await page.waitForFunction(() => document.querySelector('#trozalJsMotionCode')?.value.includes('ffcc33'));
+    const manualCall = await page.evaluate(() => window.__manualPromptCalls?.[0] || '');
+    assert.ok(manualCall.includes(manualText), 'Standalone prompt must be sent to the AI provider');
+    assert.doesNotMatch(manualCall, /MAIN THEME:|THEME-SPECIFIC CREATIVE BLUEPRINT|VISUAL CATEGORY:/,
+      'Standalone prompt must not contain automatic theme instructions');
+    assert.match(await page.locator('#trozalJsManualStatus').innerText(), /Kode JavaScript berhasil dibuat/i);
     assert.match(await page.locator('#trozalJsMotionStatus').innerText(), /belum diterapkan ke preview/i);
     assert.equal(await page.evaluate(() => window.TROZAL_JS_MOTION.getLastFrame()), frameBeforeManualGenerate,
       'Generating a manual prompt must not automatically apply code to Preview');
 
+    // The visible Studio timeline mirrors Professional Mode and offers frame stepping.
+    assert.equal(await page.locator('#trozalJsTimelinePreview').count(), 1);
+    assert.match(await page.locator('#trozalJsTimelinePreview').innerText(), /Timeline & Preview/);
+    assert.match(await page.locator('#trozalJsTimelineResolution').innerText(), /3840×2160|1280×720/);
+    assert.equal(await page.locator('#trozalJsTimelineFpsInfo').innerText(), '30');
+    assert.equal(await page.locator('#trozalJsTimelineFramesInfo').innerText(), '240');
+    await page.locator('#trozalJsTimelineNextFrame').click();
+    await page.waitForFunction(() => Number(document.querySelector('#trozalJsMotionTime')?.value) > 0);
+    const oneFrame = await page.locator('#trozalJsMotionTime').inputValue();
+    assert.ok(Math.abs(Number(oneFrame) - 1 / 30) < 0.001, 'Next Frame must move exactly one selected FPS frame');
+    await page.locator('#trozalJsTimelinePrevFrame').click();
+    await page.waitForFunction(() => Number(document.querySelector('#trozalJsMotionTime')?.value) === 0);
+    await page.locator('#trozalJsTimelineCalibrate').click();
+    await page.waitForFunction(() => document.querySelector('#trozalJsTimelineCalibrationState')?.textContent === 'Terkalibrasi');
+    await page.locator('#trozalJsTimelineStop').click();
+    await page.waitForFunction(() => Number(document.querySelector('#trozalJsMotionTime')?.value) === 0);
+
     await page.waitForFunction(() => !!document.querySelector('#trozalJsTimelineReadout'));
-    const play = page.locator('#trozalJsMotionPlay');
+    const play = page.locator('#trozalJsTimelinePlay');
     const pause = page.locator('#trozalJsMotionPause');
     await play.click();
     await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === true);
@@ -64,8 +95,9 @@ const assert = require('node:assert/strict');
     assert.match(await page.locator('#trozalJsAiGenerate').textContent(), /Generate Kode JavaScript dengan AI/);
     const firstTime = await page.evaluate(() => window.TROZAL_JS_MOTION.getPlaybackState().time);
 
-    // A second click while playing must not start another animation loop.
-    await play.click();
+    // Clicking the dedicated Play action again while already playing must not start a duplicate loop.
+    // The Professional-style toolbar button is a Play/Pause toggle, so use the dedicated Play action for this guard.
+    await page.locator('#trozalJsMotionPlay').click();
     await page.waitForTimeout(250);
     const stateDuringPlayback = await page.evaluate(() => window.TROZAL_JS_MOTION.getPlaybackState());
     assert.equal(stateDuringPlayback.playing, true);
