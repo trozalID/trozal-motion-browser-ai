@@ -28,10 +28,35 @@ const fs = require('node:fs');
 
         if (format === 'mp4') {
           const manualPrompt = page.locator('#trozalJsAiPrompt');
-          await manualPrompt.fill('Buat intro logo 5 detik dengan partikel emas dan headline TROZAL MOTION.');
+          const manualText = 'Buat intro logo 5 detik dengan partikel emas dan headline TROZAL MOTION.';
+          const frameBeforeManualGenerate = await page.evaluate(() => window.TROZAL_JS_MOTION.getLastFrame());
+          await manualPrompt.fill(manualText);
+          await page.evaluate(() => {
+            window.__manualExportPromptCalls = [];
+            window.trozalBrowserAI = {
+              provider: () => 'Gemini test',
+              model: () => 'gemini-3.8-flash',
+              generateText: async prompt => {
+                window.__manualExportPromptCalls.push(prompt);
+                return JSON.stringify({ concepts: [{
+                  title: 'Manual Gold Particle Intro',
+                  description: 'A gold orb with cinematic motion.',
+                  code: "ctx.fillStyle='#101827';ctx.fillRect(0,0,w,h);const x=w/2+Math.sin(t*2)*w*.2;ctx.fillStyle='#f5c15d';ctx.beginPath();ctx.arc(x,h/2,Math.min(w,h)*.12,0,Math.PI*2);ctx.fill();"
+                }] });
+              }
+            };
+          });
           await page.locator('#trozalJsBuildPrompt').click();
+          await page.waitForFunction(() => document.querySelector('#trozalJsMotionCode')?.value.includes('f5c15d'));
+          const manualBriefSent = await page.evaluate(() => window.__manualExportPromptCalls?.[0] || '');
+          assert.ok(manualBriefSent.includes(manualText), 'Manual Canvas prompt must be sent to the AI provider');
+          assert.doesNotMatch(manualBriefSent, /MAIN THEME:|THEME-SPECIFIC CREATIVE BLUEPRINT|VISUAL CATEGORY:/,
+            'Manual Canvas prompt must not be mixed with Theme Studio specifications');
+          assert.equal(await page.evaluate(() => window.TROZAL_JS_MOTION.getLastFrame()), frameBeforeManualGenerate,
+            'Manual generation must populate the editor without applying to Preview');
+          await page.locator('#trozalJsMotionRun').click();
           await page.waitForFunction(() =>
-            (document.querySelector('#trozalJsAiFullPrompt')?.value || '').includes('partikel emas')
+            (document.querySelector('#trozalJsMotionStatus')?.textContent || '').includes('Frame siap')
           );
           await page.locator('#trozalJsCreativeControls').evaluate(details => { details.open = true; });
         await page.locator('#trozalJsPromptDuration').selectOption({ label: '5 detik' });
