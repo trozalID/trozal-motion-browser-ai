@@ -63,6 +63,7 @@ jobs:
           node --check js-motion-engine.js
           node --check metadata-actions.js
           node --check browser-ai-gemini-cloud.js
+          node --check browser-ai-key-storage.js
           node --check browser-ai-webgpu-local.js
           node --check ip-guardrails-panel.js
           node --check browser-gpu-health.js
@@ -163,6 +164,8 @@ jobs:
         run: node tests/js-motion-studio-export-test-panel.browser.cjs
       - name: Test JavaScript Studio play, pause, resume and frame queue stability
         run: node tests/js-motion-studio-playback.browser.cjs
+      - name: Test dynamic preview duration, speed, latest-code apply and IP prompt guardrails
+        run: node tests/js-motion-studio-dynamic-preview.browser.cjs
       - name: Test direct Canvas transform gizmo in Chromium
         run: node tests/js-motion-studio-transform.browser.cjs
       - name: Verify Preview Proxy changes only preview canvas resolution
