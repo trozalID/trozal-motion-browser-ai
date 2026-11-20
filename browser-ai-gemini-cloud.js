@@ -718,7 +718,7 @@
    }
   });
  }
- window.trozalBrowserAI=Object.freeze({generateText:createInteraction,provider:providerName,model:modelId});
+ async function analyzeImageDataUrl(dataUrl){if(typeof dataUrl!=='string'||!dataUrl.startsWith('data:image/'))throw new Error('Frame Canvas tidak valid.');const input=$('trozalVisionImages');if(!input)throw new Error('Input gambar metadata tidak ditemukan.');const response=await fetch(dataUrl);const blob=await response.blob();const file=new File([blob],'trozal-js-canvas-frame.png',{type:blob.type||'image/png'});const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;await analyzeVision();return true;}window.trozalBrowserAI=Object.freeze({generateText:createInteraction,provider:providerName,model:modelId,analyzeImageDataUrl});
  function init(){
   status('trozalVisionConnection','Vision cloud memakai provider terpilih. Local WebGPU saat ini untuk Scene Composer teks; analisis frame tetap memerlukan provider Vision cloud.');
   $('trozalGeminiCheckBtn')?.addEventListener('click',checkConnection);
