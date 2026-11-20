@@ -141,7 +141,7 @@ const { chromium } = require('playwright');
   assert.match(output, /<svg/i);
   assert.doesNotMatch(output, /<script\b|<iframe\b/i, 'Returned HTML/SVG must not contain executable script or iframe elements');
   assert.doesNotMatch(output, /(?:href|src)\s*=\s*['"]https?:\/\//i, 'Returned HTML/SVG must not reference external assets');
-  const sceneRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && typeof item.body?.contents?.[0]?.parts?.[0]?.text === 'string');
+  const sceneRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => typeof part.text === 'string' && /perfume bottle/i.test(part.text)));
   assert.ok(sceneRequest, 'Scene generation should call Gemini generateContent with a text brief');
   assert.equal(sceneRequest.path, '/v1beta/models/gemini-3.1-pro-preview:generateContent', 'Scene Composer must use the selected Gemini 3.1 Pro model');
   assert.equal(sceneRequest.body.contents[0].role, 'user');
