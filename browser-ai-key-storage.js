@@ -58,6 +58,13 @@
       });
     }
 
+    const geminiClearButton = document.getElementById('trozalGeminiClearKeyBtn');
+    if (geminiClearButton) geminiClearButton.addEventListener('click', () => {
+      const next = readStore();
+      delete next.gemini;
+      writeStore(next);
+    });
+
     const clearButton = document.getElementById('trozalProviderClearBtn');
     if (clearButton) clearButton.addEventListener('click', () => {
       const next = readStore();
