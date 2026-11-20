@@ -26,7 +26,12 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#trozalJsTheme').inputValue(), holidayTheme);
     await page.locator('#trozalJsSpecific').selectOption({ index: 0 });
     await page.locator('#trozalJsDetails').fill('Gunakan warna emerald dan gold, objek lentera, headline Selamat Hari Raya, dan latar malam sinematik. Tambahkan cinematic product reveal with layered depth and precise timing.');
+    await page.locator('#trozalJsAiPrompt').fill('manual-only-text-must-not-enter-theme-prompt');
+    assert.equal(await page.locator('#trozalJsAiComposer #trozalJsManualPromptPanel').count(), 0,
+      'Manual prompt panel must be separate from the Theme Studio');
     const prompt = await page.evaluate(() => window.TROZAL_JS_MOTION.buildPrompt());
+    assert.doesNotMatch(prompt, /manual-only-text-must-not-enter-theme-prompt/,
+      'Theme prompt must not absorb the standalone manual prompt');
     for (const phrase of [
       'MAIN THEME: Christmas & Holiday','VISUAL CATEGORY:','SPECIFIC CATEGORY / SUBTHEME:',
       'THEME-SPECIFIC CREATIVE BLUEPRINT','Main-theme intent:','Hero subject and action:',
