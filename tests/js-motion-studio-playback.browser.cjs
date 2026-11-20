@@ -21,7 +21,16 @@ const assert = require('node:assert/strict');
     const pause = page.locator('#trozalJsMotionPause');
     await play.click();
     await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === true);
-    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().time > 0.35);
+    await page.waitForTimeout(1000);
+    const playbackDebug = await page.evaluate(() => ({
+      state: window.TROZAL_JS_MOTION?.getPlaybackState(),
+      timeInput: document.querySelector('#trozalJsMotionTime')?.value,
+      timeline: document.querySelector('#trozalJsTimelineScrub')?.value,
+      readout: document.querySelector('#trozalJsTimelineReadout')?.textContent,
+      status: document.querySelector('#trozalJsMotionStatus')?.textContent
+    }));
+    assert.ok(playbackDebug.state?.time > 0.35,
+      'Playback clock did not advance: ' + JSON.stringify(playbackDebug));
     await page.waitForFunction(() => {
       const readout = document.querySelector('#trozalJsTimelineReadout')?.textContent || '';
       const [elapsed, total] = readout.split(' / ');
