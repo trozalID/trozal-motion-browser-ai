@@ -42,6 +42,19 @@ const assert = require('node:assert/strict');
     assert.ok(layout.left.display !== 'none' && layout.left.height > 0, 'Left editor panels must remain visible');
     assert.ok(layout.dock.display !== 'none' && layout.dock.height > 0, 'Right/dock panels must remain visible');
     assert.ok(layout.rightPanels > 0, 'Classic right-side panels must not disappear on mobile');
+    const classicButton = await page.locator('.app>.sidebar.right button:visible').first().evaluate(el => ({height:el.getBoundingClientRect().height,display:getComputedStyle(el).display}));
+    assert.ok(classicButton.height >= 28 && classicButton.display !== 'none', 'Classic mode controls must remain visible and touchable');
+
+    await page.locator('[data-ui-layout-choice="professional"]').evaluate(button => button.click());
+    await page.waitForFunction(() => document.body.dataset.uiLayout === 'professional');
+    const professional = await page.evaluate(() => {
+      const app=document.querySelector('.app');
+      const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,width:r.width,height:r.height}};
+      return {left:rect(app.querySelector(':scope>.sidebar:not(.right)')),center:rect(app.querySelector(':scope>.main')),right:rect(app.querySelector(':scope>.sidebar.right')),button:[...app.querySelectorAll('button')].find(b=>b.offsetWidth>0&&b.offsetHeight>0)?.getBoundingClientRect().height};
+    });
+    assert.ok(professional.left.x < professional.center.x && professional.center.x < professional.right.x, 'Professional mode must also retain three side-by-side docks');
+    assert.ok(professional.button >= 28, 'Professional mode controls must remain touchable');
+
     assert.ok(layout.left.left < layout.preview.left && layout.preview.left < layout.dock.left,
       'Classic Android must keep left dock, center preview dock, and right dock side-by-side like desktop');
     assert.ok(layout.left.width > 0 && layout.preview.width > 0 && layout.dock.width > 0,
@@ -49,10 +62,10 @@ const assert = require('node:assert/strict');
     assert.ok(layout.preview.width > layout.left.width && layout.preview.width > layout.dock.width,
       'Center preview dock should receive the largest share of the narrow phone viewport');
     assert.ok(layout.stage.width <= layout.preview.width, 'Canvas must fit inside the center dock');
-    const overflowX = await page.evaluate(() => getComputedStyle(document.body).overflowX);
+    const overflowX = await page.evaluate(() => getComputedStyle(document.documentElement).overflowX);
     await page.evaluate(() => window.scrollTo(500, 0));
     const horizontalScroll = await page.evaluate(() => window.scrollX);
-    assert.equal(overflowX, 'hidden', 'Classic Android must clip horizontal overflow');
+    assert.equal(overflowX, 'hidden', 'Classic Android root viewport must clip horizontal overflow');
     assert.equal(horizontalScroll, 0, 'Classic Android page must not horizontally scroll');
     assert.ok(layout.devicePixelRatio >= 2.5, 'Test must emulate Pocophone F1 high-density screen scaling');
     assert.deepEqual(errors, [], 'Classic mobile layout must not throw browser errors');
