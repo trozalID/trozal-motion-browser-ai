@@ -5663,9 +5663,7 @@ body[data-ui-layout="classic"] .ui-layout-btn[aria-pressed="true"]{background:#d
 #trozalGeminiContactSheet img{display:block;width:100%;max-width:100%;height:100px;object-fit:contain;background:#07151a;border:1px solid #315f57;border-radius:6px}
 @media(max-width:560px){#browserGeminiCloudPanel .row,#trozalBrowserVisionCloudPanel .row{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}#browserGeminiCloudPanel .row>*,#trozalBrowserVisionCloudPanel .row>*{width:100%}#trozalGeminiContactSheet{grid-template-columns:repeat(2,minmax(0,1fr))}}
 `;
- return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+browserCloudCss+'</style>
-
-</head><body'+cleanBodyAttrs+'>'+safeRoot.outerHTML+'</body></html>';
+ return '<!doctype html><html'+cleanHtmlAttrs+'><head><meta charset="utf-8"><meta name="viewport" content="width='+htmlMotionWidth+', initial-scale=1">'+headCss+'<style>'+layoutCss+browserCloudCss+'</style></head><body'+cleanBodyAttrs+'>'+safeRoot.outerHTML+'</body></html>';
 }
 function installHtmlCaptureFallbacks(doc,scene){
  // Intentionally preserve the original composition. Earlier fallback code replaced
