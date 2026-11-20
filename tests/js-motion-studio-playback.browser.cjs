@@ -174,8 +174,59 @@ const assert = require('node:assert/strict');
     await page.locator('#trozalJsTimelineStop').click();
     assert.equal(await page.locator('#trozalJsLoopCycleReadout').innerText(), 'Siklus 0',
       'Stop should reset the loop cycle counter to zero');
+
+    // Scrubbing the visible timeline while playback is running must stop playback and keep both playheads in sync.
+    await page.locator('#trozalJsMotionDuration').fill('3');
+    await page.locator('#trozalJsMotionDuration').dispatchEvent('change');
+    await play.click();
+    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === true);
+    await page.waitForTimeout(350);
+    await page.locator('#trozalJsTimelineScrub').evaluate(el => {
+      el.value = '0.5';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === false);
+    const scrubbed = await page.evaluate(() => ({
+      time: Number(document.querySelector('#trozalJsMotionTime')?.value),
+      scrub: Number(document.querySelector('#trozalJsTimelineScrub')?.value),
+      readout: document.querySelector('#trozalJsPlaybackReadout')?.textContent
+    }));
+    assert.ok(Math.abs(scrubbed.time - 0.5) < 0.001 && Math.abs(scrubbed.scrub - 0.5) < 0.001,
+      'Scrubbing must synchronize the playhead and preview time: ' + JSON.stringify(scrubbed));
+    await page.waitForTimeout(250);
+    assert.ok(Math.abs(await page.evaluate(() => window.TROZAL_JS_MOTION.getPlaybackState().time) - 0.5) < 0.001,
+      'Playback must remain paused after a manual timeline scrub');
+
+    // FPS changes must update both the preview and visible timeline frame granularity.
+    await page.locator('#trozalJsMotionFps').selectOption('24');
+    const frameSteps = await page.evaluate(() => ({
+      preview: Number(document.querySelector('#trozalJsMotionTime')?.step),
+      timeline: Number(document.querySelector('#trozalJsTimelineScrub')?.step)
+    }));
+    assert.ok(Math.abs(frameSteps.preview - 1 / 24) < 0.0001 &&
+      Math.abs(frameSteps.timeline - 1 / 24) < 0.0001,
+      'Both playheads must use the selected FPS frame interval: ' + JSON.stringify(frameSteps));
+
+    // Shortening duration clamps the current playhead before updating the visible time readout.
+    await page.locator('#trozalJsMotionDuration').fill('3');
+    await page.locator('#trozalJsMotionDuration').dispatchEvent('change');
+    await page.locator('#trozalJsTimelineScrub').evaluate(el => {
+      el.value = '2.5';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.locator('#trozalJsMotionDuration').fill('1');
+    await page.locator('#trozalJsMotionDuration').dispatchEvent('change');
+    const clamped = await page.evaluate(() => ({
+      time: Number(document.querySelector('#trozalJsMotionTime')?.value),
+      scrub: Number(document.querySelector('#trozalJsTimelineScrub')?.value),
+      clock: document.querySelector('#trozalJsPlaybackReadout')?.textContent
+    }));
+    assert.equal(clamped.time, 1, 'Playhead must clamp to the shortened duration');
+    assert.equal(clamped.scrub, 1, 'Timeline scrubber must clamp to the shortened duration');
+    assert.equal(clamped.clock, '1.00s / 1.00s',
+      'Visible playback clock must reflect the clamped playhead and new duration: ' + JSON.stringify(clamped));
     assert.deepEqual(errors, [], 'Playback must not raise uncaught browser errors');
-    console.log('JavaScript Studio playback passed: play, pause, resume, continuous timeline loop, multi-cycle wrap, and single-flight frame rendering.');
+    console.log('JavaScript Studio playback passed: play, pause, resume, continuous timeline loop, multi-cycle wrap, scrub-to-pause synchronization, FPS frame-step sync, duration clamping, and single-flight frame rendering.');
   } finally {
     await browser.close();
   }
