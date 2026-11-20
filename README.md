@@ -50,7 +50,7 @@ Use the same API key and model. Select up to three PNG/JPG/WebP screenshots, or 
 
 ### Privacy and limits
 
-- The Gemini API key is held in the active page field only. TROZAL does not write it to localStorage or sessionStorage.
+- Provider API keys can be stored per provider in this browser profile using localStorage so they persist after refresh. Switching providers does not delete other providers' keys. This is convenience storage, not a secure secret vault; JavaScript running on the app origin can access the stored values.
 - The visual brief and any submitted screenshots are sent to Google Gemini Cloud for inference. Do not submit confidential or sensitive material.
 - API quota, availability, and charges depend on the Google AI account and selected model.
 - The procedural SVG fallback is template-based and does not call an AI service.
