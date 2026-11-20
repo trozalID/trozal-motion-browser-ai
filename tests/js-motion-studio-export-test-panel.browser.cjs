@@ -18,7 +18,7 @@ const assert = require('node:assert/strict');
       ['3840x2160', '4K']
     ];
     const fpsValues = ['24', '25', '30', '50', '60'];
-    const durations = ['1', '3', '5', '10'];
+    const durations = ['1', '3', '5', '10', '60', '3600'];
     let fpsIndex = 0;
     let durationIndex = 0;
     for (const [kind, proresMode, label] of formats) {
@@ -32,7 +32,10 @@ const assert = require('node:assert/strict');
         assert.equal(await page.locator('#trozalJsExportTestPanel').count(), 1);
         assert.equal(await page.locator('#trozalJsExportResolution option').count(), 4);
         assert.equal(await page.locator('#trozalJsExportFps option').count(), 5);
-        assert.equal(await page.locator('#trozalJsExportDuration option').count(), 4);
+        assert.equal(await page.locator('#trozalJsExportDuration option').count(), 11);
+        assert.deepEqual(await page.locator('#trozalJsExportDuration option').evaluateAll(options => options.map(option => option.value)),
+          ['1','3','5','10','30','60','120','300','600','1800','3600'],
+          'Export duration choices must extend from 1 second through exactly 1 hour');
         const selectedFps = fpsValues[fpsIndex++ % fpsValues.length];
         const selectedDuration = durations[durationIndex++ % durations.length];
         await page.locator('#trozalJsExportFps').selectOption(selectedFps);
@@ -49,6 +52,8 @@ const assert = require('node:assert/strict');
         assert.equal(await page.locator('#fps').inputValue(), selectedFps, 'selected FPS for ' + label);
         assert.ok((await page.locator('#trozalJsExportTestStatus').textContent()).includes(selectedFps + ' FPS'));
         assert.equal(await page.locator('#duration').inputValue(), selectedDuration, 'selected duration for ' + label);
+        assert.equal(await page.locator('#duration').getAttribute('max'), '3600',
+          'Main export duration control must accept up to 3600 seconds');
         assert.ok((await page.locator('#trozalJsExportTestStatus').textContent()).includes(selectedDuration + ' detik'));
         assert.equal(await page.locator('#proresMode').inputValue(), proresMode);
         assert.ok((await page.locator('#trozalJsExportTestStatus').textContent()).includes(size.replace('x','×')));
@@ -56,6 +61,6 @@ const assert = require('node:assert/strict');
       }
     }
     assert.deepEqual(errors, []);
-    console.log('JavaScript Studio export panel passed: 3 formats × 4 resolutions × 5 FPS choices and 4 test durations (1, 3, 5, 10 seconds).');
+    console.log('JavaScript Studio export panel passed: 3 formats × 4 resolutions × 5 FPS choices and durations up to 3600 seconds (1 hour).');
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exit(1); });
