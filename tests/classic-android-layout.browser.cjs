@@ -5,8 +5,8 @@ const assert = require('node:assert/strict');
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({
-      viewport: { width: 390, height: 844 },
-      deviceScaleFactor: 2,
+      viewport: { width: 393, height: 817 },
+      deviceScaleFactor: 2.75,
       isMobile: true,
       hasTouch: true
     });
@@ -31,6 +31,8 @@ const assert = require('node:assert/strict');
         scrollWidth: document.documentElement.scrollWidth,
         gridTemplateColumns: getComputedStyle(app).gridTemplateColumns,
         preview: rect(preview), left: rect(left), dock: rect(dock),
+        devicePixelRatio: window.devicePixelRatio,
+        directChildren: [...app.children].map((el,index)=>({index,tag:el.tagName,className:el.className,id:el.id,display:getComputedStyle(el).display,gridColumn:getComputedStyle(el).gridColumn,rect:{x:el.getBoundingClientRect().x,width:el.getBoundingClientRect().width}})),
         stage: rect(preview.querySelector('.stage')),
         rightPanels: [...dock.querySelectorAll('.panel')].filter(panel => getComputedStyle(panel).display !== 'none').length
       };
@@ -40,10 +42,19 @@ const assert = require('node:assert/strict');
     assert.ok(layout.left.display !== 'none' && layout.left.height > 0, 'Left editor panels must remain visible');
     assert.ok(layout.dock.display !== 'none' && layout.dock.height > 0, 'Right/dock panels must remain visible');
     assert.ok(layout.rightPanels > 0, 'Classic right-side panels must not disappear on mobile');
-    assert.ok(layout.preview.top < layout.left.top && layout.left.top < layout.dock.top,
-      'Mobile Classic should stack preview, left editor, then right dock in a predictable order');
-    assert.ok(layout.stage.width <= layout.viewport, 'Canvas must fit the phone viewport');
-    assert.ok(layout.scrollWidth <= layout.viewport + 1, 'Classic layout must not create horizontal page overflow');
+    assert.ok(layout.left.left < layout.preview.left && layout.preview.left < layout.dock.left,
+      'Classic Android must keep left dock, center preview dock, and right dock side-by-side like desktop');
+    assert.ok(layout.left.width > 0 && layout.preview.width > 0 && layout.dock.width > 0,
+      'All three docks must have usable visible widths');
+    assert.ok(layout.preview.width > layout.left.width && layout.preview.width > layout.dock.width,
+      'Center preview dock should receive the largest share of the narrow phone viewport');
+    assert.ok(layout.stage.width <= layout.preview.width, 'Canvas must fit inside the center dock');
+    const overflowX = await page.evaluate(() => getComputedStyle(document.body).overflowX);
+    await page.evaluate(() => window.scrollTo(500, 0));
+    const horizontalScroll = await page.evaluate(() => window.scrollX);
+    assert.equal(overflowX, 'hidden', 'Classic Android must clip horizontal overflow');
+    assert.equal(horizontalScroll, 0, 'Classic Android page must not horizontally scroll');
+    assert.ok(layout.devicePixelRatio >= 2.5, 'Test must emulate Pocophone F1 high-density screen scaling');
     assert.deepEqual(errors, [], 'Classic mobile layout must not throw browser errors');
     console.log('Classic Android/mobile layout passed:', JSON.stringify(layout));
   } finally {
