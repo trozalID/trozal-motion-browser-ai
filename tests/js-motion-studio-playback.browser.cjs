@@ -143,8 +143,38 @@ const assert = require('node:assert/strict');
     assert.ok(resumed.pendingMessages <= 1);
     await pause.click();
     await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === false);
+
+    // Loop is a first-class timeline control: playback must wrap to zero and keep running.
+    await page.locator('#trozalJsMotionDuration').fill('1');
+    await page.locator('#trozalJsMotionDuration').dispatchEvent('change');
+    assert.equal(await page.locator('#trozalJsTimelinePreview #trozalJsPlaybackLoop').count(), 1,
+      'Loop toggle must be visible directly inside Timeline & Preview');
+    assert.equal(await page.locator('#trozalJsMotionControls #trozalJsPlaybackLoop').count(), 0,
+      'Loop toggle must no longer be hidden among secondary playback controls');
+    await page.locator('#trozalJsPlaybackLoop').check();
+    await play.click();
+    await page.waitForFunction(() => document.querySelector('#trozalJsLoopCycleReadout')?.textContent === 'Siklus 1', null, { timeout: 5000 });
+    const firstLoop = await page.evaluate(() => ({
+      state: window.TROZAL_JS_MOTION?.getPlaybackState(),
+      time: Number(document.querySelector('#trozalJsMotionTime')?.value),
+      scrub: Number(document.querySelector('#trozalJsTimelineScrub')?.value),
+      clock: document.querySelector('#trozalJsPlaybackReadout')?.textContent,
+      fill: Number.parseFloat(document.querySelector('#trozalJsPlaybackFill')?.style.width || '0')
+    }));
+    assert.equal(firstLoop.state?.playing, true, 'Playback must remain active after the first loop boundary');
+    assert.ok(firstLoop.time >= 0 && firstLoop.time < 1, 'Playhead must return to the start of the timeline after one cycle: ' + JSON.stringify(firstLoop));
+    assert.ok(firstLoop.scrub < 1 && firstLoop.fill < 100, 'Visible timeline progress must wrap with the playback clock');
+    assert.match(firstLoop.clock || '', /[0-9]+\\.[0-9]{2}s \/ 1\\.00s/);
+    await page.waitForFunction(() => document.querySelector('#trozalJsLoopCycleReadout')?.textContent === 'Siklus 2', null, { timeout: 5000 });
+    assert.equal(await page.evaluate(() => window.TROZAL_JS_MOTION.getPlaybackState().playing), true,
+      'Timeline must keep playing through multiple loop cycles');
+    await pause.click();
+    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === false);
+    await page.locator('#trozalJsTimelineStop').click();
+    assert.equal(await page.locator('#trozalJsLoopCycleReadout').innerText(), 'Siklus 0',
+      'Stop should reset the loop cycle counter to zero');
     assert.deepEqual(errors, [], 'Playback must not raise uncaught browser errors');
-    console.log('JavaScript Studio playback passed: play, duplicate-click guard, pause, resume, and single-flight frame rendering.');
+    console.log('JavaScript Studio playback passed: play, pause, resume, continuous timeline loop, multi-cycle wrap, and single-flight frame rendering.');
   } finally {
     await browser.close();
   }
