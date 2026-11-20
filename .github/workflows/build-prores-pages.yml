@@ -9,6 +9,7 @@ on:
       - 'index.html'
       - 'js-motion-engine.js'
       - 'browser-ai-gemini-cloud.js'
+      - 'browser-ai-key-storage.js'
       - 'browser-ai-webgpu-local.js'
       - 'hybrid-canvas-renderer.js'
       - 'browser-gpu-health.js'
@@ -75,6 +76,7 @@ jobs:
           cp browser-ai.js site/browser-ai.js
           cp render-sync-advisor.js site/render-sync-advisor.js
           cp browser-ai-gemini-cloud.js site/browser-ai-gemini-cloud.js
+          cp browser-ai-key-storage.js site/browser-ai-key-storage.js
           cp browser-ai-webgpu-local.js site/browser-ai-webgpu-local.js
           cp hybrid-canvas-renderer.js site/hybrid-canvas-renderer.js
           cp browser-gpu-health.js site/browser-gpu-health.js
@@ -220,6 +222,7 @@ jobs:
           test -s site/metadata-quality-delivery.js
           test -s site/render-sync-advisor.js
           test -s site/browser-ai-gemini-cloud.js
+          test -s site/browser-ai-key-storage.js
           test -s site/browser-ai-webgpu-local.js
           test -s site/vendor/ffmpeg/worker.js
           test -s site/vendor/prores-core/ffmpeg-core.js
