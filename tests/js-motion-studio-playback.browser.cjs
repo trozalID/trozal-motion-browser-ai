@@ -47,6 +47,24 @@ const assert = require('node:assert/strict');
     assert.equal(await page.evaluate(() => window.TROZAL_JS_MOTION.getLastFrame()), frameBeforeManualGenerate,
       'Generating a manual prompt must not automatically apply code to Preview');
 
+    // The visible Studio timeline must sit directly beneath the Canvas preview and remain reachable in its own scroll area.
+    const timelineLayout = await page.evaluate(() => {
+      const preview = document.querySelector('#trozalJsMotionPreviewCol');
+      const canvas = document.querySelector('#trozalJsMotionCanvasFrame');
+      const timeline = document.querySelector('#trozalJsTimelinePreview');
+      const controls = [...document.querySelectorAll('#trozalJsMotionControls')].at(-1);
+      return {
+        overflowY: getComputedStyle(preview).overflowY,
+        canvasBeforeTimeline: !!(canvas.compareDocumentPosition(timeline) & Node.DOCUMENT_POSITION_FOLLOWING),
+        timelineBeforePlaybackControls: !!(timeline.compareDocumentPosition(controls) & Node.DOCUMENT_POSITION_FOLLOWING),
+        timelineHeight: timeline.getBoundingClientRect().height
+      };
+    });
+    assert.equal(timelineLayout.overflowY, 'auto', 'Preview column must scroll so the timeline is not clipped');
+    assert.equal(timelineLayout.canvasBeforeTimeline, true, 'Professional-style timeline must be directly after the Canvas preview');
+    assert.equal(timelineLayout.timelineBeforePlaybackControls, true, 'Timeline must appear before secondary playback controls');
+    assert.ok(timelineLayout.timelineHeight > 60, 'Timeline must have a visible rendered height');
+
     // The visible Studio timeline mirrors Professional Mode and offers frame stepping.
     assert.equal(await page.locator('#trozalJsTimelinePreview').count(), 1);
     assert.match(await page.locator('#trozalJsTimelinePreview').innerText(), /Timeline & Preview/);

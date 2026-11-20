@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('browser-ai-gemini-cloud.js', 'utf8');
-const start = source.indexOf(' async function requestJson(url,options,timeoutMs){');
+const start = source.indexOf(' async function requestJson(url,options,timeoutMs,onStatus){');
 const end = source.indexOf('\n function requireKey(){', start);
 assert.ok(start >= 0 && end > start, 'requestJson implementation must exist');
 const fnText = source.slice(start, end).trim().replace(/^async function requestJson/, 'async function');
@@ -20,9 +20,12 @@ const response = (status, payload = {}, headers = {}) => ({
 });
 (async () => {
   let calls = 0;
+  const retryStatuses = [];
   const retrySuccess = buildRequestJson(async () => ++calls === 1 ? response(503, { error: { message: 'temporary' } }) : response(200, { ok: true }));
-  assert.deepEqual(await retrySuccess('/test', {}, 10000), { ok: true });
+  assert.deepEqual(await retrySuccess('/v1beta/models/gemini-3.5-flash-lite:generateContent', {}, 10000, message => retryStatuses.push(message)), { ok: true });
   assert.equal(calls, 2, 'transient server error must retry and then succeed');
+  assert.ok(retryStatuses.some(message => /gemini-3.5-flash-lite.*percobaan 1/i.test(message)), 'retry status should identify the actual selected model');
+  assert.ok(retryStatuses.some(message => String(message).toLowerCase().includes('mencoba ulang 2/3')), 'retry status should tell the user when a retry begins');
 
   calls = 0;
   const quota = buildRequestJson(async () => { calls++; return response(429, { error: { message: 'quota' } }); });
