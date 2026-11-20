@@ -164,7 +164,8 @@ const assert = require('node:assert/strict');
     assert.equal(firstLoop.state?.playing, true, 'Playback must remain active after the first loop boundary');
     assert.ok(firstLoop.time >= 0 && firstLoop.time < 1, 'Playhead must return to the start of the timeline after one cycle: ' + JSON.stringify(firstLoop));
     assert.ok(firstLoop.scrub < 1 && firstLoop.fill < 100, 'Visible timeline progress must wrap with the playback clock');
-    assert.match(firstLoop.clock || '', /[0-9]+\\.[0-9]{2}s \/ 1\\.00s/);
+    assert.ok(String(firstLoop.clock || '').startsWith('0.'), 'Timeline time display must visibly return close to 0 seconds: ' + JSON.stringify(firstLoop));
+    assert.ok(String(firstLoop.clock || '').includes('/ 1.00s'), 'Loop clock must retain the selected duration');
     await page.waitForFunction(() => document.querySelector('#trozalJsLoopCycleReadout')?.textContent === 'Siklus 2', null, { timeout: 5000 });
     assert.equal(await page.evaluate(() => window.TROZAL_JS_MOTION.getPlaybackState().playing), true,
       'Timeline must keep playing through multiple loop cycles');
