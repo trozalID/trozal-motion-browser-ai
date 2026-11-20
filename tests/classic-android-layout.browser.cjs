@@ -62,10 +62,10 @@ const assert = require('node:assert/strict');
     assert.ok(layout.preview.width > layout.left.width && layout.preview.width > layout.dock.width,
       'Center preview dock should receive the largest share of the narrow phone viewport');
     assert.ok(layout.stage.width <= layout.preview.width, 'Canvas must fit inside the center dock');
-    const overflowX = await page.evaluate(() => getComputedStyle(document.body).overflowX);
+    const overflowX = await page.evaluate(() => getComputedStyle(document.documentElement).overflowX);
     await page.evaluate(() => window.scrollTo(500, 0));
     const horizontalScroll = await page.evaluate(() => window.scrollX);
-    assert.equal(overflowX, 'hidden', 'Classic Android must clip horizontal overflow');
+    assert.equal(overflowX, 'hidden', 'Classic Android root viewport must clip horizontal overflow');
     assert.equal(horizontalScroll, 0, 'Classic Android page must not horizontally scroll');
     assert.ok(layout.devicePixelRatio >= 2.5, 'Test must emulate Pocophone F1 high-density screen scaling');
     assert.deepEqual(errors, [], 'Classic mobile layout must not throw browser errors');
