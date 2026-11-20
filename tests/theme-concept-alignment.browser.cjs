@@ -137,6 +137,32 @@ const { chromium } = require('playwright');
     assert.match(additivePrompt, /USER DETAIL INTEGRATION RULE/);
     assert.match(additivePrompt, /Additional art direction is additive/);
 
+    // Transparent icons must inherit the selected main theme without replacing it.
+    await page.locator('#svgAiTheme').selectOption({ label: 'Space & Astronomy' });
+    await page.locator('#svgAiTransparentIconStyle').selectOption('Glassmorphism translucent');
+    await page.locator('#svgAiTransparentIconOpacity').evaluate(el => { el.value = '28'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+    await page.locator('#svgAiTransparentIconPlacement').selectOption({ label: 'Aksen latar di belakang subjek utama' });
+    const spaceIconHint = await page.locator('#svgAiTransparentIconHint').innerText();
+    const spaceAutoSpec = await page.locator('#svgAiAutoSpec').innerText();
+    assert.match(spaceIconHint, /Space & Astronomy/);
+    assert.match(spaceIconHint, /Space & Astronomy/);
+    assert.match(spaceIconHint, /28%/);
+    assert.match(spaceAutoSpec, /SPESIFIKASI ICON TRANSPARAN/);
+    await page.locator('#generateSvgAiPromptBtn').click();
+    const spaceIconPrompt = await page.locator('#svgAiPrompt').inputValue();
+    assert.match(spaceIconPrompt, /Main theme: Space & Astronomy/);
+    assert.match(spaceIconPrompt, /THEME-LINKED TRANSPARENT ICON SYSTEM/);
+    assert.match(spaceIconPrompt, /Glassmorphism translucent/);
+    assert.match(spaceIconPrompt, /theme-linked subject: Space & Astronomy/);
+    assert.match(spaceIconPrompt, /opacity 28%/);
+    await page.locator('#svgAiTheme').selectOption({ label: 'Cybersecurity' });
+    const cyberIconHint = await page.locator('#svgAiTransparentIconHint').innerText();
+    assert.match(cyberIconHint, /Cybersecurity/);
+    assert.equal(await page.locator('#svgAiTransparentIconStyle').inputValue(), 'Glassmorphism translucent',
+      'Changing the main theme must preserve the selected transparent icon treatment');
+    assert.equal(await page.locator('#svgAiTheme').inputValue(), 'Cybersecurity',
+      'Transparent icon settings must never replace the main theme');
+
     assert.deepEqual(errors, [], 'Theme selection and prompt generation must not throw browser errors');
     console.log(JSON.stringify({
       result: 'PASS',
