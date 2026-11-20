@@ -974,6 +974,14 @@ body[data-ui-viewport="desktop"] .app>.sidebar.right{grid-area:right!important;d
    <label>Tema utama</label><select id="svgAiTheme"><option>Brand Identity & Logo</option></select>
    <label>Kategori visual (otomatis mengikuti tema)</label><select id="svgAiCategory"><option>Minimal Swiss Design</option><option>Modern Editorial</option><option>Clean Corporate</option><option>Premium Luxury</option><option>Futuristic Sci-Fi</option><option>Cyberpunk Neon</option><option>Glassmorphism</option><option>Liquid / Fluid Design</option><option>3D Layered Composition</option><option>Isometric Illustration</option><option>Flat Vector Illustration</option><option>2D Cartoon</option><option>Claymorphism</option><option>Soft Gradient</option><option>Bold Brutalist</option><option>Retro / Vintage</option><option>Y2K Digital</option><option>Memphis Geometry</option><option>Bauhaus Geometric</option><option>Monochrome</option><option>Duotone</option><option>Pastel Soft</option><option>High Contrast</option><option>Photorealistic Product</option><option>Cinematic Lighting</option><option>Paper Cutout</option><option>Hand-drawn Sketch</option><option>Line Art / Monoline</option><option>Typography-led</option><option>Data Visualization</option><option>UI Prototype</option><option>Organic Nature</option><option>Surreal Abstract</option><option>Pixel Art</option><option>Minimal Iconography</option><option>Mixed Media</option><option>Dark Interface</option><option>Bright Playful</option><option>Editorial Infographic</option></select>
    <label>Kategori spesifik / subtema (relevan dengan tema)</label><select id="svgAiSpecific"><option>Logo reveal with custom emblem</option><option>Logo build from geometric pieces</option><option>Wordmark kinetic reveal</option><option>Brand guideline opener</option><option>Product hero on floating podium</option><option>Product 360 showcase</option><option>Cosmetic bottle luxury reveal</option><option>Food hero with ingredient orbit</option><option>Sneaker / fashion product launch</option><option>Smartphone device showcase</option><option>App onboarding sequence</option><option>Website landing page hero</option><option>SaaS feature explainer</option><option>Animated dashboard KPI</option><option>Data chart growth story</option><option>Financial market overview</option><option>AI neural network visualization</option><option>Robotics and automation</option><option>Cloud computing ecosystem</option><option>Cybersecurity shield sequence</option><option>Medical awareness explainer</option><option>Anatomy / science visualization</option><option>Learning process step-by-step</option><option>Timeline and roadmap</option><option>Before-after transformation</option><option>Process flow diagram</option><option>Comparison infographic</option><option>Statistics counter sequence</option><option>World map data routes</option><option>Travel destination opener</option><option>City / architecture flythrough</option><option>Nature landscape layers</option><option>Ocean and underwater scene</option><option>Wildlife conservation story</option><option>Renewable energy system</option><option>Solar / wind energy explainer</option><option>Sports event opener</option><option>Fitness training sequence</option><option>Esports tournament package</option><option>Music visualizer interface</option><option>Character mascot introduction</option><option>Animated storytelling scene</option><option>Event countdown</option><option>New year celebration</option><option>Ramadan lantern and crescent</option><option>Eid greeting composition</option><option>Wedding invitation motion</option><option>Sale campaign and discount</option><option>App interface micro-interaction</option><option>Notification and UX flow</option><option>Loading / progress animation</option><option>Abstract liquid transition</option><option>Particle field and energy</option><option>Typography quote animation</option><option>News headline package</option><option>Real estate property showcase</option><option>Automotive feature presentation</option><option>Custom specific concept</option></select>
+   <section id="svgAiTransparentIconPanel" style="margin:8px 0 10px;padding:10px;border:1px solid #56718f;border-radius:9px;background:linear-gradient(145deg,#142337,#18202c)">
+    <h4 style="margin:0 0 5px;color:#c8e2ff;font-size:11px;letter-spacing:.04em">✧ ICON TRANSPARAN · TERHUBUNG KE TEMA UTAMA</h4>
+    <p class="help" style="margin:0 0 7px;color:#b7cbe2;font-size:10px">Gaya ikon mengikuti tema, kategori visual, palet, dan material tema utama. Tidak mengganti tema utama.</p>
+    <label for="svgAiTransparentIconStyle">Gaya ikon</label>
+    <select id="svgAiTransparentIconStyle"><option value="Nonaktif">Nonaktif</option><option value="Outline transparan">Outline transparan</option><option value="Glassmorphism translucent">Glassmorphism translucent</option><option value="Duotone transparan">Duotone transparan</option><option value="Frosted glass icon">Frosted glass icon</option><option value="Soft 3D translucent">Soft 3D translucent</option><option value="Line icon dengan glow lembut">Line icon dengan glow lembut</option><option value="Filled icon dengan opacity rendah">Filled icon dengan opacity rendah</option></select>
+    <div class="row" style="gap:8px;margin-top:5px"><div style="flex:1"><label for="svgAiTransparentIconOpacity">Transparansi ikon <span id="svgAiTransparentIconOpacityValue" class="value">32%</span></label><input id="svgAiTransparentIconOpacity" type="range" min="8" max="65" step="1" value="32"></div><div style="flex:1"><label for="svgAiTransparentIconPlacement">Penempatan</label><select id="svgAiTransparentIconPlacement"><option value="Sebagai aksen latar di belakang hero subject">Aksen latar di belakang subjek utama</option><option value="Sebagai ikon pendamping di sisi komposisi">Ikon pendamping di sisi komposisi</option><option value="Sebagai watermark dekoratif tanpa teks">Watermark dekoratif tanpa teks</option><option value="Sebagai pola ikon berulang yang sangat halus">Pola ikon berulang yang halus</option></select></div></div>
+    <div id="svgAiTransparentIconHint" role="status" style="margin-top:7px;color:#c8d9eb;font-size:10px;line-height:1.5">Nonaktif. Pilih gaya untuk menambahkan ikon transparan yang selaras dengan tema.</div>
+   </section>
    <div id="svgAiThemeBrief" role="status" aria-live="polite" style="margin:7px 0 10px;padding:9px 10px;border:1px solid #355b47;border-radius:8px;background:#0a2219;color:#d8eee0;font-size:10px;line-height:1.55;white-space:pre-line">Pilih tema untuk melihat tujuan konsep, subjek utama, dan arahan visual.</div>
    <label>Detail tambahan (opsional)</label><input type="text" id="svgAiDetails" placeholder="Contoh: ikon lebah, warna emas, latar putih">
    <section class="theme-auto-spec" id="svgAiAutoSpecPanel" aria-live="polite">
@@ -5141,11 +5149,17 @@ window.trozalUpdateThemeBrief = function() {
  const category=document.getElementById('svgAiCategory')?.value||'';
  const specific=document.getElementById('svgAiSpecific')?.value||'';
  const details=document.getElementById('svgAiDetails')?.value.trim()||'';
+ const iconStyle=document.getElementById('svgAiTransparentIconStyle')?.value||'Nonaktif';
+ const iconOpacity=Number(document.getElementById('svgAiTransparentIconOpacity')?.value||32);
+ const iconPlacement=document.getElementById('svgAiTransparentIconPlacement')?.value||'Sebagai aksen latar di belakang hero subject';
+ const iconSpec=iconStyle==='Nonaktif'?'ICON TRANSPARAN: nonaktif.':('ICON TRANSPARAN TERHUBUNG KE TEMA: '+iconStyle+'. Gunakan ikon orisinal yang merepresentasikan tema utama "'+theme+'" dan subtema "'+specific+'"; turunkan bentuk, detail, palet, material, pencahayaan, serta bahasa visual dari kategori "'+category+'". Opacity '+iconOpacity+'%. Penempatan: '+iconPlacement+'. Ikon harus menjadi elemen pendukung, tidak menutupi subjek utama, tidak mengubah tema utama, tanpa logo/merek, dan tetap terbaca di atas latar.');
  const brief=window.trozalBuildThemeCreativeBrief(theme,category,specific);
+ const iconHint=document.getElementById('svgAiTransparentIconHint');
+ if(iconHint)iconHint.textContent=iconSpec;
  const host=document.getElementById('svgAiThemeBrief');
  if(host)host.textContent=brief.summary;
  const specHost=document.getElementById('svgAiAutoSpec');
- if(specHost)specHost.textContent=brief.summary+'\n\nSPESIFIKASI LENGKAP TEMA + KATEGORI:\n'+brief.prompt+'\n\nDETAIL TAMBAHAN PENGGUNA:\n'+(details||'Belum ada detail tambahan. Jangan menghilangkan atau mengganti spesifikasi otomatis; gunakan arahan kreatif sesuai tema dan kategori.')+'\n\nATURAN PENGGABUNGAN:\nDetail tambahan adalah batasan atau penekanan tambahan. Pertahankan tujuan tema, subjek utama, aset relevan, palet, komposisi, alur gerak, dan batasan domain di atas.';
+ if(specHost)specHost.textContent=brief.summary+'\n\nSPESIFIKASI ICON TRANSPARAN:\n'+iconSpec+'\n\nSPESIFIKASI LENGKAP TEMA + KATEGORI:\n'+brief.prompt+'\n\nDETAIL TAMBAHAN PENGGUNA:\n'+(details||'Belum ada detail tambahan. Jangan menghilangkan atau mengganti spesifikasi otomatis; gunakan arahan kreatif sesuai tema dan kategori.')+'\n\nATURAN PENGGABUNGAN:\nDetail tambahan adalah batasan atau penekanan tambahan. Pertahankan tujuan tema, subjek utama, aset relevan, palet, komposisi, alur gerak, dan batasan domain di atas.';
  return brief;
 };
 function trozalThemeProfile(theme){
@@ -5369,6 +5383,10 @@ $('svgAiDetails')?.addEventListener('input',()=>window.trozalUpdateThemeBrief())
   const category=val('svgAiCategory','Minimal Swiss Design');
   const specific=val('svgAiSpecific','Hero reveal');
   const details=val('svgAiDetails','');
+  const iconStyle=val('svgAiTransparentIconStyle','Nonaktif');
+  const iconOpacity=val('svgAiTransparentIconOpacity','32');
+  const iconPlacement=val('svgAiTransparentIconPlacement','Sebagai aksen latar di belakang hero subject');
+  const iconPrompt=iconStyle==='Nonaktif'?'Transparent icon treatment: disabled.':'Transparent icon treatment: '+iconStyle+'; theme-linked subject: '+theme+' / '+specific+'; inherit visual grammar from '+category+'; opacity '+iconOpacity+'%; placement: '+iconPlacement+'. Use original theme-specific iconography only as a supporting layer, never replace or obscure the main subject, and do not introduce unrelated symbols, logos, or trademarks.';
   const filename=(val('svgAiFilename')||[theme,specific].join('_')).replace(/[^a-z0-9_-]+/gi,'_').replace(/^_+|_+$/g,'')||'trozal-motion';
   const count=Math.max(1,Math.min(10,Number(val('svgAiConceptCount','3'))||3));
   const duration=val('svgAiDuration','8 detik');
@@ -5394,6 +5412,8 @@ $('svgAiDetails')?.addEventListener('input',()=>window.trozalUpdateThemeBrief())
 'Main theme: '+theme,
 'Visual category: '+category,
 'Specific concept / subtheme: '+specific,
+'THEME-LINKED TRANSPARENT ICON SYSTEM',
+iconPrompt,
 'Additional art direction: '+(details||'Use professional creative judgment and make the visual metaphor specific, original, and coherent.'),
 'THEME-SPECIFIC CREATIVE BLUEPRINT',
 themeBrief.prompt,
@@ -5470,9 +5490,12 @@ themeBrief.prompt,
   try{await navigator.clipboard.writeText(text);if($('svgAiPromptStatus'))$('svgAiPromptStatus').textContent='Prompt disalin. Buka AI tujuan lalu tekan Ctrl+V.';}
   catch(_){$('svgAiPrompt')?.focus();$('svgAiPrompt')?.select();if($('svgAiPromptStatus'))$('svgAiPromptStatus').textContent='Clipboard diblokir browser. Prompt dipilih; tekan Ctrl+C.';}
  });
- ['svgAiTheme','svgAiCategory','svgAiSpecific','svgAiDetails','svgAiFilename','svgAiConceptCount','svgAiDuration','svgAiRatio','svgAiResolution','svgAiMotionPreset','svgAiMotionTempo','svgAiMotionIntensity','svgAiPalette','svgAiCamera','svgAiTransition','svgAiTypography'].forEach(id=>{
+ ['svgAiTheme','svgAiCategory','svgAiSpecific','svgAiDetails','svgAiTransparentIconStyle','svgAiTransparentIconOpacity','svgAiTransparentIconPlacement','svgAiFilename','svgAiConceptCount','svgAiDuration','svgAiRatio','svgAiResolution','svgAiMotionPreset','svgAiMotionTempo','svgAiMotionIntensity','svgAiPalette','svgAiCamera','svgAiTransition','svgAiTypography'].forEach(id=>{
   $(id)?.addEventListener('change',()=>{if(val('svgAiPrompt'))generateSvgAiPrompt();});
  });
+ const iconOpacityControl=$('svgAiTransparentIconOpacity');
+ iconOpacityControl?.addEventListener('input',()=>{const output=$('svgAiTransparentIconOpacityValue');if(output)output.textContent=iconOpacityControl.value+'%';if($('svgAiPrompt')?.value.trim())generateSvgAiPrompt();window.trozalUpdateThemeBrief?.();});
+ ['svgAiTransparentIconStyle','svgAiTransparentIconPlacement'].forEach(id=>$(id)?.addEventListener('change',()=>window.trozalUpdateThemeBrief?.()));
  console.info('[TROZAL PROMPT] Prompt generator siap; tombol Generate Prompt terhubung.');
 })();
 
