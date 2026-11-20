@@ -10,9 +10,10 @@
  function providerId(){return String($('trozalAiProvider')?.value||'gemini');}
  function providerKey(){const ids={gemini:'trozalGeminiApiKey',openai:'trozalOpenAiKey',anthropic:'trozalAnthropicKey',groq:'trozalGroqKey',mistral:'trozalMistralKey'};return providerId()==='webgpu'?'':String($(ids[providerId()]||ids.gemini)?.value||'').trim();}
  function apiKey(){return providerKey();}
- function modelId(){return String($('trozalAiProviderModel')?.value||$('trozalBrowserAiModel')?.value||'gemini-3.8-flash');}
+ function modelId(){if(providerId()==='gemini')return String($('trozalBrowserAiModel')?.value||$('trozalAiProviderModel')?.value||'gemini-3.8-flash');return String($('trozalAiProviderModel')?.value||$('trozalBrowserAiModel')?.value||'gemini-3.8-flash');}
+ function syncGeminiModelSelectors(value){if(providerId()!=='gemini')return;const cloud=$('trozalBrowserAiModel'),manager=$('trozalAiProviderModel'),chosen=String(value||cloud?.value||manager?.value||'gemini-3.8-flash');const has=(node,model)=>node&&Array.from(node.options||[]).some(option=>option.value===model);if(cloud&&has(cloud,chosen))cloud.value=chosen;if(manager&&has(manager,chosen))manager.value=chosen;}
  function providerName(){return ({gemini:'Gemini',openai:'OpenAI',anthropic:'Claude',groq:'Groq',mistral:'Mistral',webgpu:'Local WebGPU'})[providerId()]||'Gemini';}
- function syncProviderUi(){const p=providerId(),s=$('trozalAiProviderModel');const m={webgpu:[['Llama-3.2-1B-Instruct-q4f16_1-MLC','Llama 3.2 1B · Q4 · Local']],gemini:[['gemini-3.8-flash','Gemini 3.8 Flash'],['gemini-4-hydrogen','Gemini 4 Hydrogen'],['gemini-3.1-pro-preview','Gemini 3.1 Pro · preview'],['gemini-3.5-flash-lite','Gemini 3.5 Flash-Lite']],openai:[['gpt-4.1','GPT-4.1']],anthropic:[['claude-sonnet-4-5','Claude Sonnet 4.5'],['claude-opus-4-1','Claude Opus 4.1']],groq:[['qwen/qwen3.8-27b','Qwen 3.8 27B Vision']],mistral:[['mistral-large-2512','Mistral Large 3'],['mistral-medium-2508','Mistral Medium 3.1'],['mistral-small-2506','Mistral Small 3.2']]};if(s)s.innerHTML=(m[p]||m.gemini).map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('');const keyFields=$('trozalProviderKeyFields');if(keyFields)keyFields.style.display=p==='webgpu'?'none':'grid';status('trozalProviderStatus',p==='webgpu'?'Local WebGPU dipilih · tanpa API key. Muat model lokal terlebih dahulu.':providerName()+' dipilih · masukkan API key lalu periksa koneksi.');}
+ function syncProviderUi(){const p=providerId(),s=$('trozalAiProviderModel'),cloud=$('trozalBrowserAiModel'),previous=p==='gemini'?String(cloud?.value||s?.value||'gemini-3.8-flash'):String(s?.value||'');const m={webgpu:[['Llama-3.2-1B-Instruct-q4f16_1-MLC','Llama 3.2 1B · Q4 · Local']],gemini:[['gemini-3.8-flash','Gemini 3.8 Flash'],['gemini-4-hydrogen','Gemini 4 Hydrogen'],['gemini-3.1-pro-preview','Gemini 3.1 Pro · preview'],['gemini-3.5-flash-lite','Gemini 3.5 Flash-Lite']],openai:[['gpt-4.1','GPT-4.1']],anthropic:[['claude-sonnet-4-5','Claude Sonnet 4.5'],['claude-opus-4-1','Claude Opus 4.1']],groq:[['qwen/qwen3.8-27b','Qwen 3.8 27B Vision']],mistral:[['mistral-large-2512','Mistral Large 3'],['mistral-medium-2508','Mistral Medium 3.1'],['mistral-small-2506','Mistral Small 3.2']]};if(s){s.innerHTML=(m[p]||m.gemini).map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('');if(Array.from(s.options).some(option=>option.value===previous))s.value=previous;}if(p==='gemini')syncGeminiModelSelectors(s?.value||previous);const keyFields=$('trozalProviderKeyFields');if(keyFields)keyFields.style.display=p==='webgpu'?'none':'grid';status('trozalProviderStatus',p==='webgpu'?'Local WebGPU dipilih · tanpa API key. Muat model lokal terlebih dahulu.':providerName()+' dipilih · masukkan API key lalu periksa koneksi.');}
  function status(id,message,isError){
   const node=$(id);
   if(!node)return;
@@ -25,12 +26,16 @@
   if(response.status===401||response.status===403)return 'API key ditolak atau tidak memiliki izin: '+detail;
   if(response.status===404)return 'Model atau endpoint Gemini tidak tersedia: '+detail;
   if(response.status===429)return 'Kuota / batas permintaan Gemini tercapai. Periksa limit akun Google AI: '+detail;
+  if(response.status===503)return 'Server Gemini sedang sibuk (HTTP 503). Permintaan akan dicoba ulang secara otomatis: '+detail;
   return 'Gemini Cloud HTTP '+response.status+': '+detail;
  }
- async function requestJson(url,options,timeoutMs){
+ async function requestJson(url,options,timeoutMs,onStatus){
   options=options||{};
   const externalSignal=options.signal||null;
-  const totalBudgetMs=Math.max(1000,Math.min(Number(timeoutMs)||90000,120000));
+  const totalBudgetMs=Math.max(1000,Math.min(Number(timeoutMs)||90000,90000));
+  const modelMatch=String(url||'').match(/\\/models\\/([^/:]+):generateContent/i);
+  const requestModel=modelMatch?decodeURIComponent(modelMatch[1]):'Gemini Cloud';
+  const reportStatus=message=>{if(typeof onStatus==='function'){try{onStatus(String(message));}catch(_){}}};
   const totalController=new AbortController();
   let totalTimedOut=false;
   const abortFromCaller=()=>totalController.abort(externalSignal?.reason);
@@ -56,11 +61,12 @@
     let attemptTimedOut=false;
     const abortAttempt=()=>attemptController.abort(totalSignal.reason);
     totalSignal.addEventListener('abort',abortAttempt,{once:true});
-    const attemptTimeout=Math.min(30000,remaining);
+    const attemptTimeout=Math.min(25000,remaining);
     const attemptTimer=setTimeout(()=>{attemptTimedOut=true;attemptController.abort(new Error('Gemini attempt timeout'));},attemptTimeout);
     const requestOptions=Object.assign({},options,{signal:attemptController.signal});
     let retryAfterMs=0;
     try{
+     reportStatus('Menghubungi '+requestModel+' · percobaan '+(attempt+1)+'/3…');
      const response=await fetch(url,requestOptions);
      const payload=await response.json().catch(()=>({}));
      if(!response.ok){
@@ -93,19 +99,22 @@
     }
     if(totalSignal.aborted)throw new Error('Permintaan dibatalkan.');
     if(attempt<2){
-     const backoff=2200*Math.pow(2,attempt);
-     const jitter=Math.floor(Math.random()*Math.min(900,backoff*.15));
+     const backoff=1600*Math.pow(2,attempt);
+     const jitter=Math.floor(Math.random()*Math.min(700,backoff*.15));
      const remainingAfterAttempt=totalBudgetMs-(Date.now()-startedAt);
      if(remainingAfterAttempt<=0){totalTimedOut=true;throw new Error('Gemini total request timeout');}
-     await waitForRetry(Math.min(remainingAfterAttempt,30000,Math.max(backoff+jitter,retryAfterMs)));
+     const retryDelay=Math.min(remainingAfterAttempt,30000,Math.max(backoff+jitter,retryAfterMs));
+     reportStatus('Gemini '+(lastError?.status?'HTTP '+lastError.status:'tidak merespons')+' · mencoba ulang '+(attempt+2)+'/3 dalam '+Math.max(1,Math.ceil(retryDelay/1000))+' dtk…');
+     await waitForRetry(retryDelay);
     }
    }
-   if(lastError?.status>=500)throw new Error('Gemini sedang mengalami gangguan server setelah 3 percobaan. Prompt dan editor tetap tersedia; coba lagi beberapa saat. Detail: '+lastError.message);
+   if(lastError?.status===503)throw new Error('Server Gemini masih sibuk (HTTP 503) setelah 3 percobaan. Ini gangguan sementara di sisi layanan Google, bukan kesalahan kode Canvas atau API key. Coba lagi beberapa saat atau pilih Gemini 3.5 Flash-Lite. Prompt dan kode editor tetap aman. Detail: '+lastError.message);
+   if(lastError?.status>=500)throw new Error('Gemini mengalami gangguan server (HTTP '+lastError.status+') setelah 3 percobaan. Prompt dan editor tetap tersedia; coba lagi beberapa saat. Detail: '+lastError.message);
    if(lastError&&/melewati batas/.test(lastError.message))throw new Error('Gemini tidak merespons dalam batas waktu tiap percobaan. Proses dihentikan setelah 3 percobaan atau batas waktu total. Brief dan pekerjaan editor tetap aman.');
    throw new Error('Koneksi Gemini gagal setelah 3 percobaan. Periksa internet lalu coba lagi. Pekerjaan editor tidak dihapus.');
   }catch(error){
    if(externalSignal?.aborted)throw new Error('Permintaan dibatalkan oleh pengguna. Brief dan pekerjaan editor tetap aman.');
-   if(totalTimedOut||totalSignal.aborted)throw new Error('Permintaan Gemini melewati batas waktu total ('+Math.round(totalBudgetMs/1000)+' detik). Anda dapat mencoba lagi; brief dan pekerjaan editor tetap aman.');
+   if(totalTimedOut||totalSignal.aborted){reportStatus('Gemini timeout · brief dan kode editor tetap aman.');throw new Error('Permintaan Gemini melewati batas waktu total ('+Math.round(totalBudgetMs/1000)+' detik). Tidak ada perubahan pada kode editor atau preview. Coba lagi atau pilih Gemini 3.5 Flash-Lite.');}
    if(error?.status===429)throw new Error('Kuota / rate limit Gemini tercapai (HTTP 429). Retry otomatis dihentikan agar tidak menghabiskan percobaan. Periksa Google AI Studio / billing, tunggu reset kuota, atau pilih model lain yang API key Anda izinkan. Brief tetap tersedia untuk mode manual.');
    if(/Failed to fetch|NetworkError|Load failed/i.test(error?.message||'')){
     throw new Error('Tidak dapat menghubungi Gemini Cloud setelah retry otomatis. Periksa koneksi internet, izin jaringan browser, dan status layanan Google. Brief tetap tersedia untuk mode manual.');
@@ -142,7 +151,7 @@
   else if(provider==='anthropic'){url='https://api.anthropic.com/v1/messages';headers['x-api-key']=key;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true';const content=items.map(x=>x.type==='text'?{type:'text',text:x.text}:{type:'image',source:{type:'base64',media_type:x.mime_type,data:x.data}});payload={model,max_tokens:options.generationConfig?.maxOutputTokens||8192,system:options.systemInstruction||undefined,messages:[{role:'user',content}]};}
   else{url=provider==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://api.mistral.ai/v1/chat/completions';headers.Authorization='Bearer '+key;const content=items.map(x=>x.type==='text'?{type:'text',text:x.text}:{type:'image_url',image_url:{url:'data:'+x.mime_type+';base64,'+x.data}});payload={model,messages:[...(options.systemInstruction?[{role:'system',content:options.systemInstruction}]:[]),{role:'user',content}],max_tokens:options.generationConfig?.maxOutputTokens||8192,temperature:options.generationConfig?.temperature??0.3};}
   if(provider==='gemini'){
-   const data=await requestJson(url,{method:'POST',mode:'cors',credentials:'omit',headers,body:JSON.stringify(payload),signal:options.signal},options.timeoutMs||180000);
+   const data=await requestJson(url,{method:'POST',mode:'cors',credentials:'omit',headers,body:JSON.stringify(payload),signal:options.signal},options.timeoutMs||90000,options.onStatus);
    const output=interactionText(data);
    if(!output)throw new Error('Gemini menyelesaikan permintaan tetapi tidak mengembalikan teks. Coba ulangi atau pilih model lain.');
    return output;
@@ -725,8 +734,8 @@
   $('trozalGeminiCheckBtn')?.addEventListener('click',checkConnection);
   $('trozalProviderCheckBtn')?.addEventListener('click',checkConnection);
   $('trozalAiProvider')?.addEventListener('change',syncProviderUi);
-  $('trozalAiProviderModel')?.addEventListener('change',()=>{if(providerId()==='gemini'&&$('trozalBrowserAiModel'))$('trozalBrowserAiModel').value=modelId();});
-  $('trozalBrowserAiModel')?.addEventListener('change',()=>{if(providerId()==='gemini'&&$('trozalAiProviderModel'))$('trozalAiProviderModel').value=$('trozalBrowserAiModel').value;});
+  $('trozalAiProviderModel')?.addEventListener('change',event=>syncGeminiModelSelectors(event.currentTarget.value));
+  $('trozalBrowserAiModel')?.addEventListener('change',event=>syncGeminiModelSelectors(event.currentTarget.value));
   $('trozalProviderClearBtn')?.addEventListener('click',()=>{['trozalOpenAiKey','trozalAnthropicKey','trozalGroqKey','trozalMistralKey'].forEach(id=>{if($(id))$(id).value='';});status('trozalProviderStatus','Semua API key alternatif dihapus dari halaman aktif.');});
   syncProviderUi();
   $('generateVisualMotionAiBtn')?.addEventListener('click',generateScene);
