@@ -130,7 +130,7 @@ function tick(now,token){
   time.value=String(t);
   $('trozalJsTimelineScrub').value=String(t);
   const readout=$('trozalJsTimelineReadout');
-  if(readout)readout.textContent=t.toFixed(2)+'s / '+dur.toFixed(2)+'s;
+  if(readout)readout.textContent=t.toFixed(2)+'s / '+dur.toFixed(2)+'s';
   if(!tick.last||now-tick.last>=1000/fps){
     tick.last=now;
     if(!playbackRenderBusy){
