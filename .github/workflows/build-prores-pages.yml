@@ -28,6 +28,7 @@ on:
       - '.github/workflows/build-prores-pages.yml'
       - 'tests/ffmpeg-wasm-runtime-smoke.browser.cjs'
       - 'tests/js-motion-studio-real-video-export.browser.cjs'
+      - 'tests/js-motion-studio-export-matrix.browser.cjs'
   workflow_dispatch:
 
 permissions:
@@ -36,7 +37,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: github-pages
+  # Keep each PR validation isolated from production deployment and other PRs.
+  group: github-pages-${{ github.event.pull_request.number || 'main' }}
   cancel-in-progress: true
 
 jobs:
@@ -256,6 +258,7 @@ jobs:
           curl -fsS http://127.0.0.1:4173/trozal-motion-browser-ai/vendor/prores-core/ffmpeg-core.wasm >/dev/null
           node tests/ffmpeg-wasm-runtime-smoke.browser.cjs
           node tests/js-motion-studio-real-video-export.browser.cjs
+          node tests/js-motion-studio-export-matrix.browser.cjs
           kill "$(cat /tmp/trozal-pages-smoke.pid)" || true
           rm -rf site/trozal-motion-browser-ai
 
