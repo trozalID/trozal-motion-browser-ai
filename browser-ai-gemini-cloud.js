@@ -13,7 +13,31 @@
  function modelId(){if(providerId()==='gemini')return String($('trozalBrowserAiModel')?.value||$('trozalAiProviderModel')?.value||'gemini-3.8-flash');return String($('trozalAiProviderModel')?.value||$('trozalBrowserAiModel')?.value||'gemini-3.8-flash');}
  function syncGeminiModelSelectors(value){if(providerId()!=='gemini')return;const cloud=$('trozalBrowserAiModel'),manager=$('trozalAiProviderModel'),chosen=String(value||cloud?.value||manager?.value||'gemini-3.8-flash');const has=(node,model)=>node&&Array.from(node.options||[]).some(option=>option.value===model);if(cloud&&has(cloud,chosen))cloud.value=chosen;if(manager&&has(manager,chosen))manager.value=chosen;}
  function providerName(){return ({gemini:'Gemini',openai:'OpenAI',anthropic:'Claude',groq:'Groq',mistral:'Mistral',webgpu:'Local WebGPU'})[providerId()]||'Gemini';}
- function syncProviderUi(){const p=providerId(),s=$('trozalAiProviderModel'),cloud=$('trozalBrowserAiModel'),previous=p==='gemini'?String(cloud?.value||s?.value||'gemini-3.8-flash'):String(s?.value||'');const m={webgpu:[['Llama-3.2-1B-Instruct-q4f16_1-MLC','Llama 3.2 1B · Q4 · Local']],gemini:[['gemini-3.8-flash','Gemini 3.8 Flash'],['gemini-4-hydrogen','Gemini 4 Hydrogen'],['gemini-3.1-pro-preview','Gemini 3.1 Pro · preview'],['gemini-3.5-flash-lite','Gemini 3.5 Flash-Lite']],openai:[['gpt-4.1','GPT-4.1']],anthropic:[['claude-sonnet-4-5','Claude Sonnet 4.5'],['claude-opus-4-1','Claude Opus 4.1']],groq:[['qwen/qwen3.8-27b','Qwen 3.8 27B Vision']],mistral:[['mistral-large-2512','Mistral Large 3'],['mistral-medium-2508','Mistral Medium 3.1'],['mistral-small-2506','Mistral Small 3.2']]};if(s){s.innerHTML=(m[p]||m.gemini).map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('');if(Array.from(s.options).some(option=>option.value===previous))s.value=previous;}if(p==='gemini')syncGeminiModelSelectors(s?.value||previous);const keyFields=$('trozalProviderKeyFields');if(keyFields)keyFields.style.display=p==='webgpu'?'none':'grid';status('trozalProviderStatus',p==='webgpu'?'Local WebGPU dipilih · tanpa API key. Muat model lokal terlebih dahulu.':providerName()+' dipilih · masukkan API key lalu periksa koneksi.');}
+ function syncProviderUi(){const p=providerId(),s=$('trozalAiProviderModel'),cloud=$('trozalBrowserAiModel'),previous=p==='gemini'?String(cloud?.value||s?.value||'gemini-3.8-flash'):String(s?.value||'');const m={webgpu:[['Llama-3.2-1B-Instruct-q4f16_1-MLC','Llama 3.2 1B · Q4 · Local']],gemini:[['gemini-3.8-flash','Gemini 3.8 Flash'],['gemini-4-argon','Gemini 4 Argon'],['gemini-3.1-pro-preview','Gemini 3.1 Pro · preview'],['gemini-3.5-flash-lite','Gemini 3.5 Flash-Lite']],openai:[['gpt-4.1','GPT-4.1']],anthropic:[['claude-sonnet-4-5','Claude Sonnet 4.5'],['claude-opus-4-1','Claude Opus 4.1']],groq:[['qwen/qwen3.8-27b','Qwen 3.8 27B Vision']],mistral:[['mistral-large-2512','Mistral Large 3'],['mistral-medium-2508','Mistral Medium 3.1'],['mistral-small-2506','Mistral Small 3.2']]};if(s){s.replaceChildren();(m[p]||m.gemini).forEach(([value,label])=>{const option=document.createElement('option');option.value=value;option.textContent=label;s.append(option);});if(Array.from(s.options).some(option=>option.value===previous))s.value=previous;}if(p==='gemini')syncGeminiModelSelectors(s?.value||previous);const keyFields=$('trozalProviderKeyFields');if(keyFields)keyFields.style.display=p==='webgpu'?'none':'grid';status('trozalProviderStatus',p==='webgpu'?'Local WebGPU dipilih · tanpa API key. Muat model lokal terlebih dahulu.':providerName()+' dipilih · masukkan API key lalu periksa koneksi untuk memuat semua model yang tersedia pada akun ini.');}
+ async function discoverGeminiModels(key){
+  const selected=modelId(),models=[];
+  let pageToken='';
+  for(let page=0;page<10;page++){
+   const query='?pageSize=1000'+(pageToken?'&pageToken='+encodeURIComponent(pageToken):'');
+   const data=await requestJson(API+'/models'+query,{method:'GET',mode:'cors',credentials:'omit',headers:{'x-goog-api-key':key}},30000);
+   models.push(...(Array.isArray(data.models)?data.models:[]));
+   pageToken=String(data.nextPageToken||'');
+   if(!pageToken)break;
+  }
+  const supported=models.filter(item=>Array.isArray(item.supportedGenerationMethods)&&item.supportedGenerationMethods.includes('generateContent')&&String(item.name||'').trim());
+  const unique=[...new Map(supported.map(item=>[String(item.name).replace(/^models\//,''),item])).values()];
+  if(!unique.length)throw new Error('API key diterima, tetapi Gemini API tidak mengembalikan model yang mendukung generateContent. Periksa izin project dan API key di Google AI Studio.');
+  const preferred=['gemini-3.8-flash','gemini-4-argon','gemini-3.1-pro-preview','gemini-3.5-flash-lite'];
+  unique.sort((a,b)=>{const an=String(a.name).replace(/^models\//,''),bn=String(b.name).replace(/^models\//,'');const ai=preferred.indexOf(an),bi=preferred.indexOf(bn);return (ai<0?999:ai)-(bi<0?999:bi)||an.localeCompare(bn);});
+  const names=unique.map(item=>String(item.name).replace(/^models\//,''));
+  const chosen=names.includes(selected)?selected:(preferred.find(name=>names.includes(name))||names[0]);
+  [$('trozalBrowserAiModel'),$('trozalAiProviderModel')].filter(Boolean).forEach(node=>{
+   node.replaceChildren();
+   unique.forEach(item=>{const name=String(item.name).replace(/^models\//,'');const option=document.createElement('option');option.value=name;const display=String(item.displayName||name).trim();option.textContent=display+(/preview|experimental/i.test(name+' '+display)?' · Preview':'')+' ('+name+')';option.title=String(item.description||display);node.append(option);});
+   node.value=chosen;
+  });
+  return {names,selected:chosen};
+ }
  function status(id,message,isError){
   const node=$(id);
   if(!node)return;
@@ -181,12 +205,11 @@
     status('trozalGeminiConnectionStatus',msg);status('trozalProviderStatus',msg);status('trozalVisionConnection','Local WebGPU aktif · mode teks saja');return /TROZAL LOCAL WEBGPU OK/i.test(output);
    }
    if(providerId()==='gemini'){
-    const data=await requestJson(API+'/models?pageSize=1000',{method:'GET',mode:'cors',credentials:'omit',headers:{'x-goog-api-key':requireKey()}},30000);
-    const available=(Array.isArray(data.models)?data.models:[]).filter(item=>Array.isArray(item.supportedGenerationMethods)&&item.supportedGenerationMethods.includes('generateContent'));
-    const names=available.map(item=>(String(item.name||'').startsWith('models/')?String(item.name).slice(7):String(item.name||'')));
-    if(names.length&&!names.includes(modelId()))throw new Error('API key terhubung, tetapi model '+modelId()+' tidak tersedia untuk generateContent pada key ini.');
+    const discovered=await discoverGeminiModels(requireKey());
+    if(discovered.selected!==modelId())syncGeminiModelSelectors(discovered.selected);
+    const names=discovered.names;
     const probe=await createInteraction('Reply with exactly: TROZAL GEMINI GENERATION OK',{generationConfig:{maxOutputTokens:24},timeoutMs:30000});if(!/TROZAL GEMINI GENERATION OK/i.test(probe))throw new Error('Model terdaftar tetapi uji generateContent tidak mengembalikan respons yang diharapkan.');
-    const msg='TERHUBUNG · '+names.length+' model mendukung generateContent · Uji generasi berhasil · '+modelId()+'.';
+    const msg='TERHUBUNG · '+names.length+' model Gemini tersedia pada API key ini · Uji generasi berhasil · '+modelId()+'.';
     status('trozalGeminiConnectionStatus',msg);status('trozalProviderStatus',msg);status('trozalVisionConnection','Gemini Cloud aktif · '+modelId());return true;
    }
    const output=await createInteraction('Reply with exactly: TROZAL CONNECTION OK',{generationConfig:{maxOutputTokens:24},timeoutMs:30000});
@@ -197,8 +220,7 @@
  function extractHtml(raw){
   let code=String(raw||'').trim();
   const fence=String.fromCharCode(96).repeat(3);
-  if(code.startsWith(fence)){
-   code=code.slice(fence.length);
+  if(code.startsWith(fence)){   code=code.slice(fence.length);
    const newline=code.indexOf('\n');
    if(newline>=0)code=code.slice(newline+1);
    const last=code.lastIndexOf(fence);
@@ -397,8 +419,7 @@
     const time=sampleTimes[index];
     renderAt(time);
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-    let canvas;
-    if(typeof htmlMotionIframe!=='undefined'&&htmlMotionIframe&&htmlMotionIframe.contentDocument&&typeof captureHtmlMotionAt==='function'){
+    let canvas;    if(typeof htmlMotionIframe!=='undefined'&&htmlMotionIframe&&htmlMotionIframe.contentDocument&&typeof captureHtmlMotionAt==='function'){
      canvas=await captureHtmlMotionAt(time);
     }else{
      const renderer=await ensureHtmlToImage();
@@ -597,8 +618,7 @@
    const input=[{type:'text',text:prompt}];
    images.forEach(image=>input.push({type:'image',data:image.data,mime_type:image.mime_type}));
    status('trozalGeminiStatus','Mengirim '+images.length+' gambar ke '+modelId()+' · '+providerName()+' Cloud…');
-   const output=await createInteraction(input,{
-    generationConfig:{temperature:0.15,maxOutputTokens:4096,responseMimeType:'application/json'},
+   const output=await createInteraction(input,{    generationConfig:{temperature:0.15,maxOutputTokens:4096,responseMimeType:'application/json'},
     signal:controller.signal,
     timeoutMs:180000
    });
