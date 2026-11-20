@@ -57,7 +57,7 @@ const scenarios = [
         await page.locator('[data-jsm-export-test="' + format + '"]').click();
         const download = await downloadPromise;
         const filename = download.suggestedFilename();
-        assert.match(filename, format === 'mp4' ? /\\.mp4$/i : /\\.mov$/i,
+        assert.match(filename, format === 'mp4' ? /\.mp4$/i : /\.mov$/i,
           format.toUpperCase() + ' export must produce the expected file extension');
 
         const filePath = await download.path();
