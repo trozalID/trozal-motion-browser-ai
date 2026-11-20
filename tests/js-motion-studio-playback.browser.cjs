@@ -28,10 +28,14 @@ const assert = require('node:assert/strict');
       timeInput: document.querySelector('#trozalJsMotionTime')?.value,
       timeline: document.querySelector('#trozalJsTimelineScrub')?.value,
       readout: document.querySelector('#trozalJsTimelineReadout')?.textContent,
+      visibleClock: document.querySelector('#trozalJsPlaybackReadout')?.textContent,
+      playheadFill: document.querySelector('#trozalJsPlaybackFill')?.style.width,
       status: document.querySelector('#trozalJsMotionStatus')?.textContent
     }));
     assert.ok(playbackDebug.state?.time > 0.35,
       'Playback clock did not advance: ' + JSON.stringify(playbackDebug));
+    assert.match(playbackDebug.visibleClock || '', /[0-9]+\\.[0-9]{2}s \/ [0-9]+\\.[0-9]{2}s/);
+    assert.ok(Number.parseFloat(playbackDebug.playheadFill) > 0, 'Visible playhead progress must advance');
     console.log('Playback diagnostics', JSON.stringify(playbackDebug));
     await page.waitForFunction(() => {
       const readout = document.querySelector('#trozalJsTimelineReadout')?.textContent || '';
