@@ -33,8 +33,8 @@
   options=options||{};
   const externalSignal=options.signal||null;
   const totalBudgetMs=Math.max(1000,Math.min(Number(timeoutMs)||90000,90000));
-  const modelMatch=String(url||'').match(/\\/models\\/([^/:]+):generateContent/i);
-  const requestModel=modelMatch?decodeURIComponent(modelMatch[1]):'Gemini Cloud';
+  const modelPath=String(url||''),modelStart=modelPath.indexOf('/models/')+8,modelEnd=modelPath.indexOf(':generateContent',modelStart);
+  const requestModel=modelStart>=8&&modelEnd>modelStart?decodeURIComponent(modelPath.slice(modelStart,modelEnd)):'Gemini Cloud';
   const reportStatus=message=>{if(typeof onStatus==='function'){try{onStatus(String(message));}catch(_){}}};
   const totalController=new AbortController();
   let totalTimedOut=false;
