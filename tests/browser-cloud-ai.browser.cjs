@@ -9,6 +9,7 @@ const { chromium } = require('playwright');
   const requests = [];
   let failNextSceneGeneration = false;
   let vision503AttemptsRemaining = 0;
+  let scene503AttemptsRemaining = 0;
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
 
   await page.route('https://generativelanguage.googleapis.com/**', async route => {
@@ -51,6 +52,10 @@ const { chromium } = require('playwright');
       }
       const parts = body.contents?.[0]?.parts || [];
       const imageInput = parts.some(item => item.inlineData);
+      if (!imageInput && scene503AttemptsRemaining > 0 && parts.some(item => item.text?.includes('TROZAL MODEL RETRY TEST'))) {
+        scene503AttemptsRemaining -= 1;
+        return route.fulfill({ status: 503, headers: { ...headers, 'retry-after': '0' }, body: JSON.stringify({ error: { message: 'temporary scene overload test' } }) });
+      }
       if (imageInput && vision503AttemptsRemaining > 0) {
         vision503AttemptsRemaining -= 1;
         return route.fulfill({
@@ -131,7 +136,33 @@ const { chromium } = require('playwright');
   const gemini38Probe = requests.find(item => item.method === 'POST' && item.path.endsWith('/gemini-3.8-flash:generateContent'));
   assert.ok(gemini38Probe, 'Connection check must perform a real Gemini 3.8 generateContent probe');
   assert.equal(gemini38Probe.body.generationConfig.temperature, undefined, 'Gemini 3.8 must not receive unsupported temperature config');
+  // The Gemini Cloud model dropdown is canonical for Canvas 2D generation; both selectors must stay in sync.
+  await page.locator('#trozalBrowserAiModel').selectOption('gemini-3.5-flash-lite');
+  assert.equal(await page.locator('#trozalAiProviderModel').inputValue(), 'gemini-3.5-flash-lite',
+    'Changing the visible Gemini Cloud model must update the provider model selector');
+  await page.evaluate(async () => {
+    window.__geminiRetryStatuses = [];
+    await window.trozalBrowserAI.generateText('TROZAL MODEL ROUTING TEST', {
+      generationConfig: { maxOutputTokens: 24 }, timeoutMs: 15000,
+      onStatus: message => window.__geminiRetryStatuses.push(message)
+    });
+  });
+  const selectedLiteRequest = requests.find(item => item.method === 'POST' && item.path.endsWith('/gemini-3.5-flash-lite:generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.text?.includes('TROZAL MODEL ROUTING TEST')));
+  assert.ok(selectedLiteRequest, 'Canvas Browser AI must send requests to the model selected in the Gemini Cloud dropdown');
+  scene503AttemptsRemaining = 1;
+  const requestCountBefore503 = requests.filter(item => item.method === 'POST' && item.path.endsWith('/gemini-3.5-flash-lite:generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.text?.includes('TROZAL MODEL RETRY TEST'))).length;
+  await page.evaluate(async () => window.trozalBrowserAI.generateText('TROZAL MODEL RETRY TEST', {
+    generationConfig: { maxOutputTokens: 24 }, timeoutMs: 15000,
+    onStatus: message => window.__geminiRetryStatuses.push(message)
+  }));
+  const retriedModelRequests = requests.filter(item => item.method === 'POST' && item.path.endsWith('/gemini-3.5-flash-lite:generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.text?.includes('TROZAL MODEL RETRY TEST')));
+  assert.equal(retriedModelRequests.length - requestCountBefore503, 2,
+    'A temporary Gemini 503 must be retried once before success');
+  assert.ok(await page.evaluate(() => window.__geminiRetryStatuses.some(message => /mencoba ulang 2\/3/i.test(message))),
+    'Gemini UI should show a retry status during temporary 503 recovery');
   await page.locator('#trozalAiProviderModel').selectOption('gemini-3.1-pro-preview');
+  assert.equal(await page.locator('#trozalBrowserAiModel').inputValue(), 'gemini-3.1-pro-preview',
+    'Changing the provider model must also update the visible Gemini Cloud selector');
   assert.ok(requests.every(item => item.apiKey === 'test-browser-key-never-persist'), 'API key must be sent in the header, not URL/query');
 
   await page.locator('#visualMotionPrompt').fill('A premium transparent glass perfume bottle rotating on a polished black podium, elegant rim lighting, subtle gold particles and slow camera orbit.');
