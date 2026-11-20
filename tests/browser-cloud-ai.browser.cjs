@@ -85,6 +85,13 @@ const { chromium } = require('playwright');
   assert.equal(await page.locator('#browserGeminiCloudPanel').count(), 1, 'Gemini Cloud AI panel must exist');
   assert.equal(await page.locator('#trozalBrowserVisionCloudPanel').count(), 1, 'Gemini Cloud Vision panel must exist');
   assert.equal(await page.locator('#trozalGeminiApiKey').count(), 1, 'There must be exactly one shared API key field');
+  await page.locator('#trozalAiProvider').selectOption('gemini');
+  const providerGeminiModels = await page.locator('#trozalAiProviderModel option').evaluateAll(nodes => nodes.map(node => ({ value: node.value, label: node.textContent })));
+  assert.ok(providerGeminiModels.some(model => model.value === 'gemini-3.1-pro-preview'),
+    'Gemini provider model choices must include Gemini 3.1 Pro Preview');
+  await page.locator('#trozalAiProviderModel').selectOption('gemini-3.1-pro-preview');
+  assert.equal(await page.locator('#trozalBrowserAiModel').inputValue(), 'gemini-3.1-pro-preview',
+    'Selecting Gemini 3.1 Pro in provider model list must sync the Gemini Cloud model selector');
   assert.equal(await page.locator('#trozalSceneEngine').inputValue(), 'auto', 'Scene Composer must default to Auto engine');
   assert.equal(await page.locator('#trozalSceneAutoFallback').isChecked(), true, 'Automatic fallback must be enabled by default');
   // Regression guard: the central motion editor must never disappear when Cloud AI panels load.
