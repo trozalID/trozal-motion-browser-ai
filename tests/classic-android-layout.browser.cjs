@@ -35,6 +35,7 @@ const assert = require('node:assert/strict');
         rightPanels: [...dock.querySelectorAll('.panel')].filter(panel => getComputedStyle(panel).display !== 'none').length
       };
     });
+    console.log('Classic Android layout diagnostics:', JSON.stringify(layout));
     assert.ok(layout.preview.display !== 'none' && layout.preview.height > 0, 'Preview must remain visible on Android');
     assert.ok(layout.left.display !== 'none' && layout.left.height > 0, 'Left editor panels must remain visible');
     assert.ok(layout.dock.display !== 'none' && layout.dock.height > 0, 'Right/dock panels must remain visible');
