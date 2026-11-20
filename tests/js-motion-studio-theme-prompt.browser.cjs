@@ -25,8 +25,7 @@ const assert = require('node:assert/strict');
     await page.locator('#trozalJsCategory').selectOption({ index: 1 });
     assert.equal(await page.locator('#trozalJsTheme').inputValue(), holidayTheme);
     await page.locator('#trozalJsSpecific').selectOption({ index: 0 });
-    await page.locator('#trozalJsDetails').fill('Gunakan warna emerald dan gold, objek lentera, headline Selamat Hari Raya, dan latar malam sinematik.');
-    await page.locator('#trozalJsAiPrompt').fill('cinematic product reveal with layered depth and precise timing');
+    await page.locator('#trozalJsDetails').fill('Gunakan warna emerald dan gold, objek lentera, headline Selamat Hari Raya, dan latar malam sinematik. Tambahkan cinematic product reveal with layered depth and precise timing.');
     const prompt = await page.evaluate(() => window.TROZAL_JS_MOTION.buildPrompt());
     for (const phrase of [
       'MAIN THEME: Christmas & Holiday','VISUAL CATEGORY:','SPECIFIC CATEGORY / SUBTHEME:',
