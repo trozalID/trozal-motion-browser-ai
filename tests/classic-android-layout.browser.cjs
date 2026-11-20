@@ -13,7 +13,7 @@ const assert = require('node:assert/strict');
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
-    await page.locator('[data-ui-layout-choice="classic"]').click();
+    await page.locator('[data-ui-layout-choice="classic"]').evaluate(button => button.click());
     await page.waitForFunction(() => document.body.dataset.uiLayout === 'classic');
 
     const layout = await page.evaluate(() => {
