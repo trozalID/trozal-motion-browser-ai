@@ -98,15 +98,65 @@ frame.srcdoc=doc;let seq=0,playing=false,raf=0,lastUrl='',dragOverride=null,play
 function send(type,payload){const id=++seq;return new Promise((resolve,reject)=>{pending.set(id,{resolve,reject});frame.contentWindow.postMessage(Object.assign({type,id},payload||{}),'*');setTimeout(()=>{if(pending.has(id)){pending.delete(id);reject(Error('Preview timeout · frame mungkin terlalu berat; turunkan kompleksitas atau FPS'))}},15000)})}
 addEventListener('message',e=>{if(e.source!==frame.contentWindow)return;const d=e.data||{};if(d.type==='gizmo-start'){stop();dragOverride=valueAt(+time.value||0);status.textContent='Transform aktif · geser preview untuk memindahkan scene';return}if(d.type==='gizmo-drag'&&dragOverride){dragOverride.x+=Number(d.dx)||0;dragOverride.y+=Number(d.dy)||0;$('trozalJsKeyX').value=String(Math.round(dragOverride.x*100)/100);$('trozalJsKeyY').value=String(Math.round(dragOverride.y*100)/100);show(+time.value||0);return}if(d.type==='gizmo-end'&&dragOverride){const t=+time.value||0,k={id:nextKeyId++,time:t,values:{...dragOverride}},a=currentScene().keyframes,ix=a.findIndex(x=>Math.abs(x.time-t)<.0005);if(ix>=0)a.splice(ix,1);a.push(k);a.sort((x,y)=>x.time-y.time);dragOverride=null;syncSceneUI();show(t);status.textContent='Transform tersimpan sebagai keyframe pada '+t.toFixed(2)+' detik';return}const p=pending.get(d.id);if(!p)return;pending.delete(d.id);d.type==='error'?p.reject(Error(d.error)):p.resolve(d)});
 let codeRevision=0,appliedCodeRevision=-1;code.addEventListener('input',()=>{codeRevision++;currentScene().code=code.value;currentObject().code=code.value;status.textContent='Kode berubah · klik Jalankan untuk menerapkan versi terbaru.'});async function apply(){const revision=codeRevision,source=code.value;status.textContent='Menerapkan kode terbaru…';try{currentScene().code=source;const activeId=currentObject().id;const objects=ensureObjects(currentScene()).map(o=>o.id===activeId?{...o,code:source}:{...o});await send('code',{code:source,objects});if(revision===codeRevision){appliedCodeRevision=revision;status.textContent='Kode terbaru berhasil diterapkan · revisi '+revision;return true}status.textContent='Kode berubah saat proses apply · jalankan ulang untuk menerapkan revisi terbaru.';return false}catch(e){status.textContent='JavaScript error: '+e.message;return false}}
-async function renderFrame(t){const sec=Math.max(0,Math.min(Number(t)||0,Math.min(3600,Number($('trozalJsMotionDuration').value)||10)));const anim=dragOverride?{...dragOverride}:valueAt(sec);const r=await send('frame',{time:sec,anim});lastUrl=r.dataUrl;time.value=String(sec);const readout=$('trozalJsTimelineReadout');if(readout)readout.textContent=sec.toFixed(2)+'s / '+(Number($('trozalJsMotionDuration').value)||10).toFixed(2)+'s';return r.dataUrl}
+async function renderFrame(t,updateTimeline=true){
+const sec=Math.max(0,Math.min(Number(t)||0,Math.min(3600,Number($('trozalJsMotionDuration').value)||10)));
+const anim=dragOverride?{...dragOverride}:valueAt(sec);
+const r=await send('frame',{time:sec,anim});
+lastUrl=r.dataUrl;
+if(updateTimeline&&!playing){
+  time.value=String(sec);
+  const readout=$('trozalJsTimelineReadout');
+  if(readout)readout.textContent=sec.toFixed(2)+'s / '+(Number($('trozalJsMotionDuration').value)||10).toFixed(2)+'s';
+}
+return r.dataUrl;
+}
 async function show(t){try{await renderFrame(t);status.textContent='Frame siap · '+Number(t).toFixed(3)+'s · '+$('trozalJsMotionFps').value+' FPS'}catch(e){status.textContent='Render frame gagal: '+e.message}}
-function stop(){playing=false;playbackToken++;tick.last=0;if(raf)cancelAnimationFrame(raf);raf=0}
-let playbackRenderBusy=false;function tick(now,token){if(!playing||token!==playbackToken)return;const dur=Math.min(3600,Number($('trozalJsMotionDuration').value)||10),fps=Number($('trozalJsMotionFps').value)||30,speed=Number($('trozalJsPlaybackSpeed').value)||1,t=Math.min(dur,startAt+(now/1000-startClock)*speed);time.value=String(t);$('trozalJsTimelineScrub').value=String(t);const readout=$('trozalJsTimelineReadout');if(readout)readout.textContent=t.toFixed(2)+'s / '+dur.toFixed(2)+'s';if(!tick.last||now-tick.last>=1000/fps){tick.last=now;if(!playbackRenderBusy){playbackRenderBusy=true;renderFrame(t).then(()=>{if(playing&&token===playbackToken)status.textContent='Preview berjalan · '+t.toFixed(3)+'s · '+fps+' FPS'}).catch(e=>{if(token===playbackToken){status.textContent='Playback dihentikan: '+e.message;stop()}}).finally(()=>{playbackRenderBusy=false})}}if(t>=dur){if($('trozalJsPlaybackLoop').checked){startAt=0;startClock=now/1000;time.value='0';$('trozalJsTimelineScrub').value='0'}else{stop();return}}if(playing&&token===playbackToken)raf=requestAnimationFrame(next=>tick(next,token))}
-let startClock=0,startAt=0;
+function stop(){
+playing=false;
+playbackToken++;
+tick.last=0;
+startClock=null;
+if(raf)cancelAnimationFrame(raf);
+raf=0;
+}
+let playbackRenderBusy=false;
+function tick(now,token){
+  if(!playing||token!==playbackToken)return;
+  const dur=Math.min(3600,Number($('trozalJsMotionDuration').value)||10);
+  const fps=Number($('trozalJsMotionFps').value)||30;
+  const speed=Number($('trozalJsPlaybackSpeed').value)||1;
+  if(startClock===null)startClock=now;
+  const t=Math.min(dur,startAt+((now-startClock)/1000)*speed);
+  time.value=String(t);
+  $('trozalJsTimelineScrub').value=String(t);
+  const readout=$('trozalJsTimelineReadout');
+  if(readout)readout.textContent=t.toFixed(2)+'s / '+dur.toFixed(2)+'s;
+  if(!tick.last||now-tick.last>=1000/fps){
+    tick.last=now;
+    if(!playbackRenderBusy){
+      playbackRenderBusy=true;
+      renderFrame(t,false).then(()=>{
+        if(playing&&token===playbackToken)status.textContent='Preview berjalan · '+t.toFixed(3)+'s · '+fps+' FPS';
+      }).catch(error=>{
+        if(token===playbackToken){status.textContent='Playback dihentikan: '+error.message;stop();}
+      }).finally(()=>{playbackRenderBusy=false;});
+    }
+  }
+  if(t>=dur){
+    if($('trozalJsPlaybackLoop').checked){
+      startAt=0;
+      startClock=now;
+      time.value='0';
+      $('trozalJsTimelineScrub').value='0';
+    }else{stop();return;}
+  }
+  if(playing&&token===playbackToken)raf=requestAnimationFrame(next=>tick(next,token));
+}
+let startClock=null,startAt=0;
 button.addEventListener('click',()=>{overlay.style.display='flex';show(Number(time.value)||0)});$('trozalJsMotionClose').addEventListener('click',()=>{stop();overlay.style.display='none'});overlay.addEventListener('click',e=>{if(e.target===overlay){stop();overlay.style.display='none'}});
 $('trozalJsMotionRun').addEventListener('click',async()=>{stop();if(await apply())show(Number(time.value)||0)});document.querySelectorAll('[data-jsm-export-test]').forEach(btn=>btn.addEventListener('click',async()=>{const kind=btn.dataset.jsmExportTest,format=$('format'),resolution=$('resolution'),resolutionPreset=$('trozalJsExportResolution'),fpsPreset=$('trozalJsExportFps'),durationPreset=$('trozalJsExportDuration'),fps=$('fps'),duration=$('duration'),quality=$('quality'),prores=$('proresMode'),renderButton=$('renderBtn'),testStatus=$('trozalJsExportTestStatus');if(!format||!resolution||!fps||!duration||!renderButton){testStatus.textContent='Gagal: kontrol ekspor utama tidak ditemukan.';return;}if(!await apply()){testStatus.textContent='Gagal: periksa kode JavaScript sebelum ekspor.';return;}stop();format.value=kind;resolution.value=resolutionPreset?.value||'1280x720';fps.value=fpsPreset?.value||'24';duration.value=durationPreset?.value||'1';if(quality)quality.value='high';if(prores){prores.value=kind==='pngseq'?'pngUnlimited':'unlimited';prores.dispatchEvent(new Event('change',{bubbles:true}));}format.value=kind;for(const el of [format,resolution,fps,duration,quality])if(el)el.dispatchEvent(new Event('change',{bubbles:true}));const label=kind==='pngseq'?'PNG Sequence ZIP':kind==='mp4'?'MP4 / H.264':'MOV / ProRes 4444 Alpha';testStatus.textContent='Menjalankan uji '+label+' · '+resolution.value.replace('x','×')+' · '+fps.value+' FPS · '+duration.value+' detik. Pantau panel progres render utama.';overlay.style.display='none';window.__TROZAL_JS_MOTION_EXPORT_ACTIVE=true;renderButton.click();}));$('trozalJsMotionMetadata').addEventListener('click',async()=>{try{if(!lastUrl)await renderFrame(Number(time.value)||0);if(!window.trozalBrowserAI?.analyzeImageDataUrl)throw new Error('Modul metadata AI belum siap. Muat ulang halaman.');await window.trozalBrowserAI.analyzeImageDataUrl(lastUrl);const panel=$('stockMetadataPanel')||$('metadataOptimizerPanel');panel?.scrollIntoView({behavior:'smooth',block:'start'});status.textContent='Frame Canvas 2D dikirim ke Metadata Vision. Periksa hasil di panel Metadata Mode Profesional.'}catch(e){status.textContent='Metadata Canvas gagal: '+e.message}});$('trozalJsMotionExport').addEventListener('click',async()=>{if(!await apply())return;stop();const renderButton=document.getElementById('renderBtn');if(!renderButton){status.textContent='Panel ekspor utama tidak ditemukan.';return;}status.textContent='Menyiapkan ekspor menggunakan pengaturan utama…';overlay.style.display='none';window.__TROZAL_JS_MOTION_EXPORT_ACTIVE=true;renderButton.click();});$('trozalJsMotionSample').addEventListener('click',()=>{code.value=sample;apply().then(ok=>ok&&show(0))});
-$('trozalJsMotionPlay').addEventListener('click',async()=>{if(playing||startingPlayback)return;startingPlayback=true;const token=++playbackToken,playButton=$('trozalJsMotionPlay');playButton.disabled=true;try{if(!await apply()||token!==playbackToken)return;playing=true;startClock=performance.now()/1000;startAt=Number(time.value)||0;tick.last=0;raf=requestAnimationFrame(now=>tick(now,token))}finally{startingPlayback=false;playButton.disabled=false}});$('trozalJsMotionPause').addEventListener('click',stop);time.addEventListener('input',()=>{stop();show(Number(time.value))});
-function syncStudioPreviewDuration(value){const duration=Math.max(1,Math.min(3600,Number(value)||10));stop();$('trozalJsMotionDuration').value=String(duration);$('trozalJsPreviewDurationRange').value=String(duration);time.max=String(duration);$('trozalJsTimelineScrub').max=String(duration);const readout=$('trozalJsTimelineReadout');if(readout)readout.textContent=(+time.value||0).toFixed(2)+'s / '+duration.toFixed(2)+'s';if(+time.value>duration)time.value=String(duration);if(+$('trozalJsTimelineScrub').value>duration)$('trozalJsTimelineScrub').value=String(duration);show(+time.value||0)}$('trozalJsPreviewDurationRange').addEventListener('input',e=>syncStudioPreviewDuration(e.target.value));$('trozalJsMotionDuration').addEventListener('change',()=>syncStudioPreviewDuration($('trozalJsMotionDuration').value));$('trozalJsPromptDuration').addEventListener('change',()=>syncStudioPreviewDuration(Number.parseInt($('trozalJsPromptDuration').value,10)));syncStudioPreviewDuration(Number.parseInt($('trozalJsPromptDuration').value,10));$('trozalJsMotionFps').addEventListener('change',()=>time.step=String(1/Number($('trozalJsMotionFps').value)));$('trozalJsPlaybackSpeed').addEventListener('change',()=>{if(playing){startAt=Number(time.value)||0;startClock=performance.now()/1000;}});
+$('trozalJsMotionPlay').addEventListener('click',async()=>{if(playing||startingPlayback)return;startingPlayback=true;const token=++playbackToken,playButton=$('trozalJsMotionPlay');playButton.disabled=true;try{if(!await apply()||token!==playbackToken)return;playing=true;startClock=null;startAt=Number(time.value)||0;tick.last=0;raf=requestAnimationFrame(now=>tick(now,token))}finally{startingPlayback=false;playButton.disabled=false}});$('trozalJsMotionPause').addEventListener('click',stop);time.addEventListener('input',()=>{stop();show(Number(time.value))});
+function syncStudioPreviewDuration(value){const duration=Math.max(1,Math.min(3600,Number(value)||10));stop();$('trozalJsMotionDuration').value=String(duration);$('trozalJsPreviewDurationRange').value=String(duration);time.max=String(duration);$('trozalJsTimelineScrub').max=String(duration);const readout=$('trozalJsTimelineReadout');if(readout)readout.textContent=(+time.value||0).toFixed(2)+'s / '+duration.toFixed(2)+'s';if(+time.value>duration)time.value=String(duration);if(+$('trozalJsTimelineScrub').value>duration)$('trozalJsTimelineScrub').value=String(duration);show(+time.value||0)}$('trozalJsPreviewDurationRange').addEventListener('input',e=>syncStudioPreviewDuration(e.target.value));$('trozalJsMotionDuration').addEventListener('change',()=>syncStudioPreviewDuration($('trozalJsMotionDuration').value));$('trozalJsPromptDuration').addEventListener('change',()=>syncStudioPreviewDuration(Number.parseInt($('trozalJsPromptDuration').value,10)));syncStudioPreviewDuration(Number.parseInt($('trozalJsPromptDuration').value,10));$('trozalJsMotionFps').addEventListener('change',()=>time.step=String(1/Number($('trozalJsMotionFps').value)));$('trozalJsPlaybackSpeed').addEventListener('change',()=>{if(playing){startAt=Number(time.value)||0;startClock=null;}});
 frame.addEventListener('load',()=>apply().then(ok=>ok&&show(0)));
 $('trozalJsSceneSelect').addEventListener('change',e=>{currentScene().code=code.value;const s=scenes.find(x=>x.id===+e.target.value);if(!s)return;activeScene=s.id;refreshSceneCode()});
 $('trozalJsSceneAdd').addEventListener('click',()=>{currentScene().code=code.value;const n={id:nextSceneId++,name:'Scene '+(scenes.length+1),code:code.value,keyframes:currentScene().keyframes.map(k=>({...k,id:nextKeyId++,values:{...k.values}}))};n.objects=ensureObjects(currentScene()).map(o=>({...o,id:nextObjectId++}));scenes.push(n);activeScene=n.id;activeObjectId=n.objects[0].id;refreshSceneCode()});
