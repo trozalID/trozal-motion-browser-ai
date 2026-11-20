@@ -33,7 +33,7 @@ const assert = require('node:assert/strict');
     assert.equal(state.duration, 3600, 'Preview duration must support up to one hour');
     assert.equal(await page.locator('#trozalJsMotionTime').getAttribute('max'), '3600');
     assert.equal(await page.locator('#trozalJsTimelineScrub').getAttribute('max'), '3600');
-    await range.fill('5');
+    await range.evaluate(el => { el.value = '5'; el.dispatchEvent(new Event('input', { bubbles: true })); });
     state = await page.evaluate(() => window.TROZAL_JS_MOTION.getPlaybackState());
     assert.equal(state.duration, 5, 'Duration slider must update preview duration');
     assert.equal(await duration.inputValue(), '5');
@@ -41,6 +41,13 @@ const assert = require('node:assert/strict');
     await page.locator('#trozalJsPlaybackSpeed').selectOption('2');
     state = await page.evaluate(() => window.TROZAL_JS_MOTION.getPlaybackState());
     assert.equal(state.playbackSpeed, 2, 'Playback speed selector must be reflected in runtime');
+    await page.locator('#trozalJsPlaybackSpeed').selectOption('4');
+    await page.locator('#trozalJsMotionPlay').click();
+    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === true);
+    await page.waitForFunction(() => {
+      const s = window.TROZAL_JS_MOTION?.getPlaybackState();
+      return s && !s.playing && s.time >= 4.99;
+    }, undefined, { timeout: 12000 });
 
     const replacement = "ctx.fillStyle='#ff3366';ctx.fillRect(0,0,w,h);ctx.fillStyle='#ffffff';ctx.font='bold 48px Arial';ctx.textAlign='center';ctx.fillText('NEW CODE',w/2,h/2);";
     await page.locator('#trozalJsMotionCode').fill(replacement);
