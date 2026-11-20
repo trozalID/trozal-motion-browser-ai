@@ -22,6 +22,11 @@ const assert = require('node:assert/strict');
     await play.click();
     await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === true);
     await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().time > 0.35);
+    await page.waitForFunction(() => {
+      const readout = document.querySelector('#trozalJsTimelineReadout')?.textContent || '';
+      return /0\\.[3-9][0-9]s \\/ 10\\.00s/.test(readout);
+    }, null, { timeout: 5000 });
+    assert.match(await page.locator('#trozalJsAiGenerate').textContent(), /Generate Kode JavaScript dengan AI/);
     const firstTime = await page.evaluate(() => window.TROZAL_JS_MOTION.getPlaybackState().time);
 
     // A second click while playing must not start another animation loop.
