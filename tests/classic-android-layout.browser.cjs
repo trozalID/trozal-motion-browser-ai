@@ -32,6 +32,7 @@ const assert = require('node:assert/strict');
         gridTemplateColumns: getComputedStyle(app).gridTemplateColumns,
         preview: rect(preview), left: rect(left), dock: rect(dock),
         devicePixelRatio: window.devicePixelRatio,
+        directChildren: [...app.children].map((el,index)=>({index,tag:el.tagName,className:el.className,id:el.id,display:getComputedStyle(el).display,gridColumn:getComputedStyle(el).gridColumn,rect:{x:el.getBoundingClientRect().x,width:el.getBoundingClientRect().width}})),
         stage: rect(preview.querySelector('.stage')),
         rightPanels: [...dock.querySelectorAll('.panel')].filter(panel => getComputedStyle(panel).display !== 'none').length
       };
