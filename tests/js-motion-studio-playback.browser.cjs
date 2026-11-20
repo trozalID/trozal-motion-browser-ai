@@ -17,11 +17,31 @@ const assert = require('node:assert/strict');
     // Wait for both the initial iframe load and the explicit Run action to drain before playback.
     await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().pendingMessages === 0);
 
+    await page.waitForFunction(() => !!document.querySelector('#trozalJsTimelineReadout'));
     const play = page.locator('#trozalJsMotionPlay');
     const pause = page.locator('#trozalJsMotionPause');
     await play.click();
     await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === true);
-    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().time > 0.35);
+    await page.waitForTimeout(1000);
+    const playbackDebug = await page.evaluate(() => ({
+      state: window.TROZAL_JS_MOTION?.getPlaybackState(),
+      timeInput: document.querySelector('#trozalJsMotionTime')?.value,
+      timeline: document.querySelector('#trozalJsTimelineScrub')?.value,
+      readout: document.querySelector('#trozalJsTimelineReadout')?.textContent,
+      status: document.querySelector('#trozalJsMotionStatus')?.textContent
+    }));
+    assert.ok(playbackDebug.state?.time > 0.35,
+      'Playback clock did not advance: ' + JSON.stringify(playbackDebug));
+    console.log('Playback diagnostics', JSON.stringify(playbackDebug));
+    await page.waitForFunction(() => {
+      const readout = document.querySelector('#trozalJsTimelineReadout')?.textContent || '';
+      const [elapsed, total] = readout.split('/');
+      const elapsedSeconds = Number.parseFloat(elapsed);
+      const totalSeconds = Number.parseFloat(total);
+      return Number.isFinite(elapsedSeconds) && elapsedSeconds >= 0.35 &&
+        Number.isFinite(totalSeconds) && totalSeconds >= 1;
+    }, null, { timeout: 5000 });
+    assert.match(await page.locator('#trozalJsAiGenerate').textContent(), /Generate Kode JavaScript dengan AI/);
     const firstTime = await page.evaluate(() => window.TROZAL_JS_MOTION.getPlaybackState().time);
 
     // A second click while playing must not start another animation loop.
