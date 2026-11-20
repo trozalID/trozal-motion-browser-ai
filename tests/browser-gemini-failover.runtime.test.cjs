@@ -25,7 +25,7 @@ const response = (status, payload = {}, headers = {}) => ({
   assert.deepEqual(await retrySuccess('/v1beta/models/gemini-3.5-flash-lite:generateContent', {}, 10000, message => retryStatuses.push(message)), { ok: true });
   assert.equal(calls, 2, 'transient server error must retry and then succeed');
   assert.ok(retryStatuses.some(message => /gemini-3.5-flash-lite.*percobaan 1/i.test(message)), 'retry status should identify the actual selected model');
-  assert.ok(retryStatuses.some(message => /mencoba ulang 2\\/3/i.test(message)), 'retry status should tell the user when a retry begins');
+  assert.ok(retryStatuses.some(message => String(message).toLowerCase().includes('mencoba ulang 2/3')), 'retry status should tell the user when a retry begins');
 
   calls = 0;
   const quota = buildRequestJson(async () => { calls++; return response(429, { error: { message: 'quota' } }); });
