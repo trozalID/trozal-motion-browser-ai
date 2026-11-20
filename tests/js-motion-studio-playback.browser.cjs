@@ -17,6 +17,7 @@ const assert = require('node:assert/strict');
     // Wait for both the initial iframe load and the explicit Run action to drain before playback.
     await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().pendingMessages === 0);
 
+    await page.waitForFunction(() => !!document.querySelector('#trozalJsTimelineReadout'));
     const play = page.locator('#trozalJsMotionPlay');
     const pause = page.locator('#trozalJsMotionPause');
     await play.click();
