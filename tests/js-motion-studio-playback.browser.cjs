@@ -17,6 +17,22 @@ const assert = require('node:assert/strict');
     // Wait for both the initial iframe load and the explicit Run action to drain before playback.
     await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().pendingMessages === 0);
 
+    // Manual Canvas 2D prompt must populate the JavaScript editor without applying it to Preview.
+    const frameBeforeManualGenerate = await page.evaluate(() => window.TROZAL_JS_MOTION.getLastFrame());
+    await page.locator('#trozalJsAiPrompt').fill('Buat animasi produk futuristik dengan cincin cahaya dan teks kinetik.');
+    await page.evaluate(() => {
+      window.trozalBrowserAI = {
+        provider: () => 'Gemini test',
+        model: () => 'gemini-3.8-flash',
+        generateText: async () => JSON.stringify({ concepts: [{ title: 'Manual Prompt Test', description: 'Generated code for editor.', code: "ctx.fillStyle='#ffcc33';ctx.fillRect(20,20,120,80);" }] })
+      };
+    });
+    await page.locator('#trozalJsBuildPrompt').click();
+    await page.waitForFunction(() => document.querySelector('#trozalJsMotionCode')?.value.includes('ffcc33'));
+    assert.match(await page.locator('#trozalJsMotionStatus').innerText(), /belum diterapkan ke preview/i);
+    assert.equal(await page.evaluate(() => window.TROZAL_JS_MOTION.getLastFrame()), frameBeforeManualGenerate,
+      'Generating a manual prompt must not automatically apply code to Preview');
+
     await page.waitForFunction(() => !!document.querySelector('#trozalJsTimelineReadout'));
     const play = page.locator('#trozalJsMotionPlay');
     const pause = page.locator('#trozalJsMotionPause');
@@ -28,10 +44,14 @@ const assert = require('node:assert/strict');
       timeInput: document.querySelector('#trozalJsMotionTime')?.value,
       timeline: document.querySelector('#trozalJsTimelineScrub')?.value,
       readout: document.querySelector('#trozalJsTimelineReadout')?.textContent,
+      visibleClock: document.querySelector('#trozalJsPlaybackReadout')?.textContent,
+      playheadFill: document.querySelector('#trozalJsPlaybackFill')?.style.width,
       status: document.querySelector('#trozalJsMotionStatus')?.textContent
     }));
     assert.ok(playbackDebug.state?.time > 0.35,
       'Playback clock did not advance: ' + JSON.stringify(playbackDebug));
+    assert.match(playbackDebug.visibleClock || '', /[0-9]+\.[0-9]{2}s \/ [0-9]+\.[0-9]{2}s/);
+    assert.ok(Number.parseFloat(playbackDebug.playheadFill) > 0, 'Visible playhead progress must advance');
     console.log('Playback diagnostics', JSON.stringify(playbackDebug));
     await page.waitForFunction(() => {
       const readout = document.querySelector('#trozalJsTimelineReadout')?.textContent || '';

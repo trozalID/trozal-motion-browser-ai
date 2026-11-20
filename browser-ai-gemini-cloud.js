@@ -137,7 +137,7 @@
   }
   if(!key)throw new Error('Masukkan API key untuk '+providerName()+' terlebih dahulu.');
   let url='',headers={'Content-Type':'application/json'},payload={};
-  if(provider==='gemini'){const parts=items.map(x=>x.type==='text'?{text:x.text}:{inline_data:{mime_type:x.mime_type,data:x.data}});url=API+'/models/'+encodeURIComponent(model)+':generateContent';headers['x-goog-api-key']=key;payload={contents:[{role:'user',parts}],generationConfig:Object.assign({temperature:0.3,maxOutputTokens:8192},options.generationConfig||{}),...(options.systemInstruction?{systemInstruction:{parts:[{text:String(options.systemInstruction)}]}}:{})};}
+  if(provider==='gemini'){const parts=items.map(x=>x.type==='text'?{text:x.text}:{inlineData:{mimeType:x.mime_type,data:x.data}});url=API+'/models/'+encodeURIComponent(model)+':generateContent';headers['x-goog-api-key']=key;const generationConfig=Object.assign({maxOutputTokens:8192},options.generationConfig||{});if(/^gemini-(?:3\.8|4-)/i.test(model)){['temperature','topP','topK','candidateCount','frequencyPenalty','presencePenalty'].forEach(key=>delete generationConfig[key]);if(generationConfig.thinkingConfig?.thinkingLevel==='MINIMAL')generationConfig.thinkingConfig.thinkingLevel='LOW';}payload={contents:[{role:'user',parts}],generationConfig,...(options.systemInstruction?{systemInstruction:{parts:[{text:String(options.systemInstruction)}]}}:{})};}
   else if(provider==='openai'){url='https://api.openai.com/v1/responses';headers.Authorization='Bearer '+key;const content=items.map(x=>x.type==='text'?{type:'input_text',text:x.text}:{type:'input_image',image_url:'data:'+x.mime_type+';base64,'+x.data,detail:'high'});payload={model,input:[{role:'user',content}],max_output_tokens:options.generationConfig?.maxOutputTokens||8192,instructions:options.systemInstruction||undefined};}
   else if(provider==='anthropic'){url='https://api.anthropic.com/v1/messages';headers['x-api-key']=key;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true';const content=items.map(x=>x.type==='text'?{type:'text',text:x.text}:{type:'image',source:{type:'base64',media_type:x.mime_type,data:x.data}});payload={model,max_tokens:options.generationConfig?.maxOutputTokens||8192,system:options.systemInstruction||undefined,messages:[{role:'user',content}]};}
   else{url=provider==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://api.mistral.ai/v1/chat/completions';headers.Authorization='Bearer '+key;const content=items.map(x=>x.type==='text'?{type:'text',text:x.text}:{type:'image_url',image_url:{url:'data:'+x.mime_type+';base64,'+x.data}});payload={model,messages:[...(options.systemInstruction?[{role:'system',content:options.systemInstruction}]:[]),{role:'user',content}],max_tokens:options.generationConfig?.maxOutputTokens||8192,temperature:options.generationConfig?.temperature??0.3};}
@@ -167,7 +167,7 @@
    if(providerId()==='webgpu'){
     const ready=await window.trozalWebGpuCheck?.();
     if(!ready)throw new Error('WebGPU belum siap. Periksa dukungan browser dan muat model lokal.');
-    const output=await createInteraction('Reply with exactly: TROZAL LOCAL WEBGPU OK',{generationConfig:{temperature:0,maxOutputTokens:24},timeoutMs:120000});
+    const output=await createInteraction('Reply with exactly: TROZAL LOCAL WEBGPU OK',{generationConfig:{maxOutputTokens:24},timeoutMs:120000});
     const msg='TERHUBUNG · Local WebGPU / '+modelId()+' siap tanpa API key. Model diproses di perangkat ini.';
     status('trozalGeminiConnectionStatus',msg);status('trozalProviderStatus',msg);status('trozalVisionConnection','Local WebGPU aktif · mode teks saja');return /TROZAL LOCAL WEBGPU OK/i.test(output);
    }
@@ -176,10 +176,11 @@
     const available=(Array.isArray(data.models)?data.models:[]).filter(item=>Array.isArray(item.supportedGenerationMethods)&&item.supportedGenerationMethods.includes('generateContent'));
     const names=available.map(item=>(String(item.name||'').startsWith('models/')?String(item.name).slice(7):String(item.name||'')));
     if(names.length&&!names.includes(modelId()))throw new Error('API key terhubung, tetapi model '+modelId()+' tidak tersedia untuk generateContent pada key ini.');
-    const msg='TERHUBUNG · '+names.length+' model mendukung generateContent · Pilihan: '+modelId()+' · Gemini Cloud aktif.';
+    const probe=await createInteraction('Reply with exactly: TROZAL GEMINI GENERATION OK',{generationConfig:{maxOutputTokens:24},timeoutMs:30000});if(!/TROZAL GEMINI GENERATION OK/i.test(probe))throw new Error('Model terdaftar tetapi uji generateContent tidak mengembalikan respons yang diharapkan.');
+    const msg='TERHUBUNG · '+names.length+' model mendukung generateContent · Uji generasi berhasil · '+modelId()+'.';
     status('trozalGeminiConnectionStatus',msg);status('trozalProviderStatus',msg);status('trozalVisionConnection','Gemini Cloud aktif · '+modelId());return true;
    }
-   const output=await createInteraction('Reply with exactly: TROZAL CONNECTION OK',{generationConfig:{temperature:0,maxOutputTokens:24},timeoutMs:30000});
+   const output=await createInteraction('Reply with exactly: TROZAL CONNECTION OK',{generationConfig:{maxOutputTokens:24},timeoutMs:30000});
    const success=/TROZAL CONNECTION OK/i.test(output);const msg=success?'TERHUBUNG · '+providerName()+' / '+modelId()+' siap untuk Scene Composer dan Vision.':'Provider merespons, tetapi hasil uji tidak sesuai.';
    status('trozalGeminiConnectionStatus',msg,!success);status('trozalProviderStatus',msg,!success);status('trozalVisionConnection',providerName()+' Cloud aktif · '+modelId());return success;
   }catch(error){const msg=(error.message||String(error));status('trozalGeminiConnectionStatus',msg,true);status('trozalProviderStatus',msg,true);return false;}finally{if(button)button.disabled=false;}
@@ -725,6 +726,7 @@
   $('trozalProviderCheckBtn')?.addEventListener('click',checkConnection);
   $('trozalAiProvider')?.addEventListener('change',syncProviderUi);
   $('trozalAiProviderModel')?.addEventListener('change',()=>{if(providerId()==='gemini'&&$('trozalBrowserAiModel'))$('trozalBrowserAiModel').value=modelId();});
+  $('trozalBrowserAiModel')?.addEventListener('change',()=>{if(providerId()==='gemini'&&$('trozalAiProviderModel'))$('trozalAiProviderModel').value=$('trozalBrowserAiModel').value;});
   $('trozalProviderClearBtn')?.addEventListener('click',()=>{['trozalOpenAiKey','trozalAnthropicKey','trozalGroqKey','trozalMistralKey'].forEach(id=>{if($(id))$(id).value='';});status('trozalProviderStatus','Semua API key alternatif dihapus dari halaman aktif.');});
   syncProviderUi();
   $('generateVisualMotionAiBtn')?.addEventListener('click',generateScene);

@@ -45,12 +45,12 @@ const { chromium } = require('playwright');
     }
     if (/\/models\/[^/]+:generateContent$/.test(url.pathname)) {
       const body = request.postDataJSON();
-      if (failNextSceneGeneration && !body.contents?.[0]?.parts?.some(item => item.inline_data)) {
+      if (failNextSceneGeneration && !body.contents?.[0]?.parts?.some(item => item.inlineData)) {
         failNextSceneGeneration = false;
         return route.fulfill({ status: 429, headers, body: JSON.stringify({ error: { message: 'test quota exceeded' } }) });
       }
       const parts = body.contents?.[0]?.parts || [];
-      const imageInput = parts.some(item => item.inline_data);
+      const imageInput = parts.some(item => item.inlineData);
       if (imageInput && vision503AttemptsRemaining > 0) {
         vision503AttemptsRemaining -= 1;
         return route.fulfill({
@@ -59,7 +59,8 @@ const { chromium } = require('playwright');
           body: JSON.stringify({ error: { message: 'temporary overload test' } })
         });
       }
-      const output = imageInput
+      const isGenerationProbe = parts.some(item => item.text?.includes('TROZAL GEMINI GENERATION OK'));
+      const output = isGenerationProbe ? 'TROZAL GEMINI GENERATION OK' : imageInput
         ? JSON.stringify({
             title: 'Blue Glass Sphere with Soft Reflections',
             description: 'A polished blue glass sphere floats against a dark gradient background with soft reflected light.',
@@ -123,9 +124,14 @@ const { chromium } = require('playwright');
   assert.match(await page.locator('#trozalBrowserVisionCloudPanel').innerText(), /Gemini Cloud/i, 'Vision panel must state cloud-only flow');
 
   await page.locator('#trozalGeminiApiKey').fill('test-browser-key-never-persist');
+  await page.locator('#trozalAiProviderModel').selectOption('gemini-3.8-flash');
   await page.locator('#trozalGeminiCheckBtn').click();
   await page.waitForFunction(() => document.getElementById('trozalGeminiConnectionStatus')?.textContent.includes('TERHUBUNG'));
   assert.ok(requests.some(item => item.method === 'GET' && item.path.endsWith('/models')));
+  const gemini38Probe = requests.find(item => item.method === 'POST' && item.path.endsWith('/gemini-3.8-flash:generateContent'));
+  assert.ok(gemini38Probe, 'Connection check must perform a real Gemini 3.8 generateContent probe');
+  assert.equal(gemini38Probe.body.generationConfig.temperature, undefined, 'Gemini 3.8 must not receive unsupported temperature config');
+  await page.locator('#trozalAiProviderModel').selectOption('gemini-3.1-pro-preview');
   assert.ok(requests.every(item => item.apiKey === 'test-browser-key-never-persist'), 'API key must be sent in the header, not URL/query');
 
   await page.locator('#visualMotionPrompt').fill('A premium transparent glass perfume bottle rotating on a polished black podium, elegant rim lighting, subtle gold particles and slow camera orbit.');
@@ -135,7 +141,7 @@ const { chromium } = require('playwright');
   assert.match(output, /<svg/i);
   assert.doesNotMatch(output, /<script\b|<iframe\b/i, 'Returned HTML/SVG must not contain executable script or iframe elements');
   assert.doesNotMatch(output, /(?:href|src)\s*=\s*['"]https?:\/\//i, 'Returned HTML/SVG must not reference external assets');
-  const sceneRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && typeof item.body?.contents?.[0]?.parts?.[0]?.text === 'string');
+  const sceneRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => typeof part.text === 'string' && /perfume bottle/i.test(part.text)));
   assert.ok(sceneRequest, 'Scene generation should call Gemini generateContent with a text brief');
   assert.equal(sceneRequest.path, '/v1beta/models/gemini-3.1-pro-preview:generateContent', 'Scene Composer must use the selected Gemini 3.1 Pro model');
   assert.equal(sceneRequest.body.contents[0].role, 'user');
@@ -195,10 +201,10 @@ const { chromium } = require('playwright');
 
   // A temporary Gemini 503 should retry with backoff and then complete normally.
   vision503AttemptsRemaining = 2;
-  const visionCallsBeforeRetry = requests.filter(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.inline_data)).length;
+  const visionCallsBeforeRetry = requests.filter(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.inlineData)).length;
   await page.locator('#trozalGeminiAnalyzeBtn').click();
   await page.waitForFunction(() => document.getElementById('trozalGeminiStatus')?.textContent.includes('Selesai'), null, { timeout: 30000 });
-  const visionCallsAfterRetry = requests.filter(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.inline_data)).length;
+  const visionCallsAfterRetry = requests.filter(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.inlineData)).length;
   assert.equal(visionCallsAfterRetry - visionCallsBeforeRetry, 3, 'Two temporary 503 responses should be retried before success');
   assert.match(await page.locator('#trozalVisionStatus').innerText(), /Analisis cloud selesai/);
 
@@ -220,10 +226,10 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => document.getElementById('visualMotionOutput')?.value.includes('TROZAL Smart Scene'));
   assert.match(await page.locator('#trozalSceneEngineStatus').innerText(), /API key belum tersedia/i);
   assert.equal(requests.length, requestCountBeforeNoKey, 'No-key fallback must not call Gemini');
-  const visionRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.inline_data));
+  const visionRequest = requests.find(item => item.method === 'POST' && item.path.endsWith(':generateContent') && item.body?.contents?.[0]?.parts?.some(part => part.inlineData));
   assert.ok(visionRequest, 'Vision should call Gemini generateContent with image input');
   assert.equal(visionRequest.body.contents[0].role, 'user');
-  assert.equal(visionRequest.body.contents[0].parts.filter(item => item.inline_data).length, 1);
+  assert.equal(visionRequest.body.contents[0].parts.filter(item => item.inlineData).length, 1);
   assert.match(visionRequest.body.contents[0].parts.find(item => item.text)?.text, /visible pixels/);
 
   const storage = await page.evaluate(() => ({
