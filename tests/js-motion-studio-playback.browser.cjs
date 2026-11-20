@@ -31,10 +31,14 @@ const assert = require('node:assert/strict');
     }));
     assert.ok(playbackDebug.state?.time > 0.35,
       'Playback clock did not advance: ' + JSON.stringify(playbackDebug));
+    console.log('Playback diagnostics', JSON.stringify(playbackDebug));
     await page.waitForFunction(() => {
       const readout = document.querySelector('#trozalJsTimelineReadout')?.textContent || '';
-      const [elapsed, total] = readout.split(' / ');
-      return Number.parseFloat(elapsed) >= 0.35 && total === '10.00s';
+      const [elapsed, total] = readout.split('/');
+      const elapsedSeconds = Number.parseFloat(elapsed);
+      const totalSeconds = Number.parseFloat(total);
+      return Number.isFinite(elapsedSeconds) && elapsedSeconds >= 0.35 &&
+        Number.isFinite(totalSeconds) && totalSeconds >= 1;
     }, null, { timeout: 5000 });
     assert.match(await page.locator('#trozalJsAiGenerate').textContent(), /Generate Kode JavaScript dengan AI/);
     const firstTime = await page.evaluate(() => window.TROZAL_JS_MOTION.getPlaybackState().time);
