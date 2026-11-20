@@ -33,7 +33,8 @@ const fs = require('node:fs');
           await page.waitForFunction(() =>
             (document.querySelector('#trozalJsAiFullPrompt')?.value || '').includes('partikel emas')
           );
-          await page.locator('#trozalJsPromptDuration').selectOption({ label: '5 detik' });
+          await page.locator('#trozalJsCreativeControls').evaluate(details => { details.open = true; });
+        await page.locator('#trozalJsPromptDuration').selectOption({ label: '5 detik' });
           assert.equal(await page.locator('#trozalJsMotionDuration').inputValue(), '5',
             '5-second prompt duration must also set the Canvas 2D preview duration');
           assert.equal(await page.locator('#trozalJsMotionTime').getAttribute('max'), '5',
