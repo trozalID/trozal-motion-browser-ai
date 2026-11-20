@@ -95,8 +95,9 @@ const assert = require('node:assert/strict');
     assert.match(await page.locator('#trozalJsAiGenerate').textContent(), /Generate Kode JavaScript dengan AI/);
     const firstTime = await page.evaluate(() => window.TROZAL_JS_MOTION.getPlaybackState().time);
 
-    // A second click while playing must not start another animation loop.
-    await play.click();
+    // Clicking the dedicated Play action again while already playing must not start a duplicate loop.
+    // The Professional-style toolbar button is a Play/Pause toggle, so use the dedicated Play action for this guard.
+    await page.locator('#trozalJsMotionPlay').click();
     await page.waitForTimeout(250);
     const stateDuringPlayback = await page.evaluate(() => window.TROZAL_JS_MOTION.getPlaybackState());
     assert.equal(stateDuringPlayback.playing, true);
