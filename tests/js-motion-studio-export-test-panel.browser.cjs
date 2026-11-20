@@ -18,7 +18,7 @@ const assert = require('node:assert/strict');
       ['3840x2160', '4K']
     ];
     const fpsValues = ['24', '25', '30', '50', '60'];
-    const durations = ['1', '3', '5', '10', '60', '3600'];
+    const durations = ['1', '3', '5', '10', '60', '1234', '3599', '3600'];
     let fpsIndex = 0;
     let durationIndex = 0;
     for (const [kind, proresMode, label] of formats) {
@@ -32,14 +32,14 @@ const assert = require('node:assert/strict');
         assert.equal(await page.locator('#trozalJsExportTestPanel').count(), 1);
         assert.equal(await page.locator('#trozalJsExportResolution option').count(), 4);
         assert.equal(await page.locator('#trozalJsExportFps option').count(), 5);
-        assert.equal(await page.locator('#trozalJsExportDuration option').count(), 11);
-        assert.deepEqual(await page.locator('#trozalJsExportDuration option').evaluateAll(options => options.map(option => option.value)),
-          ['1','3','5','10','30','60','120','300','600','1800','3600'],
-          'Export duration choices must extend from 1 second through exactly 1 hour');
+        assert.equal(await page.locator('#trozalJsExportDuration').getAttribute('type'), 'number');
+        assert.equal(await page.locator('#trozalJsExportDuration').getAttribute('min'), '1');
+        assert.equal(await page.locator('#trozalJsExportDuration').getAttribute('max'), '3600');
+        assert.equal(await page.locator('#trozalJsExportDuration').getAttribute('step'), '1');
         const selectedFps = fpsValues[fpsIndex++ % fpsValues.length];
         const selectedDuration = durations[durationIndex++ % durations.length];
         await page.locator('#trozalJsExportFps').selectOption(selectedFps);
-        await page.locator('#trozalJsExportDuration').selectOption(selectedDuration);
+        await page.locator('#trozalJsExportDuration').fill(selectedDuration);
         await page.locator('#trozalJsExportResolution').selectOption(size);
         const testButton = page.locator('[data-jsm-export-test="' + kind + '"]');
         assert.equal(await testButton.getAttribute('data-jsm-export-test'), kind);
