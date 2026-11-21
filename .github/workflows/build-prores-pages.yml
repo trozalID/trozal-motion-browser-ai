@@ -28,7 +28,6 @@ on:
       - 'tests/logo-studio-contract.test.cjs'
       - 'tests/render-frame-store.test.cjs'
       - 'tests/render-memory-manager.test.cjs'
-      - '.github/workflows/build-prores-pages.yml'
       - 'tests/ffmpeg-wasm-runtime-smoke.browser.cjs'
       - 'tests/js-motion-studio-real-video-export.browser.cjs'
       - 'tests/js-motion-studio-export-matrix.browser.cjs'
