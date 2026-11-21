@@ -5269,14 +5269,14 @@ window.trozalUpdateThemeBrief = function() {
  const iconPack=trozalGetThemeIconPack(theme); const selectedIcons=window.__trozalSelectedIcons||[]; const selectedIconNames=selectedIcons.map(x=>x.name).join('; ');
  const iconSpec=iconStyle==='Nonaktif'?'ICON TRANSPARAN: nonaktif.':('ICON TRANSPARAN TERHUBUNG KE TEMA: '+iconStyle+'. Gunakan ikon orisinal yang merepresentasikan tema utama "'+theme+'" dan subtema "'+specific+'"; turunkan bentuk, detail, palet, material, pencahayaan, serta bahasa visual dari kategori "'+category+'". Opacity '+iconOpacity+'%. Penempatan: '+iconPlacement+'. Ikon harus menjadi elemen pendukung, tidak menutupi subjek utama, tidak mengubah tema utama, tanpa logo/merek, dan tetap terbaca di atas latar.');
  const iconCollectionSpec='KATALOG IKON TEMA: '+iconPack.collection+' ('+iconPack.domainLabel+'), '+iconPack.icons.length+' ikon relevan. '+(selectedIconNames?'IKON DIPILIH: '+selectedIconNames+'. Maksimal 6 ikon, gunakan hanya sebagai aset pendukung.':'Belum ada ikon yang dipilih; jangan menambahkan simbol acak.');
- const completeIconSpec=iconSpec+'\\n'+iconCollectionSpec;
+ const completeIconSpec=iconSpec+'\n'+iconCollectionSpec;
  const brief=window.trozalBuildThemeCreativeBrief(theme,category,specific);
  const iconHint=document.getElementById('svgAiTransparentIconHint');
  if(iconHint)iconHint.textContent=iconSpec+' '+(selectedIconNames?'Ikon dipilih: '+selectedIconNames:'Pilih ikon dari koleksi '+iconPack.collection+'.');
  const host=document.getElementById('svgAiThemeBrief');
  if(host)host.textContent=brief.summary;
  const specHost=document.getElementById('svgAiAutoSpec');
- if(specHost)specHost.textContent=brief.summary+'\n\nSPESIFIKASI ICON TRANSPARAN:\n'+iconSpec+'\n\nSPESIFIKASI LENGKAP TEMA + KATEGORI:\n'+brief.prompt+'\n\nDETAIL TAMBAHAN PENGGUNA:\n'+(details||'Belum ada detail tambahan. Jangan menghilangkan atau mengganti spesifikasi otomatis; gunakan arahan kreatif sesuai tema dan kategori.')+'\n\nATURAN PENGGABUNGAN:\nDetail tambahan adalah batasan atau penekanan tambahan. Pertahankan tujuan tema, subjek utama, aset relevan, palet, komposisi, alur gerak, dan batasan domain di atas.';
+ if(specHost)specHost.textContent=brief.summary+'\n\nSPESIFIKASI ICON TRANSPARAN:\n'+completeIconSpec+'\n\nSPESIFIKASI LENGKAP TEMA + KATEGORI:\n'+brief.prompt+'\n\nDETAIL TAMBAHAN PENGGUNA:\n'+(details||'Belum ada detail tambahan. Jangan menghilangkan atau mengganti spesifikasi otomatis; gunakan arahan kreatif sesuai tema dan kategori.')+'\n\nATURAN PENGGABUNGAN:\nDetail tambahan adalah batasan atau penekanan tambahan. Pertahankan tujuan tema, subjek utama, aset relevan, palet, komposisi, alur gerak, dan batasan domain di atas.';
  return brief;
 };
 function trozalThemeProfile(theme){
