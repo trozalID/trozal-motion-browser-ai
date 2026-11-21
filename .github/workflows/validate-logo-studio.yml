@@ -1,0 +1,39 @@
+name: Validate Browser AI Logo Studio
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'icon-logo-motion-studio.js'
+      - 'tests/icon-logo-motion-studio.browser.cjs'
+      - 'tests/illustrative-logo-studio.test.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-logo-studio-\${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  logo-studio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout TROZAL MOTION
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Check Logo Studio JavaScript syntax
+        run: node --check icon-logo-motion-studio.js
+      - name: Test illustrative logo catalogue and SVG families
+        run: node --test tests/illustrative-logo-studio.test.cjs
+      - name: Test logo composition, per-part animation and playback
+        run: node tests/icon-logo-motion-studio.browser.cjs
