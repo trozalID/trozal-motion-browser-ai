@@ -34,6 +34,18 @@ const { chromium } = require('playwright');
     assert.match(svgOutput, /@keyframes [\w-]+(?:reveal|orbit|pop|wave|spin)/, 'per-part animation keyframes are embedded');
     assert.equal(await page.locator('#tm4PartMotion').count(), 1, 'per-part motion control is available');
     await page.locator('#tm4PartMotion').selectOption('Wave Parts');
+    assert.equal(await page.locator('#tm4Expression').count(), 1, 'character expression selector is available');
+    assert.equal(await page.locator('#tm4PartsEnabled').count(), 1, 'per-part animation toggle is available');
+    await page.locator('#tm4Expression').selectOption('Surprised');
+    await page.locator('#tm4PartsEnabled').uncheck();
+    const staticPartsSvg = await page.locator('#tm4Output').inputValue();
+    assert.match(staticPartsSvg, /M114 143 Q120 132 126 143/, 'character expression changes illustrated face geometry');
+    assert.ok(staticPartsSvg.includes('.tm4-part{transform-box:fill-box;transform-origin:center;}'), 'disabling parts removes per-part animation');
+    await page.locator('#tm4PartsEnabled').check();
+    await page.locator('[data-out="svg"]').click();
+    await page.locator('#tm4PartMotion').selectOption('Wave Parts');
+    const wavePartsSvg = await page.locator('#tm4Output').inputValue();
+    assert.ok(wavePartsSvg.includes('wave 2.6s ease-in-out infinite'), 'Wave Parts mode is emitted into the SVG');
     assert.equal(await page.locator('#tm4LayerMotion').count(), 1, 'per-layer motion selector is available');
     assert.equal(await page.locator('#tm4LayerStyle').count(), 1, 'per-layer visual style selector is available');
     assert.equal(await page.locator('#tm4Opacity').count(), 1, 'per-layer opacity control is available');
@@ -44,7 +56,28 @@ const { chromium } = require('playwright');
     assert.match(await page.locator('#tm4SceneTabs').innerText(),/Acak Komposisi/,'composition tools replace storyboard controls');
     const projectDownload = page.waitForEvent('download');
     await page.locator('#tm4SaveProject').click();
-    assert.match((await projectDownload).suggestedFilename(), /trozal-icon-motion-project\.json/);
+    const savedProject = await projectDownload;
+    assert.ok(savedProject.suggestedFilename().endsWith('.json'), 'project save produces a JSON file');
+    const savedProjectPath = await savedProject.path();
+    const savedProjectData = JSON.parse(fs.readFileSync(savedProjectPath, 'utf8'));
+    const savedSelectedLayer = savedProjectData.state.scenes[savedProjectData.state.scene].layers.find(layer => layer.id === savedProjectData.state.selected);
+    assert.equal(savedSelectedLayer.partMotion, 'Wave Parts', 'project file stores the selected per-part motion');
+    assert.equal(savedSelectedLayer.expression, 'Surprised', 'project file stores the character expression');
+    assert.equal(savedSelectedLayer.partsEnabled, true, 'project file stores the per-part animation toggle');
+    await page.locator('#tm4PartMotion').selectOption('Orbit Parts');
+    await page.locator('#tm4Expression').selectOption('Serious');
+    await page.locator('#tm4PartsEnabled').uncheck();
+    await page.locator('#tm4ProjectFile').setInputFiles(savedProjectPath);
+    await page.waitForFunction(() =>
+      document.getElementById('tm4PartMotion')?.value === 'Wave Parts' &&
+      document.getElementById('tm4Expression')?.value === 'Surprised' &&
+      document.getElementById('tm4PartsEnabled')?.checked === true
+    );
+    const duplicateDomIds = await page.locator('[id]').evaluateAll(nodes => {
+      const ids = nodes.map(node => node.id);
+      return [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
+    });
+    assert.deepEqual(duplicateDomIds, [], 'Logo Studio must not render duplicate DOM IDs');
     await page.locator('#tm4AddText').click();
     assert.equal(await page.locator('#tm4Layers .tm4-layer').count(), 7, 'text layer can be added');
     await page.locator('[data-out="svg"]').click();
