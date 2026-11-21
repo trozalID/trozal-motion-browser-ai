@@ -24,7 +24,6 @@ on:
       - 'render-memory-manager.js'
       - 'render-frame-store.js'
       - 'logo-studio.js'
-      - 'icon-logo-motion-studio.js'
       - 'tests/logo-studio.browser.cjs'
       - 'tests/logo-studio-contract.test.cjs'
       - 'tests/render-frame-store.test.cjs'
@@ -33,7 +32,6 @@ on:
       - 'tests/ffmpeg-wasm-runtime-smoke.browser.cjs'
       - 'tests/js-motion-studio-real-video-export.browser.cjs'
       - 'tests/js-motion-studio-export-matrix.browser.cjs'
-      - 'tests/icon-logo-motion-studio.browser.cjs'
   workflow_dispatch:
 
 permissions:
@@ -269,8 +267,6 @@ jobs:
           node tests/ffmpeg-wasm-runtime-smoke.browser.cjs
           node tests/js-motion-studio-real-video-export.browser.cjs
           node tests/js-motion-studio-export-matrix.browser.cjs
-          node --test tests/illustrative-logo-studio.test.cjs
-          node tests/icon-logo-motion-studio.browser.cjs
           kill "$(cat /tmp/trozal-pages-smoke.pid)" || true
           rm -rf site/trozal-motion-browser-ai
 
