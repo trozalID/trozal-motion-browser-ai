@@ -268,6 +268,7 @@ jobs:
           node tests/ffmpeg-wasm-runtime-smoke.browser.cjs
           node tests/js-motion-studio-real-video-export.browser.cjs
           node tests/js-motion-studio-export-matrix.browser.cjs
+          node tests/icon-logo-motion-studio.browser.cjs
           kill "$(cat /tmp/trozal-pages-smoke.pid)" || true
           rm -rf site/trozal-motion-browser-ai
 
