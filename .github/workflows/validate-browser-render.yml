@@ -62,6 +62,7 @@ jobs:
           node --check render-sync-advisor.js
           node --check js-motion-engine.js
           node --check logo-studio.js
+          node --check icon-logo-motion-studio.js
           node --check metadata-actions.js
           node --check browser-ai-gemini-cloud.js
           node --check browser-ai-key-storage.js
