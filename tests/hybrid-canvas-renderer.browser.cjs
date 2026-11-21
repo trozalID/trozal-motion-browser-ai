@@ -5,7 +5,7 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch({ headless: true, args: ['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
+  page.on('pageerror', error => errors.push(error.stack || error.message));
   try {
     await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
     await page.addScriptTag({ path: require.resolve('jszip/dist/jszip.min.js') });
