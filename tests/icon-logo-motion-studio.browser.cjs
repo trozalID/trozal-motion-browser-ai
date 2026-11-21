@@ -57,6 +57,8 @@ const { chromium } = require('playwright');
     assert.match(await page.locator('#tm4Output').inputValue(), /@keyframes move/);
     await page.locator('[data-out="video"]').click();
     assert.match(await page.locator('#tm4Output').inputValue(), /<section class="scene"/);
+    assert.match(await page.locator('#tm4Output').inputValue(), /data-start=/, 'exported scenes preserve their own timeline offsets');
+    assert.match(await page.locator('#tm4Output').inputValue(), /requestAnimationFrame\(frame\)/, 'exported HTML has a real multi-scene playback scheduler');
     await page.locator('#tm4Play').click();
     assert.match(await page.locator('#tm4Play').innerText(), /Pause/);
     await page.locator('#tm4Play').click();
