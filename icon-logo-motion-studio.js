@@ -7,7 +7,7 @@ if(window.__trozalIconMotionStudioV2)return;
 window.__trozalIconMotionStudioV2=true;
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const logoDomains=[
-'Identitas Abstrak','Kosmik & Antariksa','Teknologi Kuantum','Kecerdasan Buatan','Cybersecurity','Blockchain & Web3','Fintech & Finansial','Metaverse & XR','Gaming & Esports','Audio Digital','Sistem Data','Jaringan Global','Energi Masa Depan','Robotika','Nanoteknologi','Bioteknologi Sintetis','Arsitektur Futuristik','Mobilitas Antariksa','Sains Eksperimental','Matematika Visual','Tipografi Eksperimental','Geometri Modular','Optik & Ilusi','Gelombang & Frekuensi','Konstruksi Digital','Fashion Futuristik','Luxury & Haute Couture','Studio Kreatif','Media & Streaming','Komunikasi Satelit'
+'Hewan & Satwa Liar','Makhluk Laut & Air','Burung & Serangga','Tumbuhan & Botani','Bunga & Tanaman Hias','Hutan & Ekosistem','Kendaraan Darat','Kendaraan Udara','Kapal & Eksplorasi Laut','Antariksa & Planet','Fantasi & Mitologi','Makhluk Imajinatif','Robot & Android','Mesin & Industri','Teknologi Masa Depan','Olahraga & Aksi','Petualangan & Outdoor','Musik & Instrumen','Kuliner & Minuman','Fashion & Aksesori','Arsitektur & Bangunan','Sains & Laboratorium','Energi & Lingkungan','Gaming & Esports','Budaya & Seni','Profesi & Keahlian','Objek Sehari-hari','Dunia Mini & Koleksi','Identitas Abstrak','Studio Kreatif & Media'
 ];
 const nameA=['Aether','Nexus','Vanta','Orbis','Kairo','Nyx','Axiom','Vortex','Helix','Quantum','Prism','Nova','Flux','Cipher','Vertex','Onyx','Zenith','Kinetic','Lumen','Mythos','Astra','Vector','Pulse','Eon','Spectra'];
 const nameB=['Arc','Core','Glyph','Matrix','Orbit','Forge','Signal','Node','Shift','Wave','Mark','Grid','Bloom','Axis','Loop','Frame','Pulse','Field','Spark','Form','Link','Trace','Code','Sphere','Glyph'];
@@ -29,7 +29,7 @@ function svgFor(l,small=false){
  let n=(seed+1)>>>0;
  const rnd=()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296};
  const escA=esc(l.name),p=l.color||'#ffbd45',a=l.accent||'#55c7dc',dark='#233449',light='#fff4d8';
- const domain=Math.floor(seed/50)%30,family=([0,0,0,1,1,1,2,3,3,4,5,5,6,6,6,7,7,8,8,8,9,9,9,9,9,6,8,8,9,9][domain]??9),id='ill'+String(l.id||seed).replace(/[^a-z0-9]/gi,'');
+ const domain=Math.floor(seed/50)%30,family=([0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,14,14][domain]??14),id='ill'+String(l.id||seed).replace(/[^a-z0-9]/gi,'');
  const parts=[];
  const add=(name,markup)=>parts.push('<g class="tm4-part" data-part="'+name+'">'+markup+'</g>');
  const path=(d,fill=p,stroke=dark,sw=5)=>'<path d="'+d+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="'+sw+'" stroke-linecap="round" stroke-linejoin="round"/>';
@@ -115,13 +115,60 @@ function svgFor(l,small=false){
    add('shine',path('M94 119 L89 158','none','#fff',5));
   }
   add('ornament',circle(120,143,6,'#fff1a8','none'));
- } else { // architecture / science / abstract emblem with layered detail
+ } else if(family===9){ // architecture / science / abstract emblem with layered detail
   add('base',path('M54 177 L54 105 L88 105 L88 75 L120 45 L152 75 L152 105 L186 105 L186 177Z',c1));
   add('windows',Array.from({length:6},(_,i)=>'<rect x="'+(75+(i%3)*31)+'" y="'+(119+Math.floor(i/3)*27)+'" width="13" height="17" rx="3" fill="#d9f3f7" stroke="'+dark+'" stroke-width="2"/>').join(''));
   add('roof-detail',path('M82 104 L120 67 L158 104','none',c3,5));
   add('ground',path('M34 190 Q120 178 206 190','none',dark,5));
   add('sparkles',circle(44,66,5,c3,'none')+circle(192,62,5,c3,'none')+path('M183 21 L188 34 L201 39 L188 44 L183 57 L178 44 L165 39 L178 34Z',light,'none',0));
+ } else if(family===10){ // expressive insect with segmented anatomy, wings and antennae
+  add('wings',ellipse(83,104,34,48,'#bde8f1',dark,4)+ellipse(157,104,34,48,'#bde8f1',dark,4));
+  add('abdomen',path('M120 91 Q164 117 145 184 Q120 210 95 184 Q76 117 120 91Z',c1));
+  add('segments',Array.from({length:4},(_,i)=>path('M'+(98-i*2)+' '+(132+i*14)+' Q120 '+(144+i*14)+' '+(142+i*14)+' '+(132+i*14),'none',dark,3)).join(''));
+  add('head',circle(120,78,34,c2,dark,5));
+  add('antennae',path('M103 50 Q78 22 69 43 M137 50 Q162 22 171 43','none',dark,5)+circle(69,43,6,c3)+circle(171,43,6,c3));
+  add('face',eye(108,78,6)+eye(132,78,6)+path('M111 96 Q120 103 129 96','none',dark,4));
+  add('legs',path('M93 137 L62 157 M147 137 L178 157 M96 157 L72 188 M144 157 L168 188','none',dark,6));
+ } else if(family===11){ // food character / plated culinary illustration
+  add('plate',ellipse(120,160,83,25,'#fff4d8','#b7c7d3',5));
+  add('main-food',path('M55 139 Q48 75 120 70 Q192 75 185 139 Q169 164 120 157 Q71 164 55 139Z',c1));
+  add('topping',Array.from({length:5},(_,i)=>circle(82+(i*29)%78,100+((i*17+seed)%31),7,palettes[(i+seed)%palettes.length],dark,2)).join(''));
+  add('face',eye(105,119,6)+eye(135,119,6)+path('M111 135 Q120 143 129 135','none',dark,4));
+  add('garnish',path('M119 77 Q127 42 157 49 Q151 72 119 84Z','#68b97b','#397b55',3)+circle(163,61,7,'#ff765e','none'));
+  add('steam',path('M88 58 Q77 42 90 28 M120 53 Q109 36 123 20 M151 58 Q164 40 151 26','none','#a9cbd8',4));
+ } else if(family===12){ // fashion / wearable character accessory
+  add('body',path('M78 92 Q120 67 162 92 L177 184 Q120 204 63 184Z',c1));
+  add('collar',path('M83 93 L120 126 L157 93 L143 77 L120 95 L97 77Z',c2,dark,4));
+  add('head',circle(120,62,29,'#f1c18c',dark,4));
+  add('hair',path('M91 65 Q81 16 120 24 Q159 16 149 65 Q135 48 120 49 Q105 48 91 65Z',c3,dark,4));
+  add('face',eye(109,63,5)+eye(131,63,5)+path('M112 78 Q120 84 128 78','none',dark,3));
+  add('accessory',path('M77 112 L47 137 L64 153 L88 132 M163 112 L193 137 L176 153 L152 132','none',c2,8)+circle(120,151,13,'#f5d36c',dark,3));
+  add('ornament',path('M120 138 L124 148 L135 149 L127 157 L129 168 L120 162 L111 168 L113 157 L105 149 L116 148Z',c3,'none',0));
+ } else if(family===13){ // professional / explorer character with tools and uniform
+  add('backpack',path('M70 104 Q54 115 60 169 L81 180 L91 115Z',c3,dark,4));
+  add('body',path('M84 102 Q120 85 156 102 L166 181 Q120 201 74 181Z',c1));
+  add('head',circle(120,70,34,'#f1c18c',dark,5));
+  add('helmet',path('M80 66 Q84 25 120 25 Q156 25 160 66Z',c2,dark,5)+path('M73 68 L167 68','none',dark,7));
+  add('face',eye(108,73,6)+eye(132,73,6)+path('M111 91 Q120 99 129 91','none',dark,4));
+  add('arms',path('M82 117 Q48 137 67 164 M158 117 Q192 137 173 164','none',dark,9));
+  add('tool',path('M174 145 L188 159 L181 166 L167 152Z', '#b7c7d3',dark,3)+circle(190,169,8,c3,dark,2));
+  add('badge',circle(120,143,12,'#f5d36c',dark,3)+path('M120 134 L123 141 L131 142 L125 148 L127 156 L120 152 L113 156 L115 148 L109 142 L117 141Z',c3,'none',0));
+ } else { // abstract creative emblem / layered identity mark
+  add('outer-form',path('M120 25 Q151 51 190 71 L174 151 Q120 211 66 151 L50 71Z',c1,dark,6));
+  add('inner-form',path('M120 52 Q148 75 165 86 L153 143 Q120 176 87 143 L75 86Z',c2,dark,4));
+  add('ribbon',path('M75 119 Q120 83 165 119 Q120 154 75 119Z',c3,dark,3));
+  add('center',circle(120,119,23,light,dark,4)+path('M120 101 L125 114 L139 119 L125 124 L120 137 L115 124 L101 119 L115 114Z',c1,'none',0));
+  add('sparkles',Array.from({length:4},(_,i)=>circle(60+(i*37)%120,48+(i*43)%142,4,palettes[(i+seed)%palettes.length],'none')).join(''));
+  add('rays',path('M120 20 L120 39 M205 120 L185 120 M120 220 L120 200 M35 120 L55 120','none',c3,5));
  }
+ // Per-concept anatomy and ornament variations: deterministic, seed-driven and visibly distinct.
+ const v1=18+(seed*7)%23,v2=34+(seed*11)%27,v3=42+(seed*13)%31;
+ const gem=path('M120 '+v1+' L'+(120+v2)+' '+(v1+v3)+' L120 '+(v1+v3*2)+' L'+(120-v2)+' '+(v1+v3)+'Z',palettes[(seed+3)%palettes.length],dark,3);
+ const crest=path('M'+(86+(seed%9)*3)+' 66 Q120 '+(4+(seed%17)*2)+' '+(154-(seed%7)*2)+' 66 L'+(143-(seed%5)*3)+' 82 Q120 '+(65+(seed%11)*2)+' '+(97+(seed%5)*3)+' 82Z',palettes[(seed+1)%palettes.length],dark,3);
+ const spots=Array.from({length:3+(seed%5)},(_,i)=>circle(76+((seed*17+i*31)%88),92+((seed*13+i*19)%86),3+(i%3),palettes[(seed+i)%palettes.length],'none')).join('');
+ add('signature-crest',crest);
+ add('signature-emblem',gem);
+ add('signature-markings',spots);
  // Convert a shape into an independently animated component with staggered timing.
  const partStyles='<style>.tm4-part{transform-box:fill-box;transform-origin:center;animation:'+id+'float 3.6s ease-in-out infinite;}.tm4-part:nth-of-type(2n){animation-name:'+id+'bob;animation-delay:-.7s}.tm4-part:nth-of-type(3n){animation-name:'+id+'pulse;animation-delay:-1.1s}@keyframes '+id+'float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes '+id+'bob{0%,100%{transform:rotate(0deg)}50%{transform:rotate(4deg)}}@keyframes '+id+'pulse{0%,100%{opacity:1}50%{opacity:.72}}</style>';
  const defs='<defs><linearGradient id="'+id+'grad" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+p+'"/><stop offset=".55" stop-color="'+a+'"/><stop offset="1" stop-color="'+c3+'"/></linearGradient><filter id="'+id+'shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#182638" flood-opacity=".24"/></filter></defs>';
