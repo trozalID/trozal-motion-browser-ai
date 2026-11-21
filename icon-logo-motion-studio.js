@@ -162,13 +162,13 @@ function svgFor(l,small=false){
   add('rays',path('M120 20 L120 39 M205 120 L185 120 M120 220 L120 200 M35 120 L55 120','none',c3,5));
  }
  // Small, category-specific accent marks; never place a universal diamond or crest over every subject.
- const spots=Array.from({length:2+(seed%4)},(_,i)=>circle(76+((seed*17+i*31)%88),92+((seed*13+i*19)%86),2+(i%3),palettes[(seed+i)%palettes.length],'none')).join('');
+ const spots=Array.from({length:3+(seed%5)},(_,i)=>circle(76+((seed*17+i*31)%88),92+((seed*13+i*19)%86),2+(i%3),palettes[(seed+i)%palettes.length],'none')).join('');
  if([0,5,6,10,11,12,13].includes(family)){
   const expression=l.expression||'Cheerful';
   const mouth=expression==='Surprised'?'M114 143 Q120 132 126 143 Q126 153 120 154 Q114 153 114 143Z':expression==='Serious'?'M111 145 L129 145':expression==='Sleepy'?'M111 143 Q120 147 129 143':'M111 140 Q120 149 129 140';
   add('expression-detail',path(mouth,'none',dark,4));
  }
- if(seed%3===0)add('surface-markings',spots);
+ add('micro-details',spots);
  // The selected part-animation mode is now applied to semantic SVG groups.
  const partMode=l.partsEnabled===false?'None':(l.partMotion||'Sequential Reveal');
  const anim=partMode==='None'?'':partMode==='Orbit Parts'?'animation:'+id+'orbit 4s ease-in-out infinite;':partMode==='Pop Parts'?'animation:'+id+'pop 1.8s cubic-bezier(.2,.8,.2,1) infinite;':partMode==='Wave Parts'?'animation:'+id+'wave 2.6s ease-in-out infinite;':partMode==='Spin Parts'?'animation:'+id+'spin 5s ease-in-out infinite;':'animation:'+id+'reveal 2.4s ease-out both;';
