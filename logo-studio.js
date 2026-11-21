@@ -71,6 +71,11 @@ img.onerror=()=>{URL.revokeObjectURL(url);$('trozalLogoStatus').textContent='Gag
 }
 
 function ensurePanel() {
+ if (!document.getElementById('trozalLogoStudioStyles')) {
+  const style=document.createElement('style');style.id='trozalLogoStudioStyles';
+  style.textContent='#trozalLogoStudio{border:1px solid #a47b39;background:linear-gradient(145deg,#302616,#1e1d20 62%,#292116);color:#f5ead6}#trozalLogoStudio h3{color:#f3d49a}#trozalLogoStudio label{color:#f0dfc2}#trozalLogoStudio input,#trozalLogoStudio select{background:#17140f;border:1px solid #765c32;color:#fff3dc;border-radius:6px;padding:7px;width:100%;box-sizing:border-box}#trozalLogoStudio input[type=color]{padding:2px}#trozalLogoCatalog{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px;max-height:260px;overflow:auto;margin:8px 0}#trozalLogoCatalog .logo-choice{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px;background:#211d16;border:1px solid #6b5737;color:#f5ead6;border-radius:7px}#trozalLogoCatalog .logo-choice.active{border-color:#f1c36c;background:#49351c}#trozalLogoCatalog .logo-choice-mark svg{width:42px;height:42px}#trozalLogoCatalog small{opacity:.72}#trozalLogoStudio .logo-preview-wrap{margin:8px 0;padding:8px;border:1px solid #70582f;border-radius:8px;background:#15130f}#trozalLogoStudio .logo-preview{min-height:90px;display:grid;place-items:center;background:transparent}#trozalLogoStudio .logo-preview svg{width:100%;height:auto;max-height:120px}#trozalLogoStudio .logo-preview-head{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#e9cf9d}#trozalLogoStudio .row{display:flex;gap:7px;margin-top:7px}#trozalLogoStudio .row>*{flex:1;min-width:0}';
+  document.head.appendChild(style);
+ }
  if ($('trozalLogoStudio')) return;
  const anchor=$('batchQueuePanel');
  if (!anchor) return;
