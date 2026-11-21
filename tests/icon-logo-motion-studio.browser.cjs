@@ -30,7 +30,7 @@ const { chromium } = require('playwright');
     assert.match(svgOutput, /stroke-width=\"(?:4|5|6)\"/, 'illustration uses a bold outline weight');
     assert.match(svgOutput, /<(?:path|rect|circle|ellipse|polygon|line)\b/, 'logo is composed of real SVG vector geometry, not an emoji');
     assert.match(svgOutput, /class="tm4-part"/, 'SVG paths are split into independent animated parts');
-    assert.match(svgOutput, /@keyframes [\w-]+(?:float|bob|pulse)/, 'per-part animation keyframes are embedded');
+    assert.match(svgOutput, /@keyframes [\w-]+(?:reveal|orbit|pop|wave|spin)/, 'per-part animation keyframes are embedded');
     assert.equal(await page.locator('#tm4PartMotion').count(), 1, 'per-part motion control is available');
     await page.locator('#tm4PartMotion').selectOption('Wave Parts');
     assert.equal(await page.locator('#tm4LayerMotion').count(), 1, 'per-layer motion selector is available');
