@@ -17,6 +17,15 @@ test('Browser AI illustration catalogue covers 1,500 concepts across 30 real-wor
   }
 });
 
+test('catalog uses paged visual thumbnails rather than mounting all 1,500 cards at once', () => {
+  assert.match(source, /const catalogPageSize=48/);
+  assert.match(source, /list\.slice\(first,first\+catalogPageSize\)/);
+  assert.match(source, /const thumb=svgFor\(/);
+  assert.match(source, /class="tm4-thumb"/);
+  assert.match(source, /data-catalog-next/);
+  assert.match(source, /data-catalog-prev/);
+});
+
 test('all 1,500 concepts render distinct, multipart SVG artwork with 15 illustration families', () => {
   const start = source.indexOf('function svgFor(');
   const end = source.indexOf('function rectSvg(', start);
