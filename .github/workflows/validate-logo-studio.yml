@@ -17,7 +17,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  logo-studio:
+  logo-studio-static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout TROZAL MOTION
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check Logo Studio JavaScript syntax
+        run: node --check icon-logo-motion-studio.js
+      - name: Test illustrative logo catalogue and SVG families
+        run: node --test tests/illustrative-logo-studio.test.cjs
+
+  logo-studio-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -31,9 +46,5 @@ jobs:
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
-      - name: Check Logo Studio JavaScript syntax
-        run: node --check icon-logo-motion-studio.js
-      - name: Test illustrative logo catalogue and SVG families
-        run: node --test tests/illustrative-logo-studio.test.cjs
       - name: Test logo composition, per-part animation and playback
         run: node tests/icon-logo-motion-studio.browser.cjs
