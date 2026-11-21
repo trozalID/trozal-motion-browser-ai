@@ -40,6 +40,7 @@ const { chromium } = require('playwright');
     assert.equal(await page.locator('#tm4RenameScene').count(), 1, 'scene rename control is available');
     assert.equal(await page.locator('#tm4DuplicateScene').count(), 1, 'scene duplicate control is available');
     assert.equal(await page.locator('#tm4DeleteScene').count(), 1, 'scene delete control is available');
+    assert.equal(await page.locator('#tm4SceneDuration').count(), 1, 'active scene has an independent duration control');
     const projectDownload = page.waitForEvent('download');
     await page.locator('#tm4SaveProject').click();
     assert.match((await projectDownload).suggestedFilename(), /trozal-icon-motion-project\.json/);
