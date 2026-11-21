@@ -142,6 +142,8 @@ jobs:
         run: node tests/theme-concept-alignment.browser.cjs
       - name: Audit all catalogue themes and domain-specific AI prompts
         run: node tests/theme-catalogue-coverage.browser.cjs
+      - name: Validate 333 theme-linked transparent icon collections
+        run: node tests/theme-icon-catalogue.browser.cjs
       - name: Test floating render monitor interactions in Chromium
         run: node tests/floating-render-monitor.browser.cjs
       - name: Validate scene intelligence beat planning and continuity guidance
