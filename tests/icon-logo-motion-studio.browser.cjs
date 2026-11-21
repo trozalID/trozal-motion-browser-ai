@@ -14,6 +14,8 @@ const { chromium } = require('playwright');
     await page.click('#tm4ModeBtn');
     await page.waitForSelector('#tm4Overlay.open');
     assert.equal(await page.locator('#tm4Catalog .tm4-item').count(), 1500, 'catalog contains at least 1500 distinct logo concepts');
+    const catalogNames = await page.locator('#tm4Catalog .tm4-item span').allTextContents();
+    assert.equal(new Set(catalogNames).size, 1500, 'all 1500 logo names are unique and non-repeating');
     assert.match(await page.locator('#tm4MotifCount').innerText(), /1500 konsep logo vektor unik/);
     await page.locator('#tm4Search').fill('Aether Arc 0001');
     assert.equal(await page.locator('#tm4Catalog .tm4-item').count(), 1, 'exact logo search returns one distinct logo');
