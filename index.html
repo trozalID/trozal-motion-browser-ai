@@ -981,6 +981,14 @@ body[data-ui-viewport="desktop"] .app>.sidebar.right{grid-area:right!important;d
     <select id="svgAiTransparentIconStyle"><option value="Nonaktif">Nonaktif</option><option value="Outline transparan">Outline transparan</option><option value="Glassmorphism translucent">Glassmorphism translucent</option><option value="Duotone transparan">Duotone transparan</option><option value="Frosted glass icon">Frosted glass icon</option><option value="Soft 3D translucent">Soft 3D translucent</option><option value="Line icon dengan glow lembut">Line icon dengan glow lembut</option><option value="Filled icon dengan opacity rendah">Filled icon dengan opacity rendah</option></select>
     <div class="row" style="gap:8px;margin-top:5px"><div style="flex:1"><label for="svgAiTransparentIconOpacity">Transparansi ikon <span id="svgAiTransparentIconOpacityValue" class="value">32%</span></label><input id="svgAiTransparentIconOpacity" type="range" min="8" max="65" step="1" value="32"></div><div style="flex:1"><label for="svgAiTransparentIconPlacement">Penempatan</label><select id="svgAiTransparentIconPlacement"><option value="Sebagai aksen latar di belakang hero subject">Aksen latar di belakang subjek utama</option><option value="Sebagai ikon pendamping di sisi komposisi">Ikon pendamping di sisi komposisi</option><option value="Sebagai watermark dekoratif tanpa teks">Watermark dekoratif tanpa teks</option><option value="Sebagai pola ikon berulang yang sangat halus">Pola ikon berulang yang halus</option></select></div></div>
     <div id="svgAiTransparentIconHint" role="status" style="margin-top:7px;color:#c8d9eb;font-size:10px;line-height:1.5">Nonaktif. Pilih gaya untuk menambahkan ikon transparan yang selaras dengan tema.</div>
+    <div class="trozal-icon-catalog" style="margin-top:9px;padding:9px;border:1px solid #405a78;border-radius:8px;background:rgba(7,16,29,.58)">
+     <label for="svgAiIconSearch">Cari ikon · 333 koleksi mengikuti Tema Utama</label>
+     <input id="svgAiIconSearch" type="search" autocomplete="off" placeholder="Cari: planet, orbit, shield, leaf, chart, coffee…">
+     <div id="svgAiIconCatalogCount" class="help" aria-live="polite" style="margin:5px 0;color:#b7cbe2">Memuat katalog ikon tema…</div>
+     <div id="svgAiIconCatalog" role="group" aria-label="Pilihan ikon transparan berdasarkan tema aktif" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:6px;max-height:220px;overflow:auto;padding:2px"></div>
+     <div id="svgAiIconSelected" class="help" aria-live="polite" style="margin-top:7px;color:#d6e8fb">Belum ada ikon dipilih.</div>
+     <svg id="svgAiIconPreview" viewBox="0 0 320 76" role="img" aria-label="Pratinjau ikon transparan terpilih" style="display:block;width:100%;height:76px;margin-top:6px;border:1px dashed #526a84;border-radius:7px;background:transparent"></svg>
+    </div>
    </section>
    <div id="svgAiThemeBrief" role="status" aria-live="polite" style="margin:7px 0 10px;padding:9px 10px;border:1px solid #355b47;border-radius:8px;background:#0a2219;color:#d8eee0;font-size:10px;line-height:1.55;white-space:pre-line">Pilih tema untuk melihat tujuan konsep, subjek utama, dan arahan visual.</div>
    <label>Detail tambahan (opsional)</label><input type="text" id="svgAiDetails" placeholder="Contoh: ikon lebah, warna emas, latar putih">
@@ -5144,6 +5152,112 @@ window.trozalBuildThemeCreativeBrief = function(theme, category, specific) {
   'BATASAN: '+d.avoid
  ].join('\n'), prompt:lines.join('\n')};
 };
+// Theme-linked icon catalogue: one dedicated pack for every main theme entry.
+const TROZAL_ICON_DOMAIN_PACKS = {
+ 'space-cosmos': [['Planet','◉'],['Orbit','◎'],['Galaxy','✦'],['Satellite','⌖'],['Rocket','➤'],['Nebula','✧'],['Constellation','⁙'],['Telescope','⊙']],
+ 'technology-software': [['Shield','⬡'],['Cloud','☁'],['Network','⌘'],['Circuit','⌁'],['AI Node','✣'],['Lock','▣'],['Device','▤'],['Code','〈〉']],
+ 'nature-environment': [['Leaf','❧'],['Tree','♧'],['Water','≋'],['Sun','☼'],['Energy','ϟ'],['Recycle','♻'],['Mountain','△'],['Habitat','❀']],
+ 'animals-livestock': [['Species','♧'],['Paw','⌘'],['Feather','❧'],['Habitat','△'],['Migration','➝'],['Nest','⌂'],['Marine Life','≋'],['Care','✚']],
+ 'food-beverage': [['Ingredient','✿'],['Coffee','◉'],['Cup','∪'],['Pour','≋'],['Bakery','⌂'],['Plate','◎'],['Steam','♨'],['Menu','▤']],
+ 'fashion-beauty-luxury': [['Gemstone','◇'],['Watch','◷'],['Bottle','♜'],['Fabric','▥'],['Perfume','♧'],['Jewelry','✧'],['Texture','◈'],['Collection','▱']],
+ 'architecture-place': [['Building','▥'],['Floor Plan','▦'],['Interior','⌂'],['Landmark','△'],['Map Pin','⌖'],['Window','▣'],['Room','▤'],['City','▥']],
+ 'transport-mobility': [['Vehicle','▰'],['Route','➝'],['Wheel','◎'],['Aircraft','✈'],['Ship','⌁'],['Charging','ϟ'],['Navigation','⌖'],['Engine','⚙']],
+ 'industrial-infrastructure': [['Factory','▥'],['Gear','⚙'],['Pipeline','≋'],['Blueprint','▦'],['Crane','⊤'],['Logistics','➝'],['Safety','⬡'],['Machine','▣']],
+ 'sports-fitness': [['Trophy','♜'],['Ball','●'],['Score','▤'],['Whistle','◉'],['Training','ϟ'],['Medal','✧'],['Track','◎'],['Team','♧']],
+ 'culture-heritage': [['Pattern','✥'],['Artifact','◇'],['Textile','▦'],['Temple','⌂'],['Heritage','✧'],['Craft','✿'],['Map','⌖'],['Timeline','◷']],
+ 'media-entertainment': [['Play','▶'],['Waveform','∿'],['Microphone','♩'],['Camera','▣'],['Stage','▥'],['Headline','▤'],['Film','▱'],['Broadcast','◉']],
+ 'brand-graphic-design': [['Logo','✦'],['Wordmark','Aa'],['Grid','▦'],['Palette','◉'],['Package','▱'],['Typography','T'],['Emblem','◇'],['Identity','✧']],
+ 'abstract-experimental': [['Geometry','◇'],['Particle','✦'],['Fluid','≋'],['Fractal','✥'],['Loop','∞'],['Wave','∿'],['Orbit','◎'],['Light','✧']],
+ 'family-parenting': [['Family','♧'],['Home','⌂'],['Care','♡'],['Milestone','✧'],['Learning','▤'],['Routine','◷'],['Together','◎'],['Growth','❀']],
+ 'gaming-character': [['Character','♙'],['Controller','⌘'],['Power-up','ϟ'],['Portal','◎'],['Quest','◇'],['Pixel','▦'],['Mascot','♟'],['World','△']],
+ 'maps-data-public': [['Map','⌖'],['Chart','▥'],['Route','➝'],['Statistics','▤'],['Location','⊙'],['Timeline','◷'],['Civic','⌂'],['Legend','◇']],
+ 'product-commercial': [['Product','▰'],['Package','▱'],['Feature','✧'],['Material','◈'],['Showcase','◎'],['Tag','◇'],['Campaign','✦'],['CTA','➝']],
+ 'science-education': [['Atom','⚛'],['Molecule','⌬'],['Book','▤'],['Microscope','⊙'],['Formula','∑'],['Diagram','⌗'],['Research','✧'],['Learning','▦']],
+ 'healthcare': [['Care','✚'],['Heart','♡'],['Medical','⊕'],['Pulse','∿'],['Clinic','⌂'],['Wellness','❀'],['Anatomy','◇'],['Support','◎']]
+};
+const TROZAL_ICON_GLYPHS = ['✦','◇','◎','⌖','≋','▦','✧','➝'];
+window.__trozalSelectedIcons = window.__trozalSelectedIcons || [];
+window.__trozalIconTheme = '';
+function trozalGetThemeIconPack(theme) {
+ const clean=String(theme||'').trim();
+ const domain=window.trozalGetThemeDomainProfile(clean);
+ const curated=TROZAL_ICON_DOMAIN_PACKS[domain.id]||[];
+ const subthemes=(domain.subthemes||[]).slice(0,8);
+ const icons=subthemes.map((subtheme,index)=>{
+  const base=curated[index]||[subtheme,TROZAL_ICON_GLYPHS[index%TROZAL_ICON_GLYPHS.length]];
+  return {id:clean+'::'+index,name:base[0]+' — '+subtheme,shortName:base[0],glyph:base[1],keywords:(clean+' '+domain.label+' '+subtheme+' '+base[0]).toLowerCase()};
+ });
+ return {theme:clean,domain:domain.id,domainLabel:domain.label,collection:clean+' · Icon Collection',icons};
+}
+window.trozalGetThemeIconPack=trozalGetThemeIconPack;
+window.TROZAL_THEME_ICON_CATALOG=TROZAL_AI_THEMES.map(theme=>trozalGetThemeIconPack(theme));
+function trozalRenderIconPreview() {
+ const svg=document.getElementById('svgAiIconPreview');
+ if(!svg)return;
+ svg.replaceChildren();
+ const selected=window.__trozalSelectedIcons||[];
+ const ns='http://www.w3.org/2000/svg';
+ if(!selected.length){
+  const hint=document.createElementNS(ns,'text');hint.setAttribute('x','160');hint.setAttribute('y','43');hint.setAttribute('text-anchor','middle');hint.setAttribute('fill','#91a8c2');hint.setAttribute('font-size','11');hint.textContent='Pratinjau ikon transparan · pilih ikon di atas';svg.appendChild(hint);return;
+ }
+ const opacity=(Number(document.getElementById('svgAiTransparentIconOpacity')?.value||32)/100).toFixed(2);
+ selected.slice(0,6).forEach((item,index)=>{
+  const x=28+index*52;
+  const circle=document.createElementNS(ns,'circle');circle.setAttribute('cx',String(x));circle.setAttribute('cy','35');circle.setAttribute('r','23');circle.setAttribute('fill','none');circle.setAttribute('stroke','#91c8ff');circle.setAttribute('stroke-opacity',opacity);circle.setAttribute('stroke-width','1.2');svg.appendChild(circle);
+  const glyph=document.createElementNS(ns,'text');glyph.setAttribute('x',String(x));glyph.setAttribute('y','42');glyph.setAttribute('text-anchor','middle');glyph.setAttribute('font-size','20');glyph.setAttribute('fill','#c8e2ff');glyph.setAttribute('fill-opacity',opacity);glyph.textContent=item.glyph;svg.appendChild(glyph);
+ });
+}
+function trozalRenderIconCatalog(query='') {
+ const host=document.getElementById('svgAiIconCatalog');
+ const count=document.getElementById('svgAiIconCatalogCount');
+ const selectedHost=document.getElementById('svgAiIconSelected');
+ if(!host)return;
+ const theme=document.getElementById('svgAiTheme')?.value||'';
+ const q=String(query||'').trim().toLowerCase();
+ const currentPack=trozalGetThemeIconPack(theme);
+ const all=window.TROZAL_THEME_ICON_CATALOG||[];
+ const matches=q?all.flatMap(pack=>pack.icons.filter(icon=>icon.keywords.includes(q)||icon.name.toLowerCase().includes(q)).map(icon=>({...icon,theme:pack.theme,domainLabel:pack.domainLabel}))).slice(0,24):currentPack.icons.map(icon=>({...icon,theme:currentPack.theme,domainLabel:currentPack.domainLabel}));
+ host.replaceChildren();
+ matches.forEach(item=>{
+  const button=document.createElement('button');button.type='button';button.className='trozal-icon-choice';button.setAttribute('aria-pressed',String((window.__trozalSelectedIcons||[]).some(x=>x.id===item.id)));
+  button.style.cssText='display:flex;align-items:center;gap:7px;min-height:42px;padding:6px 8px;border:1px solid #526a84;border-radius:7px;background:rgba(24,43,64,.72);color:#e5f1ff;text-align:left;font-size:10px;cursor:pointer';
+  const glyph=document.createElement('span');glyph.textContent=item.glyph;glyph.setAttribute('aria-hidden','true');glyph.style.cssText='font-size:19px;color:#b9dcff;min-width:23px;text-align:center';
+  const label=document.createElement('span');label.textContent=item.name;label.style.cssText='line-height:1.3';
+  button.append(glyph,label);
+  button.addEventListener('click',()=>{
+   if(item.theme!==document.getElementById('svgAiTheme')?.value){
+    const themeSelect=document.getElementById('svgAiTheme');
+    if(themeSelect){let option=[...themeSelect.options].find(o=>o.value===item.theme);if(!option){option=document.createElement('option');option.value=item.theme;option.textContent=item.theme;themeSelect.appendChild(option);}themeSelect.value=item.theme;themeSelect.dispatchEvent(new Event('change',{bubbles:true}));}
+   }
+   const current=window.__trozalSelectedIcons||[];
+   const exists=current.some(x=>x.id===item.id);
+   window.__trozalSelectedIcons=exists?current.filter(x=>x.id!==item.id):[...current,{id:item.id,name:item.name,glyph:item.glyph,theme:item.theme}].slice(0,6);
+   trozalRenderIconCatalog(document.getElementById('svgAiIconSearch')?.value||'');
+   trozalRenderIconPreview();
+   window.trozalUpdateThemeBrief?.();
+   if(document.getElementById('svgAiPrompt')?.value.trim())window.generateSvgAiPrompt?.();
+  });
+  host.appendChild(button);
+ });
+ const chosen=window.__trozalSelectedIcons||[];
+ if(selectedHost)selectedHost.textContent=chosen.length?'Ikon terpilih ('+chosen.length+'/6): '+chosen.map(x=>x.name).join(' · '):'Belum ada ikon dipilih. Pilih hingga 6 ikon untuk satu konsep.';
+ if(count)count.textContent=q?'Hasil pencarian global: '+matches.length+' ikon dari 333 koleksi tema.':currentPack.collection+' · '+currentPack.domainLabel+' · '+currentPack.icons.length+' ikon tersedia · '+(all.length)+' koleksi tema';
+ host.querySelectorAll('.trozal-icon-choice').forEach(button=>{if(button.getAttribute('aria-pressed')==='true')button.style.borderColor='#8dc8ff';});
+}
+function trozalUpdateIconCatalog(theme,resetSelection=false) {
+ const clean=String(theme||'').trim();
+ if(resetSelection&&window.__trozalIconTheme!==clean)window.__trozalSelectedIcons=[];
+ window.__trozalIconTheme=clean;
+ const search=document.getElementById('svgAiIconSearch');
+ trozalRenderIconCatalog(search?.value||'');
+ trozalRenderIconPreview();
+}
+function trozalInitIconCatalog() {
+ const search=document.getElementById('svgAiIconSearch');
+ if(search&&!search.dataset.trozalBound){search.dataset.trozalBound='1';search.addEventListener('input',()=>trozalRenderIconCatalog(search.value));}
+ trozalUpdateIconCatalog(document.getElementById('svgAiTheme')?.value||'',true);
+}
+
 window.trozalUpdateThemeBrief = function() {
  const theme=document.getElementById('svgAiTheme')?.value||'';
  const category=document.getElementById('svgAiCategory')?.value||'';
@@ -5152,10 +5266,13 @@ window.trozalUpdateThemeBrief = function() {
  const iconStyle=document.getElementById('svgAiTransparentIconStyle')?.value||'Nonaktif';
  const iconOpacity=Number(document.getElementById('svgAiTransparentIconOpacity')?.value||32);
  const iconPlacement=document.getElementById('svgAiTransparentIconPlacement')?.value||'Sebagai aksen latar di belakang hero subject';
+ const iconPack=trozalGetThemeIconPack(theme); const selectedIcons=window.__trozalSelectedIcons||[]; const selectedIconNames=selectedIcons.map(x=>x.name).join('; ');
  const iconSpec=iconStyle==='Nonaktif'?'ICON TRANSPARAN: nonaktif.':('ICON TRANSPARAN TERHUBUNG KE TEMA: '+iconStyle+'. Gunakan ikon orisinal yang merepresentasikan tema utama "'+theme+'" dan subtema "'+specific+'"; turunkan bentuk, detail, palet, material, pencahayaan, serta bahasa visual dari kategori "'+category+'". Opacity '+iconOpacity+'%. Penempatan: '+iconPlacement+'. Ikon harus menjadi elemen pendukung, tidak menutupi subjek utama, tidak mengubah tema utama, tanpa logo/merek, dan tetap terbaca di atas latar.');
+ const iconCollectionSpec='KATALOG IKON TEMA: '+iconPack.collection+' ('+iconPack.domainLabel+'), '+iconPack.icons.length+' ikon relevan. '+(selectedIconNames?'IKON DIPILIH: '+selectedIconNames+'. Maksimal 6 ikon, gunakan hanya sebagai aset pendukung.':'Belum ada ikon yang dipilih; jangan menambahkan simbol acak.');
+ const completeIconSpec=iconSpec+'\\n'+iconCollectionSpec;
  const brief=window.trozalBuildThemeCreativeBrief(theme,category,specific);
  const iconHint=document.getElementById('svgAiTransparentIconHint');
- if(iconHint)iconHint.textContent=iconSpec;
+ if(iconHint)iconHint.textContent=iconSpec+' '+(selectedIconNames?'Ikon dipilih: '+selectedIconNames:'Pilih ikon dari koleksi '+iconPack.collection+'.');
  const host=document.getElementById('svgAiThemeBrief');
  if(host)host.textContent=brief.summary;
  const specHost=document.getElementById('svgAiAutoSpec');
@@ -5252,6 +5369,7 @@ function trozalApplyTheme(theme,keepCustomSearch=false){
  const select=$('svgAiTheme');let opt=[...select.options].find(o=>o.value.toLowerCase()===clean.toLowerCase());if(!opt){opt=document.createElement('option');opt.value=clean;opt.textContent=clean;select.appendChild(opt);}select.value=opt.value;
  if(!keepCustomSearch)$('svgAiThemeSearch').value=clean;
  const profile=trozalThemeProfile(clean);trozalSetSelectOptions($('svgAiCategory'),profile.styles);trozalSetSelectOptions($('svgAiSpecific'),profile.specifics);
+ trozalUpdateIconCatalog(clean,true);
  $('svgAiThemeSearchHint').textContent='Tema aktif: '+clean+' · '+profile.styles.length+' gaya visual dan '+profile.specifics.length+' subtema tersedia. Pilihan mengikuti tema utama.';
  trozalUpdateThemeBrief();
  if($('svgAiPrompt').value.trim())generateSvgAiPrompt();
@@ -5372,6 +5490,7 @@ function trozalInitThemeCatalog(){
 
 // Initialize the theme catalogue before the prompt controls are bound.
 trozalInitThemeCatalog();
+trozalInitIconCatalog();
 $('svgAiDetails')?.addEventListener('input',()=>window.trozalUpdateThemeBrief());
 
 (function(){
@@ -5386,7 +5505,10 @@ $('svgAiDetails')?.addEventListener('input',()=>window.trozalUpdateThemeBrief())
   const iconStyle=val('svgAiTransparentIconStyle','Nonaktif');
   const iconOpacity=val('svgAiTransparentIconOpacity','32');
   const iconPlacement=val('svgAiTransparentIconPlacement','Sebagai aksen latar di belakang hero subject');
-  const iconPrompt=iconStyle==='Nonaktif'?'Transparent icon treatment: disabled.':'Transparent icon treatment: '+iconStyle+'; theme-linked subject: '+theme+' / '+specific+'; inherit visual grammar from '+category+'; opacity '+iconOpacity+'%; placement: '+iconPlacement+'. Use original theme-specific iconography only as a supporting layer, never replace or obscure the main subject, and do not introduce unrelated symbols, logos, or trademarks.';
+  const selectedIcons=window.__trozalSelectedIcons||[];
+  const iconPack=window.trozalGetThemeIconPack(theme);
+  const selectedIconPrompt=selectedIcons.length?' Selected transparent icon assets from '+iconPack.collection+': '+selectedIcons.map(x=>x.name).join('; ')+'. Use these exact semantic assets, max 6, and keep them secondary.':' No icon assets selected; do not invent unrelated symbols.';
+  const iconPrompt=(iconStyle==='Nonaktif'?'Transparent icon treatment: disabled.':'Transparent icon treatment: '+iconStyle+'; theme-linked subject: '+theme+' / '+specific+'; inherit visual grammar from '+category+'; opacity '+iconOpacity+'%; placement: '+iconPlacement+'. Use original theme-specific iconography only as a supporting layer, never replace or obscure the main subject, and do not introduce unrelated symbols, logos, or trademarks.')+selectedIconPrompt;
   const filename=(val('svgAiFilename')||[theme,specific].join('_')).replace(/[^a-z0-9_-]+/gi,'_').replace(/^_+|_+$/g,'')||'trozal-motion';
   const count=Math.max(1,Math.min(10,Number(val('svgAiConceptCount','3'))||3));
   const duration=val('svgAiDuration','8 detik');
