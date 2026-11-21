@@ -149,6 +149,10 @@ jobs:
         run: node tests/theme-icon-catalogue.browser.cjs
       - name: Validate independent Logo Studio, search, theme isolation and SVG export
         run: node tests/logo-studio.browser.cjs
+      - name: Validate illustrative Logo Studio catalogue, animated parts and playback
+        run: |
+          node --test tests/illustrative-logo-studio.test.cjs
+          node tests/icon-logo-motion-studio.browser.cjs
       - name: Test floating render monitor interactions in Chromium
         run: node tests/floating-render-monitor.browser.cjs
       - name: Validate scene intelligence beat planning and continuity guidance
