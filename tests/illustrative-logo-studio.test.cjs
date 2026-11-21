@@ -34,8 +34,9 @@ test('all 1,500 concepts render distinct, multipart SVG artwork with 15 illustra
     const family=svg.match(/data-illustration-family="(\d+)"/);
     if(family) families.add(family[1]);
     assert.ok((svg.match(/data-part="/g)||[]).length>=5,'concept '+i+' must have multiple semantic parts');
-    assert.match(svg,/@keyframes .*float/);
+    assert.match(svg,/@keyframes .*reveal/);
     assert.doesNotMatch(svg,/<rect[^>]*(?:width="(?:100%|240)"|height="(?:100%|240)")/,'no enclosing frame');
+    assert.doesNotMatch(svg,/signature-(?:crest|emblem)/,'no universal diamond or crest overlay');
   }
   assert.equal(families.size,15,'all fifteen illustration families are represented');
   assert.equal(artworks.size,1500,'all 1,500 rendered artworks must be structurally distinct');

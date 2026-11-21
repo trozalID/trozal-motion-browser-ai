@@ -28,6 +28,13 @@ on:
       - feature/adaptive-render-memory-manager-2026-11-18
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'icon-logo-motion-studio.js'
+      - 'tests/icon-logo-motion-studio.browser.cjs'
+      - 'tests/illustrative-logo-studio.test.cjs'
+      - '.github/workflows/build-prores-pages.yml'
+      - '.github/workflows/validate-browser-render.yml'
+      - '.github/workflows/validate-logo-studio.yml'
   workflow_dispatch:
 
 permissions:
