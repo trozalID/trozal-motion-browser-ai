@@ -4,7 +4,8 @@ const fs = require('node:fs');
 const { chromium } = require('playwright');
 
 (async () => {
-  const source = fs.readFileSync('site/icon-logo-motion-studio.js', 'utf8');
+  const sourcePath = fs.existsSync('site/icon-logo-motion-studio.js') ? 'site/icon-logo-motion-studio.js' : 'icon-logo-motion-studio.js';
+  const source = fs.readFileSync(sourcePath, 'utf8');
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
