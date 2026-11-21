@@ -5163,17 +5163,18 @@ const TROZAL_ICON_DOMAIN_PACKS = {
  'architecture-place': [['Building','▥'],['Floor Plan','▦'],['Interior','⌂'],['Landmark','△'],['Map Pin','⌖'],['Window','▣'],['Room','▤'],['City','▥']],
  'transport-mobility': [['Vehicle','▰'],['Route','➝'],['Wheel','◎'],['Aircraft','✈'],['Ship','⌁'],['Charging','ϟ'],['Navigation','⌖'],['Engine','⚙']],
  'industrial-infrastructure': [['Factory','▥'],['Gear','⚙'],['Pipeline','≋'],['Blueprint','▦'],['Crane','⊤'],['Logistics','➝'],['Safety','⬡'],['Machine','▣']],
- 'sports-fitness': [['Trophy','♜'],['Ball','●'],['Score','▤'],['Whistle','◉'],['Training','ϟ'],['Medal','✧'],['Track','◎'],['Team','♧']],
+ 'sports-performance': [['Trophy','♜'],['Ball','●'],['Score','▤'],['Whistle','◉'],['Training','ϟ'],['Medal','✧'],['Track','◎'],['Team','♧']],
  'culture-heritage': [['Pattern','✥'],['Artifact','◇'],['Textile','▦'],['Temple','⌂'],['Heritage','✧'],['Craft','✿'],['Map','⌖'],['Timeline','◷']],
  'media-entertainment': [['Play','▶'],['Waveform','∿'],['Microphone','♩'],['Camera','▣'],['Stage','▥'],['Headline','▤'],['Film','▱'],['Broadcast','◉']],
  'brand-graphic-design': [['Logo','✦'],['Wordmark','Aa'],['Grid','▦'],['Palette','◉'],['Package','▱'],['Typography','T'],['Emblem','◇'],['Identity','✧']],
  'abstract-experimental': [['Geometry','◇'],['Particle','✦'],['Fluid','≋'],['Fractal','✥'],['Loop','∞'],['Wave','∿'],['Orbit','◎'],['Light','✧']],
  'family-parenting': [['Family','♧'],['Home','⌂'],['Care','♡'],['Milestone','✧'],['Learning','▤'],['Routine','◷'],['Together','◎'],['Growth','❀']],
  'gaming-character': [['Character','♙'],['Controller','⌘'],['Power-up','ϟ'],['Portal','◎'],['Quest','◇'],['Pixel','▦'],['Mascot','♟'],['World','△']],
+ 'finance-payments': [['Wallet','▱'],['Card','▣'],['Payment','⊕'],['Coins','◎'],['Savings','◇'],['Budget','▤'],['Transfer','➝'],['Security','⬡']],
  'maps-data-public': [['Map','⌖'],['Chart','▥'],['Route','➝'],['Statistics','▤'],['Location','⊙'],['Timeline','◷'],['Civic','⌂'],['Legend','◇']],
  'product-commercial': [['Product','▰'],['Package','▱'],['Feature','✧'],['Material','◈'],['Showcase','◎'],['Tag','◇'],['Campaign','✦'],['CTA','➝']],
  'science-education': [['Atom','⚛'],['Molecule','⌬'],['Book','▤'],['Microscope','⊙'],['Formula','∑'],['Diagram','⌗'],['Research','✧'],['Learning','▦']],
- 'healthcare': [['Care','✚'],['Heart','♡'],['Medical','⊕'],['Pulse','∿'],['Clinic','⌂'],['Wellness','❀'],['Anatomy','◇'],['Support','◎']]
+ 'healthcare-wellness': [['Care','✚'],['Heart','♡'],['Medical','⊕'],['Pulse','∿'],['Clinic','⌂'],['Wellness','❀'],['Anatomy','◇'],['Support','◎']]
 };
 const TROZAL_ICON_GLYPHS = ['✦','◇','◎','⌖','≋','▦','✧','➝'];
 window.__trozalSelectedIcons = window.__trozalSelectedIcons || [];
@@ -5255,6 +5256,7 @@ function trozalUpdateIconCatalog(theme,resetSelection=false) {
 function trozalInitIconCatalog() {
  const search=document.getElementById('svgAiIconSearch');
  if(search&&!search.dataset.trozalBound){search.dataset.trozalBound='1';search.addEventListener('input',()=>trozalRenderIconCatalog(search.value));}
+ ['svgAiTransparentIconOpacity','svgAiTransparentIconStyle','svgAiTransparentIconPlacement'].forEach(id=>document.getElementById(id)?.addEventListener('input',trozalRenderIconPreview));
  trozalUpdateIconCatalog(document.getElementById('svgAiTheme')?.value||'',true);
 }
 
