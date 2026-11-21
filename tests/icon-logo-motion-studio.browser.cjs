@@ -44,7 +44,28 @@ const { chromium } = require('playwright');
     assert.match(await page.locator('#tm4SceneTabs').innerText(),/Acak Komposisi/,'composition tools replace storyboard controls');
     const projectDownload = page.waitForEvent('download');
     await page.locator('#tm4SaveProject').click();
-    assert.match((await projectDownload).suggestedFilename(), /trozal-icon-motion-project\.json/);
+    const savedProject = await projectDownload;
+    assert.match(savedProject.suggestedFilename(), /trozal-icon-motion-project\\.json/);
+    const savedProjectPath = await savedProject.path();
+    const savedProjectData = JSON.parse(fs.readFileSync(savedProjectPath, 'utf8'));
+    const savedSelectedLayer = savedProjectData.state.scenes[savedProjectData.state.scene].layers.find(layer => layer.id === savedProjectData.state.selected);
+    assert.equal(savedSelectedLayer.partMotion, 'Wave Parts', 'project file stores the selected per-part motion');
+    assert.equal(savedSelectedLayer.expression, 'Surprised', 'project file stores the character expression');
+    assert.equal(savedSelectedLayer.partsEnabled, true, 'project file stores the per-part animation toggle');
+    await page.locator('#tm4PartMotion').selectOption('Orbit Parts');
+    await page.locator('#tm4Expression').selectOption('Serious');
+    await page.locator('#tm4PartsEnabled').uncheck();
+    await page.locator('#tm4ProjectFile').setInputFiles(savedProjectPath);
+    await page.waitForFunction(() =>
+      document.getElementById('tm4PartMotion')?.value === 'Wave Parts' &&
+      document.getElementById('tm4Expression')?.value === 'Surprised' &&
+      document.getElementById('tm4PartsEnabled')?.checked === true
+    );
+    const duplicateDomIds = await page.locator('[id]').evaluateAll(nodes => {
+      const ids = nodes.map(node => node.id);
+      return [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
+    });
+    assert.deepEqual(duplicateDomIds, [], 'Logo Studio must not render duplicate DOM IDs');
     await page.locator('#tm4AddText').click();
     assert.equal(await page.locator('#tm4Layers .tm4-layer').count(), 7, 'text layer can be added');
     await page.locator('[data-out="svg"]').click();
