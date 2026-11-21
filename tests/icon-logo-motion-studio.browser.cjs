@@ -22,7 +22,7 @@ const { chromium } = require('playwright');
     await page.locator('#tm4AddText').click();
     assert.equal(await page.locator('#tm4Layers .tm4-layer').count(), 5, 'text layer can be added');
     await page.locator('#tm4AddScene').click();
-    assert.equal(await page.locator('#tm4SceneTabs button').count(), 4, 'new scene can be added');
+    assert.equal(await page.locator('#tm4SceneTabs [data-scene]').count(), 4, 'new scene can be added');
     await page.locator('[data-out="svg"]').click();
     assert.match(await page.locator('#tm4Output').inputValue(), /<svg/);
     await page.locator('[data-out="html"]').click();
