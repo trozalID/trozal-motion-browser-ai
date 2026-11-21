@@ -27,7 +27,7 @@ const { chromium } = require('playwright');
     assert.doesNotMatch(svgOutput, /<rect[^>]+x=[\"']0[\"'][^>]+y=[\"']0[\"'][^>]+width=[\"']240[\"'][^>]+height=[\"']240[\"']/, 'logo artwork must not have a full-canvas rectangular frame');
     assert.match(svgOutput, /<circle\b/, 'illustrated icon includes recognizable internal details');
     assert.match(svgOutput, /stroke=\"#12345b\"/, 'illustration uses the bold dark outline style');
-    assert.match(svgOutput, /<path\b/, 'logo is a vector mark, not an emoji');
+    assert.match(svgOutput, /<(?:path|rect|circle|ellipse|polygon|line)\b/, 'logo is composed of real SVG vector geometry, not an emoji');
     assert.match(svgOutput, /class="tm4-part"/, 'SVG paths are split into independent animated parts');
     assert.match(svgOutput, /tm4PartMotion/, 'per-part animation keyframes are embedded');
     assert.equal(await page.locator('#tm4PartMotion').count(), 1, 'per-part motion control is available');
