@@ -61,6 +61,7 @@ jobs:
           set -euo pipefail
           node --check render-sync-advisor.js
           node --check js-motion-engine.js
+          node --check logo-studio.js
           node --check metadata-actions.js
           node --check browser-ai-gemini-cloud.js
           node --check browser-ai-key-storage.js
@@ -144,6 +145,8 @@ jobs:
         run: node tests/theme-catalogue-coverage.browser.cjs
       - name: Validate 333 theme-linked transparent icon collections
         run: node tests/theme-icon-catalogue.browser.cjs
+      - name: Validate independent Logo Studio, search, theme isolation and SVG export
+        run: node tests/logo-studio.browser.cjs
       - name: Test floating render monitor interactions in Chromium
         run: node tests/floating-render-monitor.browser.cjs
       - name: Validate scene intelligence beat planning and continuity guidance
