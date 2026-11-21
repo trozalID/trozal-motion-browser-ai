@@ -44,6 +44,11 @@ const assert = require('node:assert/strict');
   const download = await downloadPromise;
   assert.equal(download.suggestedFilename(), 'trozal-logo.svg');
 
+  await page.locator('#trozalLogoInsertCanvas').click();
+  await page.waitForFunction(() => !!document.querySelector('#object svg'));
+  assert.match(await page.locator('#object').innerHTML(), /BRAND TEST/,
+    'Logo Studio must insert the generated SVG as an editable Canvas asset');
+
   assert.deepEqual(errors, [], 'Unexpected page errors while using Logo Studio');
   await browser.close();
 })().catch(error => { console.error(error); process.exit(1); });
