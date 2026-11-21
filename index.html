@@ -625,6 +625,28 @@ button.part:focus-visible{outline:2px solid #ffe8a3;outline-offset:2px}
 #trozalDebugLog .err{color:#ff858b}#trozalDebugLog .warn{color:#ffd17a}#trozalDebugLog .info{color:#a8d5ff}
 @media(min-width:700px){#trozalDebugPanel{left:auto;width:520px;right:14px;bottom:58px}}
 
+
+/* INDEPENDENT LOGO STUDIO — isolated from theme intelligence */
+#trozalLogoStudio{background:linear-gradient(145deg,#302616,#1e1d20 62%,#292116);border:1px solid #a47b39;box-shadow:0 8px 22px #09070588}
+#trozalLogoStudio h3{color:#f3d49a}#trozalLogoStudio h3 b{color:#f6c66b}
+#trozalLogoStudio label{color:#f0dfc2}#trozalLogoStudio input,#trozalLogoStudio select{background:#17140f;border:1px solid #765c32;color:#fff3dc;border-radius:6px;padding:7px;width:100%}
+#trozalLogoStudio input[type=color]{padding:2px}
+.logo-catalog{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:260px;overflow:auto;padding:2px}
+.logo-choice{display:grid;grid-template-columns:42px 1fr;grid-template-rows:auto auto;align-items:center;gap:2px 7px;min-width:0;padding:6px;text-align:left;border:1px solid #675332;background:#211d17;color:#f7e9cf}
+.logo-choice.active{border-color:#f2c66d;background:#3a2b16;box-shadow:0 0 0 1px #f2c66d55}
+.logo-choice-mark{grid-row:1/3;width:40px;height:40px;display:grid;place-items:center}.logo-choice-mark svg{width:100%;height:100%}
+.logo-choice>span:nth-child(2){font-size:10px;font-weight:800}.logo-choice small{font-size:9px;color:#c5ad83}
+.logo-preview-wrap{margin:9px 0;padding:8px;border:1px solid #795d32;border-radius:8px;background:linear-gradient(145deg,#16130f,#282117)}
+.logo-preview-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px;color:#e9cc92;font-size:9px;letter-spacing:.06em}
+.logo-preview-head span{font-weight:400;color:#c7b28b;text-align:right}
+.logo-preview{min-height:110px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px dashed #735d3c;border-radius:6px;background-color:#17140f;background-image:linear-gradient(45deg,#ffffff0a 25%,transparent 25%),linear-gradient(-45deg,#ffffff0a 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ffffff0a 75%),linear-gradient(-45deg,transparent 75%,#ffffff0a 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0}
+.logo-preview svg{display:block;width:100%;max-width:520px;height:auto;max-height:140px}
+.logo-anim-reveal svg{animation:trozalLogoReveal 1.1s ease both}.logo-anim-pulse svg{animation:trozalLogoPulse 1.8s ease-in-out infinite}.logo-anim-spin svg g{transform-box:fill-box;transform-origin:center;animation:trozalLogoSpin 5s linear infinite}
+@keyframes trozalLogoReveal{from{opacity:0;transform:translateY(12px) scale(.94);clip-path:inset(0 100% 0 0)}to{opacity:1;transform:none;clip-path:inset(0)}}
+@keyframes trozalLogoPulse{50%{filter:drop-shadow(0 0 8px #f2c66d88)}}
+@keyframes trozalLogoSpin{to{transform:rotate(360deg)}}
+@media(max-width:520px){.logo-catalog{grid-template-columns:repeat(2,minmax(0,1fr))}.logo-preview{min-height:92px}}
+
 </style>
 <style>
 
@@ -968,6 +990,22 @@ body[data-ui-viewport="desktop"] .app>.sidebar.right{grid-area:right!important;d
   </section>
 
 
+  <section class="panel" id="trozalLogoStudio" aria-labelledby="trozalLogoStudioTitle">
+   <h3 id="trozalLogoStudioTitle"><b>◆</b> LOGO STUDIO · INDEPENDENT</h3>
+   <p class="help">Katalog logo berdiri sendiri. Pilihan logo tidak mengikuti atau mengubah Tema Utama, kategori visual, maupun katalog ikon dekoratif.</p>
+   <label for="trozalLogoSearch">Cari logo</label><input id="trozalLogoSearch" type="search" autocomplete="off" placeholder="Cari: monogram, shield, leaf, orbit…">
+   <label for="trozalLogoCategory">Kategori logo</label>
+   <select id="trozalLogoCategory"><option>Semua</option><option>Monogram</option><option>Geometris</option><option>Abstrak</option><option>Organik</option><option>Emblem</option><option>Teknologi</option><option>Maskot</option><option>Wordmark</option></select>
+   <div id="trozalLogoCount" class="help" aria-live="polite">Memuat katalog logo independen…</div>
+   <div id="trozalLogoCatalog" class="logo-catalog" role="group" aria-label="Katalog logo independen"></div>
+   <div class="logo-preview-wrap"><div class="logo-preview-head"><strong>PRATINJAU LOGO</strong><span id="trozalLogoActiveName">Orbit · Geometris</span></div><div id="trozalLogoPreview" class="logo-preview" role="img" aria-label="Pratinjau logo terpilih"></div></div>
+   <div class="row"><div><label for="trozalLogoName">Nama brand / teks</label><input id="trozalLogoName" type="text" maxlength="32" value="TROZAL"></div><div><label for="trozalLogoColor">Warna logo</label><input id="trozalLogoColor" type="color" value="#e5b85c" style="width:100%;height:34px;padding:2px"></div></div>
+   <label for="trozalLogoTagline">Tagline (opsional)</label><input id="trozalLogoTagline" type="text" maxlength="48" placeholder="Contoh: Motion Design Studio">
+   <label for="trozalLogoAnimation">Animasi pratinjau</label><select id="trozalLogoAnimation"><option value="none">Diam</option><option value="reveal">Reveal</option><option value="pulse">Pulse</option><option value="spin">Spin mark</option></select>
+   <div class="row" style="margin-top:9px"><button type="button" id="trozalLogoRandom">✦ Logo acak</button><button type="button" id="trozalLogoCopy">Salin SVG</button></div>
+   <div class="row" style="margin-top:6px"><button type="button" class="primary" id="trozalLogoDownload">Unduh SVG</button><button type="button" id="trozalLogoPng">Unduh PNG transparan</button></div>
+   <div id="trozalLogoStatus" class="status" role="status" aria-live="polite"></div>
+  </section>
   <section class="panel ai-tools panel-tone-ai" id="svgMotionModePanel"><h3><b>✦</b> MODE HTML MOTION · GENERATE AI</h3>
    <p class="help">Buat konsep motion graphic HTML + CSS yang siap diimpor. Cari tema, pilih resolusi dan rasio, lalu tempel dokumen HTML lengkap ke terminal trozal_MOTION.</p>
    <label>Search tema AI</label><input id="svgAiThemeSearch" type="text" list="svgAiThemeSuggestions" autocomplete="off" placeholder="Cari tema: Cybersecurity, Ramadan, Space, Coffee..."><datalist id="svgAiThemeSuggestions"></datalist><div id="svgAiThemeResults" class="theme-search-results" hidden></div><div class="theme-quick-picks"><button type="button" data-theme-pick="Cinematic Brand Film">Cinematic</button><button type="button" data-theme-pick="Futuristic Technology Commercial">Futuristic</button><button type="button" data-theme-pick="Luxury Brand Commercial">Premium</button><button type="button" data-theme-pick="3D Product Visualization">3D</button><button type="button" data-theme-pick="Commercial Motion Package">Commercial</button></div><div class="row" style="display:flex;gap:7px;margin:6px 0 10px"><button type="button" id="svgAiRandomThemeBtn" class="secondary">✦ Tema inspirasi acak</button><span class="help" id="svgAiCatalogCount">Memuat katalog tema…</span></div><p class="theme-search-hint" id="svgAiThemeSearchHint">Cari tema atau ketik tema khusus. Kategori visual dan subtema akan disesuaikan otomatis.</p>
@@ -6105,6 +6143,7 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
 <script src="./smart-render-preflight.js" defer></script>
 <script src="./render-frame-store.js" defer></script>
 
+<script src="./logo-studio.js" defer></script>
 <script src="./js-motion-engine.js?v=20261119-2248" defer></script>
 </body>
 </html>

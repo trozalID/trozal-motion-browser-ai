@@ -83,6 +83,7 @@ jobs:
           cp hybrid-canvas-renderer.js site/hybrid-canvas-renderer.js
           cp browser-gpu-health.js site/browser-gpu-health.js
           cp browser-gpu-frame-pipeline.js site/browser-gpu-frame-pipeline.js
+          cp logo-studio.js site/logo-studio.js
           touch site/.nojekyll
 
       - name: Validate inline JavaScript syntax
@@ -204,6 +205,7 @@ jobs:
           set -euo pipefail
           grep -q -- '--enable-encoder=prores_ks' /tmp/ffmpeg-wasm/Dockerfile
           test -s site/index.html
+          test -s site/logo-studio.js
           test -s site/render-frame-store.js
           test -s site/js/scene-intelligence.js
           node <<'NODE'
