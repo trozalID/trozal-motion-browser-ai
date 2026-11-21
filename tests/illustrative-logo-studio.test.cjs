@@ -50,3 +50,11 @@ test('all 1,500 concepts render distinct, multipart SVG artwork with 15 illustra
   assert.equal(families.size,15,'all fifteen illustration families are represented');
   assert.equal(artworks.size,1500,'all 1,500 rendered artworks must be structurally distinct');
 });
+
+test('layer visibility and lock controls affect preview and exports', () => {
+  assert.match(source, /visible:true,locked:false/);
+  assert.match(source, /data-layer-visible=/);
+  assert.match(source, /data-layer-lock=/);
+  assert.match(source, /filter\(l=>l\.visible!==false\)/);
+  assert.match(source, /pointer-events:'\+\(l\.locked\?'none':'auto'\)/);
+});
