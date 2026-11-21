@@ -76,11 +76,12 @@ const { chromium } = require('playwright');
     assert.match(await page.locator('#svgAiIconSelected').innerText(), /Ikon terpilih/);
     assert.deepEqual(errors, [], 'Icon catalogue interactions must not throw browser errors');
 
+    const iconCounts = await page.evaluate(() => window.TROZAL_THEME_ICON_CATALOG.map(pack => pack.icons.length));
     console.log(JSON.stringify({
       result: 'PASS',
       mainThemes: audit.mainThemeCount,
       dedicatedIconCollections: audit.iconCollectionCount,
-      minimumIconsPerCollection: Math.min(...await page.evaluate(() => window.TROZAL_THEME_ICON_CATALOG.map(pack => pack.icons.length))),
+      minimumIconsPerCollection: Math.min(...iconCounts),
       globalSearchAndThemeSync: 'PASS',
       selectedIconsIncludedInPrompt: 'PASS',
       iconStylePreservedOnThemeChange: 'PASS'
