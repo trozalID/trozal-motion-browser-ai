@@ -57,6 +57,7 @@ function download(name,type,data) {
 const blob=new Blob([data],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function bind() {
+ $('trozalLogoInsertCanvas')?.addEventListener('click',insertIntoCanvas);
 ['trozalLogoName','trozalLogoTagline','trozalLogoColor','trozalLogoAnimation'].forEach(id=>$(id)?.addEventListener('input',render));
 $('trozalLogoSearch')?.addEventListener('input',renderCatalog);$('trozalLogoCategory')?.addEventListener('change',renderCatalog);
 $('trozalLogoRandom')?.addEventListener('click',()=>{const options=templates.filter(item=>item.id!==active.id);active=options[Math.floor(Math.random()*options.length)]||templates[0];renderCatalog();render();});
@@ -68,9 +69,46 @@ img.onload=()=>{const canvas=document.createElement('canvas');canvas.width=1280;
 img.onerror=()=>{URL.revokeObjectURL(url);$('trozalLogoStatus').textContent='Gagal membuat PNG. Unduh SVG sebagai alternatif.';};img.src=url;
 });
 }
+
+function ensurePanel() {
+ if ($('trozalLogoStudio')) return;
+ const anchor=$('batchQueuePanel');
+ if (!anchor) return;
+ const panel=document.createElement('section');
+ panel.className='panel';
+ panel.id='trozalLogoStudio';
+ panel.setAttribute('aria-labelledby','trozalLogoStudioTitle');
+ panel.innerHTML='<h3 id="trozalLogoStudioTitle">◆ LOGO STUDIO · INDEPENDENT</h3><p class="help">Katalog logo independen dari 333 tema utama. Pilih logo, atur identitas, lalu masukkan sebagai SVG ke Canvas 2D.</p><label for="trozalLogoSearch">Cari logo</label><input id="trozalLogoSearch" type="search" placeholder="Cari monogram, shield, leaf, orbit…"><label for="trozalLogoCategory">Kategori logo</label><select id="trozalLogoCategory"><option>Semua</option><option>Monogram</option><option>Geometris</option><option>Abstrak</option><option>Organik</option><option>Emblem</option><option>Teknologi</option><option>Maskot</option><option>Wordmark</option></select><div id="trozalLogoCount" class="help" aria-live="polite">Memuat katalog logo…</div><div id="trozalLogoCatalog" class="logo-catalog" role="group" aria-label="Katalog logo independen"></div><div class="logo-preview-wrap"><div class="logo-preview-head"><strong>PRATINJAU LOGO</strong><span id="trozalLogoActiveName">Orbit · Geometris</span></div><div id="trozalLogoPreview" class="logo-preview" role="img" aria-label="Pratinjau logo terpilih"></div></div><div class="row"><div><label for="trozalLogoName">Nama brand / teks</label><input id="trozalLogoName" maxlength="32" value="TROZAL"></div><div><label for="trozalLogoColor">Warna logo</label><input id="trozalLogoColor" type="color" value="#e5b85c"></div></div><label for="trozalLogoTagline">Tagline (opsional)</label><input id="trozalLogoTagline" maxlength="48" placeholder="Motion Design Studio"><label for="trozalLogoAnimation">Animasi pratinjau</label><select id="trozalLogoAnimation"><option value="none">Diam</option><option value="reveal">Reveal</option><option value="pulse">Pulse</option><option value="spin">Spin mark</option></select><div class="row"><button type="button" id="trozalLogoRandom">✦ Logo acak</button><button type="button" id="trozalLogoCopy">Salin SVG</button></div><div class="row"><button type="button" id="trozalLogoDownload">Unduh SVG</button><button type="button" id="trozalLogoPng">Unduh PNG transparan</button></div><div id="trozalLogoStatus" class="status" role="status" aria-live="polite"></div>';
+ anchor.insertAdjacentElement('afterend',panel);
+}
+function ensureCanvasInsertButton() {
+ if ($('trozalLogoInsertCanvas')) return;
+ const status=$('trozalLogoStatus'), panel=$('trozalLogoStudio');
+ if (!status || !panel) return;
+ const button=document.createElement('button');
+ button.type='button';button.id='trozalLogoInsertCanvas';button.className='primary';
+ button.textContent='＋ Masukkan ke Canvas 2D';
+ button.style.width='100%';button.style.margin='8px 0';
+ status.insertAdjacentElement('beforebegin',button);
+}
+function insertIntoCanvas() {
+ const input=$('fileInput');
+ if (!input) { $('trozalLogoStatus').textContent='Input aset Canvas tidak ditemukan.'; return false; }
+ try {
+  const file=new File([buildSvg()],'trozal-logo.svg',{type:'image/svg+xml;charset=utf-8'});
+  const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;
+  input.dispatchEvent(new Event('change',{bubbles:true}));
+  $('trozalLogoStatus').textContent='Logo dimasukkan sebagai SVG asset ke Canvas 2D. Anda dapat mengatur posisi, ukuran, warna, layer, dan animasinya melalui kontrol Canvas.';
+  return true;
+ } catch(error) {
+  $('trozalLogoStatus').textContent='Tidak dapat memasukkan logo otomatis: '+(error?.message||'browser tidak mendukung transfer file');
+  return false;
+ }
+}
+
 function init() {
-if(!$('trozalLogoStudio'))return;bind();renderCatalog();render();
-window.trozalLogoStudio={getSvg:buildSvg,getActiveTemplate:()=>active.id,getTemplates:()=>templates.map(({id,name,category})=>({id,name,category}))};
+ensurePanel();if(!$('trozalLogoStudio'))return;ensureCanvasInsertButton();bind();renderCatalog();render();
+window.trozalLogoStudio={getSvg:buildSvg,insertIntoCanvas,getActiveTemplate:()=>active.id,getTemplates:()=>templates.map(({id,name,category})=>({id,name,category}))};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
