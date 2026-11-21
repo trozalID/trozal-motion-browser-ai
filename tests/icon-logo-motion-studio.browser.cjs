@@ -17,7 +17,7 @@ const { chromium } = require('playwright');
     assert.match(await page.locator('#tm4MotifCount').innerText(), /1620 pilihan ikon\/logo/);
     await page.locator('#tm4Search').fill('kaktus');
     assert.equal(await page.locator('#tm4Catalog .tm4-item').count(), 9, 'catalog search shows all style treatments for a motif');
-    await page.locator('#tm4Catalog .tm4-item').click();
+    await page.locator('#tm4Catalog .tm4-item').first().click();
     assert.equal(await page.locator('#tm4Layers .tm4-layer').count(), 2, 'adding an icon creates a layer');
     await page.locator('#tm4AddText').click();
     assert.equal(await page.locator('#tm4Layers .tm4-layer').count(), 3, 'text layer can be added');
