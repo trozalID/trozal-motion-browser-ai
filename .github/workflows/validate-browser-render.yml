@@ -106,6 +106,7 @@ jobs:
           NODE
           node tests/metadata-actions.test.cjs
           node tests/ip-guardrails-panel.test.cjs
+          node tests/logo-studio-contract.test.cjs
           node tests/browser-render-scheduler.test.cjs
           node tests/canvas-render-speed.test.cjs
           node tests/smart-render-preflight.test.cjs
