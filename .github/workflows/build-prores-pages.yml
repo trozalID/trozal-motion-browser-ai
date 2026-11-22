@@ -68,6 +68,9 @@ jobs:
           cp trozal-image-to-code-video.js site/trozal-image-to-code-video.js
           cp js-motion-engine.js site/js-motion-engine.js
           cp js/scene-intelligence.js site/js/scene-intelligence.js
+          cp js/character-rig.mjs site/js/character-rig.mjs
+          cp js/universal-object-rig.mjs site/js/universal-object-rig.mjs
+          cp js/universal-object-rig.worker.mjs site/js/universal-object-rig.worker.mjs
           cp metadata-quality-delivery.js site/metadata-quality-delivery.js
           cp metadata-actions.js site/metadata-actions.js
           cp ip-guardrails-panel.js site/ip-guardrails-panel.js
