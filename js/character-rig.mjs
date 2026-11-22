@@ -161,12 +161,11 @@ function reconstructBackground(source, maskData, maskWidth, maskHeight, width, h
   }
   if (!tail) throw new Error("Mask subjek menutupi seluruh gambar; latar tidak dapat direkonstruksi.");
   while (head < tail) {
-    const i = queue[head++], x = i % width, y = (i / width) | 0;
-    const visit = n => { if (owner[n] === -1) { owner[n] = owner[i]; queue[tail++] = n; } };
-    if (x > 0) visit(i - 1);
-    if (x + 1 < width) visit(i + 1);
-    if (y > 0) visit(i - width);
-    if (y + 1 < height) visit(i + width);
+    const i = queue[head++], x = i % width, y = (i / width) | 0, sourceIndex = owner[i];
+    if (x > 0 && owner[i - 1] === -1) { owner[i - 1] = sourceIndex; queue[tail++] = i - 1; }
+    if (x + 1 < width && owner[i + 1] === -1) { owner[i + 1] = sourceIndex; queue[tail++] = i + 1; }
+    if (y > 0 && owner[i - width] === -1) { owner[i - width] = sourceIndex; queue[tail++] = i - width; }
+    if (y + 1 < height && owner[i + width] === -1) { owner[i + width] = sourceIndex; queue[tail++] = i + width; }
   }
   const filled = new ImageData(new Uint8ClampedArray(src), width, height);
   for (let i = 0; i < total; i++) {
@@ -259,6 +258,7 @@ export async function createCharacterRig(dataUrl, options = {}) {
     const rawMask = segmentation.getAsFloat32Array();
     if (!maskWidth || !maskHeight || rawMask.length < maskWidth * maskHeight) throw new Error("Mask siluet dari model tidak valid.");
     const maskAt = (x, y) => Number(rawMask[y * maskWidth + x]) || 0;
+    maskAt.width = maskWidth; maskAt.height = maskHeight;
     const { specs, labels, bounds } = assignPosePartLabels(rawMask, maskWidth, maskHeight, landmarks, width, height);
     const background = reconstructBackground(source, rawMask, maskWidth, maskHeight, width, height, maskAt);
     const parts = [];
