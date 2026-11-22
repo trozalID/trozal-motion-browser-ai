@@ -44,10 +44,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
-    environment:
-      name: ${{ github.event_name == 'pull_request' && 'pages-build-validation' || 'github-pages' }}
-      url: ${{ github.event_name == 'pull_request' && '' || steps.deployment.outputs.page_url }}
+  build-site:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     steps:
@@ -282,8 +279,17 @@ jobs:
           name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
           path: site
 
+
+  deploy-pages:
+    needs: build-site
+    if: github.event_name != 'pull_request'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
       - name: Deploy to GitHub Pages
-        if: github.event_name != 'pull_request'
         id: deployment
         uses: actions/deploy-pages@v4
         with:
