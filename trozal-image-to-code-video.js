@@ -32,7 +32,7 @@ async function buildUniversalRig(auto=false){
  const button=$('itcvBuildRig');if(button)button.disabled=true;
  try{
   status('Menyiapkan SAM 2.1 Tiny WebGPU untuk segmentasi lokal…');
-  const mod=await import('./js/universal-object-rig.mjs');
+  const mod=await import('./js/universal-object-rig.mjs?v=20261122-2');
   currentRig=await mod.createUniversalObjectRig(uris[0],currentComponents,{
    maxDimension:1280,
    segmenter:window.__TROZAL_UNIVERSAL_RIG_TEST_PROVIDER__||undefined,

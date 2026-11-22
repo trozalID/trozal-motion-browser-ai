@@ -123,48 +123,160 @@ function makeCanvas(width, height) {
   if (!context) throw new Error("Canvas 2D tidak tersedia untuk membuat PNG rig.");
   return { canvas, context };
 }
+function dilateOwnerMask(owner, best, alpha, width, height, bounds) {
+  // SAM's 256px mask grid can leave a thin original-image fringe. Grow the
+  // foreground ownership by a few source pixels so the old silhouette is
+  // removed from the reconstructed background and stays attached to the part.
+  for (let pass = 0; pass < 3; pass++) {
+    const expandedOwner = new Int16Array(owner);
+    const expandedBest = new Float32Array(best);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const index = y * width + x;
+        if (owner[index] >= 0) continue;
+        let chosen = -1, chosenScore = -Infinity;
+        for (let dy = -1; dy <= 1; dy++) {
+          const ny = y + dy;
+          if (ny < 0 || ny >= height) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            if (!dx && !dy) continue;
+            const nx = x + dx;
+            if (nx < 0 || nx >= width) continue;
+            const neighbor = ny * width + nx;
+            if (owner[neighbor] >= 0 && best[neighbor] > chosenScore) {
+              chosen = neighbor;
+              chosenScore = best[neighbor];
+            }
+          }
+        }
+        if (chosen >= 0) {
+          expandedOwner[index] = owner[chosen];
+          expandedBest[index] = chosenScore;
+          alpha[index] = Math.max(224, alpha[chosen] || 0);
+        }
+      }
+    }
+    owner.set(expandedOwner);
+    best.set(expandedBest);
+  }
+  bounds.forEach(box => {
+    box.minX = width; box.minY = height; box.maxX = -1; box.maxY = -1;
+  });
+  for (let index = 0; index < owner.length; index++) {
+    const partIndex = owner[index];
+    if (partIndex < 0) continue;
+    const x = index % width, y = (index / width) | 0, box = bounds[partIndex];
+    if (x < box.minX) box.minX = x;
+    if (x > box.maxX) box.maxX = x;
+    if (y < box.minY) box.minY = y;
+    if (y > box.maxY) box.maxY = y;
+  }
+}
 function reconstructBackground(source, width, height, owner) {
-  const total = width * height;
-  const nearest = new Int32Array(total);
+  // Work at a smaller scale to avoid expensive full-resolution inpainting.
+  // A nearest-colour fill alone stretches edge pixels into the removed object
+  // and often looks like a ghost. Diffusing that fill toward a smooth,
+  // boundary-connected interpolation removes the recognizable old silhouette.
+  const scale = Math.min(1, 360 / Math.max(width, height));
+  const sw = Math.max(1, Math.round(width * scale));
+  const sh = Math.max(1, Math.round(height * scale));
+  const sourceCanvas = makeCanvas(width, height);
+  sourceCanvas.context.putImageData(new ImageData(new Uint8ClampedArray(source.data), width, height), 0, 0);
+  const smallCanvas = makeCanvas(sw, sh);
+  smallCanvas.context.imageSmoothingEnabled = true;
+  smallCanvas.context.imageSmoothingQuality = "high";
+  smallCanvas.context.drawImage(sourceCanvas.canvas, 0, 0, sw, sh);
+  const small = smallCanvas.context.getImageData(0, 0, sw, sh);
+  const count = sw * sh;
+  const hole = new Uint8Array(count);
+  const nearest = new Int32Array(count);
   nearest.fill(-1);
-  const queue = new Int32Array(total);
+  const queue = new Int32Array(count);
   let head = 0, tail = 0;
-  for (let i = 0; i < total; i++) {
-    if (owner[i] < 0) { nearest[i] = i; queue[tail++] = i; }
+
+  // Mark a low-resolution pixel as a hole when any source pixel represented
+  // by it belongs to a movable component.
+  for (let y = 0; y < sh; y++) {
+    const y0 = Math.floor(y * height / sh);
+    const y1 = Math.min(height, Math.max(y0 + 1, Math.ceil((y + 1) * height / sh)));
+    for (let x = 0; x < sw; x++) {
+      const x0 = Math.floor(x * width / sw);
+      const x1 = Math.min(width, Math.max(x0 + 1, Math.ceil((x + 1) * width / sw)));
+      let masked = false;
+      for (let sy = y0; sy < y1 && !masked; sy++) {
+        const row = sy * width;
+        for (let sx = x0; sx < x1; sx++) {
+          if (owner[row + sx] >= 0) { masked = true; break; }
+        }
+      }
+      const index = y * sw + x;
+      if (masked) hole[index] = 1;
+      else { nearest[index] = index; queue[tail++] = index; }
+    }
   }
   if (!tail) throw new Error("Mask menutupi seluruh gambar; latar tidak dapat direkonstruksi.");
+
+  // Multi-source flood fill supplies a stable initial colour for the hole.
   while (head < tail) {
-    const i = queue[head++], x = i % width, y = (i / width) | 0, src = nearest[i];
-    if (x > 0 && nearest[i - 1] < 0) { nearest[i - 1] = src; queue[tail++] = i - 1; }
-    if (x + 1 < width && nearest[i + 1] < 0) { nearest[i + 1] = src; queue[tail++] = i + 1; }
-    if (y > 0 && nearest[i - width] < 0) { nearest[i - width] = src; queue[tail++] = i - width; }
-    if (y + 1 < height && nearest[i + width] < 0) { nearest[i + width] = src; queue[tail++] = i + width; }
+    const index = queue[head++], x = index % sw, y = (index / sw) | 0, src = nearest[index];
+    if (x > 0 && nearest[index - 1] < 0) { nearest[index - 1] = src; queue[tail++] = index - 1; }
+    if (x + 1 < sw && nearest[index + 1] < 0) { nearest[index + 1] = src; queue[tail++] = index + 1; }
+    if (y > 0 && nearest[index - sw] < 0) { nearest[index - sw] = src; queue[tail++] = index - sw; }
+    if (y + 1 < sh && nearest[index + sw] < 0) { nearest[index + sw] = src; queue[tail++] = index + sw; }
   }
-  const filled = new ImageData(new Uint8ClampedArray(source.data), width, height);
-  for (let i = 0; i < total; i++) {
-    if (owner[i] < 0) continue;
-    const from = nearest[i] * 4, to = i * 4;
-    filled.data[to] = source.data[from];
-    filled.data[to + 1] = source.data[from + 1];
-    filled.data[to + 2] = source.data[from + 2];
-    filled.data[to + 3] = 255;
+
+  let current = new Uint8ClampedArray(small.data);
+  for (let index = 0; index < count; index++) {
+    if (!hole[index]) continue;
+    const from = nearest[index] * 4, to = index * 4;
+    current[to] = small.data[from];
+    current[to + 1] = small.data[from + 1];
+    current[to + 2] = small.data[from + 2];
+    current[to + 3] = 255;
   }
-  const raw = makeCanvas(width, height);
-  raw.context.putImageData(filled, 0, 0);
-  const blur = makeCanvas(width, height);
-  blur.context.filter = "blur(" + Math.max(3, Math.round(Math.min(width, height) * 0.006)) + "px)";
-  blur.context.drawImage(raw.canvas, 0, 0);
-  const softened = blur.context.getImageData(0, 0, width, height).data;
-  for (let i = 0; i < total; i++) {
-    if (owner[i] < 0) continue;
-    const p = i * 4;
-    filled.data[p] = softened[p];
-    filled.data[p + 1] = softened[p + 1];
-    filled.data[p + 2] = softened[p + 2];
+
+  // Harmonic diffusion: non-masked pixels remain fixed, while fill pixels
+  // converge toward neighbouring background colours instead of retaining a
+  // stretched copy of the foreground edge.
+  let next = new Uint8ClampedArray(current);
+  const iterations = Math.max(64, Math.min(112, Math.round(Math.min(sw, sh) * 0.42)));
+  for (let pass = 0; pass < iterations; pass++) {
+    next.set(current);
+    for (let y = 0; y < sh; y++) {
+      const up = Math.max(0, y - 1) * sw, row = y * sw, down = Math.min(sh - 1, y + 1) * sw;
+      for (let x = 0; x < sw; x++) {
+        const index = row + x;
+        if (!hole[index]) continue;
+        const left = row + Math.max(0, x - 1), right = row + Math.min(sw - 1, x + 1);
+        const p = index * 4, l = left * 4, r = right * 4, u = (up + x) * 4, d = (down + x) * 4;
+        next[p] = (current[l] + current[r] + current[u] + current[d]) * 0.25;
+        next[p + 1] = (current[l + 1] + current[r + 1] + current[u + 1] + current[d + 1]) * 0.25;
+        next[p + 2] = (current[l + 2] + current[r + 2] + current[u + 2] + current[d + 2]) * 0.25;
+        next[p + 3] = 255;
+      }
+    }
+    const swap = current; current = next; next = swap;
   }
-  const result = makeCanvas(width, height);
-  result.context.putImageData(filled, 0, 0);
-  return result.canvas.toDataURL("image/png");
+
+  const filledSmall = makeCanvas(sw, sh);
+  filledSmall.context.putImageData(new ImageData(current, sw, sh), 0, 0);
+  const upscaled = makeCanvas(width, height);
+  upscaled.context.imageSmoothingEnabled = true;
+  upscaled.context.imageSmoothingQuality = "high";
+  upscaled.context.drawImage(filledSmall.canvas, 0, 0, width, height);
+  const fillPixels = upscaled.context.getImageData(0, 0, width, height).data;
+  const result = new ImageData(new Uint8ClampedArray(source.data), width, height);
+  for (let index = 0; index < owner.length; index++) {
+    if (owner[index] < 0) continue;
+    const p = index * 4;
+    result.data[p] = fillPixels[p];
+    result.data[p + 1] = fillPixels[p + 1];
+    result.data[p + 2] = fillPixels[p + 2];
+    result.data[p + 3] = 255;
+  }
+  const output = makeCanvas(width, height);
+  output.context.putImageData(result, 0, 0);
+  return output.canvas.toDataURL("image/png");
 }
 function cropPart(source, width, height, owner, alpha, partIndex, bounds, spec) {
   const box = bounds[partIndex];
@@ -281,6 +393,9 @@ export async function createUniversalObjectRig(dataUrl, components, options = {}
         }
       }
     }
+    // Expand the selected object edge slightly before extracting layers and
+    // removing it from the background. This prevents a stationary rim/halo.
+    dilateOwnerMask(owner, best, alpha, width, height, bounds);
     const parts = [];
     for (let i = 0; i < maskResults.length; i++) {
       const layer = cropPart(source, width, height, owner, alpha, i, bounds, maskResults[i].spec);
