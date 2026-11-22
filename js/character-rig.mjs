@@ -84,7 +84,7 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
   const specs = buildPosePartSpecs(landmarks, width, height);
   const labels = new Int16Array(maskWidth * maskHeight);
   labels.fill(-1);
-  const bounds = specs.map(() => ({ minX: maskWidth, minY: maskHeight, maxX: -1, maxY: -1 }));
+  const bounds = specs.map(() => ({ minX: width, minY: height, maxX: -1, maxY: -1 }));
   const scaleX = width / maskWidth, scaleY = height / maskHeight;
   for (let y = 0; y < maskHeight; y++) {
     const py = (y + 0.5) * scaleY;
