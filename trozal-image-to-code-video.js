@@ -22,7 +22,8 @@ function makeCssHtml(images,cfg,art,rig){
  let body='';
  if(rig&&Array.isArray(rig.parts)&&rig.parts.length){
   const rw=Math.max(1,Number(rig.width)||1),rh=Math.max(1,Number(rig.height)||1);
-  body+='<img class="source" alt="Latar hasil segmentasi" src="'+esc(rig.background||images[0]||'')+'">';
+  css.push('.rig-canvas{position:absolute;left:50%;top:50%;width:min(100%,'+(100*rw/rh)+'vh);height:min(100%,'+(100*rh/rw)+'vw);aspect-ratio:'+rw+'/'+rh+';transform:translate(-50%,-50%);overflow:hidden}.rig-canvas .source{object-fit:fill}');
+  body+='<div class="rig-canvas"><img class="source" alt="Latar hasil segmentasi" src="'+esc(rig.background||images[0]||'')+'">';
   rig.parts.forEach((part,index)=>{
    if(part.enabled===false||!part.src)return;
    const x=clamp(part.x,0,rw),y=clamp(part.y,0,rh),w=clamp(part.w,1,rw),h=clamp(part.h,1,rh);
@@ -39,6 +40,7 @@ function makeCssHtml(images,cfg,art,rig){
    css.push('.part-'+index+'{left:'+(x/rw*100)+'%;top:'+(y/rh*100)+'%;width:'+(w/rw*100)+'%;height:'+(h/rh*100)+'%;transform-origin:'+px+'% '+py+'%;animation-name:'+name+';animation-duration:'+period+'s;animation-delay:'+phase+'s}');
    body+='<img class="part part-'+index+'" alt="'+esc(part.name||'Objek '+(index+1))+'" src="'+esc(part.src)+'">';
   });
+  body+='</div>';
  }else{
   const list=(images||[]).filter(Boolean);
   list.forEach((src,index)=>{
