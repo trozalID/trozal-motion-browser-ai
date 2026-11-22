@@ -62,13 +62,13 @@ test('layer visibility and lock controls affect preview and exports', () => {
 
 test('Pages deployment is isolated from the expensive ProRes build job', () => {
   const workflow = fs.readFileSync('.github/workflows/build-prores-pages.yml', 'utf8');
-  const build = workflow.split('\\n  deploy-pages:')[0];
+  const build = workflow.split('\n  deploy-pages:')[0];
   const deploy = workflow.split('\\n  deploy-pages:')[1] || '';
   assert.match(workflow, /jobs:\\s+build-site:/);
   assert.match(workflow, /deploy-pages:\\s+needs:\\s+build-site/);
   assert.match(build, /Build FFmpeg core with ProRes 4444 enabled/);
   assert.match(build, /Upload Pages artifact/);
   assert.doesNotMatch(build, /Deploy to GitHub Pages/);
-  assert.match(deploy, /actions\\/deploy-pages@v4/);
+  assert.match(deploy, /actions\/deploy-pages@v4/);
   assert.doesNotMatch(deploy, /Build FFmpeg core with ProRes 4444 enabled/);
 });
