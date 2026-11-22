@@ -33,7 +33,7 @@ const path=require('node:path');
   assert.ok(found.size>=10,'Segmentation should assign multiple independent body regions; got '+found.size);
   const lowResolutionMask=new Float32Array(25*25);lowResolutionMask.fill(1);
   const scaled=rig.assignPosePartLabels(lowResolutionMask,25,25,landmarks,100,100);
-  assert.ok(scaled.bounds.some(box=>box.maxX>25&&box.maxY>25),'Part crop bounds must be expressed in original-image pixels, not low-resolution mask coordinates.');
+  assert.ok(scaled.bounds.some(box=>box.minX<box.maxX&&box.minY<box.maxY&&box.minX>=0&&box.maxX<100&&box.maxY<100&&box.maxX>25&&box.maxY>25),'Part crop bounds must be expressed in original-image pixels, not low-resolution mask coordinates.');
 
   const moduleSource=fs.readFileSync(path.join(__dirname,'../js/character-rig.mjs'),'utf8');
   const directorSource=fs.readFileSync(path.join(__dirname,'../trozal-image-to-code-video.js'),'utf8');
