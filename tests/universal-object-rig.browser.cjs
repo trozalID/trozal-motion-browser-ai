@@ -11,7 +11,7 @@ const {chromium}=require('playwright');
   await page.waitForSelector('#itcvModeBtn',{timeout:20000});
   await page.locator('#itcvModeBtn').click();
   await page.waitForSelector('#itcvRigSource');
-  for (const id of ['itcvCameraShake','itcvColorGrade','itcvBackground','itcvVignette','itcvLoop','itcvRigSpeed','itcvRigAmplitude','itcvRigParallax','itcvRigShadow','itcvRigStagger']) {
+  for (const id of ['itcvCameraShake','itcvColorGrade','itcvBackground','itcvVignette','itcvLoop','itcvRigSpeed','itcvRigAmplitude','itcvRigParallax','itcvRigShadow','itcvRigStagger','itcvCameraZoom','itcvFocusX','itcvFocusY','itcvFilmGrain','itcvLensSoftness']) {
    assert.equal(await page.locator('#'+id).count(),1,'New finishing control '+id+' must exist');
   }
   await page.evaluate(async()=>{
@@ -58,6 +58,10 @@ const {chromium}=require('playwright');
   assert.match(html,/cameraShake/,'HTML export must serialize camera shake');
   assert.match(html,/colorGrade/,'HTML export must serialize color grading');
   assert.match(html,/vignette/,'HTML export must serialize vignette setting');
+  for (const key of ['cameraZoom','focusX','focusY','filmGrain','lensSoftness']) {
+   assert.ok(html.includes(key), 'HTML export must serialize '+key);
+   assert.ok((await page.locator('#itcvJs').inputValue()).includes(key), 'JavaScript export must serialize '+key);
+  }
   for (const key of ['rigSpeed','rigAmplitude','rigParallax','rigShadow','rigStagger']) {
    assert.ok(html.includes(key), 'HTML export must serialize '+key);
    assert.ok((await page.locator('#itcvJs').inputValue()).includes(key), 'JavaScript export must serialize '+key);
