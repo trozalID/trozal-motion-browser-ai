@@ -11,7 +11,7 @@ const {chromium}=require('playwright');
   await page.waitForSelector('#itcvModeBtn',{timeout:20000});
   await page.locator('#itcvModeBtn').click();
   await page.waitForSelector('#itcvRigSource');
-  for (const id of ['itcvCameraShake','itcvColorGrade','itcvBackground','itcvVignette','itcvLoop']) {
+  for (const id of ['itcvCameraShake','itcvColorGrade','itcvBackground','itcvVignette','itcvLoop','itcvRigSpeed','itcvRigAmplitude','itcvRigParallax','itcvRigShadow','itcvRigStagger']) {
    assert.equal(await page.locator('#'+id).count(),1,'New finishing control '+id+' must exist');
   }
   await page.evaluate(async()=>{
@@ -58,6 +58,10 @@ const {chromium}=require('playwright');
   assert.match(html,/cameraShake/,'HTML export must serialize camera shake');
   assert.match(html,/colorGrade/,'HTML export must serialize color grading');
   assert.match(html,/vignette/,'HTML export must serialize vignette setting');
+  for (const key of ['rigSpeed','rigAmplitude','rigParallax','rigShadow','rigStagger']) {
+   assert.ok(html.includes(key), 'HTML export must serialize '+key);
+   assert.ok((await page.locator('#itcvJs').inputValue()).includes(key), 'JavaScript export must serialize '+key);
+  }
   const preview=page.frameLocator('#itcvPreview');
   await preview.locator('#trozal-video-canvas').waitFor({timeout:10000});
   const rendered=await preview.locator('#trozal-video-canvas').evaluate(async c=>{const until=Date.now()+10000;let lit=0;while(Date.now()<until){const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;lit=0;for(let i=0;i<d.length;i+=4)if(d[i]>50||d[i+1]>50||d[i+2]>50)lit++;if(lit>100)return lit;await new Promise(resolve=>setTimeout(resolve,100));}return lit;});
