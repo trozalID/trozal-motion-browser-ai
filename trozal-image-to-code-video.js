@@ -24,7 +24,7 @@ async function buildCharacterRig(auto=false){
  try{
   if(!uris[0])uris[0]=await read(files[0]);
   status('Menganalisis pose manusia dan memisahkan layer tubuh…');
-  const mod=await import('./js/character-rig.js');
+  const mod=await import('./js/character-rig.mjs');
   currentRig=await mod.createCharacterRig(uris[0],{maxDimension:1280,onProgress:message=>status(message)});
   renderRigDirector(currentRig);
   return true;
