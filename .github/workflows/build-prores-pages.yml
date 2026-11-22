@@ -65,6 +65,7 @@ jobs:
           set -euo pipefail
           mkdir -p site/js site/vendor/ffmpeg site/vendor/prores-core
           cp index.html site/index.html
+          cp trozal-image-to-code-video.js site/trozal-image-to-code-video.js
           cp js-motion-engine.js site/js-motion-engine.js
           cp js/scene-intelligence.js site/js/scene-intelligence.js
           cp metadata-quality-delivery.js site/metadata-quality-delivery.js
@@ -90,6 +91,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node --check site/trozal-image-to-code-video.js
           node <<'NODE'
           const fs = require('fs');
           const path = require('path');

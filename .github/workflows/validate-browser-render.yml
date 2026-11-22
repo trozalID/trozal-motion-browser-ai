@@ -70,6 +70,7 @@ jobs:
           node --check js-motion-engine.js
           node --check logo-studio.js
           node --check icon-logo-motion-studio.js
+          node --check trozal-image-to-code-video.js
           node --check metadata-actions.js
           node --check browser-ai-gemini-cloud.js
           node --check browser-ai-key-storage.js
