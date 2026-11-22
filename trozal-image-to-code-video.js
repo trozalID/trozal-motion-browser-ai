@@ -28,8 +28,8 @@ function makeCssHtml(images,cfg,art,rig){
    if(part.enabled===false||!part.src)return;
    const x=clamp(part.x,0,rw),y=clamp(part.y,0,rh),w=clamp(part.w,1,rw),h=clamp(part.h,1,rh);
    const px=clamp((Number(part.pivotX==null?x+w/2:part.pivotX)-x)/w*100,0,100),py=clamp((Number(part.pivotY==null?y+h/2:part.pivotY)-y)/h*100,0,100);
-   const motion=String(part.motion||'swing'),amp=clamp(part.amp==null?.15:part.amp,0,1),speed=clamp(part.speed==null?1:part.speed,.1,12);
-   const name='trozal-part-'+index,period=clamp(duration/Math.max(.25,speed),.6,duration*3),phase=-Math.abs(Number(part.phase)||0)%period;
+   const motion=String(part.motion||'swing'),amp=clamp((part.amp==null?.15:part.amp)*(part.amplitudeMultiplier==null?1:clamp(part.amplitudeMultiplier,0,2.5))*clamp(cfg.rigAmplitude==null?1:cfg.rigAmplitude,0,2.5),0,2.5),speed=clamp((part.speed==null?1:part.speed)*(part.speedMultiplier==null?1:clamp(part.speedMultiplier,.1,3))*clamp(cfg.rigSpeed==null?1:cfg.rigSpeed,.25,3),.1,36);
+   const name='trozal-part-'+index,period=clamp(duration/Math.max(.25,speed),.6,duration*3),phase=-Math.abs(Number(part.phase)||0)-(cfg.rigStagger?index*.31:0);
    let a='transform:rotate('+(-amp*32)+'deg)',b='transform:rotate('+(amp*32)+'deg)';
    if(motion==='wheel'||motion==='rotate'){a='transform:rotate(0deg)';b='transform:rotate(360deg)';}
    else if(motion==='bob'){a='transform:translateY(-'+(amp*28)+'px)';b='transform:translateY('+(amp*28)+'px)';}
@@ -38,7 +38,7 @@ function makeCssHtml(images,cfg,art,rig){
    else if(motion==='static'){a='transform:none';b='transform:none';}
    css.push('@keyframes '+name+'{0%,100%{'+a+'}50%{'+b+'}}');
    css.push('.part-'+index+'{left:'+(x/rw*100)+'%;top:'+(y/rh*100)+'%;width:'+(w/rw*100)+'%;height:'+(h/rh*100)+'%;transform-origin:'+px+'% '+py+'%;animation-name:'+name+';animation-duration:'+period+'s;animation-delay:'+phase+'s}');
-   body+='<img class="part part-'+index+'" alt="'+esc(part.name||'Objek '+(index+1))+'" src="'+esc(part.src)+'">';
+   body+='<img class="part part-'+index+'" alt="'+esc(part.name||'Objek '+(index+1))+'" data-speedMultiplier="'+clamp(part.speedMultiplier==null?1:part.speedMultiplier,.1,3)+'" data-amplitudeMultiplier="'+clamp(part.amplitudeMultiplier==null?1:part.amplitudeMultiplier,0,2.5)+'" data-opacity="'+clamp(part.opacity==null?1:part.opacity,0,1)+'" data-pivotX="'+Number(part.pivotX||0)+'" data-pivotY="'+Number(part.pivotY||0)+'" style="opacity:'+clamp(part.opacity==null?1:part.opacity,0,1)+'" src="'+esc(part.src)+'">';
   });
   body+='</div>';
  }else{
