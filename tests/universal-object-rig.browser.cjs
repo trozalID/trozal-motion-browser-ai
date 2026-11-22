@@ -44,7 +44,7 @@ const {chromium}=require('playwright');
   const box=await page.locator('#itcvRigSource').boundingBox();
   const map=await page.locator('#itcvRigSource').evaluate(el=>el.__trozalMap);
   await page.mouse.click(box.x+box.width*(map.x+map.w*.72)/640,box.y+box.height*(map.y+map.h*.5)/360);
-  await page.waitForFunction(()=>document.getElementById('itcvRigParts')?.textContent.includes('Komponen manual'));
+  await page.waitForFunction(()=>document.getElementById('itcvRigParts')?.querySelector('input[type="text"]')?.value.includes('Komponen manual'));
   await page.locator('#itcvBuildRig').click();
   await page.waitForFunction(()=>document.getElementById('itcvHtml')?.value.includes('sam2.1-tiny-browser-universal-rig'),{timeout:30000});
   await page.waitForFunction(()=>document.getElementById('itcvPreview')?.contentWindow?.TROZAL_VIDEO?.characterRigEmbedded===true,{timeout:15000});
