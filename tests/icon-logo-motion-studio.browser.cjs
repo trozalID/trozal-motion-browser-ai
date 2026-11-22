@@ -63,6 +63,7 @@ const { chromium } = require('playwright');
     assert.equal(await page.locator('#tm4Rotation').inputValue(),'0','reset clears rotation');
     assert.equal(await page.locator('#tm4FlipX').isChecked(),false,'reset clears horizontal flip');
     assert.equal(await page.locator('#tm4FlipY').isChecked(),false,'reset clears vertical flip');
+    await page.locator('#tm4FlipX').check(); await page.locator('#tm4FlipY').check();
     const svgOutput = await page.locator('#tm4Output').inputValue();
     assert.match(svgOutput, /<svg/);
     assert.doesNotMatch(svgOutput, /<rect[^>]+x=[\"']0[\"'][^>]+y=[\"']0[\"'][^>]+width=[\"']240[\"'][^>]+height=[\"']240[\"']/, 'logo artwork must not have a full-canvas rectangular frame');
