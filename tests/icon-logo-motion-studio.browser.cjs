@@ -39,6 +39,7 @@ const { chromium } = require('playwright');
     await page.locator('[data-layer-lock="'+firstLayerId+'"]').click();
     assert.match(await page.locator('#tm4Stage [data-layer="'+firstLayerId+'"]').getAttribute('style'), /pointer-events:none/, 'locked layers ignore preview interaction');
     await page.locator('[data-layer-lock="'+firstLayerId+'"]').click();
+    await page.locator('[data-select="'+firstLayerId+'"]').click();
     assert.equal(await page.locator('#tm4FlipX').count(), 1, 'horizontal flip control is available');
     assert.equal(await page.locator('#tm4FlipY').count(), 1, 'vertical flip control is available');
     await page.locator('#tm4FlipX').check();
