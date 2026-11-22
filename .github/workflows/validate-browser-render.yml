@@ -165,6 +165,13 @@ jobs:
           node tests/character-rig.test.cjs
       - name: Verify Character Rig module and Mode 5 controls in Chromium
         run: node tests/character-rig-loading.browser.cjs
+      - name: Validate Universal Rig module syntax and component contract
+        run: |
+          node --check js/universal-object-rig.mjs
+          node --check js/universal-object-rig.worker.mjs
+          node tests/universal-object-rig.test.cjs
+      - name: Verify Universal Rig workflow in Chromium with mocked local segmenter
+        run: node tests/universal-object-rig.browser.cjs
       - name: Verify Scene Intelligence source asset and API
         run: node tests/scene-intelligence-loading.test.cjs
       - name: Verify Scene Intelligence loads in Chromium workspace
