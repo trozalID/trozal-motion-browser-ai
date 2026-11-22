@@ -11,6 +11,9 @@ const {chromium}=require('playwright');
   await page.waitForSelector('#itcvModeBtn',{timeout:20000});
   await page.locator('#itcvModeBtn').click();
   await page.waitForSelector('#itcvRigSource');
+  for (const id of ['itcvCameraShake','itcvColorGrade','itcvBackground','itcvVignette','itcvLoop']) {
+   assert.equal(await page.locator('#'+id).count(),1,'New finishing control '+id+' must exist');
+  }
   await page.evaluate(async()=>{
    const canvas=document.createElement('canvas');canvas.width=320;canvas.height=180;
    const ctx=canvas.getContext('2d');ctx.fillStyle='#172a3c';ctx.fillRect(0,0,320,180);
@@ -50,6 +53,15 @@ const {chromium}=require('playwright');
   await page.waitForFunction(()=>document.getElementById('itcvPreview')?.contentWindow?.TROZAL_VIDEO?.characterRigEmbedded===true,{timeout:15000});
   assert.match(await page.locator('#itcvRigStatus').innerText(),/PNG layer transparan/);
   assert.match(await page.locator('#itcvJs').inputValue(),/characterPartCount/);
+  const html=await page.locator('#itcvHtml').inputValue();
+  assert.match(html,/trozal-export-fallback/,'Standalone HTML must include a visible source-image fallback');
+  assert.match(html,/cameraShake/,'HTML export must serialize camera shake');
+  assert.match(html,/colorGrade/,'HTML export must serialize color grading');
+  assert.match(html,/vignette/,'HTML export must serialize vignette setting');
+  const frame=page.frames().find(f=>f.name()==='Image to video preview');
+  await frame.waitForFunction(()=>!!document.querySelector('#trozal-video-canvas')?.width,{timeout:10000});
+  const rendered=await frame.evaluate(()=>{const c=document.querySelector('#trozal-video-canvas');const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let lit=0;for(let i=0;i<d.length;i+=4)if(d[i]>50||d[i+1]>50||d[i+2]>50)lit++;return lit;});
+  assert.ok(rendered>100,'HTML preview must paint visible pixels instead of a blank/black frame');
   assert.deepEqual(errors,[],'Mode 5 Universal Rig must not produce uncaught page errors');
   console.log('PASS: Browser Mode 5 manual point -> mocked SAM mask -> transparent object layer -> self-contained HTML/JS preview.');
  }finally{await browser.close();}
