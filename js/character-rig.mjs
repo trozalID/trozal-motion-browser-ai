@@ -107,11 +107,11 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
       const torso = specs[0];
       if (polygonContains(px, py, torso.polygon) && best > 0.72) bestIndex = 0;
       labels[idx] = bestIndex;
-      const box = bounds[bestIndex];
-      if (x < box.minX) box.minX = x;
-      if (y < box.minY) box.minY = y;
-      if (x > box.maxX) box.maxX = x;
-      if (y > box.maxY) box.maxY = y;
+      const box = bounds[bestIndex], imageX = Math.max(0, Math.min(width - 1, Math.floor(px))), imageY = Math.max(0, Math.min(height - 1, Math.floor(py)));
+      if (imageX < box.minX) box.minX = imageX;
+      if (imageY < box.minY) box.minY = imageY;
+      if (imageX > box.maxX) box.maxX = imageX;
+      if (imageY > box.maxY) box.maxY = imageY;
     }
   }
   return { specs, labels, bounds };
