@@ -55,11 +55,11 @@ const {chromium}=require('playwright');
   for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY']) {
    assert.equal(await page.locator('[data-rig-control="'+key+'"]').count(),1,'Per-component control '+key+' must be available');
   }
-  await page.locator('[data-rig-control="speedMultiplier"]').fill('1.75');
-  await page.locator('[data-rig-control="amplitudeMultiplier"]').fill('0.6');
-  await page.locator('[data-rig-control="opacity"]').fill('0.8');
-  await page.locator('[data-rig-control="pivotX"]').fill('120');
-  await page.locator('[data-rig-control="pivotY"]').fill('100');
+  await page.locator('[data-rig-control="speedMultiplier"]').evaluate(el=>{el.value='1.75';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.locator('[data-rig-control="amplitudeMultiplier"]').evaluate(el=>{el.value='0.6';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.locator('[data-rig-control="opacity"]').evaluate(el=>{el.value='0.8';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.locator('[data-rig-control="pivotX"]').evaluate(el=>{el.value='120';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.locator('[data-rig-control="pivotY"]').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));});
   assert.match(await page.locator('#itcvJs').inputValue(),/characterPartCount/);
   const html=await page.locator('#itcvHtml').inputValue();
   assert.match(html,/trozal-export-fallback/,'Standalone HTML must include a visible source-image fallback');
