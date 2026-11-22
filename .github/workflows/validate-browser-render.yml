@@ -71,6 +71,7 @@ jobs:
           node --check logo-studio.js
           node --check icon-logo-motion-studio.js
           node --check trozal-image-to-code-video.js
+          node --check js/character-rig.mjs
           node --check metadata-actions.js
           node --check browser-ai-gemini-cloud.js
           node --check browser-ai-key-storage.js
@@ -161,6 +162,7 @@ jobs:
         run: node tests/floating-render-monitor.browser.cjs
       - name: Validate scene intelligence beat planning and continuity guidance
         run: node tests/scene-intelligence.test.cjs
+          node tests/character-rig.test.cjs
       - name: Verify Scene Intelligence source asset and API
         run: node tests/scene-intelligence-loading.test.cjs
       - name: Verify Scene Intelligence loads in Chromium workspace
