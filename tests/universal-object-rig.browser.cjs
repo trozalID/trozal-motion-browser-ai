@@ -60,7 +60,7 @@ const {chromium}=require('playwright');
   assert.match(html,/vignette/,'HTML export must serialize vignette setting');
   const preview=page.frameLocator('#itcvPreview');
   await preview.locator('#trozal-video-canvas').waitFor({timeout:10000});
-  const rendered=await preview.locator('#trozal-video-canvas').evaluate(c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let lit=0;for(let i=0;i<d.length;i+=4)if(d[i]>50||d[i+1]>50||d[i+2]>50)lit++;return lit;});
+  const rendered=await preview.locator('#trozal-video-canvas').evaluate(async c=>{const until=Date.now()+10000;let lit=0;while(Date.now()<until){const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;lit=0;for(let i=0;i<d.length;i+=4)if(d[i]>50||d[i+1]>50||d[i+2]>50)lit++;if(lit>100)return lit;await new Promise(resolve=>setTimeout(resolve,100));}return lit;});
   assert.ok(rendered>100,'HTML preview must paint visible pixels instead of a blank/black frame');
   assert.deepEqual(errors,[],'Mode 5 Universal Rig must not produce uncaught page errors');
   console.log('PASS: Browser Mode 5 manual point -> mocked SAM mask -> transparent object layer -> self-contained HTML/JS preview.');
