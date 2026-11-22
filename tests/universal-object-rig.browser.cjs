@@ -11,7 +11,7 @@ const {chromium}=require('playwright');
   await page.waitForSelector('#itcvModeBtn',{timeout:20000});
   await page.locator('#itcvModeBtn').click();
   await page.waitForSelector('#itcvRigSource');
-  for (const id of ['itcvCameraShake','itcvColorGrade','itcvBackground','itcvVignette','itcvLoop','itcvRigSpeed','itcvRigAmplitude','itcvRigParallax','itcvRigShadow','itcvRigStagger']) {
+  for (const id of ['itcvCameraShake','itcvColorGrade','itcvBackground','itcvVignette','itcvLoop','itcvRigSpeed','itcvRigAmplitude','itcvRigParallax','itcvRigShadow','itcvRigStagger','itcvCameraZoom','itcvFocusX','itcvFocusY','itcvFilmGrain','itcvLensSoftness']) {
    assert.equal(await page.locator('#'+id).count(),1,'New finishing control '+id+' must exist');
   }
   await page.evaluate(async()=>{
@@ -62,7 +62,7 @@ const {chromium}=require('playwright');
   await page.locator('[data-rig-control="pivotY"]').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));});
   assert.match(await page.locator('#itcvJs').inputValue(),/characterPartCount/);
   const html=await page.locator('#itcvHtml').inputValue();
-  assert.match(html,/trozal-export-fallback/,'Standalone HTML must include a visible source-image fallback');
+  assert.doesNotMatch(html,/trozal-export-fallback/,'Standalone HTML must not leave a static source image behind the animated canvas');
   assert.match(html,/cameraShake/,'HTML export must serialize camera shake');
   assert.match(html,/colorGrade/,'HTML export must serialize color grading');
   assert.match(html,/vignette/,'HTML export must serialize vignette setting');
@@ -77,6 +77,11 @@ const {chromium}=require('playwright');
   await preview.locator('#trozal-video-canvas').waitFor({timeout:10000});
   const rendered=await preview.locator('#trozal-video-canvas').evaluate(async c=>{const until=Date.now()+10000;let lit=0;while(Date.now()<until){const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;lit=0;for(let i=0;i<d.length;i+=4)if(d[i]>50||d[i+1]>50||d[i+2]>50)lit++;if(lit>100)return lit;await new Promise(resolve=>setTimeout(resolve,100));}return lit;});
   assert.ok(rendered>100,'HTML preview must paint visible pixels instead of a blank/black frame');
+  await page.evaluate(()=>{const frame=document.createElement('iframe');frame.id='standalone-export-check';frame.style.cssText='position:fixed;left:-10000px;width:640px;height:360px';frame.setAttribute('sandbox','allow-scripts allow-same-origin');frame.srcdoc=document.getElementById('itcvHtml').value;document.body.appendChild(frame);});
+  const standalone=page.frameLocator('#standalone-export-check');
+  await standalone.locator('#trozal-video-canvas').waitFor({timeout:10000});
+  await page.waitForFunction(()=>document.getElementById('standalone-export-check')?.contentWindow?.TROZAL_VIDEO?.frameCount>3,{timeout:10000});
+  assert.ok(await standalone.locator('#trozal-video-canvas').evaluate(c=>c.width>0&&c.height>0),'Standalone HTML must create a running canvas');
   assert.deepEqual(errors,[],'Mode 5 Universal Rig must not produce uncaught page errors');
   console.log('PASS: Browser Mode 5 manual point -> mocked SAM mask -> transparent object layer -> self-contained HTML/JS preview.');
  }finally{await browser.close();}
