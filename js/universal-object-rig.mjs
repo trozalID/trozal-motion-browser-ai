@@ -63,7 +63,7 @@ export function normalizeUniversalComponents(input) {
       id, name: String(item.name || "Komponen " + (index + 1)).slice(0, 72),
       kind: String(item.kind || "object").slice(0, 48), bbox, point, pivot,
       parent: item.parent ? slug(item.parent, "") : null,
-      motion, amp: clamp(item.amp, 0, motion === "wheel" || motion === "rotate" ? 1 : 0.8),
+      motion, amp: item.amp == null ? fallback.amp : clamp(item.amp, 0, motion === "wheel" || motion === "rotate" ? 1 : 0.8),
       speed: clamp(item.speed == null ? fallback.speed : item.speed, 0, 12),
       phase: Number.isFinite(Number(item.phase)) ? Number(item.phase) : index * 1.17
     });
@@ -299,7 +299,7 @@ export async function createUniversalObjectRig(dataUrl, components, options = {}
       notes: "SAM membuat mask piksel dari kotak/titik prompt yang disediakan AI Vision atau pengguna. Nama dan gerakan adalah saran semantik yang dapat diedit. Background reconstruction bersifat perkiraan; periksa tepi objek sebelum ekspor."
     };
   } finally {
-    if (workerReady) await worker.dispose();
+    if (worker && typeof worker.dispose === "function") await worker.dispose();
     else if (worker && typeof worker.terminate === "function") worker.terminate();
   }
 }
