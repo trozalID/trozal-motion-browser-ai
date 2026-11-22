@@ -52,12 +52,23 @@ const {chromium}=require('playwright');
   await page.waitForFunction(()=>document.getElementById('itcvHtml')?.value.includes('sam2.1-tiny-browser-universal-rig'),{timeout:30000});
   await page.waitForFunction(()=>document.getElementById('itcvPreview')?.contentWindow?.TROZAL_VIDEO?.characterRigEmbedded===true,{timeout:15000});
   assert.match(await page.locator('#itcvRigStatus').innerText(),/PNG layer transparan/);
+  for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY']) {
+   assert.equal(await page.locator('[data-rig-control="'+key+'"]').count(),1,'Per-component control '+key+' must be available');
+  }
+  await page.locator('[data-rig-control="speedMultiplier"]').evaluate(el=>{el.value='1.75';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.locator('[data-rig-control="amplitudeMultiplier"]').evaluate(el=>{el.value='0.6';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.locator('[data-rig-control="opacity"]').evaluate(el=>{el.value='0.8';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.locator('[data-rig-control="pivotX"]').evaluate(el=>{el.value='120';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.locator('[data-rig-control="pivotY"]').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));});
   assert.match(await page.locator('#itcvJs').inputValue(),/characterPartCount/);
   const html=await page.locator('#itcvHtml').inputValue();
   assert.match(html,/trozal-export-fallback/,'Standalone HTML must include a visible source-image fallback');
   assert.match(html,/cameraShake/,'HTML export must serialize camera shake');
   assert.match(html,/colorGrade/,'HTML export must serialize color grading');
   assert.match(html,/vignette/,'HTML export must serialize vignette setting');
+  for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY']) {
+   assert.ok(html.includes(key), 'HTML export must embed per-component '+key);
+  }
   for (const key of ['rigSpeed','rigAmplitude','rigParallax','rigShadow','rigStagger']) {
    assert.ok(html.includes(key), 'HTML export must serialize '+key);
    assert.ok((await page.locator('#itcvJs').inputValue()).includes(key), 'JavaScript export must serialize '+key);
