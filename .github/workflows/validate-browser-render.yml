@@ -163,6 +163,8 @@ jobs:
       - name: Validate scene intelligence beat planning and continuity guidance
         run: node tests/scene-intelligence.test.cjs
           node tests/character-rig.test.cjs
+      - name: Verify Character Rig module and Mode 5 controls in Chromium
+        run: node tests/character-rig-loading.browser.cjs
       - name: Verify Scene Intelligence source asset and API
         run: node tests/scene-intelligence-loading.test.cjs
       - name: Verify Scene Intelligence loads in Chromium workspace
