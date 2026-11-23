@@ -77,9 +77,25 @@ const assert = require('node:assert/strict');
 
   const controls = workspace.locator('[data-itcv-zone="controls"]');
   const preview = workspace.locator('[data-itcv-zone="preview"]');
+  await page.evaluate(() => {
+    window.__panelDragEvents = [];
+    for (const type of ['dragstart', 'dragenter', 'dragover', 'drop', 'dragend']) {
+      document.addEventListener(type, e => {
+        window.__panelDragEvents.push({ type, target: e.target.id || e.target.className || e.target.tagName });
+      }, true);
+    }
+  });
   const before = await controls.evaluate(el => getComputedStyle(el).gridArea);
   await controls.locator('.itcv-panel-grip').dragTo(preview);
   const after = await controls.evaluate(el => getComputedStyle(el).gridArea);
+  const panelDrag = await page.evaluate(() => window.__panelDragEvents);
+  console.log('PANEL_DRAG_DIAGNOSTICS', JSON.stringify({
+    before,
+    after,
+    sourceInline: document.querySelector('[data-itcv-zone="controls"]').style.gridArea,
+    targetInline: document.querySelector('[data-itcv-zone="preview"]').style.gridArea,
+    events: panelDrag
+  }));
   assert.notEqual(after, before, 'Dragging a panel grip onto another panel must move/swap its workspace position');
 
   assert.deepEqual(errors, [], 'Image to Code workspace must not emit browser runtime errors');
