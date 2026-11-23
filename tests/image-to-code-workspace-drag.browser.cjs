@@ -84,13 +84,6 @@ const assert = require('node:assert/strict');
   await rowSplitter.focus();
   await page.keyboard.press('ArrowUp');
   const keyboardDockAfter = await output.evaluate(el => el.getBoundingClientRect().height);
-  const keyboardRowDiag = await page.evaluate(() => ({
-    focused: document.activeElement?.className,
-    rowValue: document.getElementById('trozalImageCodeVideoWorkspace')?.querySelector('.shell')?.style.getPropertyValue('--itcv-output-height'),
-    gridRows: getComputedStyle(document.querySelector('#trozalImageCodeVideoWorkspace .shell')).gridTemplateRows,
-    ariaNow: document.querySelector('.itcv-row-splitter')?.getAttribute('aria-valuenow')
-  }));
-  console.log('KEYBOARD_ROW_DIAGNOSTICS', JSON.stringify({ dockAfter, keyboardDockAfter, keyboardRowDiag }));
   assert.ok(keyboardDockAfter > dockAfter + 10, 'ArrowUp on row separator must enlarge output dock');
 
   const controls = workspace.locator('[data-itcv-zone="controls"]');
