@@ -87,7 +87,7 @@ const {chromium}=require('playwright');
   console.log('Mode 5 JavaScript asset diagnostics:',JSON.stringify(assetSummary));
   // Studio's launcher can be visually hidden while Mode 5 owns the workspace;
   // invoke its real click handler so this integration test can switch modes.
-  await page.locator('#trozalJsMotionBtn').evaluate(el=>el.click());
+  await page.locator('#itcvBack').click();\n  await page.locator('#trozalJsMotionBtn').waitFor({state:'visible',timeout:10000});\n  await page.locator('#trozalJsMotionBtn').click();
   await page.waitForSelector('#trozalJsMotionCode');
   await page.locator('#trozalJsMotionCode').fill(executableRuntime);
   await page.locator('#trozalJsMotionRun').click();
