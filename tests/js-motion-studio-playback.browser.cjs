@@ -17,6 +17,10 @@ const assert = require('node:assert/strict');
     // Wait for both the initial iframe load and the explicit Run action to drain before playback.
     await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().pendingMessages === 0);
 
+    // Preview frames must not PNG-encode and transfer a full image on every playback tick.
+    assert.equal(await page.evaluate(() => window.TROZAL_JS_MOTION.getLastFrame()), '',
+      'Ordinary preview frames must avoid expensive PNG dataURL serialization');
+
     // The manual prompt is a separate panel and must not be coupled to the Theme Studio.
     assert.equal(await page.locator('#trozalJsAiComposer #trozalJsManualPromptPanel').count(), 0,
       'Manual prompt must be a standalone panel outside Theme Studio');
@@ -27,9 +31,11 @@ const assert = require('node:assert/strict');
     await page.evaluate(() => {
       window.__manualPromptCalls = [];
       window.trozalBuildThemeCreativeBrief = () => { throw new Error('Manual prompt must not call the theme brief builder'); };
+      window.__metadataCapture = '';
       window.trozalBrowserAI = {
         provider: () => 'Gemini test',
         model: () => 'gemini-3.8-flash',
+        analyzeImageDataUrl: async dataUrl => { window.__metadataCapture = dataUrl; return {}; },
         generateText: async prompt => {
           window.__manualPromptCalls.push(prompt);
           return JSON.stringify({ concepts: [{ title: 'Manual Prompt Test', description: 'Generated code for editor.', code: "ctx.fillStyle='#ffcc33';ctx.fillRect(20,20,120,80);" }] });
@@ -46,6 +52,10 @@ const assert = require('node:assert/strict');
     assert.match(await page.locator('#trozalJsMotionStatus').innerText(), /belum diterapkan ke preview/i);
     assert.equal(await page.evaluate(() => window.TROZAL_JS_MOTION.getLastFrame()), frameBeforeManualGenerate,
       'Generating a manual prompt must not automatically apply code to Preview');
+
+    // Metadata requests a one-off capture; PNG encoding is deferred until explicitly needed.
+    await page.locator('#trozalJsMotionMetadata').click();
+    await page.waitForFunction(() => (window.__metadataCapture || '').startsWith('data:image/png;base64,'));
 
     // The visible Studio timeline must sit directly beneath the Canvas preview and remain reachable in its own scroll area.
     const timelineLayout = await page.evaluate(() => {
