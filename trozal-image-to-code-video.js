@@ -72,12 +72,26 @@ function makeCssHtml(images,cfg,art,rig){
 function makeHtml(images,cfg,art,characterRig){
  return makeCssHtml(images,cfg,art,characterRig);
 }
-function renderRigSource(){
+async function renderRigSource(){
  const canvas=$('itcvRigSource');if(!canvas)return;
- const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#07131b';ctx.fillRect(0,0,canvas.width,canvas.height);
- if(!files.length){canvas.__trozalMap=null;return;}
- const image=new Image();image.onload=()=>{const scale=Math.min(canvas.width/image.naturalWidth,canvas.height/image.naturalHeight),w=image.naturalWidth*scale,h=image.naturalHeight*scale,x=(canvas.width-w)/2,y=(canvas.height-h)/2;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,x,y,w,h);canvas.__trozalMap={x,y,w,h,imageWidth:image.naturalWidth,imageHeight:image.naturalHeight};currentComponents.forEach((c,i)=>{if(c.point){const px=x+c.point.x*w,py=y+c.point.y*h;ctx.strokeStyle='#ffd86b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,7,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#ffd86b';ctx.fillText(String(i+1),px+9,py-7);}});};
- image.src=uris[0]||URL.createObjectURL(files[0]);
+ const ctx=canvas.getContext('2d');if(!ctx)return;
+ ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#07131b';ctx.fillRect(0,0,canvas.width,canvas.height);
+ canvas.__trozalMap=null;canvas.__trozalImageStatus='loading';
+ if(!files.length){canvas.__trozalImageStatus='empty';return;}
+ try{
+  // Use the same FileReader data URL path as the rig builder. This avoids
+  // object-URL timing/revocation issues in Chromium and local browser builds.
+  const source=uris[0]||(await read(files[0]));uris[0]=source;
+  const image=new Image();image.src=source;
+  if(typeof image.decode==='function')await image.decode();
+  else await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error('Gambar tidak dapat dibaca browser.'));});
+  if(!image.naturalWidth||!image.naturalHeight)throw new Error('Dimensi gambar sumber kosong.');
+  const scale=Math.min(canvas.width/image.naturalWidth,canvas.height/image.naturalHeight),w=image.naturalWidth*scale,h=image.naturalHeight*scale,x=(canvas.width-w)/2,y=(canvas.height-h)/2;
+  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,x,y,w,h);
+  canvas.__trozalMap={x,y,w,h,imageWidth:image.naturalWidth,imageHeight:image.naturalHeight};
+  canvas.__trozalImageStatus='ready';
+  currentComponents.forEach((c,i)=>{if(c.point){const px=x+c.point.x*w,py=y+c.point.y*h;ctx.strokeStyle='#ffd86b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,7,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#ffd86b';ctx.fillText(String(i+1),px+9,py-7);}});
+ }catch(error){canvas.__trozalImageStatus='error';canvas.__trozalImageError=error&&error.message?error.message:String(error);status('Gagal memuat gambar sumber: '+canvas.__trozalImageError);}
 }
 async function buildUniversalRig(auto=false){
  if(!files.length)throw new Error('Pilih satu gambar terlebih dahulu.');
