@@ -88,12 +88,12 @@ const assert = require('node:assert/strict');
   const before = await controls.evaluate(el => getComputedStyle(el).gridArea);
   await controls.locator('.itcv-panel-grip').dragTo(preview);
   const after = await controls.evaluate(el => getComputedStyle(el).gridArea);
+  const panelState = await page.evaluate(() => ({ sourceInline: document.querySelector('[data-itcv-zone="controls"]').style.gridArea, targetInline: document.querySelector('[data-itcv-zone="preview"]').style.gridArea }));
   const panelDrag = await page.evaluate(() => window.__panelDragEvents);
   console.log('PANEL_DRAG_DIAGNOSTICS', JSON.stringify({
     before,
     after,
-    sourceInline: document.querySelector('[data-itcv-zone="controls"]').style.gridArea,
-    targetInline: document.querySelector('[data-itcv-zone="preview"]').style.gridArea,
+    ...panelState,
     events: panelDrag
   }));
   assert.notEqual(after, before, 'Dragging a panel grip onto another panel must move/swap its workspace position');
