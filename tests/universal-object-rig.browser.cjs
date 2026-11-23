@@ -55,8 +55,15 @@ const {chromium}=require('playwright');
   const exported=await page.locator('#itcvHtml').inputValue();
   assert.doesNotMatch(exported,/<script\b|\bimport\s*\(/i,'Importer-safe HTML must not contain JavaScript or module imports.');
   assert.match(exported,/@keyframes trozal-part-0/,'Each segmented object must receive a CSS keyframe animation.');
-  await page.frameLocator('#itcvPreview').locator('.part-0').waitFor({timeout:15000});
-  assert.notEqual(await page.frameLocator('#itcvPreview').locator('.part-0').evaluate(el=>getComputedStyle(el).animationName),'none','Segmented object must animate in CSS preview.');
+  const cssPreviewPart=page.frameLocator('#itcvPreview').locator('.part-0');
+  await cssPreviewPart.waitFor({state:'attached',timeout:15000});
+  const cssPreviewDiagnostics=await cssPreviewPart.evaluate(el=>{
+   const style=getComputedStyle(el),rect=el.getBoundingClientRect(),parent=el.parentElement?.getBoundingClientRect(),frame=el.ownerDocument.defaultView.frameElement?.getBoundingClientRect();
+   return {display:style.display,visibility:style.visibility,opacity:style.opacity,animationName:style.animationName,width:rect.width,height:rect.height,parentWidth:parent?.width,parentHeight:parent?.height,frameWidth:frame?.width,frameHeight:frame?.height,complete:el.complete,naturalWidth:el.naturalWidth,naturalHeight:el.naturalHeight,src:el.currentSrc?.slice(0,40)};
+  });
+  console.log('Mode 5 CSS preview diagnostics:',JSON.stringify(cssPreviewDiagnostics));
+  assert.notEqual(cssPreviewDiagnostics.animationName,'none','Segmented object must animate in CSS preview: '+JSON.stringify(cssPreviewDiagnostics));
+  assert.ok(cssPreviewDiagnostics.width>0&&cssPreviewDiagnostics.height>0,'Segmented object must have visible geometry in CSS preview: '+JSON.stringify(cssPreviewDiagnostics));
   assert.match(await page.locator('#itcvRigStatus').innerText(),/PNG layer transparan/);
   for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY']) {
    assert.equal(await page.locator('[data-rig-control="'+key+'"]').count(),1,'Per-component control '+key+' must be available');
@@ -73,16 +80,60 @@ const {chromium}=require('playwright');
   const runtimeData=JSON.parse(runtimePayload[1]);
   assert.ok(Math.abs(runtimeData.characterRig.parts[0].speed-2.1)<0.001,'Per-component speed multiplier must affect exported JavaScript runtime speed.');
   assert.ok(Math.abs(runtimeData.characterRig.parts[0].amp-0.108)<0.001,'Per-component amplitude multiplier must affect exported JavaScript runtime amplitude.');
+
+  // Exercise the segmented JavaScript export in the actual Studio sandbox.
+  // Force a visible bob motion so this verifies pixels changing, not only valid syntax.
+  runtimeData.characterRig.parts[0].motion='bob';
+  runtimeData.characterRig.parts[0].amp=0.8;
+  const executableRuntime=runtimeSource.replace(runtimePayload[1],JSON.stringify(runtimeData));
+  const assetSummary=await page.evaluate(async sources=>Promise.all(sources.map(src=>new Promise(resolve=>{
+    const image=new Image();image.onload=()=>resolve({ok:true,protocol:src.slice(0,32),length:src.length,width:image.naturalWidth,height:image.naturalHeight});
+    image.onerror=()=>resolve({ok:false,protocol:src.slice(0,32),length:src.length});
+    image.src=src;
+  }))),[...(runtimeData.images||[]),runtimeData.characterRig?.background,...(runtimeData.characterRig?.parts||[]).map(p=>p.src)].filter(Boolean));
+  console.log('Mode 5 JavaScript asset diagnostics:',JSON.stringify(assetSummary));
+  // Studio's launcher can be visually hidden while Mode 5 owns the workspace;
+  // invoke its real click handler so this integration test can switch modes.
+  await page.locator('#itcvBack').click();
+  await page.locator('#trozalJsMotionBtn').waitFor({state:'visible',timeout:10000});
+  await page.locator('#trozalJsMotionBtn').click();
+  await page.waitForSelector('#trozalJsMotionCode');
+  await page.locator('#trozalJsMotionCode').fill(executableRuntime);
+  await page.locator('#trozalJsMotionRun').click();
+  await page.waitForFunction(() => {
+    const s=(document.querySelector('#trozalJsMotionStatus')?.textContent||'').trim();
+    return /^Frame siap|^Render frame gagal:|^JavaScript error:|^Preview timeout|^Kode terbaru berhasil diterapkan|^Kode berubah saat proses apply/.test(s);
+  },null,{timeout:22000});
+  const studioStatus=await page.locator('#trozalJsMotionStatus').innerText();
+  assert.match(studioStatus,/Frame siap/, 'JavaScript Studio must compile and render the Mode 5 code. Status: '+studioStatus+' | pageErrors='+JSON.stringify(errors));
+  assert.ok(await page.evaluate(()=>!!window.TROZAL_JS_MOTION?.renderFrame),'JavaScript Studio render API must be available.');
+  await page.evaluate(async()=>{await window.TROZAL_JS_MOTION.renderFrame(0);});
+  await page.frameLocator('#trozalJsMotionFrame').locator('#c').evaluate(canvas=>{
+    window.__mode5Before=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+  });
+  await page.evaluate(async()=>{await window.TROZAL_JS_MOTION.renderFrame(1);});
+  const movedPixels=await page.frameLocator('#trozalJsMotionFrame').locator('#c').evaluate(canvas=>{
+    const before=window.__mode5Before,after=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+    let changed=0;for(let i=0;i<after.length;i+=4){if(before[i]!==after[i]||before[i+1]!==after[i+1]||before[i+2]!==after[i+2])changed++;}
+    return changed;
+  });
+  assert.ok(movedPixels>100,'A segmented object with bob motion must visibly move in JavaScript Studio; changed pixels='+movedPixels);
   const html=await page.locator('#itcvHtml').inputValue();
   assert.doesNotMatch(html,/<script\b|\bimport\s*\(/i,'HTML importer output must be CSS-only.');
   for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY']) assert.ok(html.includes(key),'CSS HTML must preserve '+key+' as layer metadata.');
+  // Mode 5's workspace is intentionally hidden while JavaScript Studio is open.
+  // Verify the already-mounted CSS preview by attachment and computed animation,
+  // not Playwright's visibility heuristic for a hidden parent workspace.
   const preview=page.frameLocator('#itcvPreview');
-  await preview.locator('.part-0').waitFor({timeout:10000});
-  assert.notEqual(await preview.locator('.part-0').evaluate(el=>getComputedStyle(el).animationName),'none');
+  const previewPart=preview.locator('.part-0');
+  await previewPart.waitFor({state:'attached',timeout:10000});
+  const previewAnimation=await previewPart.evaluate(el=>getComputedStyle(el).animationName);
+  assert.notEqual(previewAnimation,'none','Mode 5 CSS preview must retain its independent part animation while Studio is open.');
   await page.evaluate(()=>{const frame=document.createElement('iframe');frame.id='standalone-export-check';frame.style.cssText='position:fixed;left:-10000px;width:640px;height:360px';frame.srcdoc=document.getElementById('itcvHtml').value;document.body.appendChild(frame);});
   const standalone=page.frameLocator('#standalone-export-check');
-  await standalone.locator('.part-0').waitFor({timeout:10000});
-  assert.notEqual(await standalone.locator('.part-0').evaluate(el=>getComputedStyle(el).animationName),'none','Standalone HTML must animate segmented objects without JavaScript.');
+  const standalonePart=standalone.locator('.part-0');
+  await standalonePart.waitFor({state:'attached',timeout:10000});
+  assert.notEqual(await standalonePart.evaluate(el=>getComputedStyle(el).animationName),'none','Standalone HTML must animate segmented objects without JavaScript.');
   assert.deepEqual(errors,[],'Mode 5 Universal Rig must not produce uncaught page errors');
   console.log('PASS: Browser Mode 5 manual point -> mocked SAM mask -> transparent object layer -> self-contained HTML/JS preview.');
  }finally{await browser.close();}

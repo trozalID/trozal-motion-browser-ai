@@ -44,8 +44,10 @@ assert.ok(source.includes("$('trozalJsObjectDuplicate').addEventListener('click'
 assert.ok(source.includes("$('trozalJsObjectVisible').addEventListener('change'"), 'Object visibility control must work');
 
 const imageToCodeSource = fs.readFileSync('trozal-image-to-code-video.js', 'utf8');
-assert.ok(imageToCodeSource.includes('return Promise.all(ASSETS.map(preloadImage)).then(()=>{'),
+assert.ok(imageToCodeSource.includes('return Promise.all(ASSETS.map(preloadImage)).then(loaded=>{'),
   'Image to Code JavaScript must wait for all source and rig assets before drawing');
+assert.ok(imageToCodeSource.includes('if(ASSETS.length&&!loaded.some(Boolean))throw new Error('),
+  'Image to Code JavaScript must report when every source and rig asset fails to load');
 assert.ok(imageToCodeSource.includes("else{const fallback=imageFor((DATA.images||[])[0])"),
   'Universal Rig must fall back to the original source image when its segmented background is unavailable');
 const runtimeStart = imageToCodeSource.indexOf('return `const DATA=${payload};');
