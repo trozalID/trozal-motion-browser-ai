@@ -79,7 +79,9 @@ const {chromium}=require('playwright');
   runtimeData.characterRig.parts[0].motion='bob';
   runtimeData.characterRig.parts[0].amp=0.8;
   const executableRuntime=runtimeSource.replace(runtimePayload[1],JSON.stringify(runtimeData));
-  await page.locator('#trozalJsMotionBtn').click();
+  // Studio's launcher can be visually hidden while Mode 5 owns the workspace;
+  // invoke its real click handler so this integration test can switch modes.
+  await page.locator('#trozalJsMotionBtn').evaluate(el=>el.click());
   await page.waitForSelector('#trozalJsMotionCode');
   await page.locator('#trozalJsMotionCode').fill(executableRuntime);
   await page.locator('#trozalJsMotionRun').click();
