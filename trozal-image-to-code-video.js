@@ -82,7 +82,9 @@ function makeRuntime(images,cfg,art,characterRig){
  const scene=(art&&typeof art==='object')?art:{description:String(art||'Cinematic image motion'),layers:[]};
  const runtimeRig=characterRig&&Array.isArray(characterRig.parts)?{...characterRig,parts:characterRig.parts.map(part=>{const defaults={swing:{amp:.18,speed:1.2},hinge:{amp:.34,speed:.8},wheel:{amp:1,speed:4.2},rotate:{amp:1,speed:1.4},bob:{amp:.035,speed:1.1},float:{amp:.045,speed:.7},pulse:{amp:.075,speed:1.1},static:{amp:0,speed:0}},base=defaults[part.motion]||defaults.swing;return {...part,speed:(Number(part.speed)||base.speed)*(Number.isFinite(Number(part.speedMultiplier))?Number(part.speedMultiplier):1),amp:(Number(part.amp)||base.amp)*(Number.isFinite(Number(part.amplitudeMultiplier))?Number(part.amplitudeMultiplier):1)};})}:characterRig||null;
  const payload=JSON.stringify({images,config:cfg,scene,characterRig:runtimeRig});
- // JavaScript Studio evaluates the textarea as a draw(ctx,t,w,h,anim) function body on every frame.
+ // OUTPUT CONTRACT: this is a JavaScript Studio draw-function BODY, not a standalone script.
+ // JavaScript Studio compiles it as new Function('ctx','t','w','h','anim', source) and awaits its return value.
+ // Keep the signature variables ctx, t, w, h and anim in this scope; async Promise returns are supported.
  // Preload every visual asset before JavaScript Studio captures a frame.
  return `const DATA=${payload};
 // Keep the segmented component count in the optional JavaScript export for Studio diagnostics and compatibility.
@@ -131,6 +133,8 @@ ctx.restore();
 });`;
 }
 function makeCssHtml(images,cfg,art,rig){
+ // OUTPUT CONTRACT: standalone, self-contained HTML using CSS @keyframes only.
+ // Keep this importer-safe: no external JavaScript imports, modules, or runtime dependencies.
  const duration=Math.max(2,Math.min(60,Number(cfg.duration)||8));
  const ratio=String(cfg.ratio||'16:9').replace(':',' / ');
  const esc=value=>String(value==null?'':value).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
