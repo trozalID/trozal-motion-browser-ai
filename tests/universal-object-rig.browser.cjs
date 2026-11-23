@@ -90,7 +90,6 @@ const {chromium}=require('playwright');
   assert.match(studioStatus,/Frame siap/, 'JavaScript Studio must compile and render the Mode 5 code. Status: '+studioStatus+' | pageErrors='+JSON.stringify(errors));
   assert.ok(await page.evaluate(()=>!!window.TROZAL_JS_MOTION?.renderFrame),'JavaScript Studio render API must be available.');
   await page.evaluate(async()=>{await window.TROZAL_JS_MOTION.renderFrame(0);});
-  await page.frameLocator('#trozalJsMotionFrame').locator('iframe').evaluate(()=>{}).catch(()=>{});
   await page.frameLocator('#trozalJsMotionFrame').locator('#c').evaluate(canvas=>{
     window.__mode5Before=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
   });
