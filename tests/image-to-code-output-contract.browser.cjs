@@ -50,7 +50,7 @@ const assert = require('node:assert/strict');
         hasKeyframes: /@keyframes\s+trozal-camera/.test(parsed.querySelector('style')?.textContent || ''),
         hasEmbeddedImage: !!parsed.querySelector('img.source'),
         hasExternalScript: !!parsed.querySelector('script[src]'),
-        hasModuleImport: /\\bimport\\s/.test(js),
+        hasModuleImport: /\bimport\s/.test(js),
         hasBrowserGlobalCache: /\\bglobalThis\\b/.test(js),
         hasCanvasScopedCache: /ctx\\.canvas\\[CACHE_KEY\\]/.test(js),
         hasIndependentBobFloatMotion: /kind==='bob'.*kind==='float'/s.test(js)
