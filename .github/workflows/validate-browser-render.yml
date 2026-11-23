@@ -259,6 +259,9 @@ jobs:
       - name: Verify Image to Code workspace panel drag and resize
         run: node tests/image-to-code-workspace-drag.browser.cjs
 
+      - name: Verify Mode 5 HTML and JavaScript Studio output contract
+        run: node tests/image-to-code-output-contract.browser.cjs
+
       - name: Stop local preview server
         if: always()
         run: if [ -f /tmp/browser-ai-http.pid ]; then kill "$(cat /tmp/browser-ai-http.pid)" || true; fi
