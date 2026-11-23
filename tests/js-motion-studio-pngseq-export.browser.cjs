@@ -33,12 +33,24 @@ const JSZip = require('jszip');
     await page.locator('#resolution').selectOption('1280x720');
     await page.locator('#format').selectOption('pngseq');
 
-    const downloadPromise = page.waitForEvent('download', { timeout: 90000 }).catch(error => ({ downloadError: error.message }));
+    const downloadPromise = page.waitForEvent('download', { timeout: 15000 }).catch(error => ({ downloadError: error.message }));
     await page.locator('#trozalJsMotionExport').click();
-    // Fail promptly with useful state if the export button did not reach the
-    // shared renderer, rather than waiting two minutes for a download event.
-    await page.waitForFunction(() => window.__trozalRenderMetrics?.active === true, { timeout: 20000 });
-    const download = await downloadPromise;
+    // Wait for the renderer's terminal state; active=true only proves that
+    // the click started and does not prove frames or the ZIP were completed.
+    await page.waitForFunction(() => {
+      const status = document.querySelector('#exportStatus')?.textContent || '';
+      return status.includes('PNG Sequence selesai') || status.includes('GAGAL') || status.includes('gagal');
+    }, { timeout: 60000 });
+    const exportStatus = await page.locator('#exportStatus').textContent();
+    assert.match(exportStatus || '', /PNG Sequence selesai/i, 'PNG Sequence renderer must reach success: ' + exportStatus);
+    // If Chromium suppresses the delayed automatic download after async
+    // rendering, use the app's explicit download button for the retained Blob.
+    let download = await Promise.race([downloadPromise, page.waitForTimeout(5000).then(() => null)]);
+    if (!download) {
+      await page.locator('#downloadVideo').click();
+      download = await downloadPromise;
+    }
+    assert.ok(download && !download.downloadError, 'PNG Sequence ZIP download must be available: ' + (download?.downloadError || exportStatus));
     assert.match(download.suggestedFilename(), /\.zip$/i, 'PNG Sequence export must produce a ZIP archive');
     const filePath = await download.path();
     assert.ok(filePath, 'Browser must provide the downloaded ZIP file');
