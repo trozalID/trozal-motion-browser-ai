@@ -58,7 +58,7 @@ const {chromium}=require('playwright');
   await page.frameLocator('#itcvPreview').locator('.part-0').waitFor({timeout:15000});
   assert.notEqual(await page.frameLocator('#itcvPreview').locator('.part-0').evaluate(el=>getComputedStyle(el).animationName),'none','Segmented object must animate in CSS preview.');
   assert.match(await page.locator('#itcvRigStatus').innerText(),/PNG layer transparan/);
-  for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY']) {
+  for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY','timelineStart','timelineDuration']) {
    assert.equal(await page.locator('[data-rig-control="'+key+'"]').count(),1,'Per-component control '+key+' must be available');
   }
   await page.locator('[data-rig-control="speedMultiplier"]').evaluate(el=>{el.value='1.75';el.dispatchEvent(new Event('input',{bubbles:true}));});
@@ -66,6 +66,8 @@ const {chromium}=require('playwright');
   await page.locator('[data-rig-control="opacity"]').evaluate(el=>{el.value='0.8';el.dispatchEvent(new Event('input',{bubbles:true}));});
   await page.locator('[data-rig-control="pivotX"]').evaluate(el=>{el.value='120';el.dispatchEvent(new Event('input',{bubbles:true}));});
   await page.locator('[data-rig-control="pivotY"]').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.locator('[data-rig-control="timelineStart"]').evaluate(el=>{el.value='2';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.locator('[data-rig-control="timelineDuration"]').evaluate(el=>{el.value='4';el.dispatchEvent(new Event('input',{bubbles:true}));});
   const runtimeSource=await page.locator('#itcvJs').inputValue();
   assert.match(runtimeSource,/characterPartCount/,'Optional JavaScript source remains available separately.');
   const runtimePayload=runtimeSource.match(/const DATA=(\{[\s\S]*\});\n\/\/ Keep the segmented component count/);
@@ -73,9 +75,14 @@ const {chromium}=require('playwright');
   const runtimeData=JSON.parse(runtimePayload[1]);
   assert.ok(Math.abs(runtimeData.characterRig.parts[0].speed-2.1)<0.001,'Per-component speed multiplier must affect exported JavaScript runtime speed.');
   assert.ok(Math.abs(runtimeData.characterRig.parts[0].amp-0.108)<0.001,'Per-component amplitude multiplier must affect exported JavaScript runtime amplitude.');
+  assert.equal(runtimeData.characterRig.parts[0].timelineStart,2,'Per-component timeline start must be preserved in JavaScript export.');
+  assert.equal(runtimeData.characterRig.parts[0].timelineDuration,4,'Per-component timeline duration must be preserved in JavaScript export.');
   const html=await page.locator('#itcvHtml').inputValue();
   assert.doesNotMatch(html,/<script\b|\bimport\s*\(/i,'HTML importer output must be CSS-only.');
-  for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY']) assert.ok(html.includes(key),'CSS HTML must preserve '+key+' as layer metadata.');
+  for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY','timelineStart','timelineDuration']) assert.ok(html.includes(key),'CSS HTML must preserve '+key+' as layer metadata.');
+  assert.match(html,/data-timelineStart="2"/,'HTML layer metadata must retain the timeline start.');
+  assert.match(html,/data-timelineDuration="4"/,'HTML layer metadata must retain the timeline duration.');
+  assert.match(html,/animation-duration:4s/,'HTML CSS keyframes must use the per-object timeline duration.');
   const preview=page.frameLocator('#itcvPreview');
   await preview.locator('.part-0').waitFor({timeout:10000});
   assert.notEqual(await preview.locator('.part-0').evaluate(el=>getComputedStyle(el).animationName),'none');
