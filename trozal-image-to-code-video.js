@@ -93,7 +93,22 @@ const CACHE_KEY='__TROZAL_ITCV_IMAGE_CACHE__';
 // Keep decoded assets on the persistent Studio canvas, not on a browser global.
 const CACHE=ctx.canvas[CACHE_KEY]||(ctx.canvas[CACHE_KEY]=Object.create(null));
 function imageFor(src){if(!src)return null;let im=CACHE[src];if(!im){im=new Image();CACHE[src]=im;im.src=src;}return im.complete&&im.naturalWidth?im:null;}
-function preloadImage(src){if(!src)return Promise.resolve(null);let im=CACHE[src];if(!im){im=new Image();CACHE[src]=im;}return new Promise(resolve=>{let settled=false;const done=()=>{if(settled)return;settled=true;resolve(im.naturalWidth?im:null);};if(im.complete&&im.src){done();return;}im.addEventListener('load',done,{once:true});im.addEventListener('error',done,{once:true});if(im.src!==src)im.src=src;if(im.complete)done();});}
+function preloadImage(src,index){
+ if(!src)return Promise.resolve(null);
+ let im=CACHE[src];
+ if(im&&im.complete&&im.naturalWidth>0)return Promise.resolve(im);
+ if(!im||im.complete&&!im.naturalWidth){im=new Image();CACHE[src]=im;}
+ return new Promise((resolve,reject)=>{
+  let settled=false;
+  const finish=()=>{if(settled)return;settled=true;im.onload=null;im.onerror=null;resolve(im.naturalWidth>0?im:null);};
+  const fail=()=>{if(settled)return;settled=true;im.onload=null;im.onerror=null;reject(new Error('Aset #'+(index+1)+' gagal dimuat ('+String(src).slice(0,48)+')'));};
+  im.onload=finish;im.onerror=fail;
+  if(im.src!==src)im.src=src;
+  if(typeof im.decode==='function')im.decode().then(finish).catch(()=>{if(im.complete&&!im.naturalWidth)fail();});
+  if(im.complete){if(im.naturalWidth>0)finish();else fail();}
+  setTimeout(()=>{if(!settled)fail();},20000);
+ });
+}
 const ASSETS=[...(DATA.images||[]),DATA.characterRig?.background,...(DATA.characterRig?.parts||[]).map(p=>p.src),...(DATA.scene?.layers||[]).map(p=>p.src)].filter(Boolean);
 const duration=Math.max(2,Number(DATA.config.duration)||8);
 const phase=((Math.max(0,t)%duration)/duration)*Math.PI*2;
