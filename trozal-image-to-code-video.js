@@ -105,7 +105,8 @@ const shake=Math.max(0,Math.min(2,Number(DATA.config.cameraShake)||0));
 const dx=(camera==='static'?0:Math.sin(phase)*w*0.012*strength)+Math.sin(t*31)*shake*w*0.002;
 const dy=(camera==='static'?0:Math.cos(phase)*h*0.009*strength)+Math.cos(t*27)*shake*h*0.002;
 const background=DATA.config.background||'#050a10';
-return Promise.all(ASSETS.map(preloadImage)).then(()=>{
+return Promise.all(ASSETS.map(preloadImage)).then(loaded=>{
+if(ASSETS.length&&!loaded.some(Boolean))throw new Error('JavaScript Studio tidak berhasil memuat aset gambar Mode 5. Coba unggah ulang gambar PNG/JPG/WEBP yang valid.');
 ctx.save();ctx.fillStyle=background;ctx.fillRect(0,0,w,h);
 const rig=DATA.characterRig;
 function drawImage(src,x,y,bw,bh,angle=0,scale=1,alpha=1){
