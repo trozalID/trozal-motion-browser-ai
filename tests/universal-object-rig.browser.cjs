@@ -55,8 +55,15 @@ const {chromium}=require('playwright');
   const exported=await page.locator('#itcvHtml').inputValue();
   assert.doesNotMatch(exported,/<script\b|\bimport\s*\(/i,'Importer-safe HTML must not contain JavaScript or module imports.');
   assert.match(exported,/@keyframes trozal-part-0/,'Each segmented object must receive a CSS keyframe animation.');
-  await page.frameLocator('#itcvPreview').locator('.part-0').waitFor({timeout:15000});
-  assert.notEqual(await page.frameLocator('#itcvPreview').locator('.part-0').evaluate(el=>getComputedStyle(el).animationName),'none','Segmented object must animate in CSS preview.');
+  const cssPreviewPart=page.frameLocator('#itcvPreview').locator('.part-0');
+  await cssPreviewPart.waitFor({state:'attached',timeout:15000});
+  const cssPreviewDiagnostics=await cssPreviewPart.evaluate(el=>{
+   const style=getComputedStyle(el),rect=el.getBoundingClientRect(),parent=el.parentElement?.getBoundingClientRect(),frame=el.ownerDocument.defaultView.frameElement?.getBoundingClientRect();
+   return {display:style.display,visibility:style.visibility,opacity:style.opacity,animationName:style.animationName,width:rect.width,height:rect.height,parentWidth:parent?.width,parentHeight:parent?.height,frameWidth:frame?.width,frameHeight:frame?.height,complete:el.complete,naturalWidth:el.naturalWidth,naturalHeight:el.naturalHeight,src:el.currentSrc?.slice(0,40)};
+  });
+  console.log('Mode 5 CSS preview diagnostics:',JSON.stringify(cssPreviewDiagnostics));
+  assert.notEqual(cssPreviewDiagnostics.animationName,'none','Segmented object must animate in CSS preview: '+JSON.stringify(cssPreviewDiagnostics));
+  assert.ok(cssPreviewDiagnostics.width>0&&cssPreviewDiagnostics.height>0,'Segmented object must have visible geometry in CSS preview: '+JSON.stringify(cssPreviewDiagnostics));
   assert.match(await page.locator('#itcvRigStatus').innerText(),/PNG layer transparan/);
   for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY']) {
    assert.equal(await page.locator('[data-rig-control="'+key+'"]').count(),1,'Per-component control '+key+' must be available');
