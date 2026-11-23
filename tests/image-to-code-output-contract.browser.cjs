@@ -51,8 +51,8 @@ const assert = require('node:assert/strict');
         hasEmbeddedImage: !!parsed.querySelector('img.source'),
         hasExternalScript: !!parsed.querySelector('script[src]'),
         hasModuleImport: /\bimport\s/.test(js),
-        hasBrowserGlobalCache: /\\bglobalThis\\b/.test(js),
-        hasCanvasScopedCache: /ctx\\.canvas\\[CACHE_KEY\\]/.test(js),
+        hasBrowserGlobalCache: /\bglobalThis\b/.test(js),
+        hasCanvasScopedCache: /ctx\.canvas\[CACHE_KEY\]/.test(js),
         hasIndependentBobFloatMotion: /kind==='bob'.*kind==='float'/s.test(js)
       };
     });
