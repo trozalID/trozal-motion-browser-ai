@@ -20,7 +20,7 @@ const {chromium}=require('playwright');
   assert.match(await page.locator('#itcvBuildRig').innerText(),/UNIVERSAL RIG/);
   const version=await page.locator('script[src*="trozal-image-to-code-video.js"]').getAttribute('src');
   assert.match(version,/\?v=20261123-2(?:&|$)/,'Mode 5 asset URL must use the current cache-busting version');
-  assert.match(version,/rig=20261123-1/,'Universal Rig asset URL must use the current cache-busting version');
+  assert.match(version,/rig=20261123-2/,'Universal Rig asset URL must use the current cache-busting version');
   console.log('PASS: Mode 5 Character Rig controls and browser ES module load.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});
