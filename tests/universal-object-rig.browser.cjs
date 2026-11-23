@@ -73,6 +73,28 @@ const {chromium}=require('playwright');
   const runtimeData=JSON.parse(runtimePayload[1]);
   assert.ok(Math.abs(runtimeData.characterRig.parts[0].speed-2.1)<0.001,'Per-component speed multiplier must affect exported JavaScript runtime speed.');
   assert.ok(Math.abs(runtimeData.characterRig.parts[0].amp-0.108)<0.001,'Per-component amplitude multiplier must affect exported JavaScript runtime amplitude.');
+
+  // Exercise the segmented JavaScript export in the actual Studio sandbox.
+  // Force a visible bob motion so this verifies pixels changing, not only valid syntax.
+  runtimeData.characterRig.parts[0].motion='bob';
+  runtimeData.characterRig.parts[0].amp=0.8;
+  const executableRuntime=runtimeSource.replace(runtimePayload[1],JSON.stringify(runtimeData));
+  await page.locator('#trozalJsMotionBtn').click();
+  await page.waitForSelector('#trozalJsMotionCode');
+  await page.locator('#trozalJsMotionCode').fill(executableRuntime);
+  await page.locator('#trozalJsMotionRun').click();
+  await page.waitForFunction(() => /Frame siap/.test(document.querySelector('#trozalJsMotionStatus')?.textContent||''),null,{timeout:15000});
+  await page.evaluate(async()=>{await window.TROZAL_JS_MOTION.renderFrame(0);});
+  await page.frameLocator('#trozalJsMotionCanvasFrame').locator('#c').evaluate(canvas=>{
+    window.__mode5Before=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+  });
+  await page.evaluate(async()=>{await window.TROZAL_JS_MOTION.renderFrame(1);});
+  const movedPixels=await page.frameLocator('#trozalJsMotionCanvasFrame').locator('#c').evaluate(canvas=>{
+    const before=window.__mode5Before,after=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+    let changed=0;for(let i=0;i<after.length;i+=4){if(before[i]!==after[i]||before[i+1]!==after[i+1]||before[i+2]!==after[i+2])changed++;}
+    return changed;
+  });
+  assert.ok(movedPixels>100,'A segmented object with bob motion must visibly move in JavaScript Studio; changed pixels='+movedPixels);
   const html=await page.locator('#itcvHtml').inputValue();
   assert.doesNotMatch(html,/<script\b|\bimport\s*\(/i,'HTML importer output must be CSS-only.');
   for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY']) assert.ok(html.includes(key),'CSS HTML must preserve '+key+' as layer metadata.');
