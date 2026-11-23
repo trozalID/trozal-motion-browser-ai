@@ -79,6 +79,12 @@ const {chromium}=require('playwright');
   runtimeData.characterRig.parts[0].motion='bob';
   runtimeData.characterRig.parts[0].amp=0.8;
   const executableRuntime=runtimeSource.replace(runtimePayload[1],JSON.stringify(runtimeData));
+  const assetSummary=await page.evaluate(async sources=>Promise.all(sources.map(src=>new Promise(resolve=>{
+    const image=new Image();image.onload=()=>resolve({ok:true,protocol:src.slice(0,32),length:src.length,width:image.naturalWidth,height:image.naturalHeight});
+    image.onerror=()=>resolve({ok:false,protocol:src.slice(0,32),length:src.length});
+    image.src=src;
+  }))),[...(runtimeData.images||[]),runtimeData.characterRig?.background,...(runtimeData.characterRig?.parts||[]).map(p=>p.src)].filter(Boolean));
+  console.log('Mode 5 JavaScript asset diagnostics:',JSON.stringify(assetSummary));
   // Studio's launcher can be visually hidden while Mode 5 owns the workspace;
   // invoke its real click handler so this integration test can switch modes.
   await page.locator('#trozalJsMotionBtn').evaluate(el=>el.click());
