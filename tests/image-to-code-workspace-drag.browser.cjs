@@ -77,26 +77,51 @@ const assert = require('node:assert/strict');
 
   const controls = workspace.locator('[data-itcv-zone="controls"]');
   const preview = workspace.locator('[data-itcv-zone="preview"]');
+  const panelEvents = [];
   await page.evaluate(() => {
     window.__panelDragEvents = [];
-    for (const type of ['dragstart', 'dragenter', 'dragover', 'drop', 'dragend']) {
+    for (const type of ['pointerdown', 'pointermove', 'pointerup']) {
       document.addEventListener(type, e => {
-        window.__panelDragEvents.push({ type, target: e.target.id || e.target.className || e.target.tagName });
+        if (e.target.closest?.('.itcv-panel-grip')) {
+          window.__panelDragEvents.push({ type, x: e.clientX, y: e.clientY });
+        }
       }, true);
     }
   });
+  await controls.scrollIntoViewIfNeeded();
+  await preview.scrollIntoViewIfNeeded();
+  const sourceGrip = controls.locator('.itcv-panel-grip');
+  await sourceGrip.scrollIntoViewIfNeeded();
+  const sourceBox = await sourceGrip.boundingBox();
+  const targetBox = await preview.boundingBox();
   const before = await controls.evaluate(el => getComputedStyle(el).gridArea);
-  await controls.locator('.itcv-panel-grip').dragTo(preview);
+  await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 10 });
+  await page.mouse.up();
   const after = await controls.evaluate(el => getComputedStyle(el).gridArea);
-  const panelState = await page.evaluate(() => ({ sourceInline: document.querySelector('[data-itcv-zone="controls"]').style.gridArea, targetInline: document.querySelector('[data-itcv-zone="preview"]').style.gridArea }));
-  const panelDrag = await page.evaluate(() => window.__panelDragEvents);
-  console.log('PANEL_DRAG_DIAGNOSTICS', JSON.stringify({
-    before,
-    after,
-    ...panelState,
-    events: panelDrag
+  const panelState = await page.evaluate(() => ({
+    sourceInline: document.querySelector('[data-itcv-zone="controls"]').style.gridArea,
+    targetInline: document.querySelector('[data-itcv-zone="preview"]').style.gridArea
   }));
+  const panelDrag = await page.evaluate(() => window.__panelDragEvents);
+  console.log('PANEL_DRAG_DIAGNOSTICS', JSON.stringify({ before, after, ...panelState, events: panelDrag }));
+  assert.ok(panelDrag.some(e => e.type === 'pointerdown') && panelDrag.some(e => e.type === 'pointerup'), 'Panel grip must receive pointer drag input');
   assert.notEqual(after, before, 'Dragging a panel grip onto another panel must move/swap its workspace position');
+
+  // Output panels are draggable too: move the JavaScript card before HTML.
+  const htmlCard = cards.nth(0);
+  const jsCard = cards.nth(1);
+  const jsGrip = jsCard.locator('.itcv-panel-grip');
+  await jsGrip.scrollIntoViewIfNeeded();
+  const jsGripBox = await jsGrip.boundingBox();
+  const htmlBox = await htmlCard.boundingBox();
+  await page.mouse.move(jsGripBox.x + jsGripBox.width / 2, jsGripBox.y + jsGripBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(htmlBox.x + htmlBox.width / 2, htmlBox.y + htmlBox.height / 2, { steps: 10 });
+  await page.mouse.up();
+  const outputOrder = await cards.evaluateAll(els => els.map(el => el.querySelector(':scope > label')?.textContent || ''));
+  assert.match(outputOrder[0], /JAVASCRIPT/, 'Dragging the JavaScript output panel onto HTML must reorder the output dock');
 
   assert.deepEqual(errors, [], 'Image to Code workspace must not emit browser runtime errors');
   await browser.close();
