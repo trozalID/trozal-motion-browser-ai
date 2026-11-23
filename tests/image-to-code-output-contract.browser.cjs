@@ -47,7 +47,7 @@ const assert = require('node:assert/strict');
         htmlTitle: parsed.title,
         hasBody: !!parsed.body,
         hasStage: !!parsed.querySelector('.stage'),
-        hasKeyframes: /@keyframes\\s+trozal-camera/.test(parsed.querySelector('style')?.textContent || ''),
+        hasKeyframes: /@keyframes\s+trozal-camera/.test(parsed.querySelector('style')?.textContent || ''),
         hasEmbeddedImage: !!parsed.querySelector('img.source'),
         hasExternalScript: !!parsed.querySelector('script[src]'),
         hasModuleImport: /\\bimport\\s/.test(js),
