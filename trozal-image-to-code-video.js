@@ -80,7 +80,8 @@ function mode(on){document.body.classList.toggle('itcv-mode-active',!!on);const 
 function meta(){$('itcvMeta').textContent=$('itcvRatio').value+' · '+$('itcvFps').value+' FPS · '+$('itcvDuration').value+'s';$('itcvPreview').style.aspectRatio=$('itcvRatio').value.replace(':',' / ');}
 function makeRuntime(images,cfg,art,characterRig){
  const scene=(art&&typeof art==='object')?art:{description:String(art||'Cinematic image motion'),layers:[]};
- const payload=JSON.stringify({images,config:cfg,scene,characterRig:characterRig||null});
+ const runtimeRig=characterRig&&Array.isArray(characterRig.parts)?{...characterRig,parts:characterRig.parts.map(part=>{const defaults={swing:{amp:.18,speed:1.2},hinge:{amp:.34,speed:.8},wheel:{amp:1,speed:4.2},rotate:{amp:1,speed:1.4},bob:{amp:.035,speed:1.1},float:{amp:.045,speed:.7},pulse:{amp:.075,speed:1.1},static:{amp:0,speed:0}},base=defaults[part.motion]||defaults.swing;return {...part,speed:(Number(part.speed)||base.speed)*(Number.isFinite(Number(part.speedMultiplier))?Number(part.speedMultiplier):1),amp:(Number(part.amp)||base.amp)*(Number.isFinite(Number(part.amplitudeMultiplier))?Number(part.amplitudeMultiplier):1)};})}:characterRig||null;
+ const payload=JSON.stringify({images,config:cfg,scene,characterRig:runtimeRig});
  // JavaScript Studio evaluates the textarea as a draw(ctx,t,w,h,anim) function body on every frame.
  // Preload every visual asset before JavaScript Studio captures a frame.
  return `const DATA=${payload};
