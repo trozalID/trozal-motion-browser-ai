@@ -256,6 +256,9 @@ jobs:
           })().catch(e => { console.error(e); process.exit(1); });
           NODE
 
+      - name: Verify Image to Code workspace panel drag and resize
+        run: node tests/image-to-code-workspace-drag.browser.cjs
+
       - name: Stop local preview server
         if: always()
         run: if [ -f /tmp/browser-ai-http.pid ]; then kill "$(cat /tmp/browser-ai-http.pid)" || true; fi
