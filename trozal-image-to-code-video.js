@@ -146,7 +146,7 @@ function makeCssHtml(images,cfg,art,rig){
    const x=clamp(part.x,0,rw),y=clamp(part.y,0,rh),w=clamp(part.w,1,rw),h=clamp(part.h,1,rh);
    const px=clamp((Number(part.pivotX==null?x+w/2:part.pivotX)-x)/w*100,0,100),py=clamp((Number(part.pivotY==null?y+h/2:part.pivotY)-y)/h*100,0,100);
    const motion=String(part.motion||'swing'),amp=clamp((part.amp==null?.15:part.amp)*(part.amplitudeMultiplier==null?1:clamp(part.amplitudeMultiplier,0,2.5))*clamp(cfg.rigAmplitude==null?1:cfg.rigAmplitude,0,2.5),0,2.5),speed=clamp((part.speed==null?1:part.speed)*(part.speedMultiplier==null?1:clamp(part.speedMultiplier,.1,3))*clamp(cfg.rigSpeed==null?1:cfg.rigSpeed,.25,3),.1,36);
-   const name='trozal-part-'+index,period=clamp(duration/Math.max(.25,speed),.6,duration*3),phase=-Math.abs(Number(part.phase)||0)-(cfg.rigStagger?index*.31:0);
+   const name='trozal-part-'+index,period=clamp(part.timelineDuration==null?duration/Math.max(.25,speed):part.timelineDuration,.6,duration*3),phase=clamp(part.timelineStart==null?0:part.timelineStart,0,duration*3)-Math.abs(Number(part.phase)||0)-(cfg.rigStagger?index*.31:0);
    let a='transform:rotate('+(-amp*32)+'deg)',b='transform:rotate('+(amp*32)+'deg)';
    if(motion==='wheel'||motion==='rotate'){a='transform:rotate(0deg)';b='transform:rotate(360deg)';}
    else if(motion==='bob'){a='transform:translateY(-'+(amp*28)+'px)';b='transform:translateY('+(amp*28)+'px)';}
@@ -274,6 +274,8 @@ function renderRigDirector(rig){
   addRigSlider('speedMultiplier','Kecepatan bagian',.1,3,.05,part.speedMultiplier==null?1:part.speedMultiplier,v=>part.speedMultiplier=v);
   addRigSlider('amplitudeMultiplier','Kekuatan bagian',0,2.5,.05,part.amplitudeMultiplier==null?1:part.amplitudeMultiplier,v=>part.amplitudeMultiplier=v);
   addRigSlider('opacity','Opacity layer',0,1,.05,part.opacity==null?1:part.opacity,v=>part.opacity=v);
+  addRigSlider('timelineStart','Mulai gerakan (detik)',0,60,.1,part.timelineStart==null?0:part.timelineStart,v=>part.timelineStart=v);
+  addRigSlider('timelineDuration','Durasi gerakan (detik)',.6,60,.1,part.timelineDuration==null?Math.max(.6,Number($('itcvDuration').value||8)/Math.max(.25,Number(part.speed)||1)):part.timelineDuration,v=>part.timelineDuration=v);
   const rigWidth=Number(rig&&rig.width)||1280,rigHeight=Number(rig&&rig.height)||720;
   addRigSlider('pivotX','Pivot X',0,rigWidth,1,Number(part.pivotX)||0,v=>part.pivotX=v);
   addRigSlider('pivotY','Pivot Y',0,rigHeight,1,Number(part.pivotY)||0,v=>part.pivotY=v);
