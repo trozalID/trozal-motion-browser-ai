@@ -75,6 +75,17 @@ const assert = require('node:assert/strict');
   const dockAfter = await output.evaluate(el => el.getBoundingClientRect().height);
   assert.ok(dockAfter > dockBefore + 35, 'Dragging horizontal splitter must enlarge output dock');
 
+  // Splitters also support keyboard resizing, not only pointer dragging.
+  const keyboardWidthBefore = await cards.nth(0).evaluate(el => el.getBoundingClientRect().width);
+  await outputSplitter.focus();
+  await page.keyboard.press('ArrowRight');
+  const keyboardWidthAfter = await cards.nth(0).evaluate(el => el.getBoundingClientRect().width);
+  assert.ok(keyboardWidthAfter > keyboardWidthBefore + 10, 'ArrowRight on output separator must widen HTML output');
+  await rowSplitter.focus();
+  await page.keyboard.press('ArrowUp');
+  const keyboardDockAfter = await output.evaluate(el => el.getBoundingClientRect().height);
+  assert.ok(keyboardDockAfter > dockAfter + 10, 'ArrowUp on row separator must enlarge output dock');
+
   const controls = workspace.locator('[data-itcv-zone="controls"]');
   const preview = workspace.locator('[data-itcv-zone="preview"]');
   const panelEvents = [];
@@ -122,6 +133,31 @@ const assert = require('node:assert/strict');
   await page.mouse.up();
   const outputOrder = await cards.evaluateAll(els => els.map(el => el.querySelector(':scope > label')?.textContent || ''));
   assert.match(outputOrder[0], /JAVASCRIPT/, 'Dragging the JavaScript output panel onto HTML must reorder the output dock');
+
+  // Layout, output ordering, and sizes must survive a full reload.
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('trozal.itcv.workspace.layout.v2') || 'null'));
+  assert.ok(saved, 'Workspace layout should be automatically saved');
+  assert.equal(saved.panelAreas.controls, 'preview', 'Saved workspace positions must record panel swaps');
+  assert.equal(saved.panelAreas.preview, 'controls', 'Saved workspace positions must record the target swap');
+  assert.deepEqual(saved.outputOrder, ['javascript', 'html'], 'Saved output order must keep JavaScript before HTML');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('#itcvModeBtn').click();
+  await workspace.waitFor({ state: 'visible' });
+  const reloadedControls = workspace.locator('[data-itcv-zone="controls"]');
+  const reloadedCards = workspace.locator('[data-itcv-zone="output"] > .out');
+  assert.equal(await reloadedControls.evaluate(el => el.style.gridArea), 'preview', 'Panel positions must be restored after reload');
+  const reloadedOrder = await reloadedCards.evaluateAll(els => els.map(el => el.dataset.itcvPanelId));
+  assert.deepEqual(reloadedOrder, ['javascript', 'html'], 'Output panel order must be restored after reload');
+  const persistedOutputLeft = await workspace.locator('[data-itcv-zone="output"]').evaluate(el => parseFloat(el.style.getPropertyValue('--itcv-output-left')));
+  assert.ok(persistedOutputLeft > 0, 'Output width must persist after reload');
+
+  // Reset restores original panel slots, HTML-first output order, and clears saved layout.
+  await workspace.locator('#itcvResetWorkspace').click();
+  assert.equal(await reloadedControls.evaluate(el => el.style.gridArea), '', 'Reset must restore the default controls position');
+  const resetOrder = await reloadedCards.evaluateAll(els => els.map(el => el.dataset.itcvPanelId));
+  assert.deepEqual(resetOrder, ['html', 'javascript'], 'Reset must restore HTML-first output order');
+  const cleared = await page.evaluate(() => localStorage.getItem('trozal.itcv.workspace.layout.v2'));
+  assert.equal(cleared, null, 'Reset must clear the persisted workspace layout');
 
   assert.deepEqual(errors, [], 'Image to Code workspace must not emit browser runtime errors');
   await browser.close();
