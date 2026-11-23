@@ -49,7 +49,7 @@ assert.ok(imageToCodeSource.includes('return Promise.all(ASSETS.map(preloadImage
 assert.ok(imageToCodeSource.includes("else{const fallback=imageFor((DATA.images||[])[0])"),
   'Universal Rig must fall back to the original source image when its segmented background is unavailable');
 const runtimeStart = imageToCodeSource.indexOf('return `const DATA=${payload};');
-const runtimeEnd = imageToCodeSource.indexOf('`;\\n}\\nfunction makeCssHtml', runtimeStart);
+const runtimeEnd = imageToCodeSource.indexOf('`;\n}\nfunction makeCssHtml', runtimeStart);
 assert.ok(runtimeStart >= 0 && runtimeEnd > runtimeStart, 'Image to Code runtime template must remain extractable');
 const generatedRuntime = imageToCodeSource.slice(runtimeStart + 'return `'.length, runtimeEnd)
   .replace('${payload}', JSON.stringify({images:['data:image/png;base64,AA=='],config:{duration:8},scene:{layers:[]},characterRig:null}));
