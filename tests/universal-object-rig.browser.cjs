@@ -24,7 +24,9 @@ const {chromium}=require('playwright');
    const transfer=new DataTransfer();transfer.items.add(file);
    const input=document.getElementById('itcvFiles');input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));
   });
-  await page.waitForFunction(()=>!!document.getElementById('itcvRigSource')?.__trozalMap);
+  await page.waitForFunction(()=>{const c=document.getElementById('itcvRigSource');return !!c&&c.__trozalImageStatus&&c.__trozalImageStatus!=='loading';},{timeout:12000}).catch(async error=>{const diagnostic=await page.locator('#itcvRigSource').evaluate(c=>({status:c.__trozalImageStatus||null,error:c.__trozalImageError||null,map:!!c.__trozalMap,files:document.getElementById('itcvFiles')?.files?.length||0,statusText:document.getElementById('itcvStatus')?.textContent||''}));throw new Error(error.message+' | imageDiagnostic='+JSON.stringify(diagnostic)+' | pageErrors='+JSON.stringify(errors));});
+  const imageDiagnostic=await page.locator('#itcvRigSource').evaluate(c=>({status:c.__trozalImageStatus,error:c.__trozalImageError,map:!!c.__trozalMap}));
+  assert.ok(imageDiagnostic.map,'Universal Rig source image must decode and create a coordinate map: '+JSON.stringify(imageDiagnostic));
   await page.evaluate(()=>{
    window.__TROZAL_UNIVERSAL_RIG_TEST_PROVIDER__={
     width:0,height:0,
