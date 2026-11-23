@@ -50,6 +50,18 @@ const { chromium } = require('playwright');
     assert.equal(stats.format, 'MP4');
     assert.equal(stats.cancelDisabled, false, 'Cancel must be enabled during rendering');
 
+    // Live monitor refresh must use the real completed-frame counter, not infer it from rounded percent.
+    await page.evaluate(() => { window.__trozalRenderMetrics.frame = 37; });
+    await page.waitForTimeout(350);
+    const liveMetrics = await page.evaluate(() => ({
+      frames: document.getElementById('tfrFrames')?.textContent,
+      elapsed: document.getElementById('tfrElapsed')?.textContent,
+      percent: document.getElementById('tfrPct')?.textContent
+    }));
+    assert.equal(liveMetrics.frames, '37 / 120', 'Floating monitor must show the actual completed frame count');
+    assert.notEqual(liveMetrics.elapsed, '—', 'Elapsed time must refresh while rendering is active');
+    assert.equal(liveMetrics.percent, '25.0%', 'Timer refresh must not invent progress while a frame is still running');
+
     // The whole header is a drag handle; dragging the title area must reposition the panel.
     let head = await page.locator('#trozalFloatingRender .tfr-head').boundingBox();
     await page.mouse.move(head.x + 65, head.y + head.height / 2);
