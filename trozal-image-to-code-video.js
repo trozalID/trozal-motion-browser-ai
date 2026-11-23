@@ -18,24 +18,32 @@ const ws=document.createElement('main');ws.id='trozalImageCodeVideoWorkspace';ws
  if(rigPanel)inspector.append(rigPanel);
  Array.from(content.querySelectorAll(':scope > .out')).forEach(card=>outputPanel.append(card));
  if(!inspector.children.length){const note=document.createElement('div');note.className='itcv-inspector-empty';note.textContent='Panel Scene / Object Rig akan tampil di sini.';inspector.append(note);}
- shell.replaceChildren(controls,center,inspector,outputPanel);
+ const split=(name)=>{const el=document.createElement('div');el.className='itcv-column-splitter';el.dataset.split=name;el.setAttribute('role','separator');el.setAttribute('aria-orientation','vertical');el.setAttribute('aria-label','Ubah lebar panel');el.tabIndex=0;return el;};
+ const splitA=split('left'),splitB=split('right');
+ shell.replaceChildren(controls,splitA,center,splitB,inspector,outputPanel);
  controls.dataset.itcvZone='controls';
  const style=document.createElement('style');style.textContent=`
- #trozalImageCodeVideoWorkspace .shell{display:grid!important;grid-template-columns:minmax(255px,290px) minmax(400px,1fr) minmax(290px,340px)!important;grid-template-rows:minmax(430px,1fr) auto!important;grid-template-areas:"controls preview inspector" "output output output"!important;gap:12px!important;align-items:stretch!important;max-width:1800px!important;min-height:calc(100vh - 140px)}
+ #trozalImageCodeVideoWorkspace .shell{display:grid!important;grid-template-columns:var(--itcv-left,290px) 7px minmax(360px,1fr) 7px var(--itcv-right,340px)!important;grid-template-rows:minmax(430px,1fr) auto!important;grid-template-areas:"controls split-a preview split-b inspector" "output output output output output"!important;gap:10px 8px!important;align-items:stretch!important;max-width:1900px!important;min-height:calc(100vh - 140px)}
  #trozalImageCodeVideoWorkspace [data-itcv-zone="controls"]{grid-area:controls}
  #trozalImageCodeVideoWorkspace [data-itcv-zone="preview"]{grid-area:preview}
  #trozalImageCodeVideoWorkspace [data-itcv-zone="inspector"]{grid-area:inspector}
  #trozalImageCodeVideoWorkspace [data-itcv-zone="output"]{grid-area:output;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start}
- #trozalImageCodeVideoWorkspace .panel[data-itcv-zone]{min-width:0;min-height:240px;width:100%;max-width:100%;resize:both;overflow:auto}
+ #trozalImageCodeVideoWorkspace .panel[data-itcv-zone]{min-width:0;min-height:240px;width:100%;max-width:100%;resize:vertical;overflow:auto}
+ #trozalImageCodeVideoWorkspace .itcv-column-splitter{grid-row:1;align-self:stretch;cursor:col-resize;border-radius:8px;background:linear-gradient(180deg,#24566b,#102d3b);border:1px solid #397b92;touch-action:none;position:relative}
+ #trozalImageCodeVideoWorkspace .itcv-column-splitter:after{content:"";position:absolute;left:2px;right:2px;top:45%;height:42px;border-radius:4px;background:repeating-linear-gradient(180deg,#8edcf0 0 2px,transparent 2px 6px);opacity:.7}
+ #trozalImageCodeVideoWorkspace .itcv-column-splitter:focus{outline:2px solid #8edcf0;outline-offset:2px}
  #trozalImageCodeVideoWorkspace .itcv-workspace-preview .preview{margin:0;min-width:0}
  #trozalImageCodeVideoWorkspace .itcv-workspace-preview iframe{width:100%;max-height:calc(100vh - 260px);min-height:260px}
- #trozalImageCodeVideoWorkspace .itcv-workspace-inspector>.scene-director,#trozalImageCodeVideoWorkspace .itcv-workspace-inspector>.rig-panel{margin:0;min-width:0;max-width:100%;resize:both;overflow:auto}
+ #trozalImageCodeVideoWorkspace .itcv-workspace-inspector>.scene-director,#trozalImageCodeVideoWorkspace .itcv-workspace-inspector>.rig-panel{margin:0;min-width:0;max-width:100%;resize:vertical;overflow:auto}
  #trozalImageCodeVideoWorkspace .itcv-output-dock>.out{margin:0;min-width:0;min-height:220px;resize:both;overflow:auto}
  #trozalImageCodeVideoWorkspace .itcv-output-dock textarea{min-height:170px;resize:both}
  #trozalImageCodeVideoWorkspace .itcv-inspector-empty{padding:16px;color:#b6d3e0;font-size:12px}
- @media(max-width:1180px){#trozalImageCodeVideoWorkspace .shell{grid-template-columns:minmax(230px,280px) minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;grid-template-areas:"controls preview" "inspector inspector" "output output"!important}#trozalImageCodeVideoWorkspace [data-itcv-zone="output"]{grid-template-columns:repeat(2,minmax(0,1fr))}}
- @media(max-width:760px){#trozalImageCodeVideoWorkspace .shell{grid-template-columns:minmax(0,1fr)!important;grid-template-areas:"controls" "preview" "inspector" "output"!important}#trozalImageCodeVideoWorkspace [data-itcv-zone="output"]{grid-template-columns:minmax(0,1fr)}#trozalImageCodeVideoWorkspace .panel[data-itcv-zone]{resize:vertical!important;min-height:180px}}
+ @media(max-width:1180px){#trozalImageCodeVideoWorkspace .shell{grid-template-columns:250px 7px minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;grid-template-areas:"controls split-a preview" "inspector inspector inspector" "output output output"!important}#trozalImageCodeVideoWorkspace [data-split="right"]{display:none}#trozalImageCodeVideoWorkspace [data-itcv-zone="output"]{grid-template-columns:repeat(2,minmax(0,1fr))}}
+ @media(max-width:760px){#trozalImageCodeVideoWorkspace .shell{grid-template-columns:minmax(0,1fr)!important;grid-template-areas:"controls" "preview" "inspector" "output"!important}#trozalImageCodeVideoWorkspace .itcv-column-splitter{display:none}#trozalImageCodeVideoWorkspace [data-itcv-zone="output"]{grid-template-columns:minmax(0,1fr)}#trozalImageCodeVideoWorkspace .panel[data-itcv-zone]{resize:vertical!important;min-height:180px}}
  `;document.head.append(style);
+ const drag={active:null,startX:0,startSize:0};
+ const limits={left:[230,480],right:[260,480]};
+ [splitA,splitB].forEach(handle=>{handle.addEventListener('pointerdown',e=>{if(window.matchMedia&&window.matchMedia('(max-width:1180px)').matches&&handle===splitB)return;drag.active=handle.dataset.split;drag.startX=e.clientX;drag.startSize=parseFloat(getComputedStyle(shell).getPropertyValue(drag.active==='left'?'--itcv-left':'--itcv-right'))||(drag.active==='left'?290:340);handle.setPointerCapture?.(e.pointerId);e.preventDefault();});handle.addEventListener('pointermove',e=>{if(drag.active!==handle.dataset.split)return;const d=e.clientX-drag.startX,sign=drag.active==='left'?1:-1,[min,max]=limits[drag.active];const size=Math.max(min,Math.min(max,drag.startSize+d*sign));shell.style.setProperty(drag.active==='left'?'--itcv-left':'--itcv-right',size+'px');});const stop=()=>{if(drag.active===handle.dataset.split)drag.active=null;};handle.addEventListener('pointerup',stop);handle.addEventListener('pointercancel',stop);handle.addEventListener('keydown',e=>{if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;const key=handle.dataset.split,prop=key==='left'?'--itcv-left':'--itcv-right',cur=parseFloat(getComputedStyle(shell).getPropertyValue(prop))||(key==='left'?290:340),step=e.shiftKey?24:10,sign=(e.key==='ArrowRight'?1:-1)*(key==='left'?1:-1),[min,max]=limits[key];shell.style.setProperty(prop,Math.max(min,Math.min(max,cur+step*sign))+'px');e.preventDefault();});});
 })();
 ws.insertAdjacentHTML('beforeend','<div id="itcvCopyDock" aria-label="Salin kode hasil"><strong>HASIL KODE</strong><button type="button" id="itcvDockCopyHtml" disabled>Copy HTML</button><button type="button" id="itcvDockCopyJs" disabled>Copy JavaScript</button></div>');
 let files=[],uris=[],htmlOut='',jsOut='',playing=true,currentScene=null,currentRig=null,currentComponents=[];const status=s=>$('itcvStatus').textContent=s;
