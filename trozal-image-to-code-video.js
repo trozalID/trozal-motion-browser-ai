@@ -70,6 +70,8 @@ function makeRuntime(images,cfg,art,characterRig){
  // JavaScript Studio evaluates the textarea as a draw(ctx,t,w,h,anim) function body on every frame.
  // Keep decoded images in the Studio iframe global so image loading is asynchronous but persistent.
  return `const DATA=${payload};
+// Keep the segmented component count in the optional JavaScript export for Studio diagnostics and compatibility.
+const characterPartCount=Array.isArray(DATA.characterRig?.parts)?DATA.characterRig.parts.length:0;
 const CACHE_KEY='__TROZAL_ITCV_IMAGE_CACHE__';
 const CACHE=globalThis[CACHE_KEY]||(globalThis[CACHE_KEY]=Object.create(null));
 function imageFor(src){if(!src)return null;let im=CACHE[src];if(!im){im=new Image();CACHE[src]=im;im.src=src;}return im.complete&&im.naturalWidth?im:null;}
