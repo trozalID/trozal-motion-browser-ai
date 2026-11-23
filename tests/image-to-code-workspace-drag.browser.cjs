@@ -13,35 +13,61 @@ const assert = require('node:assert/strict');
 
   const output = workspace.locator('[data-itcv-zone="output"]');
   const cards = output.locator(':scope > .out');
+  const outputSplitter = output.locator('.itcv-output-splitter');
+  const rowSplitter = workspace.locator('.itcv-row-splitter');
   assert.equal(await cards.count(), 2, 'HTML and JavaScript output panels must both be present');
-  assert.equal(await output.locator('.itcv-output-splitter').count(), 1, 'Output panels need a draggable width splitter');
-  assert.equal(await workspace.locator('.itcv-row-splitter').count(), 1, 'Output dock needs a draggable height splitter');
+  assert.equal(await outputSplitter.count(), 1, 'Output panels need a draggable width splitter');
+  assert.equal(await rowSplitter.count(), 1, 'Output dock needs a draggable height splitter');
 
   await page.evaluate(() => {
     window.__splitDebug = [];
     const out = document.querySelector('[data-itcv-zone="output"]');
     const split = out.querySelector('.itcv-output-splitter');
-    for (const type of ['pointerdown','pointermove','pointerup']) {
+    for (const type of ['pointerdown', 'pointermove', 'pointerup']) {
       document.addEventListener(type, e => {
         if (e.target === split || split.contains(e.target) || e.composedPath().includes(split)) {
-          window.__splitDebug.push({type, x:e.clientX, target:e.target.className, captured:split.hasPointerCapture?.(e.pointerId), active:window.__trozalITCV2});
+          window.__splitDebug.push({
+            type,
+            x: e.clientX,
+            target: e.target.className,
+            captured: split.hasPointerCapture?.(e.pointerId),
+            active: window.__trozalITCV2
+          });
         }
       }, true);
     }
   });
+
   const leftBefore = await cards.nth(0).evaluate(el => el.getBoundingClientRect().width);
-  const splitBox = await output.locator('.itcv-output-splitter').boundingBox();
+  // The output dock is intentionally below the first workspace row. Scroll its
+  // splitter into the viewport before using page.mouse, whose coordinates are
+  // viewport-relative (a bounding box below the viewport cannot receive input).
+  await outputSplitter.scrollIntoViewIfNeeded();
+  const splitBox = await outputSplitter.boundingBox();
   await page.mouse.move(splitBox.x + splitBox.width / 2, splitBox.y + splitBox.height / 2);
   await page.mouse.down();
   await page.mouse.move(splitBox.x + 75, splitBox.y + splitBox.height / 2, { steps: 8 });
   await page.mouse.up();
   const leftAfter = await cards.nth(0).evaluate(el => el.getBoundingClientRect().width);
-  const diag = await output.evaluate(el => ({before:0, width:el.getBoundingClientRect().width, columns:getComputedStyle(el).gridTemplateColumns, variable:el.style.getPropertyValue('--itcv-output-left'), inline:el.style.gridTemplateColumns, cards:[...el.querySelectorAll(':scope > .out')].map(x=>x.getBoundingClientRect().width)}));
-  console.log('OUTPUT_SPLITTER_DIAGNOSTICS', JSON.stringify({leftBefore,leftAfter,splitBox,diag,events:await page.evaluate(()=>window.__splitDebug)}));
+  const diag = await output.evaluate(el => ({
+    width: el.getBoundingClientRect().width,
+    columns: getComputedStyle(el).gridTemplateColumns,
+    variable: el.style.getPropertyValue('--itcv-output-left'),
+    inline: el.style.gridTemplateColumns,
+    cards: [...el.querySelectorAll(':scope > .out')].map(x => x.getBoundingClientRect().width)
+  }));
+  console.log('OUTPUT_SPLITTER_DIAGNOSTICS', JSON.stringify({
+    leftBefore,
+    leftAfter,
+    splitBox,
+    diag,
+    events: await page.evaluate(() => window.__splitDebug)
+  }));
   assert.ok(leftAfter > leftBefore + 35, 'Dragging output splitter must resize the HTML/JS columns');
 
   const dockBefore = await output.evaluate(el => el.getBoundingClientRect().height);
-  const rowBox = await workspace.locator('.itcv-row-splitter').boundingBox();
+  await rowSplitter.scrollIntoViewIfNeeded();
+  const rowBox = await rowSplitter.boundingBox();
   await page.mouse.move(rowBox.x + rowBox.width / 2, rowBox.y + rowBox.height / 2);
   await page.mouse.down();
   await page.mouse.move(rowBox.x + rowBox.width / 2, rowBox.y - 65, { steps: 8 });
