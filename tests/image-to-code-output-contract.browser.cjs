@@ -69,7 +69,9 @@ const assert = require('node:assert/strict');
     assert.equal(result.hasIndependentBobFloatMotion, true, 'Bob and float components must receive translation motion');
 
     // Exercise the actual JavaScript Studio sandbox, not only new Function in the parent page.
-    await page.locator('#itcvBack').click();\n    await page.locator('#trozalJsMotionBtn').waitFor({ state: 'visible', timeout: 10000 });\n    await page.locator('#trozalJsMotionBtn').click();
+    await page.locator('#itcvBack').click();
+    await page.locator('#trozalJsMotionBtn').waitFor({ state: 'visible', timeout: 10000 });
+    await page.locator('#trozalJsMotionBtn').click();
     await page.waitForSelector('#trozalJsMotionCode');
     await page.locator('#trozalJsMotionCode').fill(await page.locator('#itcvJs').inputValue());
     await page.locator('#trozalJsMotionRun').click();
