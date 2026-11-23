@@ -17,6 +17,18 @@ const assert = require('node:assert/strict');
   assert.equal(await output.locator('.itcv-output-splitter').count(), 1, 'Output panels need a draggable width splitter');
   assert.equal(await workspace.locator('.itcv-row-splitter').count(), 1, 'Output dock needs a draggable height splitter');
 
+  await page.evaluate(() => {
+    window.__splitDebug = [];
+    const out = document.querySelector('[data-itcv-zone="output"]');
+    const split = out.querySelector('.itcv-output-splitter');
+    for (const type of ['pointerdown','pointermove','pointerup']) {
+      document.addEventListener(type, e => {
+        if (e.target === split || split.contains(e.target) || e.composedPath().includes(split)) {
+          window.__splitDebug.push({type, x:e.clientX, target:e.target.className, captured:split.hasPointerCapture?.(e.pointerId), active:window.__trozalITCV2});
+        }
+      }, true);
+    }
+  });
   const leftBefore = await cards.nth(0).evaluate(el => el.getBoundingClientRect().width);
   const splitBox = await output.locator('.itcv-output-splitter').boundingBox();
   await page.mouse.move(splitBox.x + splitBox.width / 2, splitBox.y + splitBox.height / 2);
@@ -24,6 +36,8 @@ const assert = require('node:assert/strict');
   await page.mouse.move(splitBox.x + 75, splitBox.y + splitBox.height / 2, { steps: 8 });
   await page.mouse.up();
   const leftAfter = await cards.nth(0).evaluate(el => el.getBoundingClientRect().width);
+  const diag = await output.evaluate(el => ({before:0, width:el.getBoundingClientRect().width, columns:getComputedStyle(el).gridTemplateColumns, variable:el.style.getPropertyValue('--itcv-output-left'), inline:el.style.gridTemplateColumns, cards:[...el.querySelectorAll(':scope > .out')].map(x=>x.getBoundingClientRect().width)}));
+  console.log('OUTPUT_SPLITTER_DIAGNOSTICS', JSON.stringify({leftBefore,leftAfter,splitBox,diag,events:await page.evaluate(()=>window.__splitDebug)}));
   assert.ok(leftAfter > leftBefore + 35, 'Dragging output splitter must resize the HTML/JS columns');
 
   const dockBefore = await output.evaluate(el => el.getBoundingClientRect().height);
