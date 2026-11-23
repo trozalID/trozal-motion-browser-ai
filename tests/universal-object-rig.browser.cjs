@@ -121,13 +121,19 @@ const {chromium}=require('playwright');
   const html=await page.locator('#itcvHtml').inputValue();
   assert.doesNotMatch(html,/<script\b|\bimport\s*\(/i,'HTML importer output must be CSS-only.');
   for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY']) assert.ok(html.includes(key),'CSS HTML must preserve '+key+' as layer metadata.');
+  // Mode 5's workspace is intentionally hidden while JavaScript Studio is open.
+  // Verify the already-mounted CSS preview by attachment and computed animation,
+  // not Playwright's visibility heuristic for a hidden parent workspace.
   const preview=page.frameLocator('#itcvPreview');
-  await preview.locator('.part-0').waitFor({timeout:10000});
-  assert.notEqual(await preview.locator('.part-0').evaluate(el=>getComputedStyle(el).animationName),'none');
+  const previewPart=preview.locator('.part-0');
+  await previewPart.waitFor({state:'attached',timeout:10000});
+  const previewAnimation=await previewPart.evaluate(el=>getComputedStyle(el).animationName);
+  assert.notEqual(previewAnimation,'none','Mode 5 CSS preview must retain its independent part animation while Studio is open.');
   await page.evaluate(()=>{const frame=document.createElement('iframe');frame.id='standalone-export-check';frame.style.cssText='position:fixed;left:-10000px;width:640px;height:360px';frame.srcdoc=document.getElementById('itcvHtml').value;document.body.appendChild(frame);});
   const standalone=page.frameLocator('#standalone-export-check');
-  await standalone.locator('.part-0').waitFor({timeout:10000});
-  assert.notEqual(await standalone.locator('.part-0').evaluate(el=>getComputedStyle(el).animationName),'none','Standalone HTML must animate segmented objects without JavaScript.');
+  const standalonePart=standalone.locator('.part-0');
+  await standalonePart.waitFor({state:'attached',timeout:10000});
+  assert.notEqual(await standalonePart.evaluate(el=>getComputedStyle(el).animationName),'none','Standalone HTML must animate segmented objects without JavaScript.');
   assert.deepEqual(errors,[],'Mode 5 Universal Rig must not produce uncaught page errors');
   console.log('PASS: Browser Mode 5 manual point -> mocked SAM mask -> transparent object layer -> self-contained HTML/JS preview.');
  }finally{await browser.close();}
