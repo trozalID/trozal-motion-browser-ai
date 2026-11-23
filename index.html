@@ -3394,6 +3394,7 @@ if(wanted==='pngseq'){
  setExportStatus('PNG Sequence selesai: '+mb.toFixed(1)+' MB · '+totalFrames+' frame · alpha/transparansi dipertahankan.');
  setStatus('PNG Sequence ZIP berhasil dibuat. Setiap frame tersimpan sebagai PNG transparan.');
  setRenderProgress(100,'PNG Sequence berhasil','success');
+ if(window.__trozalRenderMetrics)window.__trozalRenderMetrics.active=false;
  const convertButton=$('convertPngToMov');
  const pngRenderBaseName=activeRenderBaseName;
  convertButton.textContent='Convert PNG ke MOV ProRes 4444';
