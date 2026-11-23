@@ -19,7 +19,7 @@ const assert = require('node:assert/strict');
       ctx.fillStyle = '#102030'; ctx.fillRect(0, 0, 320, 180);
       ctx.fillStyle = '#ef3f32'; ctx.fillRect(100, 50, 120, 80);
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-      return await blob.arrayBuffer();
+      return Array.from(new Uint8Array(await blob.arrayBuffer()));
     });
     await page.locator('#itcvFiles').setInputFiles({
       name: 'mode5-contract.png',
