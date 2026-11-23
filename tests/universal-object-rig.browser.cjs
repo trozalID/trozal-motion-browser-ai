@@ -85,7 +85,10 @@ const {chromium}=require('playwright');
   await page.waitForSelector('#trozalJsMotionCode');
   await page.locator('#trozalJsMotionCode').fill(executableRuntime);
   await page.locator('#trozalJsMotionRun').click();
-  await page.waitForFunction(() => {const s=document.querySelector('#trozalJsMotionStatus')?.textContent||'';return !!s&&!s.startsWith('Memuat engine');},null,{timeout:20000});
+  await page.waitForFunction(() => {
+    const s=(document.querySelector('#trozalJsMotionStatus')?.textContent||'').trim();
+    return /^Frame siap|^Render frame gagal:|^JavaScript error:|^Preview timeout|^Kode terbaru berhasil diterapkan|^Kode berubah saat proses apply/.test(s);
+  },null,{timeout:22000});
   const studioStatus=await page.locator('#trozalJsMotionStatus').innerText();
   assert.match(studioStatus,/Frame siap/, 'JavaScript Studio must compile and render the Mode 5 code. Status: '+studioStatus+' | pageErrors='+JSON.stringify(errors));
   assert.ok(await page.evaluate(()=>!!window.TROZAL_JS_MOTION?.renderFrame),'JavaScript Studio render API must be available.');
