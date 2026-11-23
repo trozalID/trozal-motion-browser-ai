@@ -93,7 +93,7 @@ const CACHE_KEY='__TROZAL_ITCV_IMAGE_CACHE__';
 // Keep decoded assets on the persistent Studio canvas, not on a browser global.
 const CACHE=ctx.canvas[CACHE_KEY]||(ctx.canvas[CACHE_KEY]=Object.create(null));
 function imageFor(src){if(!src)return null;let im=CACHE[src];if(!im){im=new Image();CACHE[src]=im;im.src=src;}return im.complete&&im.naturalWidth?im:null;}
-function preloadImage(src){if(!src)return Promise.resolve(null);let im=CACHE[src];if(im&&im.complete)return Promise.resolve(im.naturalWidth?im:null);if(!im){im=new Image();CACHE[src]=im;}return new Promise(resolve=>{if(im.complete){resolve(im.naturalWidth?im:null);return;}const done=()=>resolve(im.naturalWidth?im:null);im.addEventListener('load',done,{once:true});im.addEventListener('error',done,{once:true});if(!im.src)im.src=src;});}
+function preloadImage(src){if(!src)return Promise.resolve(null);let im=CACHE[src];if(!im){im=new Image();CACHE[src]=im;}return new Promise(resolve=>{let settled=false;const done=()=>{if(settled)return;settled=true;resolve(im.naturalWidth?im:null);};if(im.complete&&im.src){done();return;}im.addEventListener('load',done,{once:true});im.addEventListener('error',done,{once:true});if(im.src!==src)im.src=src;if(im.complete)done();});}
 const ASSETS=[...(DATA.images||[]),DATA.characterRig?.background,...(DATA.characterRig?.parts||[]).map(p=>p.src),...(DATA.scene?.layers||[]).map(p=>p.src)].filter(Boolean);
 const duration=Math.max(2,Number(DATA.config.duration)||8);
 const phase=((Math.max(0,t)%duration)/duration)*Math.PI*2;
