@@ -85,13 +85,17 @@ const {chromium}=require('playwright');
   await page.waitForSelector('#trozalJsMotionCode');
   await page.locator('#trozalJsMotionCode').fill(executableRuntime);
   await page.locator('#trozalJsMotionRun').click();
-  await page.waitForFunction(() => /Frame siap/.test(document.querySelector('#trozalJsMotionStatus')?.textContent||''),null,{timeout:15000});
+  await page.waitForFunction(() => {const s=document.querySelector('#trozalJsMotionStatus')?.textContent||'';return !!s&&!s.startsWith('Memuat engine');},null,{timeout:20000});
+  const studioStatus=await page.locator('#trozalJsMotionStatus').innerText();
+  assert.match(studioStatus,/Frame siap/, 'JavaScript Studio must compile and render the Mode 5 code. Status: '+studioStatus+' | pageErrors='+JSON.stringify(errors));
+  assert.ok(await page.evaluate(()=>!!window.TROZAL_JS_MOTION?.renderFrame),'JavaScript Studio render API must be available.');
   await page.evaluate(async()=>{await window.TROZAL_JS_MOTION.renderFrame(0);});
-  await page.frameLocator('#trozalJsMotionCanvasFrame').locator('#c').evaluate(canvas=>{
+  await page.frameLocator('#trozalJsMotionFrame').locator('iframe').evaluate(()=>{}).catch(()=>{});
+  await page.frameLocator('#trozalJsMotionFrame').locator('#c').evaluate(canvas=>{
     window.__mode5Before=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
   });
   await page.evaluate(async()=>{await window.TROZAL_JS_MOTION.renderFrame(1);});
-  const movedPixels=await page.frameLocator('#trozalJsMotionCanvasFrame').locator('#c').evaluate(canvas=>{
+  const movedPixels=await page.frameLocator('#trozalJsMotionFrame').locator('#c').evaluate(canvas=>{
     const before=window.__mode5Before,after=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
     let changed=0;for(let i=0;i<after.length;i+=4){if(before[i]!==after[i]||before[i+1]!==after[i+1]||before[i+2]!==after[i+2])changed++;}
     return changed;
