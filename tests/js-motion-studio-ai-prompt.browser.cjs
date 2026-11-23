@@ -16,6 +16,7 @@ const assert = require('node:assert/strict');
       generateText: async (prompt, options) => {
         if (!prompt.includes('cinematic product reveal')) throw new Error('User brief was not forwarded');
         if (!options.systemInstruction.includes('Canvas 2D')) throw new Error('Canvas-only system instruction missing');
+        if (!options.systemInstruction.includes('ARTICULATED MOTION IS MANDATORY')) throw new Error('Articulated subject-motion contract missing');
         return JSON.stringify({ concepts: [
           { title: 'Neon Orbit', description: 'A bright neon orbital reveal.', code: 'ctx.fillStyle="#101827";ctx.fillRect(0,0,w,h);ctx.fillStyle="#37d5ff";ctx.beginPath();ctx.arc(w/2+Math.sin(t)*80,h/2,60,0,Math.PI*2);ctx.fill();' },
           { title: 'Glass Pulse', description: 'A soft glass-like pulse.', code: 'ctx.fillStyle="#101827";ctx.fillRect(0,0,w,h);ctx.globalAlpha=.5+.5*Math.sin(t*2);ctx.fillStyle="#ffffff";ctx.beginPath();ctx.arc(w/2,h/2,90,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;' }
