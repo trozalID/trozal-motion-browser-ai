@@ -68,13 +68,15 @@ function makeRuntime(images,cfg,art,characterRig){
  const scene=(art&&typeof art==='object')?art:{description:String(art||'Cinematic image motion'),layers:[]};
  const payload=JSON.stringify({images,config:cfg,scene,characterRig:characterRig||null});
  // JavaScript Studio evaluates the textarea as a draw(ctx,t,w,h,anim) function body on every frame.
- // Keep decoded images in the Studio iframe global so image loading is asynchronous but persistent.
+ // Preload every visual asset before JavaScript Studio captures a frame.
  return `const DATA=${payload};
 // Keep the segmented component count in the optional JavaScript export for Studio diagnostics and compatibility.
 const characterPartCount=Array.isArray(DATA.characterRig?.parts)?DATA.characterRig.parts.length:0;
 const CACHE_KEY='__TROZAL_ITCV_IMAGE_CACHE__';
 const CACHE=globalThis[CACHE_KEY]||(globalThis[CACHE_KEY]=Object.create(null));
 function imageFor(src){if(!src)return null;let im=CACHE[src];if(!im){im=new Image();CACHE[src]=im;im.src=src;}return im.complete&&im.naturalWidth?im:null;}
+function preloadImage(src){if(!src)return Promise.resolve(null);let im=CACHE[src];if(im&&im.complete)return Promise.resolve(im.naturalWidth?im:null);if(!im){im=new Image();CACHE[src]=im;}return new Promise(resolve=>{if(im.complete){resolve(im.naturalWidth?im:null);return;}const done=()=>resolve(im.naturalWidth?im:null);im.addEventListener('load',done,{once:true});im.addEventListener('error',done,{once:true});if(!im.src)im.src=src;});}
+const ASSETS=[...(DATA.images||[]),DATA.characterRig?.background,...(DATA.characterRig?.parts||[]).map(p=>p.src),...(DATA.scene?.layers||[]).map(p=>p.src)].filter(Boolean);
 const duration=Math.max(2,Number(DATA.config.duration)||8);
 const phase=((Math.max(0,t)%duration)/duration)*Math.PI*2;
 const fitMode=DATA.config.fit==='cover'?'cover':'contain';
@@ -85,6 +87,7 @@ const shake=Math.max(0,Math.min(2,Number(DATA.config.cameraShake)||0));
 const dx=(camera==='static'?0:Math.sin(phase)*w*0.012*strength)+Math.sin(t*31)*shake*w*0.002;
 const dy=(camera==='static'?0:Math.cos(phase)*h*0.009*strength)+Math.cos(t*27)*shake*h*0.002;
 const background=DATA.config.background||'#050a10';
+return Promise.all(ASSETS.map(preloadImage)).then(()=>{
 ctx.save();ctx.fillStyle=background;ctx.fillRect(0,0,w,h);
 const rig=DATA.characterRig;
 function drawImage(src,x,y,bw,bh,angle=0,scale=1,alpha=1){
@@ -98,7 +101,7 @@ if(rig&&rig.background){
  const factor=(fitMode==='cover'?Math.max(w/rw,h/rh):Math.min(w/rw,h/rh))*zoom;
  const ox=(w-rw*factor)/2+dx,oy=(h-rh*factor)/2+dy;
  ctx.save();ctx.translate(ox,oy);ctx.scale(factor,factor);
- const bg=imageFor(rig.background);if(bg)ctx.drawImage(bg,0,0,rw,rh);
+ const bg=imageFor(rig.background);if(bg)ctx.drawImage(bg,0,0,rw,rh);else{const fallback=imageFor((DATA.images||[])[0]);if(fallback)ctx.drawImage(fallback,0,0,rw,rh);}
  const parts=Array.isArray(rig.parts)?rig.parts:[];
  const children=Object.create(null);parts.forEach(p=>{const k=p.parent||'';(children[k]||(children[k]=[])).push(p);});
  function drawPart(p){const idx=parts.indexOf(p),speed=(Number(p.speed)||1)*(Number(DATA.config.rigSpeed)||1),amp=(Number(p.amp)||0)*(Number(DATA.config.rigAmplitude)||1),offset=(Number(p.phase)||0)+(DATA.config.rigStagger?idx*.43:0),kind=p.motion||'swing';const angle=kind==='static'?0:(kind==='rotate'||kind==='wheel'?t*speed:Math.sin(t*speed+offset)*amp);ctx.save();ctx.translate(Number(p.pivotX)||0,Number(p.pivotY)||0);if(DATA.config.rigParallax){const depth=((Number(p.y)||0)+(Number(p.h)||0)/2)/rh-.5;ctx.translate(Math.sin(t*.65+offset)*depth*rw*.012,Math.cos(t*.52+offset)*depth*rh*.009);}ctx.rotate(angle);ctx.translate(-(Number(p.pivotX)||0),-(Number(p.pivotY)||0));const im=imageFor(p.src);if(im&&p.enabled!==false){ctx.globalAlpha=Math.max(0,Math.min(1,Number(p.opacity==null?1:p.opacity)));ctx.drawImage(im,Number(p.x)||0,Number(p.y)||0,Number(p.w)||im.naturalWidth,Number(p.h)||im.naturalHeight);}(children[p.id]||[]).forEach(drawPart);ctx.restore();}
@@ -109,7 +112,8 @@ if(rig&&rig.background){
 const layers=Array.isArray(DATA.scene?.layers)?DATA.scene.layers.filter(x=>x.enabled!==false):[];
 layers.slice(0,12).forEach((layer,i)=>{const x=Math.max(0,Math.min(1,Number(layer.x)||.5))*w,y=Math.max(0,Math.min(1,Number(layer.y)||.5))*h,lw=Math.max(.04,Math.min(.8,Number(layer.w)||.22))*w,lh=Math.max(.04,Math.min(.8,Number(layer.h)||.18))*h,p=t*(.45+(i%4)*.17)+i*1.73;ctx.save();ctx.globalCompositeOperation='screen';ctx.globalAlpha=Math.max(0,Math.min(1,strength));if(/particle|ornament/i.test(String(layer.kind||''))){for(let n=0;n<5;n++){const a=p+n*Math.PI*2/5;ctx.beginPath();ctx.fillStyle='rgba(255,224,154,.55)';ctx.arc(x+Math.cos(a)*lw*.24,y+Math.sin(a)*lh*.42,Math.max(1,Math.min(w,h)*.004),0,Math.PI*2);ctx.fill();}}else{const pulse=.5+.5*Math.sin(p),g=ctx.createRadialGradient(x,y,1,x,y,Math.max(lw,lh));g.addColorStop(0,'rgba(255,218,140,'+(.12+.12*pulse)+')');g.addColorStop(1,'rgba(255,218,140,0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(x,y,lw*.4,lh*.4,0,0,Math.PI*2);ctx.fill();}ctx.restore();});
 if(DATA.config.vignette!==false){const g=ctx.createRadialGradient(w*.5,h*.5,Math.min(w,h)*.18,w*.5,h*.5,Math.max(w,h)*.72);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.42)');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);}
-ctx.restore();`;
+ctx.restore();
+});`;
 }
 function makeCssHtml(images,cfg,art,rig){
  const duration=Math.max(2,Math.min(60,Number(cfg.duration)||8));
