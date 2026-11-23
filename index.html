@@ -3452,8 +3452,8 @@ let motion=getMotionState(elapsed),baseW=w,baseH=h,cx=w/2,cy=h/2;
 if(window.__TROZAL_JS_MOTION_EXPORT_ACTIVE===true){
  const frameData=await window.TROZAL_JS_MOTION?.renderFrame(elapsed);
  if(!frameData)throw new Error('JavaScript Studio tidak menghasilkan frame pada '+elapsed.toFixed(3)+'s.');
- const frameImage=await new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('Gagal membaca frame JavaScript Studio.'));image.src=frameData});
- ctx.drawImage(frameImage,0,0,w,h);
+ if(frameData&&typeof frameData==='object'&&typeof frameData.close==='function'){ctx.drawImage(frameData,0,0,w,h);frameData.close()}else{const frameImage=await new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('Gagal membaca frame JavaScript Studio.'));image.src=frameData});
+ ctx.drawImage(frameImage,0,0,w,h);}
 }else{
  let obj=$('object');
 // Match CSS preview geometry: width relative to stage width, height relative to stage height.
