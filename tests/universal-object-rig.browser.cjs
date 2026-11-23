@@ -68,7 +68,7 @@ const {chromium}=require('playwright');
   await page.locator('[data-rig-control="pivotY"]').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));});
   const runtimeSource=await page.locator('#itcvJs').inputValue();
   assert.match(runtimeSource,/characterPartCount/,'Optional JavaScript source remains available separately.');
-  const runtimePayload=runtimeSource.match(/const DATA=(\\{[\\s\\S]*\\});\\n\\/\\/ Keep the segmented component count/);
+  const runtimePayload=runtimeSource.match(/const DATA=(\{[\s\S]*\});\n\/\/ Keep the segmented component count/);
   assert.ok(runtimePayload,'JavaScript export must contain a parseable scene payload.');
   const runtimeData=JSON.parse(runtimePayload[1]);
   assert.ok(Math.abs(runtimeData.characterRig.parts[0].speed-2.1)<0.001,'Per-component speed multiplier must affect exported JavaScript runtime speed.');
