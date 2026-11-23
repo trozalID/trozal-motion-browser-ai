@@ -23,8 +23,10 @@ assert.ok(source.includes('new Function("ctx","t","w","h","anim",o.code)'),
   'Each Canvas object must receive interpolated anim values');
 assert.match(source, /const a=d\.anim\|\|\{\}/,
   'Frame runtime must read interpolated animation values from the message');
-assert.ok(source.includes('item.draw(ctx,d.time,c.width,c.height,a)'),
-  'Frame runtime must pass interpolated animation values into each object');
+assert.ok(source.includes('await item.draw(ctx,d.time,c.width,c.height,a)'),
+  'Frame runtime must await asynchronous object drawing and pass interpolated animation values');
+assert.ok(source.includes('addEventListener("message",async e=>'),
+  'Frame message handler must await asynchronous drawing before capturing PNG data');
 assert.ok(source.includes("code.addEventListener('input',()=>{currentScene().code=code.value;currentObject().code=code.value;"),
   'Active object code must persist as the editor changes');
 assert.ok(source.includes("calibration.textContent='Belum dikalibrasi'"),
