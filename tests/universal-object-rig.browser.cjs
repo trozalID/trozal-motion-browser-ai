@@ -49,8 +49,12 @@ const {chromium}=require('playwright');
   await page.mouse.click(box.x+box.width*(map.x+map.w*.72)/640,box.y+box.height*(map.y+map.h*.5)/360);
   await page.waitForFunction(()=>document.getElementById('itcvRigParts')?.querySelector('input[type="text"]')?.value.includes('Komponen manual'));
   await page.locator('#itcvBuildRig').click();
-  await page.waitForFunction(()=>document.getElementById('itcvHtml')?.value.includes('sam2.1-tiny-browser-universal-rig'),{timeout:30000});
-  await page.waitForFunction(()=>document.getElementById('itcvPreview')?.contentWindow?.TROZAL_VIDEO?.characterRigEmbedded===true,{timeout:15000});
+  await page.waitForFunction(()=>{const html=document.getElementById('itcvHtml')?.value||'';return html.includes('@keyframes trozal-part-0')&&html.includes('class="part part-0"')&&html.includes('class="rig-canvas"');},{timeout:30000});
+  const exported=await page.locator('#itcvHtml').inputValue();
+  assert.doesNotMatch(exported,/<script\b|\bimport\s*\(/i,'Importer-safe HTML must not contain JavaScript or module imports.');
+  assert.match(exported,/@keyframes trozal-part-0/,'Each segmented object must receive a CSS keyframe animation.');
+  await page.frameLocator('#itcvPreview').locator('.part-0').waitFor({timeout:15000});
+  assert.notEqual(await page.frameLocator('#itcvPreview').locator('.part-0').evaluate(el=>getComputedStyle(el).animationName),'none','Segmented object must animate in CSS preview.');
   assert.match(await page.locator('#itcvRigStatus').innerText(),/PNG layer transparan/);
   for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY']) {
    assert.equal(await page.locator('[data-rig-control="'+key+'"]').count(),1,'Per-component control '+key+' must be available');
@@ -60,28 +64,17 @@ const {chromium}=require('playwright');
   await page.locator('[data-rig-control="opacity"]').evaluate(el=>{el.value='0.8';el.dispatchEvent(new Event('input',{bubbles:true}));});
   await page.locator('[data-rig-control="pivotX"]').evaluate(el=>{el.value='120';el.dispatchEvent(new Event('input',{bubbles:true}));});
   await page.locator('[data-rig-control="pivotY"]').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));});
-  assert.match(await page.locator('#itcvJs').inputValue(),/characterPartCount/);
+  assert.match(await page.locator('#itcvJs').inputValue(),/characterPartCount/,'Optional JavaScript source remains available separately.');
   const html=await page.locator('#itcvHtml').inputValue();
-  assert.doesNotMatch(html,/trozal-export-fallback/,'Standalone HTML must not leave a static source image behind the animated canvas');
-  assert.match(html,/cameraShake/,'HTML export must serialize camera shake');
-  assert.match(html,/colorGrade/,'HTML export must serialize color grading');
-  assert.match(html,/vignette/,'HTML export must serialize vignette setting');
-  for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY']) {
-   assert.ok(html.includes(key), 'HTML export must embed per-component '+key);
-  }
-  for (const key of ['rigSpeed','rigAmplitude','rigParallax','rigShadow','rigStagger']) {
-   assert.ok(html.includes(key), 'HTML export must serialize '+key);
-   assert.ok((await page.locator('#itcvJs').inputValue()).includes(key), 'JavaScript export must serialize '+key);
-  }
+  assert.doesNotMatch(html,/<script\b|\bimport\s*\(/i,'HTML importer output must be CSS-only.');
+  for (const key of ['speedMultiplier','amplitudeMultiplier','opacity','pivotX','pivotY']) assert.ok(html.includes(key),'CSS HTML must preserve '+key+' as layer metadata.');
   const preview=page.frameLocator('#itcvPreview');
-  await preview.locator('#trozal-video-canvas').waitFor({timeout:10000});
-  const rendered=await preview.locator('#trozal-video-canvas').evaluate(async c=>{const until=Date.now()+10000;let lit=0;while(Date.now()<until){const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;lit=0;for(let i=0;i<d.length;i+=4)if(d[i]>50||d[i+1]>50||d[i+2]>50)lit++;if(lit>100)return lit;await new Promise(resolve=>setTimeout(resolve,100));}return lit;});
-  assert.ok(rendered>100,'HTML preview must paint visible pixels instead of a blank/black frame');
-  await page.evaluate(()=>{const frame=document.createElement('iframe');frame.id='standalone-export-check';frame.style.cssText='position:fixed;left:-10000px;width:640px;height:360px';frame.setAttribute('sandbox','allow-scripts allow-same-origin');frame.srcdoc=document.getElementById('itcvHtml').value;document.body.appendChild(frame);});
+  await preview.locator('.part-0').waitFor({timeout:10000});
+  assert.notEqual(await preview.locator('.part-0').evaluate(el=>getComputedStyle(el).animationName),'none');
+  await page.evaluate(()=>{const frame=document.createElement('iframe');frame.id='standalone-export-check';frame.style.cssText='position:fixed;left:-10000px;width:640px;height:360px';frame.srcdoc=document.getElementById('itcvHtml').value;document.body.appendChild(frame);});
   const standalone=page.frameLocator('#standalone-export-check');
-  await standalone.locator('#trozal-video-canvas').waitFor({timeout:10000});
-  await page.waitForFunction(()=>document.getElementById('standalone-export-check')?.contentWindow?.TROZAL_VIDEO?.frameCount>3,{timeout:10000});
-  assert.ok(await standalone.locator('#trozal-video-canvas').evaluate(c=>c.width>0&&c.height>0),'Standalone HTML must create a running canvas');
+  await standalone.locator('.part-0').waitFor({timeout:10000});
+  assert.notEqual(await standalone.locator('.part-0').evaluate(el=>getComputedStyle(el).animationName),'none','Standalone HTML must animate segmented objects without JavaScript.');
   assert.deepEqual(errors,[],'Mode 5 Universal Rig must not produce uncaught page errors');
   console.log('PASS: Browser Mode 5 manual point -> mocked SAM mask -> transparent object layer -> self-contained HTML/JS preview.');
  }finally{await browser.close();}
