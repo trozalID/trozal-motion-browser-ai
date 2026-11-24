@@ -394,10 +394,15 @@ export function buildPosePartSpecs(landmarks, width, height, mask = null, maskWi
       const isLeft = p.id === "handL";
       const pinky = get(isLeft ? 17 : 18);
       const thumb = get(isLeft ? 21 : 22);
-      const tips = [b, pinky, thumb].filter(Boolean);
+      // Pose estimators can return low-quality finger points far from the wrist.
+      // Ignore those outliers; otherwise the averaged palm center and radius can
+      // stretch across the torso/skirt and steal pixels from unrelated layers.
+      const plausibleHandSpan = Math.max(shoulderWidth * 1.05, 18);
+      const plausibleTips = [b, pinky, thumb].filter(pt => pt && dist(a, pt) <= plausibleHandSpan);
+      const tips = plausibleTips.length ? plausibleTips : (b && dist(a, b) <= plausibleHandSpan * 1.6 ? [b] : [a]);
       const tipCenter = tips.reduce((sum, pt) => ({ x: sum.x + pt.x / tips.length, y: sum.y + pt.y / tips.length }), { x: 0, y: 0 });
       const tipSpread = tips.reduce((max, pt) => Math.max(max, dist(pt, tipCenter)), 0);
-      const palmRadius = Math.max(shoulderWidth * 0.125, tipSpread * 1.35);
+      const palmRadius = Math.min(shoulderWidth * 0.22, Math.max(shoulderWidth * 0.125, tipSpread * 1.15));
       specs.push({
         ...p, aPoint: a, bPoint: tipCenter, radiusPx: palmRadius,
         pivot: a, shape: "capsule", jointPoints: [a, ...tips],
