@@ -5,6 +5,10 @@
 const MEDIAPIPE_BUNDLE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.mjs";
 const MEDIAPIPE_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
 const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
+export const CHARACTER_RIG_MASK_THRESHOLDS = Object.freeze({ assetAlpha: 0.18, labelAssignment: 0.26, backgroundInpaint: 0.18 });
+export function shouldInpaintMaskPixel(confidence) {
+  return Number(confidence) >= CHARACTER_RIG_MASK_THRESHOLDS.backgroundInpaint;
+}
 
 const PARTS = [
   { id: "torso", name: "Torso", parent: null, a: 11, b: 24, radius: 0, amp: 0.025, speed: 1.1, phase: 0.0 },
@@ -138,7 +142,7 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
     const py = (y + 0.5) * scaleY;
     for (let x = 0; x < maskWidth; x++) {
       const idx = y * maskWidth + x;
-      if (Number(mask[idx]) < 0.26) continue;
+      if (Number(mask[idx]) < CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) continue;
       const px = (x + 0.5) * scaleX;
       let best = 1.28, bestIndex = 0;
       for (let k = 1; k < specs.length; k++) {
@@ -216,7 +220,7 @@ function reconstructBackground(source, maskData, maskWidth, maskHeight, width, h
     for (let x = 0; x < width; x++) {
       const mx = Math.min(maskWidth - 1, Math.floor(x * maskWidth / width));
       const i = y * width + x;
-      if (maskAt(mx, my) < 0.25) { owner[i] = i; queue[tail++] = i; }
+      if (!shouldInpaintMaskPixel(maskAt(mx, my))) { owner[i] = i; queue[tail++] = i; }
     }
   }
   if (!tail) throw new Error("Mask subjek menutupi seluruh gambar; latar tidak dapat direkonstruksi.");
@@ -230,7 +234,7 @@ function reconstructBackground(source, maskData, maskWidth, maskHeight, width, h
   const filled = new ImageData(new Uint8ClampedArray(src), width, height);
   for (let i = 0; i < total; i++) {
     const x = i % width, y = (i / width) | 0;
-    if (maskAt(Math.min(maskWidth - 1, Math.floor(x * maskWidth / width)), Math.min(maskHeight - 1, Math.floor(y * maskHeight / height))) < 0.25) continue;
+    if (!shouldInpaintMaskPixel(maskAt(Math.min(maskWidth - 1, Math.floor(x * maskWidth / width)), Math.min(maskHeight - 1, Math.floor(y * maskHeight / height))))) continue;
     const oi = owner[i] * 4, di = i * 4;
     filled.data[di] = src[oi]; filled.data[di + 1] = src[oi + 1]; filled.data[di + 2] = src[oi + 2]; filled.data[di + 3] = 255;
   }
@@ -246,7 +250,7 @@ function reconstructBackground(source, maskData, maskWidth, maskHeight, width, h
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const m = maskAt(Math.min(maskWidth - 1, Math.floor(x * maskWidth / width)), Math.min(maskHeight - 1, Math.floor(y * maskHeight / height)));
-      if (m < 0.25) continue;
+      if (!shouldInpaintMaskPixel(m)) continue;
       const i = (y * width + x) * 4;
       filled.data[i] = softened[i]; filled.data[i + 1] = softened[i + 1]; filled.data[i + 2] = softened[i + 2]; filled.data[i + 3] = 255;
     }
@@ -281,7 +285,7 @@ function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bou
       }
       if (!include) continue;
       const confidence = maskAt(mx, my);
-      const alpha = Math.round(255 * Math.max(0, Math.min(1, (confidence - 0.18) / 0.72)));
+      const alpha = Math.round(255 * Math.max(0, Math.min(1, (confidence - CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha) / (1 - CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha))));
       if (alpha < 8) continue;
       const si = (y * width + x) * 4, di = ((y - y0) * w + (x - x0)) * 4;
       image.data[di] = src[si]; image.data[di + 1] = src[si + 1]; image.data[di + 2] = src[si + 2]; image.data[di + 3] = alpha;
