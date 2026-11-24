@@ -27,6 +27,14 @@ const path=require('node:path');
   for(const id of ['torso','head','upperArmL','forearmL','upperLegL','lowerLegL']){assert.ok(byId[id].jointOverlap>=5,'Joint overlap must cover shared pixels for '+id);}
   assert.ok(byId.upperArmL.jointOverlap>=byId.upperArmL.radiusPx*.5,'Limb joints need enough overlap to avoid visible gaps');
 
+  const componentLabels=new Int16Array(300);componentLabels.fill(-1);
+  for(let y=1;y<6;y++)for(let x=1;x<6;x++)componentLabels[y*30+x]=0;
+  for(let y=1;y<4;y++)for(let x=12;x<15;x++)componentLabels[y*30+x]=0;
+  for(let y=1;y<5;y++)for(let x=20;x<24;x++)componentLabels[y*30+x]=0;
+  rig.keepMeaningfulPartComponents(componentLabels,30,10,1);
+  assert.equal(componentLabels[2*30+2],0,'Largest body component must remain');
+  assert.equal(componentLabels[2*30+13],-1,'Small isolated speckles must be removed');
+  assert.equal(componentLabels[2*30+21],0,'Meaningful secondary body regions must not be discarded');
   const mask=new Float32Array(100*100);mask.fill(1);
   const assigned=rig.assignPosePartLabels(mask,100,100,landmarks,100,100);
   assert.equal(assigned.labels.length,10000);
