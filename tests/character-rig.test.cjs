@@ -4,7 +4,10 @@ const fs=require('node:fs');
 const path=require('node:path');
 (async()=>{
   const rig=await import('../js/character-rig.mjs');
-  assert.deepEqual(rig.CHARACTER_RIG_MASK_THRESHOLDS,{assetAlpha:0.18,labelAssignment:0.26,backgroundInpaint:0.18});
+  assert.deepEqual(rig.CHARACTER_RIG_MASK_THRESHOLDS,{assetAlpha:0.18,labelAssignment:0.18,backgroundInpaint:0.18});
+  assert.equal(rig.shouldAssignMaskPixel(0.20),true,'Faint subject-edge pixels with visible alpha must be assigned to a moving part');
+  assert.equal(rig.shouldAssignMaskPixel(0.18),true,'Pixels at the part alpha threshold must be assigned consistently');
+  assert.equal(rig.shouldAssignMaskPixel(0.17),false,'Pixels below the part alpha threshold must not become part pixels');
   assert.equal(rig.shouldInpaintMaskPixel(0.20),true,'Faint subject-edge pixels used by part alpha must also be removed from the background');
   assert.equal(rig.shouldInpaintMaskPixel(0.18),true,'Pixels at the part alpha threshold must be inpainted');
   assert.equal(rig.shouldInpaintMaskPixel(0.17),false,'Pixels below the part alpha threshold must remain background');
