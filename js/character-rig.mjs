@@ -80,7 +80,7 @@ export function buildPosePartSpecs(landmarks, width, height) {
 }
 
 /* Pure segmentation assignment, exported for deterministic tests. */
-export function keepMeaningfulPartComponents(labels, width, height, partCount) {
+export function keepMeaningfulPartComponents(labels, width, height, partCount, anchors = []) {
   const visited = new Uint8Array(labels.length), queue = new Int32Array(labels.length);
   const components = Array.from({ length: partCount }, () => []);
   const largestSizes = new Int32Array(partCount);
@@ -88,9 +88,12 @@ export function keepMeaningfulPartComponents(labels, width, height, partCount) {
     const label = labels[start];
     if (label < 0 || visited[start]) continue;
     let head = 0, tail = 0;
+    let minX = width, minY = height, maxX = -1, maxY = -1;
     queue[tail++] = start; visited[start] = 1;
     while (head < tail) {
       const index = queue[head++], x = index % width, y = (index / width) | 0;
+      minX = Math.min(minX, x); minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
       for (let dy = -1; dy <= 1; dy++) {
         const ny = y + dy;
         if (ny < 0 || ny >= height) continue;
@@ -106,20 +109,26 @@ export function keepMeaningfulPartComponents(labels, width, height, partCount) {
       }
     }
     largestSizes[label] = Math.max(largestSizes[label], tail);
-    components[label].push(queue.slice(0, tail));
+    components[label].push({ pixels: queue.slice(0, tail), minX, minY, maxX, maxY });
   }
   labels.fill(-1);
   for (let label = 0; label < partCount; label++) {
-    // Preserve substantial secondary regions (e.g. separated clothing/limb pixels),
-    // while rejecting tiny segmentation speckles. Threshold is per body part.
     const minimumSize = Math.max(12, Math.ceil(largestSizes[label] * 0.025));
+    const partAnchors = anchors[label] || [];
     for (const component of components[label]) {
-      if (component.length < minimumSize) continue;
-      for (const index of component) labels[index] = label;
+      const { pixels, minX, minY, maxX, maxY } = component;
+      const touchesJoint = partAnchors.some(anchor => {
+        const dx = Math.max(minX - anchor.x, 0, anchor.x - maxX);
+        const dy = Math.max(minY - anchor.y, 0, anchor.y - maxY);
+        return dx * dx + dy * dy <= anchor.radius * anchor.radius;
+      });
+      // Small regions near a known joint can be valid hands, feet, or narrow
+      // limb connections; retain them while continuing to reject remote speckles.
+      if (pixels.length < minimumSize && !(touchesJoint && pixels.length >= 3)) continue;
+      for (const index of pixels) labels[index] = label;
     }
   }
 }
-
 export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, width, height) {
   const specs = buildPosePartSpecs(landmarks, width, height);
   const labels = new Int16Array(maskWidth * maskHeight);
@@ -147,7 +156,12 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
       labels[idx] = bestIndex;
     }
   }
-  keepMeaningfulPartComponents(labels, maskWidth, maskHeight, specs.length);
+  const componentAnchors = specs.map(spec => (spec.jointPoints || []).map(point => ({
+    x: point.x / scaleX,
+    y: point.y / scaleY,
+    radius: Math.max(2, Math.ceil((Number(spec.jointOverlap) || 3) / Math.min(scaleX, scaleY)))
+  })));
+  keepMeaningfulPartComponents(labels, maskWidth, maskHeight, specs.length, componentAnchors);
   const bounds = specs.map(() => ({ minX: width, minY: height, maxX: -1, maxY: -1 }));
   for (let i = 0; i < labels.length; i++) {
     const label = labels[i];
