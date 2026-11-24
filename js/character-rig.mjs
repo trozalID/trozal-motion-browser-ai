@@ -58,10 +58,10 @@ export function buildPosePartSpecs(landmarks, width, height) {
   const headRY = Math.max(headRX * 1.12, shoulderWidth * 0.24);
   const specs = [];
   const torsoPivot = { x: (leftHip.x + rightHip.x) / 2, y: (leftHip.y + rightHip.y) / 2 };
-  specs.push({ ...PARTS[0], pivot: torsoPivot, shape: "polygon", polygon: torsoPoly, width: shoulderWidth, jointPoints: [leftShoulder, rightShoulder, leftHip, rightHip], jointOverlap: Math.max(3, shoulderWidth * 0.055) });
+  specs.push({ ...PARTS[0], pivot: torsoPivot, shape: "polygon", polygon: torsoPoly, width: shoulderWidth, jointPoints: [leftShoulder, rightShoulder, leftHip, rightHip], jointOverlap: Math.max(5, shoulderWidth * 0.11) });
   for (const p of PARTS.slice(1)) {
     if (p.id === "head") {
-      specs.push({ ...p, pivot: { x: headCenter.x, y: Math.max(headCenter.y + headRY * 0.72, (leftShoulder.y + rightShoulder.y) / 2 - 2) }, shape: "ellipse", center: headCenter, rx: headRX, ry: headRY, jointPoints: [{ x: headCenter.x, y: headCenter.y + headRY * 0.72 }], jointOverlap: Math.max(3, headRX * 0.12) });
+      specs.push({ ...p, pivot: { x: headCenter.x, y: Math.max(headCenter.y + headRY * 0.72, (leftShoulder.y + rightShoulder.y) / 2 - 2) }, shape: "ellipse", center: headCenter, rx: headRX, ry: headRY, jointPoints: [{ x: headCenter.x, y: headCenter.y + headRY * 0.72 }], jointOverlap: Math.max(5, headRX * 0.22) });
       continue;
     }
     const a = get(p.a), b = get(p.b);
@@ -73,16 +73,17 @@ export function buildPosePartSpecs(landmarks, width, height) {
     else if (p.radius === "shin") radius = shoulderWidth * 0.082;
     else if (p.radius === "hand") radius = shoulderWidth * 0.092;
     else if (p.radius === "foot") radius = shoulderWidth * 0.105;
-    specs.push({ ...p, aPoint: a, bPoint: b, radiusPx: radius, pivot: a, shape: "capsule", jointPoints: [a, b], jointOverlap: Math.max(3, radius * 0.24) });
+    specs.push({ ...p, aPoint: a, bPoint: b, radiusPx: radius, pivot: a, shape: "capsule", jointPoints: [a, b], jointOverlap: Math.max(5, radius * 0.52) });
   }
   if (!specs.some(x => x.id === "head")) throw new Error("Landmark kepala tidak cukup jelas untuk membuat rig.");
   return specs;
 }
 
 /* Pure segmentation assignment, exported for deterministic tests. */
-function keepLargestPartComponents(labels, width, height, partCount) {
+export function keepMeaningfulPartComponents(labels, width, height, partCount) {
   const visited = new Uint8Array(labels.length), queue = new Int32Array(labels.length);
-  const largest = new Array(partCount), largestSizes = new Int32Array(partCount);
+  const components = Array.from({ length: partCount }, () => []);
+  const largestSizes = new Int32Array(partCount);
   for (let start = 0; start < labels.length; start++) {
     const label = labels[start];
     if (label < 0 || visited[start]) continue;
@@ -104,14 +105,18 @@ function keepLargestPartComponents(labels, width, height, partCount) {
         }
       }
     }
-    if (tail > largestSizes[label]) {
-      largestSizes[label] = tail;
-      largest[label] = queue.slice(0, tail);
-    }
+    largestSizes[label] = Math.max(largestSizes[label], tail);
+    components[label].push(queue.slice(0, tail));
   }
   labels.fill(-1);
   for (let label = 0; label < partCount; label++) {
-    for (const index of largest[label] || []) labels[index] = label;
+    // Preserve substantial secondary regions (e.g. separated clothing/limb pixels),
+    // while rejecting tiny segmentation speckles. Threshold is per body part.
+    const minimumSize = Math.max(12, Math.ceil(largestSizes[label] * 0.025));
+    for (const component of components[label]) {
+      if (component.length < minimumSize) continue;
+      for (const index of component) labels[index] = label;
+    }
   }
 }
 
@@ -142,7 +147,7 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
       labels[idx] = bestIndex;
     }
   }
-  keepLargestPartComponents(labels, maskWidth, maskHeight, specs.length);
+  keepMeaningfulPartComponents(labels, maskWidth, maskHeight, specs.length);
   const bounds = specs.map(() => ({ minX: width, minY: height, maxX: -1, maxY: -1 }));
   for (let i = 0; i < labels.length; i++) {
     const label = labels[i];
