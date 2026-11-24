@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 (async()=>{
   const rig=await import('../js/character-rig.mjs');
-  assert.deepEqual(rig.CHARACTER_RIG_MASK_THRESHOLDS,{assetAlpha:0.18,labelAssignment:0.26,backgroundInpaint:0.18,maxPartAssignmentScore:2.2});
+  assert.deepEqual(rig.CHARACTER_RIG_MASK_THRESHOLDS,{assetAlpha:0.18,labelAssignment:0.18,backgroundInpaint:0.18,maxPartAssignmentScore:2.2});
   assert.equal(rig.CHARACTER_RIG_MASK_THRESHOLDS.maxPartAssignmentScore,2.2,'Part assignment must include a wider garment/silhouette envelope so valid foreground pixels are not left behind.');
   assert.equal(rig.shouldInpaintMaskPixel(0.20),true,'Faint subject-edge pixels used by part alpha must also be removed from the background');
   assert.equal(rig.shouldInpaintMaskPixel(0.18),true,'Pixels at the part alpha threshold must be inpainted');
@@ -21,11 +21,11 @@ const path=require('node:path');
 
   const overlapSpec={shape:'capsule',aPoint:{x:10,y:10},bPoint:{x:30,y:10},radiusPx:5};
   assert.equal(rig.isPartAssetPixelIncluded(4,2,0.9,overlapSpec,20,15),true,'Foreground pixels just outside a limb label must be duplicated into its layer to prevent holes when another part moves over it.');
-  assert.equal(rig.isPartAssetPixelIncluded(4,2,0.9,overlapSpec,20,18),false,'Overlap duplication must stay narrow and must not copy distant background pixels.');
+  assert.equal(rig.isPartAssetPixelIncluded(4,2,0.9,overlapSpec,20,20),false,'Overlap duplication must stay narrow and must not copy distant background pixels.');
   assert.equal(rig.isPartAssetPixelIncluded(4,2,0.1,overlapSpec,20,11),false,'Low-confidence background pixels must never be duplicated into a body layer.');
   const torsoOverlap={shape:'polygon',polygon:[{x:10,y:10},{x:30,y:10},{x:28,y:30},{x:12,y:30}],width:20};
   assert.equal(rig.isPartAssetPixelIncluded(7,0,0.9,torsoOverlap,20,20),true,'Torso interior must remain present even when segmentation assigned a pixel to an overlapping limb.');
-  assert.equal(rig.isPartAssetPixelIncluded(7,0,0.9,torsoOverlap,20,32),false,'Torso overlap must not extend far beyond its silhouette.');
+  assert.equal(rig.isPartAssetPixelIncluded(7,0,0.9,torsoOverlap,20,35),false,'Torso overlap must not extend far beyond its silhouette.');
   const underlayWidth=20,underlayHeight=20,underlayMaskWidth=10,underlayMaskHeight=10;
   const underlaySource={data:new Uint8ClampedArray(underlayWidth*underlayHeight*4)};
   for(let y=0;y<underlayHeight;y++)for(let x=0;x<underlayWidth;x++){
@@ -44,6 +44,25 @@ const path=require('node:path');
   assert.equal(underlay.source.data[(10*underlayWidth+10)*4],underlaySource.data[(10*underlayWidth+8)*4],'Occluded torso pixels should be reconstructed from the nearest visible torso patch');
   assert.equal(underlaySource.data[(10*underlayWidth+10)*4],210,'Underlay reconstruction must not mutate the original image used by moving limbs');
   assert.ok(underlay.bounds.maxX>=11&&underlay.bounds.maxY>=11,'Torso underlay bounds must include reconstructed overlap pixels');
+
+  const occlusionW=16,occlusionH=12;
+  const occlusionLabels=new Int16Array(occlusionW*occlusionH);occlusionLabels.fill(-1);
+  const occlusionMask=new Float32Array(occlusionW*occlusionH);
+  for(let x=5;x<=9;x++){occlusionMask[6*occlusionW+x]=.95;occlusionLabels[6*occlusionW+x]=2;}
+  occlusionLabels[6*occlusionW+6]=1;
+  const occlusionMaskAt=(x,y)=>occlusionMask[y*occlusionW+x];
+  const limbUnderlay=rig.buildPartOcclusionUnderlayMap(
+    occlusionLabels,occlusionW,occlusionH,occlusionW,occlusionH,
+    {shape:'capsule',aPoint:{x:6,y:6},bPoint:{x:10,y:6},radiusPx:2},
+    1,occlusionMaskAt,{minX:6,minY:6,maxX:6,maxY:6}
+  );
+  assert.ok(limbUnderlay&&limbUnderlay.filledPixels>0,'An articulated limb should receive a local underlay for foreground pixels occluding its silhouette.');
+  assert.equal(limbUnderlay.sourceMap[6*occlusionW+8],6*occlusionW+6,'Occluded limb pixels must be reconstructed from the nearest visible pixel belonging to the same limb.');
+  assert.ok(limbUnderlay.bounds.maxX>=8,'Occlusion reconstruction must expand the limb asset bounds to include repaired pixels.');
+  const weakVisibilityLandmarks=landmarks.map(p=>({...p}));
+  weakVisibilityLandmarks[25]={x:.44,y:.76,z:0,visibility:.04,presence:.14};
+  const weakVisibilitySpecs=rig.buildPosePartSpecs(weakVisibilityLandmarks,100,100);
+  assert.ok(weakVisibilitySpecs.some(part=>part.id==='upperLegL'),'A partially occluded joint with usable presence confidence must not cause an entire limb to disappear.');
   const specs=rig.buildPosePartSpecs(landmarks,100,100);
 
   const skirtMask=new Float32Array(100*100);
@@ -58,9 +77,26 @@ const path=require('node:path');
   const skirtIndex=skirtAssigned.specs.findIndex(part=>part.id==='lowerGarment');
   assert.ok(skirtIndex>=0,'Connected skirt geometry must be present in the segmentation specs.');
   assert.equal(skirtAssigned.labels[66*100+50],skirtIndex,'The center of the skirt must stay assigned to the unified garment layer.');
+  assert.equal(rig.isPartAssetPixelIncluded(7,skirtIndex,.98,skirt,50,66),false,'The static skirt layer must not duplicate foreground pixels already owned by an articulated hand or arm.');
+  const handsOnSkirt=landmarks.map(p=>({...p}));
+  const setHandsOnSkirt=(id,x,y)=>{handsOnSkirt[id]={x,y,z:0,visibility:1,presence:1};};
+  setHandsOnSkirt(13,.45,.52);setHandsOnSkirt(15,.48,.62);setHandsOnSkirt(19,.49,.64);
+  setHandsOnSkirt(14,.55,.52);setHandsOnSkirt(16,.52,.62);setHandsOnSkirt(20,.51,.64);
+  const handsOnSkirtAssigned=rig.assignPosePartLabels(skirtMask,100,100,handsOnSkirt,100,100);
+  const handPixelLabel=handsOnSkirtAssigned.labels[63*100+50];
+  assert.ok(handPixelLabel>=0&&handsOnSkirtAssigned.specs[handPixelLabel].id!=='lowerGarment','Hands placed in front of a skirt must remain assigned to articulated hand/arm layers.');
   const pantsMask=new Float32Array(100*100);
   for(let y=58;y<=74;y++){for(let x=38;x<=46;x++)pantsMask[y*100+x]=.98;for(let x=54;x<=62;x++)pantsMask[y*100+x]=.98;}
   assert.equal(rig.detectLowerGarmentRegion(pantsMask,100,100,landmarks,100,100),null,'Separated trouser legs with an open center gap must not be incorrectly fused into a skirt layer.');
+  const aLineMask=new Float32Array(100*100);
+  for(let y=58;y<=74;y++){
+    const halfWidth=Math.round(7+(y-58)*0.75);
+    for(let x=50-halfWidth;x<=50+halfWidth;x++)aLineMask[y*100+x]=.98;
+  }
+  const aLine=rig.detectLowerGarmentRegion(aLineMask,100,100,landmarks,100,100);
+  assert.ok(aLine,'A connected A-line skirt should be detected from its full scanline profile.');
+  const leftContour=aLine.polygon.slice(0,25);
+  assert.ok(leftContour[leftContour.length-1].x<leftContour[0].x,'The garment polygon must preserve a widening hem instead of flattening the skirt into a narrow trapezoid.');
   const byId=Object.fromEntries(specs.map(p=>[p.id,p]));
   for(const id of ['head','torso','upperArmL','forearmL','handL','upperArmR','forearmR','handR','upperLegL','lowerLegL','footL','upperLegR','lowerLegR','footR']){
     assert.ok(byId[id], 'Missing body part spec: '+id);
@@ -81,6 +117,12 @@ const path=require('node:path');
   assert.equal(componentLabels[2*30+2],0,'Largest body component must remain');
   assert.equal(componentLabels[2*30+13],-1,'Small isolated speckles must be removed');
   assert.equal(componentLabels[2*30+21],0,'Meaningful secondary body regions must not be discarded');
+  const componentLabelsLarge=new Int16Array(50*50);componentLabelsLarge.fill(-1);
+  for(let y=2;y<22;y++)for(let x=2;x<22;x++)componentLabelsLarge[y*50+x]=0;
+  for(let y=2;y<6;y++)for(let x=30;x<33;x++)componentLabelsLarge[y*50+x]=0;
+  rig.keepMeaningfulPartComponents(componentLabelsLarge,50,50,1);
+  assert.equal(componentLabelsLarge[3*50+31],0,'Meaningful secondary limb/clothing regions must survive component cleanup even when smaller than the main silhouette.');
+
   const anchoredLabels=new Int16Array(300);anchoredLabels.fill(-1);
   for(let y=1;y<6;y++)for(let x=1;x<6;x++)anchoredLabels[y*30+x]=0;
   for(let y=1;y<3;y++)for(let x=12;x<14;x++)anchoredLabels[y*30+x]=0;
@@ -91,6 +133,12 @@ const path=require('node:path');
   const mask=new Float32Array(100*100);mask.fill(1);
   const assigned=rig.assignPosePartLabels(mask,100,100,landmarks,100,100);
   assert.equal(assigned.labels.length,10000);
+  const farForeground=new Float32Array(100*100);
+  for(let y=40;y<45;y++)for(let x=15;x<20;x++)farForeground[y*100+x]=0.20;
+  const farAssigned=rig.assignPosePartLabels(farForeground,100,100,landmarks,100,100);
+  assert.ok(farAssigned.labels[42*100+17]>0,'Foreground pixels outside the torso and beyond the normal part radius must still be assigned to the nearest articulated body part.');
+  assert.equal(rig.CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment,rig.CHARACTER_RIG_MASK_THRESHOLDS.backgroundInpaint,'Every pixel removed from the background must be eligible for part-layer assignment.');
+
   const noisyMask=new Float32Array(100*100);
   for(let y=10;y<96;y++)for(let x=20;x<81;x++)noisyMask[y*100+x]=1;
   for(let y=0;y<3;y++)for(let x=0;x<3;x++)noisyMask[y*100+x]=1;
@@ -109,8 +157,10 @@ const path=require('node:path');
 
   const moduleSource=fs.readFileSync(path.join(__dirname,'../js/character-rig.mjs'),'utf8');
   const directorSource=fs.readFileSync(path.join(__dirname,'../trozal-image-to-code-video.js'),'utf8');
-  assert.match(moduleSource,/Array\.isArray\(bounds\) \? bounds\[partIndex\] : \(partIndex === 0 \? bounds : null\)/,'Torso underlay bounds object must be normalized alongside per-part bounds arrays.');
+  assert.match(moduleSource,/Array\.isArray\(bounds\) \? bounds\[partIndex\] : bounds/,'A single explicit bounds object and per-part bounds arrays must both be supported.');
   assert.match(moduleSource,/!box \|\| !Number\.isFinite\(box\.maxX\)/,'Missing or invalid part bounds must be rejected safely.');
+  assert.match(moduleSource,/buildPartOcclusionUnderlayMap/,'Moving limbs must reconstruct pixels hidden behind overlapping foreground parts.');
+  assert.match(moduleSource,/const featherStart = Math\.max\(0, CHARACTER_RIG_MASK_THRESHOLDS\.assetAlpha - 0\.045\)/,'The subject alpha feather must not discard pixels already removed from the background.');
   assert.match(moduleSource,/outputSegmentationMasks:\s*true/);
   assert.match(moduleSource,/getAsFloat32Array\(\)/);
   assert.match(moduleSource,/canvas\.toDataURL\("image\/png"\)/);

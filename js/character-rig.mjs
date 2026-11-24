@@ -5,7 +5,7 @@
 const MEDIAPIPE_BUNDLE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.mjs";
 const MEDIAPIPE_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
 const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
-export const CHARACTER_RIG_MASK_THRESHOLDS = Object.freeze({ assetAlpha: 0.18, labelAssignment: 0.26, backgroundInpaint: 0.18, maxPartAssignmentScore: 2.2 });
+export const CHARACTER_RIG_MASK_THRESHOLDS = Object.freeze({ assetAlpha: 0.18, labelAssignment: 0.18, backgroundInpaint: 0.18, maxPartAssignmentScore: 2.2 });
 export function shouldInpaintMaskPixel(confidence) {
   return Number(confidence) >= CHARACTER_RIG_MASK_THRESHOLDS.backgroundInpaint;
 }
@@ -29,7 +29,10 @@ const PARTS = [
 
 function point(lm, w, h, idx) {
   const p = lm[idx];
-  if (!p || (p.visibility != null && p.visibility < 0.18)) return null;
+  if (!p || !Number.isFinite(Number(p.x)) || !Number.isFinite(Number(p.y))) return null;
+  const visibility = p.visibility == null ? 1 : Number(p.visibility);
+  const presence = p.presence == null ? 1 : Number(p.presence);
+  if (Math.max(visibility, presence) < 0.10) return null;
   return { x: Math.max(0, Math.min(w - 1, Number(p.x) * w)), y: Math.max(0, Math.min(h - 1, Number(p.y) * h)) };
 }
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
@@ -63,7 +66,7 @@ function polygonEdgeDistance(x, y, poly) {
  * open through most of the hip-to-knee interval.
  */
 export function detectLowerGarmentRegion(mask, maskWidth, maskHeight, landmarks, width, height) {
-  if (!mask || !maskWidth || !maskHeight) return null;
+  if (!mask || !maskWidth || !maskHeight || !width || !height) return null;
   const get = idx => point(landmarks || [], width, height, idx);
   const leftHip = get(23), rightHip = get(24), leftKnee = get(25), rightKnee = get(26);
   if (!leftHip || !rightHip || !leftKnee || !rightKnee) return null;
@@ -73,52 +76,105 @@ export function detectLowerGarmentRegion(mask, maskWidth, maskHeight, landmarks,
   const hipWidth = Math.max(8, dist(leftHip, rightHip));
   const span = kneeY - hipY;
   if (span < hipWidth * 0.22) return null;
+
+  // Sample the whole skirt panel, not just its first/last scanline. Choosing
+  // the nearest foreground seed around the hip center handles off-center
+  // silhouettes; following that connected run preserves an A-line hem.
+  const scaleX = maskWidth / width, scaleY = maskHeight / height;
+  const startY = hipY - span * 0.05;
+  const endY = kneeY - span * 0.06;
+  const samples = 25;
+  const centerX = Math.max(0, Math.min(maskWidth - 1, Math.round(hipCenter * scaleX)));
+  const centerRadius = Math.max(1, Math.round(hipWidth * 0.11 * scaleX));
+  const maxRadius = Math.ceil(hipWidth * 1.65 * scaleX);
   const rows = [];
-  const startY = hipY + span * 0.12, endY = kneeY - span * 0.10;
-  const samples = 11;
+
   for (let n = 0; n < samples; n++) {
     const py = startY + (endY - startY) * n / (samples - 1);
-    const my = Math.max(0, Math.min(maskHeight - 1, Math.floor(py * maskHeight / height)));
-    const centerX = Math.max(0, Math.min(maskWidth - 1, Math.floor(hipCenter * maskWidth / width)));
-    const centerRadius = Math.max(1, Math.round(hipWidth * 0.075 * maskWidth / width));
-    let centerCovered = false;
+    const my = Math.max(0, Math.min(maskHeight - 1, Math.floor(py * scaleY)));
+    let seedX = -1, seedDistance = Infinity;
     for (let dx = -centerRadius; dx <= centerRadius; dx++) {
       const mx = centerX + dx;
-      if (mx >= 0 && mx < maskWidth && Number(mask[my * maskWidth + mx]) >= CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) {
-        centerCovered = true; break;
-      }
+      if (mx < 0 || mx >= maskWidth) continue;
+      if (Number(mask[my * maskWidth + mx]) < CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) continue;
+      if (Math.abs(dx) < seedDistance) { seedX = mx; seedDistance = Math.abs(dx); }
     }
-    if (!centerCovered) { rows.push({ covered: false, y: py }); continue; }
-    let left = centerX, right = centerX;
-    const maxRadius = Math.ceil(hipWidth * 1.15 * maskWidth / width);
-    for (let mx = centerX - 1; mx >= Math.max(0, centerX - maxRadius); mx--) {
+    if (seedX < 0) {
+      rows.push({ covered: false, y: py });
+      continue;
+    }
+
+    let left = seedX, right = seedX;
+    for (let mx = seedX - 1; mx >= Math.max(0, centerX - maxRadius); mx--) {
       if (Number(mask[my * maskWidth + mx]) < CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) break;
       left = mx;
     }
-    for (let mx = centerX + 1; mx < Math.min(maskWidth, centerX + maxRadius + 1); mx++) {
+    for (let mx = seedX + 1; mx < Math.min(maskWidth, centerX + maxRadius + 1); mx++) {
       if (Number(mask[my * maskWidth + mx]) < CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) break;
       right = mx;
     }
-    rows.push({ covered: true, y: py, left: left * width / maskWidth, right: (right + 1) * width / maskWidth });
+    rows.push({
+      covered: true,
+      y: py,
+      left: left / scaleX,
+      right: (right + 1) / scaleX
+    });
   }
+
   const connected = rows.filter(row => row.covered);
   if (connected.length / samples < 0.72) return null;
-  const widths = connected.map(row => row.right - row.left).sort((a,b)=>a-b);
+  const widths = connected.map(row => row.right - row.left).sort((a, b) => a - b);
   const medianWidth = widths[Math.floor(widths.length / 2)];
   if (medianWidth < hipWidth * 0.58) return null;
-  const first = connected[0], last = connected[connected.length - 1];
-  const topY = Math.max(hipY, first.y - span * 0.04);
-  const hemY = Math.min(kneeY - 2, last.y + span * 0.08);
-  if (hemY <= topY + 2) return null;
+
+  // Bridge occasional one- or two-row mask dropouts, then smooth only scanline
+  // noise. The center-gap test above still rejects separated trouser legs.
+  const profile = rows.map(row => row.covered ? { ...row } : null);
+  for (let i = 0; i < profile.length; i++) {
+    if (profile[i]) continue;
+    let before = i - 1, after = i + 1;
+    while (before >= 0 && !profile[before]) before--;
+    while (after < profile.length && !profile[after]) after++;
+    if (before >= 0 && after < profile.length) {
+      const t = (i - before) / (after - before);
+      profile[i] = {
+        covered: true,
+        y: rows[i].y,
+        left: profile[before].left + (profile[after].left - profile[before].left) * t,
+        right: profile[before].right + (profile[after].right - profile[before].right) * t
+      };
+    } else {
+      const nearest = before >= 0 ? profile[before] : profile[after];
+      profile[i] = { ...nearest, y: rows[i].y };
+    }
+  }
+  const median3 = (a, b, c) => [a, b, c].sort((x, y) => x - y)[1];
+  const smoothed = profile.map((row, i) => {
+    const prev = profile[Math.max(0, i - 1)];
+    const next = profile[Math.min(profile.length - 1, i + 1)];
+    return {
+      y: row.y,
+      left: median3(prev.left, row.left, next.left),
+      right: median3(prev.right, row.right, next.right)
+    };
+  });
+
+  // Overlap the lower garment slightly into the pelvis and just below the
+  // sampled hem so the legs never reveal a slit at the waist or skirt edge.
+  const topY = Math.max(0, hipY - span * 0.09);
+  const hemY = Math.min(height - 1, kneeY + span * 0.025);
+  const first = smoothed[0], last = smoothed[smoothed.length - 1];
   const polygon = [
-    { x: first.left, y: topY }, { x: first.right, y: topY },
-    { x: last.right, y: hemY }, { x: last.left, y: hemY }
+    { x: first.left, y: topY },
+    ...smoothed.map(row => ({ x: row.left, y: row.y })),
+    { x: last.right, y: hemY },
+    ...smoothed.slice().reverse().map(row => ({ x: row.right, y: row.y }))
   ];
   return {
     id: "lowerGarment", name: "Rok / pakaian bawah", parent: "torso",
     pivot: { x: hipCenter, y: hipY }, shape: "polygon", polygon,
     width: medianWidth, jointPoints: [leftHip, rightHip],
-    jointOverlap: Math.max(5, hipWidth * 0.12),
+    jointOverlap: Math.max(7, hipWidth * 0.18),
     amp: 0, speed: 0, phase: 0, motion: "static"
   };
 }
@@ -203,6 +259,85 @@ export function buildTorsoUnderlay(source, labels, maskWidth, maskHeight, width,
   };
 }
 
+/* Reconstruct pixels of a moving part that are hidden by another foreground
+ * limb. The nearest visible pixels of the same part are propagated only
+ * inside its expanded anatomical region and only over foreground-mask pixels.
+ * This is deterministic local reconstruction, not generative texture recovery.
+ */
+export function buildPartOcclusionUnderlayMap(labels, maskWidth, maskHeight, width, height, spec, partIndex, maskAt, baseBounds) {
+  if (!labels || !maskAt || !spec || !maskWidth || !maskHeight) return null;
+  if (spec.shape !== "capsule" && spec.shape !== "ellipse") return null;
+  const total = maskWidth * maskHeight;
+  if (labels.length < total) return null;
+  const inside = new Uint8Array(total);
+  const owner = new Int32Array(total); owner.fill(-1);
+  const queue = new Int32Array(total);
+  let head = 0, tail = 0;
+  const scaleX = width / maskWidth, scaleY = height / maskHeight;
+  for (let y = 0; y < maskHeight; y++) {
+    const py = (y + 0.5) * scaleY;
+    for (let x = 0; x < maskWidth; x++) {
+      const i = y * maskWidth + x;
+      if (labels[i] < 0 || Number(maskAt(x, y)) < CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha) continue;
+      const px = (x + 0.5) * scaleX;
+      let inPart = false;
+      if (spec.shape === "capsule") {
+        const pad = Math.max(2, Number(spec.radiusPx) * 0.42);
+        inPart = segmentDistance(px, py, spec.aPoint, spec.bPoint) <= Number(spec.radiusPx) + pad;
+      } else {
+        const nx = (px - spec.center.x) / (spec.rx * 1.18);
+        const ny = (py - spec.center.y) / (spec.ry * 1.18);
+        inPart = nx * nx + ny * ny <= 1;
+      }
+      if (!inPart) continue;
+      inside[i] = 1;
+      if (labels[i] === partIndex) {
+        owner[i] = i;
+        queue[tail++] = i;
+      }
+    }
+  }
+  if (!tail) return null;
+  while (head < tail) {
+    const i = queue[head++], x = i % maskWidth, y = (i / maskWidth) | 0;
+    const visit = next => {
+      if (inside[next] && owner[next] === -1) {
+        owner[next] = owner[i];
+        queue[tail++] = next;
+      }
+    };
+    if (x > 0) visit(i - 1);
+    if (x + 1 < maskWidth) visit(i + 1);
+    if (y > 0) visit(i - maskWidth);
+    if (y + 1 < maskHeight) visit(i + maskWidth);
+    if (x > 0 && y > 0) visit(i - maskWidth - 1);
+    if (x + 1 < maskWidth && y > 0) visit(i - maskWidth + 1);
+    if (x > 0 && y + 1 < maskHeight) visit(i + maskWidth - 1);
+    if (x + 1 < maskWidth && y + 1 < maskHeight) visit(i + maskWidth + 1);
+  }
+  const sourceMap = new Int32Array(total); sourceMap.fill(-1);
+  const bounds = baseBounds && Number.isFinite(baseBounds.minX) ? { ...baseBounds } :
+    { minX: width, minY: height, maxX: -1, maxY: -1 };
+  let filledPixels = 0;
+  for (let y = 0; y < maskHeight; y++) {
+    for (let x = 0; x < maskWidth; x++) {
+      const i = y * maskWidth + x;
+      if (!inside[i] || labels[i] === partIndex || labels[i] < 0 || owner[i] < 0) continue;
+      sourceMap[i] = owner[i];
+      filledPixels++;
+      const x0 = Math.floor(x * scaleX);
+      const y0 = Math.floor(y * scaleY);
+      const x1 = Math.min(width - 1, Math.floor((x + 1) * scaleX) - 1);
+      const y1 = Math.min(height - 1, Math.floor((y + 1) * scaleY) - 1);
+      bounds.minX = Math.min(bounds.minX, x0);
+      bounds.minY = Math.min(bounds.minY, y0);
+      bounds.maxX = Math.max(bounds.maxX, x1);
+      bounds.maxY = Math.max(bounds.maxY, y1);
+    }
+  }
+  return filledPixels ? { sourceMap, bounds, filledPixels } : null;
+}
+
 /* Keep a narrow duplicate of foreground pixels around each part's silhouette.
  * A pixel may belong to one segmentation label, but must be available to both
  * adjacent layers so a moving limb cannot expose a transparent hole in a still
@@ -212,7 +347,7 @@ export function isPartAssetPixelIncluded(label, partIndex, confidence, spec, x, 
   if (label === partIndex) return true;
   if (Number(confidence) < CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha) return false;
   if (spec.shape === "capsule") {
-    const overlap = Math.max(2, Number(spec.radiusPx) * 0.38);
+    const overlap = Math.max(3, Number(spec.radiusPx) * 0.72);
     return segmentDistance(x, y, spec.aPoint, spec.bPoint) <= Number(spec.radiusPx) + overlap;
   }
   if (spec.shape === "ellipse") {
@@ -221,8 +356,12 @@ export function isPartAssetPixelIncluded(label, partIndex, confidence, spec, x, 
     return nx * nx + ny * ny <= 1;
   }
   if (spec.shape === "polygon") {
-    return polygonContains(x, y, spec.polygon) ||
-      polygonEdgeDistance(x, y, spec.polygon) <= Math.max(2, Number(spec.width) * 0.075);
+    const edgeOverlap = polygonEdgeDistance(x, y, spec.polygon) <= Math.max(3, Number(spec.width) * 0.11);
+    // The lower garment owns its interior only through explicit label assignment.
+    // This prevents hands/arms classified in front of the skirt being copied
+    // into the static garment and then visually buried.
+    if (spec.id === "lowerGarment") return edgeOverlap;
+    return polygonContains(x, y, spec.polygon) || edgeOverlap;
   }
   return false;
 }
@@ -301,7 +440,7 @@ export function keepMeaningfulPartComponents(labels, width, height, partCount, a
   }
   labels.fill(-1);
   for (let label = 0; label < partCount; label++) {
-    const minimumSize = Math.max(12, Math.ceil(largestSizes[label] * 0.025));
+    const minimumSize = Math.max(10, Math.ceil(largestSizes[label] * 0.0125));
     const partAnchors = anchors[label] || [];
     for (const component of components[label]) {
       const { pixels, minX, minY, maxX, maxY } = component;
@@ -328,10 +467,11 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
       const idx = y * maskWidth + x;
       if (Number(mask[idx]) < CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) continue;
       const px = (x + 0.5) * scaleX;
-      // Wider garments and loose silhouettes extend beyond the narrow joint capsules.
-      // Keep a wider nearest-part envelope so foreground pixels are not erased
-      // from the background without being copied into any movable body layer.
-      let best = CHARACTER_RIG_MASK_THRESHOLDS.maxPartAssignmentScore, bestIndex = 0;
+      // Every foreground pixel removed from the background must have a body-layer
+      // owner. Track the true nearest articulated part even outside the normal
+      // capsule radius; otherwise wide sleeves, coat edges and limbs disappear.
+      let best = Infinity, bestIndex = -1;
+      let bestArm = Infinity, bestArmIndex = -1;
       for (let k = 1; k < specs.length; k++) {
         const s = specs[k];
         let score = Infinity;
@@ -342,10 +482,23 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
           score = segmentDistance(px, py, s.aPoint, s.bPoint) / s.radiusPx;
         }
         if (score < best) { best = score; bestIndex = k; }
+        if (/^(upperArm|forearm|hand)/.test(s.id) && score < bestArm) {
+          bestArm = score;
+          bestArmIndex = k;
+        }
       }
       const garmentIndex = specs.findIndex(spec => spec.id === "lowerGarment");
-      if (garmentIndex >= 0 && polygonContains(px, py, specs[garmentIndex].polygon)) bestIndex = garmentIndex;
-      if (polygonContains(px, py, specs[0].polygon) && best > 0.72) bestIndex = 0;
+      if (garmentIndex >= 0 && polygonContains(px, py, specs[garmentIndex].polygon)) {
+        // Hands and sleeves in front of a skirt must remain articulated parts,
+        // not be swallowed by the lower-garment polygon.
+        bestIndex = bestArmIndex >= 0 && bestArm <= 1.35 ? bestArmIndex : garmentIndex;
+      } else if (polygonContains(px, py, specs[0].polygon) && best > 0.72) {
+        bestIndex = 0;
+      }
+      // In rare frames a pose landmark may be missing; keep the torso as a
+      // safe fallback only inside its actual polygon. Never route loose
+      // foreground outside the torso to an asset that cannot contain it.
+      if (bestIndex < 0 && polygonContains(px, py, specs[0].polygon)) bestIndex = 0;
       labels[idx] = bestIndex;
     }
   }
@@ -453,16 +606,16 @@ function rawCanvasFromImageData(data) {
   canvas.getContext("2d").putImageData(data, 0, 0);
   return canvas;
 }
-function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bounds, spec) {
+function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bounds, spec, underlayMap = null) {
   // Character torso underlay carries one bounds object, while the regular
   // segmentation path carries an array indexed by part. Normalize both shapes.
-  const box = Array.isArray(bounds) ? bounds[partIndex] : (partIndex === 0 ? bounds : null);
+  const box = Array.isArray(bounds) ? bounds[partIndex] : bounds;
   if (!box || !Number.isFinite(box.maxX) || !Number.isFinite(box.maxY) ||
       !Number.isFinite(box.minX) || !Number.isFinite(box.minY) ||
       box.maxX < box.minX || box.maxY < box.minY) return null;
-  const overlapPad = spec.shape === "capsule" ? Number(spec.radiusPx) * 0.38 :
+  const overlapPad = spec.shape === "capsule" ? Number(spec.radiusPx) * 0.72 :
     spec.shape === "ellipse" ? Math.max(Number(spec.rx), Number(spec.ry)) * 0.12 :
-    spec.shape === "polygon" ? Number(spec.width) * 0.075 : 0;
+    spec.shape === "polygon" ? Number(spec.width) * 0.11 : 0;
   const pad = Math.max(3, Math.ceil(Number(spec.jointOverlap) || 0), Math.ceil(overlapPad));
   const x0 = Math.max(0, box.minX - pad), y0 = Math.max(0, box.minY - pad);
   const x1 = Math.min(width - 1, box.maxX + pad), y1 = Math.min(height - 1, box.maxY + pad);
@@ -477,16 +630,21 @@ function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bou
       const mx = Math.min(maskAt.width - 1, Math.floor(x * maskAt.width / width));
       const label = labelMap[my * maskAt.width + mx];
       const confidence = maskAt(mx, my);
-      let include = isPartAssetPixelIncluded(label, partIndex, confidence, spec, x + 0.5, y + 0.5);
+      const maskIndex = my * maskAt.width + mx;
+      const seedIndex = underlayMap ? underlayMap[maskIndex] : -1;
+      let include = seedIndex >= 0 || isPartAssetPixelIncluded(label, partIndex, confidence, spec, x + 0.5, y + 0.5);
       if (!include && spec.jointPoints && spec.jointPoints.length) {
         const overlap = Number(spec.jointOverlap) || 3;
         include = confidence >= CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha &&
           spec.jointPoints.some(point => Math.hypot(x + 0.5 - point.x, y + 0.5 - point.y) <= overlap);
       }
       if (!include) continue;
-      const alpha = Math.round(255 * Math.max(0, Math.min(1, (confidence - CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha) / (1 - CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha))));
+      const featherStart = Math.max(0, CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha - 0.045);
+      const alpha = Math.round(255 * Math.max(0, Math.min(1, (confidence - featherStart) / (1 - featherStart))));
       if (alpha < 8) continue;
-      const si = (y * width + x) * 4, di = ((y - y0) * w + (x - x0)) * 4;
+      const seedX = seedIndex >= 0 ? Math.max(0, Math.min(width - 1, Math.floor(((seedIndex % maskAt.width) + 0.5) * width / maskAt.width))) : x;
+      const seedY = seedIndex >= 0 ? Math.max(0, Math.min(height - 1, Math.floor((Math.floor(seedIndex / maskAt.width) + 0.5) * height / maskAt.height))) : y;
+      const si = (seedY * width + seedX) * 4, di = ((y - y0) * w + (x - x0)) * 4;
       image.data[di] = src[si]; image.data[di + 1] = src[si + 1]; image.data[di + 2] = src[si + 2]; image.data[di + 3] = alpha;
     }
   }
@@ -535,13 +693,17 @@ export async function createCharacterRig(dataUrl, options = {}) {
     const parts = [];
     for (let i = 0; i < specs.length; i++) {
       const useUnderlay = i === 0 && torsoUnderlay;
+      const partUnderlay = !useUnderlay && i > 0 && specs[i].motion !== "static"
+        ? buildPartOcclusionUnderlayMap(labels, maskWidth, maskHeight, width, height, specs[i], i, maskAt, bounds[i])
+        : null;
       const asset = createPartAsset(
         useUnderlay ? torsoUnderlay.source : source,
         width, height,
         useUnderlay ? torsoUnderlay.labels : labels,
         maskAt, i,
-        useUnderlay ? torsoUnderlay.bounds : bounds,
-        specs[i]
+        useUnderlay ? torsoUnderlay.bounds : (partUnderlay ? partUnderlay.bounds : bounds),
+        specs[i],
+        partUnderlay ? partUnderlay.sourceMap : null
       );
       if (asset) parts.push(asset);
     }
