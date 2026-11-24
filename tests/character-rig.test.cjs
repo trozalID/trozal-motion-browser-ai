@@ -24,6 +24,8 @@ const path=require('node:path');
   assert.equal(byId.handL.parent,'forearmL');
   assert.equal(byId.lowerLegR.parent,'upperLegR');
   assert.equal(byId.footR.parent,'lowerLegR');
+  for(const id of ['torso','head','upperArmL','forearmL','upperLegL','lowerLegL']){assert.ok(byId[id].jointOverlap>=5,'Joint overlap must cover shared pixels for '+id);}
+  assert.ok(byId.upperArmL.jointOverlap>=byId.upperArmL.radiusPx*.5,'Limb joints need enough overlap to avoid visible gaps');
 
   const mask=new Float32Array(100*100);mask.fill(1);
   const assigned=rig.assignPosePartLabels(mask,100,100,landmarks,100,100);
