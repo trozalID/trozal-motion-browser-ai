@@ -100,7 +100,7 @@ function buildCharacterRigCode(rig){
   'const children={};for(const p of rig.parts){const key=p.parent||"root";(children[key]||(children[key]=[])).push(p);}',
   'function drawPart(p){ctx.save();const angle=p.amp*Math.sin(t*p.speed+p.phase);ctx.translate(p.pivotX,p.pivotY);ctx.rotate(angle);ctx.translate(-p.pivotX,-p.pivotY);const image=assets[p.id];if(image)ctx.drawImage(image,p.x,p.y,p.w,p.h);for(const child of children[p.id]||[])drawPart(child);ctx.restore();}',
   'for(const p of children.root||[])drawPart(p);ctx.restore();'
- ].join('\\n');
+ ].join('\n');
 }
 const rigFile=$('trozalJsRigFile'),rigBuild=$('trozalJsRigBuild'),rigStatus=$('trozalJsRigStatus');let rigSourceDataUrl='';
 rigFile.addEventListener('change',()=>{
