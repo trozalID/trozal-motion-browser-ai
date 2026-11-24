@@ -105,7 +105,7 @@ function buildCharacterRigCode(rig){
 const rigFile=$('trozalJsRigFile'),rigBuild=$('trozalJsRigBuild'),rigStatus=$('trozalJsRigStatus');let rigSourceDataUrl='';
 rigFile.addEventListener('change',()=>{
  const file=rigFile.files&&rigFile.files[0];if(!file){rigSourceDataUrl='';return;}
- if(!/^image\\/(png|jpeg|webp)$/.test(file.type)){rigStatus.textContent='Format tidak didukung. Pilih PNG, JPEG, atau WebP.';rigFile.value='';return;}
+ if(!/^image\/(png|jpeg|webp)$/.test(file.type)){rigStatus.textContent='Format tidak didukung. Pilih PNG, JPEG, atau WebP.';rigFile.value='';return;}
  if(file.size>15*1024*1024){rigStatus.textContent='Ukuran gambar maksimal 15 MB.';rigFile.value='';return;}
  const reader=new FileReader();reader.onload=()=>{rigSourceDataUrl=String(reader.result||'');rigStatus.textContent='Foto siap · '+file.name+' · '+Math.round(file.size/1024)+' KB. Klik Buat Rig.';};reader.onerror=()=>{rigStatus.textContent='Gagal membaca file gambar.';};reader.readAsDataURL(file);
 });
