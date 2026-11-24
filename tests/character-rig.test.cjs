@@ -118,7 +118,8 @@ const path=require('node:path');
   assert.ok(byId.upperArmL.amp<=0.08&&byId.forearmL.amp<=0.09&&byId.handL.amp<=0.055,'Arm-chain motion must preserve the original hand position.');
   assert.ok(byId.upperArmR.amp<=0.08&&byId.forearmR.amp<=0.09&&byId.handR.amp<=0.055,'The opposite arm chain must use the same natural-motion limits.');
   assert.ok(skirt.amp<=0.03,'The skirt should move only subtly with the hips.');
-  assert.ok(byId.handL.radiusPx>20*0.09&&byId.handR.radiusPx>20*0.09,'Hand capsules must cover the palm using wrist, index, pinky and thumb landmarks.');
+  assert.ok(byId.handL.radiusPx>20*0.09&&byId.handR.radiusPx>20*0.09,'Hand capsules must cover the palm using valid wrist and fingertip landmarks.');
+  assert.ok(byId.handL.radiusPx<=20*0.22&&byId.handR.radiusPx<=20*0.22,'Outlier pinky/thumb landmarks must not inflate a hand capsule across the torso or garment.');
   assert.equal(byId.lowerLegR.parent,'upperLegR');
   assert.equal(byId.footR.parent,'lowerLegR');
   for(const id of ['torso','head','upperArmL','forearmL','upperLegL','lowerLegL']){assert.ok(byId[id].jointOverlap>=5,'Joint overlap must cover shared pixels for '+id);}
