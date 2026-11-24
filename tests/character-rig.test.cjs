@@ -26,6 +26,24 @@ const path=require('node:path');
   const torsoOverlap={shape:'polygon',polygon:[{x:10,y:10},{x:30,y:10},{x:28,y:30},{x:12,y:30}],width:20};
   assert.equal(rig.isPartAssetPixelIncluded(7,0,0.9,torsoOverlap,20,20),true,'Torso interior must remain present even when segmentation assigned a pixel to an overlapping limb.');
   assert.equal(rig.isPartAssetPixelIncluded(7,0,0.9,torsoOverlap,20,32),false,'Torso overlap must not extend far beyond its silhouette.');
+  const underlayWidth=20,underlayHeight=20,underlayMaskWidth=10,underlayMaskHeight=10;
+  const underlaySource={data:new Uint8ClampedArray(underlayWidth*underlayHeight*4)};
+  for(let y=0;y<underlayHeight;y++)for(let x=0;x<underlayWidth;x++){
+    const i=(y*underlayWidth+x)*4;
+    underlaySource.data[i]=x+y*underlayWidth;underlaySource.data[i+1]=80;underlaySource.data[i+2]=120;underlaySource.data[i+3]=255;
+  }
+  const underlayLabels=new Int16Array(underlayMaskWidth*underlayMaskHeight);underlayLabels.fill(-1);
+  underlayLabels[5*underlayMaskWidth+4]=0;
+  underlayLabels[5*underlayMaskWidth+5]=1;
+  const underlayMask=new Float32Array(underlayMaskWidth*underlayMaskHeight);underlayMask.fill(0.95);
+  const underlayMaskAt=(x,y)=>underlayMask[y*underlayMaskWidth+x];
+  const underlayPolygon=[{x:4,y:4},{x:16,y:4},{x:16,y:16},{x:4,y:16}];
+  const underlay=rig.buildTorsoUnderlay(underlaySource,underlayLabels,underlayMaskWidth,underlayMaskHeight,underlayWidth,underlayHeight,{polygon:underlayPolygon},underlayMaskAt);
+  assert.ok(underlay,'A visible torso seed should produce an underlay');
+  assert.equal(underlay.labels[5*underlayMaskWidth+5],0,'A foreground limb pixel inside the torso silhouette must also be included in the static torso underlay');
+  assert.equal(underlay.source.data[(10*underlayWidth+10)*4],underlaySource.data[(10*underlayWidth+8)*4],'Occluded torso pixels should be reconstructed from the nearest visible torso patch');
+  assert.equal(underlaySource.data[(10*underlayWidth+10)*4],210,'Underlay reconstruction must not mutate the original image used by moving limbs');
+  assert.ok(underlay.bounds.maxX>=11&&underlay.bounds.maxY>=11,'Torso underlay bounds must include reconstructed overlap pixels');
   const specs=rig.buildPosePartSpecs(landmarks,100,100);
   const byId=Object.fromEntries(specs.map(p=>[p.id,p]));
   for(const id of ['head','torso','upperArmL','forearmL','handL','upperArmR','forearmR','handR','upperLegL','lowerLegL','footL','upperLegR','lowerLegR','footR']){
