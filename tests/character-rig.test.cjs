@@ -72,6 +72,12 @@ const path=require('node:path');
   assert.ok(skirt,'A connected lower garment must be identified as one shared layer rather than split between the legs.');
   assert.equal(skirt.motion,'static','A skirt should remain a unified garment layer while the legs move underneath it.');
   assert.equal(skirt.parent,'torso','The skirt must follow the torso/pelvis as one coherent garment.');
+  assert.equal(skirt.motion,'swing','The skirt must have its own subtle hip-driven motion instead of remaining frozen.');
+  assert.ok(skirt.amp>0&&skirt.speed>0,'Skirt animation must have non-zero amplitude and speed.');
+  assert.equal(skirt.renderOrder,20,'The skirt should be painted above thighs but below front-facing arms.');
+  assert.equal(skirtSpecs.find(part=>part.id==='upperLegL').renderOrder,10,'Thighs must render behind the skirt.');
+  assert.equal(skirtSpecs.find(part=>part.id==='upperArmL').renderOrder,30,'Arms must render in front of the skirt.');
+  assert.equal(skirtSpecs.find(part=>part.id==='head').renderOrder,40,'The head must render above torso clothing and limbs.');
   assert.ok(skirtSpecs.indexOf(skirt)>skirtSpecs.findIndex(part=>part.id==='upperLegR'),'The unified skirt layer must be composited above both moving thighs.');
   const skirtAssigned=rig.assignPosePartLabels(skirtMask,100,100,landmarks,100,100);
   const skirtIndex=skirtAssigned.specs.findIndex(part=>part.id==='lowerGarment');
@@ -104,6 +110,9 @@ const path=require('node:path');
   }
   assert.equal(byId.forearmL.parent,'upperArmL');
   assert.equal(byId.handL.parent,'forearmL');
+  assert.equal(byId.handL.motion,'swing');
+  assert.equal(byId.handR.motion,'swing');
+  assert.ok(byId.handL.radiusPx>20*0.09&&byId.handR.radiusPx>20*0.09,'Hand capsules must cover the palm using wrist, index, pinky and thumb landmarks.');
   assert.equal(byId.lowerLegR.parent,'upperLegR');
   assert.equal(byId.footR.parent,'lowerLegR');
   for(const id of ['torso','head','upperArmL','forearmL','upperLegL','lowerLegL']){assert.ok(byId[id].jointOverlap>=5,'Joint overlap must cover shared pixels for '+id);}
@@ -167,6 +176,8 @@ const path=require('node:path');
   assert.match(directorSource,/itcvAutoRig/);
   assert.match(directorSource,/itcvRigParts/);
   assert.match(directorSource,/function drawRig\(t,w,h\)/);
+  assert.match(directorSource,/children\[k\]\.sort\(\(a,b\)=>\(Number\(a\.renderOrder\)\|\|0\)-\(Number\(b\.renderOrder\)\|\|0\)\)/,'Runtime renderer must respect anatomical depth order so skirts cannot cover foreground hands.');
+  assert.match(moduleSource,/renderOrder: Number\.isFinite\(Number\(spec\.renderOrder\)\) \? Number\(spec\.renderOrder\) : 0/,'Exported rig layers must retain their render order metadata.');
   assert.match(directorSource,/characterRigEmbedded:!!DATA\.characterRig/);
   assert.match(directorSource,/createCharacterRig\(uris\[0\]/);
 
