@@ -178,6 +178,7 @@ const path=require('node:path');
   assert.match(directorSource,/function drawRig\(t,w,h\)/);
   assert.match(directorSource,/children\[k\]\.sort\(\(a,b\)=>\(Number\(a\.renderOrder\)\|\|0\)-\(Number\(b\.renderOrder\)\|\|0\)\)/,'Runtime renderer must respect anatomical depth order so skirts cannot cover foreground hands.');
   assert.match(moduleSource,/renderOrder: Number\.isFinite\(Number\(spec\.renderOrder\)\) \? Number\(spec\.renderOrder\) : 0/,'Exported rig layers must retain their render order metadata.');
+  assert.match(moduleSource,/motion: spec\.motion \|\| "swing"/,'Exported rig assets must retain their explicit motion mode instead of silently falling back to a generic default.');
   assert.match(directorSource,/characterRigEmbedded:!!DATA\.characterRig/);
   assert.match(directorSource,/createCharacterRig\(uris\[0\]/);
 
