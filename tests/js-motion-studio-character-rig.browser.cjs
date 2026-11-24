@@ -30,13 +30,15 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
    ctx.drawImage(frame0,0,0);const pixels0=ctx.getImageData(0,0,1280,720).data;
    ctx.clearRect(0,0,1280,720);ctx.drawImage(frame1,0,0);const pixels1=ctx.getImageData(0,0,1280,720).data;
    let changedPixels=0;for(let i=0;i<pixels0.length;i+=4)if(pixels0[i]!==pixels1[i]||pixels0[i+1]!==pixels1[i+1]||pixels0[i+2]!==pixels1[i+2]||pixels0[i+3]!==pixels1[i+3])changedPixels++;
-   return {assetKeys:Object.keys(object.rigAssets||{}),code:api.getCode(),frameType:frame1?.constructor?.name,changedPixels};
+   return {assetKeys:Object.keys(object.rigAssets||{}),code:api.getCode(),frameType:frame1?.constructor?.name,changedPixels,hasMotionControls:!!document.querySelector('#trozalJsRigMotionPreset')&&!!document.querySelector('#trozalJsRigIntensity')};
   });
   assert.ok(result.assetKeys.includes('background')&&result.assetKeys.includes('head'),'Rig PNG assets must be attached to the JavaScript Studio object');
   assert.match(result.code,/drawPart/,'Generated Canvas code must articulate the parent-child rig hierarchy');
   assert.match(result.code,/Math\.sin\(t\*p\.speed\+p\.phase\)/,'Body-part motion must be time dependent');
   assert.ok(result.changedPixels>0,'Two different timestamps must produce visibly different rendered pixels; got '+result.changedPixels);
-  assert.ok(result.code.includes('p.amp*1.85'),'Articulated joint motion must use visible motion gain');
+  assert.ok(result.code.includes('motionGain=2.700'),'Walk Cycle must use a strong default motion gain');
+  assert.ok(result.code.includes('p.amp*partGain*swing'),'Each body part must receive its own animated joint rotation');
+  assert.ok(result.hasMotionControls,'Character Rig must expose motion preset and intensity controls');
   assert.equal(errors.length,0,'No browser runtime errors: '+errors.join('; '));
   console.log('PASS: JavaScript Studio imports Character Rig layers, loads PNG assets in its sandbox renderer, and renders articulated parent-child motion.');
  }finally{await browser.close();}
