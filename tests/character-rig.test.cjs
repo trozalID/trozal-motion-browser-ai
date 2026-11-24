@@ -9,6 +9,33 @@ const path=require('node:path');
   assert.equal(rig.shouldInpaintMaskPixel(0.20),true,'Faint subject-edge pixels used by part alpha must also be removed from the background');
   assert.equal(rig.shouldInpaintMaskPixel(0.18),true,'Pixels at the part alpha threshold must be inpainted');
   assert.equal(rig.shouldInpaintMaskPixel(0.11),false,'Pixels below the part alpha threshold must remain background');
+
+  const diagnosticMask=new Float32Array(49);
+  const diagnosticLabels=new Int16Array(49);diagnosticLabels.fill(-1);
+  const put=(x,y,label,confidence=.92)=>{const index=y*7+x;diagnosticLabels[index]=label;diagnosticMask[index]=confidence;};
+  for(const [x,y] of [[1,1],[2,1],[1,2],[2,2]])put(x,y,0);
+  put(3,0,1,.78);
+  for(const [x,y] of [[4,0],[5,0],[4,1],[5,1],[4,2],[5,2],[0,6],[1,6],[2,6],[3,6]])put(x,y,2,.88);
+  diagnosticMask[0]=.9; // Foreground confidence that was correctly rejected by pose assignment.
+  const diagnosticMaskSnapshot=new Float32Array(diagnosticMask);
+  const diagnosticLabelsSnapshot=new Int16Array(diagnosticLabels);
+  const diagnostics=rig.analyzeCharacterMaskQuality(
+    diagnosticMask,diagnosticLabels,7,7,
+    [{id:'torso',name:'Torso'},{id:'head',name:'Kepala'},{id:'handL',name:'Tangan kiri'}],
+    [{minX:1,minY:1,maxX:2,maxY:2},{minX:3,minY:0,maxX:3,maxY:0},{minX:0,minY:0,maxX:5,maxY:6}]
+  );
+  assert.ok(diagnostics,'Valid mask and label arrays must produce a diagnostics report.');
+  assert.equal(diagnostics.foregroundPixels,16,'Foreground diagnostics should count model pixels above the assignment threshold.');
+  assert.equal(diagnostics.assignedPixels,15,'Assigned count should include only valid body-part labels.');
+  assert.equal(diagnostics.unassignedForegroundPixels,1,'Rejected foreground spill must be reported, not assigned silently.');
+  assert.equal(diagnostics.unassignedForegroundPercent,6.25);
+  assert.equal(diagnostics.parts[2].componentCount,2,'Detached anatomical mask fragments must be counted.');
+  assert.equal(diagnostics.parts[2].detachedPixels,4,'Diagnostics should quantify pixels outside the largest connected component.');
+  assert.ok(diagnostics.parts[2].warnings.some(message=>message.includes('fragmen terpisah')),'A sufficiently large detached fragment should be flagged for review.');
+  assert.deepEqual(diagnosticMask,diagnosticMaskSnapshot,'Diagnostics must not mutate source confidence values.');
+  assert.deepEqual(diagnosticLabels,diagnosticLabelsSnapshot,'Diagnostics must not mutate body-part assignments.');
+  assert.equal(rig.analyzeCharacterMaskQuality(null,diagnosticLabels,7,7,[]),null,'Missing mask input must return no diagnostics.');
+
   const matteWidth=7,matteHeight=7,matte=new Float32Array(matteWidth*matteHeight);
   for(let y=1;y<=5;y++)for(let x=1;x<=5;x++)matte[y*matteWidth+x]=0.92;
   matte[3*matteWidth+3]=0.01;
@@ -219,6 +246,8 @@ const path=require('node:path');
   assert.match(moduleSource,/activeMask = acceptedMask/,'Background inpainting and part extraction must share the same anatomically accepted foreground matte to prevent segmentation spill from becoming colored limb ghosts.');
   assert.match(moduleSource,/best > CHARACTER_RIG_MASK_THRESHOLDS\.maxPartAssignmentScore/,'Foreground pixels too far from every pose part must not be assigned to a limb.');
   assert.match(moduleSource,/const featherStart = Math\.max\(0, CHARACTER_RIG_MASK_THRESHOLDS\.assetAlpha - 0\.045\)/,'The subject alpha feather must not discard pixels already removed from the background.');
+  assert.match(moduleSource,/analyzeCharacterMaskQuality/,'Mode 3 must report anatomical mask coverage and connectivity.');
+  assert.match(moduleSource,/unassignedForegroundPercent/,'Diagnostics must report foreground pixels rejected by anatomical assignment.');
   assert.match(moduleSource,/outputSegmentationMasks:\s*true/);
   assert.match(moduleSource,/getAsFloat32Array\(\)/);
   assert.match(moduleSource,/canvas\.toDataURL\("image\/png"\)/);
