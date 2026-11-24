@@ -27,7 +27,7 @@ const path=require('node:path');
 
   const mask=new Float32Array(100*100);mask.fill(1);
   const assigned=rig.assignPosePartLabels(mask,100,100,landmarks,100,100);
-  assert.equal(assigned.labels.length,10000);
+  assert.equal(assigned.labels.length,10000);\n  assert.equal(assigned.labels[0],-1,'Foreground speckles far outside pose landmarks must not be attached to the torso');
   assert.ok(assigned.labels.some(x=>x===0),'Torso region should have assigned pixels');
   const found=new Set(assigned.labels.filter(x=>x>=0));
   assert.ok(found.size>=10,'Segmentation should assign multiple independent body regions; got '+found.size);
