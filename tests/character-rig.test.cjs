@@ -45,6 +45,22 @@ const path=require('node:path');
   assert.equal(underlaySource.data[(10*underlayWidth+10)*4],210,'Underlay reconstruction must not mutate the original image used by moving limbs');
   assert.ok(underlay.bounds.maxX>=11&&underlay.bounds.maxY>=11,'Torso underlay bounds must include reconstructed overlap pixels');
   const specs=rig.buildPosePartSpecs(landmarks,100,100);
+
+  const skirtMask=new Float32Array(100*100);
+  for(let y=58;y<=74;y++)for(let x=36;x<=64;x++)skirtMask[y*100+x]=.98;
+  const skirtSpecs=rig.buildPosePartSpecs(landmarks,100,100,skirtMask,100,100);
+  const skirt=skirtSpecs.find(part=>part.id==='lowerGarment');
+  assert.ok(skirt,'A connected lower garment must be identified as one shared layer rather than split between the legs.');
+  assert.equal(skirt.motion,'static','A skirt should remain a unified garment layer while the legs move underneath it.');
+  assert.equal(skirt.parent,'torso','The skirt must follow the torso/pelvis as one coherent garment.');
+  assert.ok(skirtSpecs.indexOf(skirt)>skirtSpecs.findIndex(part=>part.id==='upperLegR'),'The unified skirt layer must be composited above both moving thighs.');
+  const skirtAssigned=rig.assignPosePartLabels(skirtMask,100,100,landmarks,100,100);
+  const skirtIndex=skirtAssigned.specs.findIndex(part=>part.id==='lowerGarment');
+  assert.ok(skirtIndex>=0,'Connected skirt geometry must be present in the segmentation specs.');
+  assert.equal(skirtAssigned.labels[66*100+50],skirtIndex,'The center of the skirt must stay assigned to the unified garment layer.');
+  const pantsMask=new Float32Array(100*100);
+  for(let y=58;y<=74;y++){for(let x=38;x<=46;x++)pantsMask[y*100+x]=.98;for(let x=54;x<=62;x++)pantsMask[y*100+x]=.98;}
+  assert.equal(rig.detectLowerGarmentRegion(pantsMask,100,100,landmarks,100,100),null,'Separated trouser legs with an open center gap must not be incorrectly fused into a skirt layer.');
   const byId=Object.fromEntries(specs.map(p=>[p.id,p]));
   for(const id of ['head','torso','upperArmL','forearmL','handL','upperArmR','forearmR','handR','upperLegL','lowerLegL','footL','upperLegR','lowerLegR','footR']){
     assert.ok(byId[id], 'Missing body part spec: '+id);
