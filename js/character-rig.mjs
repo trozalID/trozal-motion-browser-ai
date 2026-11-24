@@ -11,20 +11,20 @@ export function shouldInpaintMaskPixel(confidence) {
 }
 
 const PARTS = [
-  { id: "torso", name: "Torso", parent: null, a: 11, b: 24, radius: 0, amp: 0.025, speed: 1.1, phase: 0.0 },
-  { id: "upperLegL", name: "Paha kiri", parent: "torso", a: 23, b: 25, radius: "leg", amp: 0.19, speed: 1.55, phase: 0, renderOrder: 10 },
-  { id: "lowerLegL", name: "Betis kiri", parent: "upperLegL", a: 25, b: 27, radius: "shin", amp: 0.24, speed: 1.55, phase: 1.0 },
-  { id: "footL", name: "Kaki kiri", parent: "lowerLegL", a: 27, b: 31, radius: "foot", amp: 0.11, speed: 1.55, phase: 0.4 },
-  { id: "upperLegR", name: "Paha kanan", parent: "torso", a: 24, b: 26, radius: "leg", amp: 0.19, speed: 1.55, phase: Math.PI, renderOrder: 10 },
-  { id: "lowerLegR", name: "Betis kanan", parent: "upperLegR", a: 26, b: 28, radius: "shin", amp: 0.24, speed: 1.55, phase: 2.0 },
-  { id: "footR", name: "Kaki kanan", parent: "lowerLegR", a: 28, b: 32, radius: "foot", amp: 0.11, speed: 1.55, phase: 2.4 },
-  { id: "upperArmL", name: "Lengan atas kiri", parent: "torso", a: 11, b: 13, radius: "upperArm", amp: 0.24, speed: 1.35, phase: Math.PI, renderOrder: 30 },
-  { id: "forearmL", name: "Lengan bawah kiri", parent: "upperArmL", a: 13, b: 15, radius: "forearm", amp: 0.26, speed: 1.35, phase: 0.8 },
-  { id: "handL", name: "Tangan kiri", parent: "forearmL", a: 15, b: 19, radius: "hand", amp: 0.20, speed: 1.5, phase: 1.3, motion: "swing", renderOrder: 40 },
-  { id: "upperArmR", name: "Lengan atas kanan", parent: "torso", a: 12, b: 14, radius: "upperArm", amp: 0.24, speed: 1.35, phase: 0, renderOrder: 30 },
-  { id: "forearmR", name: "Lengan bawah kanan", parent: "upperArmR", a: 14, b: 16, radius: "forearm", amp: 0.26, speed: 1.35, phase: 1.8 },
-  { id: "handR", name: "Tangan kanan", parent: "forearmR", a: 16, b: 20, radius: "hand", amp: 0.20, speed: 1.5, phase: 2.3, motion: "swing", renderOrder: 40 },
-  { id: "head", name: "Kepala", parent: "torso", a: 0, b: 7, radius: "head", amp: 0.105, speed: 0.9, phase: 0.3, renderOrder: 40 }
+  { id: "torso", name: "Torso", parent: null, a: 11, b: 24, radius: 0, amp: 0.012, speed: 1.1, phase: 0.0 },
+  { id: "upperLegL", name: "Paha kiri", parent: "torso", a: 23, b: 25, radius: "leg", amp: 0.055, speed: 1.55, phase: 0, renderOrder: 10 },
+  { id: "lowerLegL", name: "Betis kiri", parent: "upperLegL", a: 25, b: 27, radius: "shin", amp: 0.07, speed: 1.55, phase: 1.0 },
+  { id: "footL", name: "Kaki kiri", parent: "lowerLegL", a: 27, b: 31, radius: "foot", amp: 0.03, speed: 1.55, phase: 0.4 },
+  { id: "upperLegR", name: "Paha kanan", parent: "torso", a: 24, b: 26, radius: "leg", amp: 0.055, speed: 1.55, phase: Math.PI, renderOrder: 10 },
+  { id: "lowerLegR", name: "Betis kanan", parent: "upperLegR", a: 26, b: 28, radius: "shin", amp: 0.07, speed: 1.55, phase: Math.PI + 1.0 },
+  { id: "footR", name: "Kaki kanan", parent: "lowerLegR", a: 28, b: 32, radius: "foot", amp: 0.03, speed: 1.55, phase: Math.PI + 0.4 },
+  { id: "upperArmL", name: "Lengan atas kiri", parent: "torso", a: 11, b: 13, radius: "upperArm", amp: 0.075, speed: 1.35, phase: Math.PI, renderOrder: 30 },
+  { id: "forearmL", name: "Lengan bawah kiri", parent: "upperArmL", a: 13, b: 15, radius: "forearm", amp: 0.085, speed: 1.35, phase: 0.8 },
+  { id: "handL", name: "Tangan kiri", parent: "forearmL", a: 15, b: 19, radius: "hand", amp: 0.05, speed: 1.5, phase: 1.3, motion: "swing", renderOrder: 40 },
+  { id: "upperArmR", name: "Lengan atas kanan", parent: "torso", a: 12, b: 14, radius: "upperArm", amp: 0.075, speed: 1.35, phase: 0, renderOrder: 30 },
+  { id: "forearmR", name: "Lengan bawah kanan", parent: "upperArmR", a: 14, b: 16, radius: "forearm", amp: 0.085, speed: 1.35, phase: Math.PI + 0.8 },
+  { id: "handR", name: "Tangan kanan", parent: "forearmR", a: 16, b: 20, radius: "hand", amp: 0.05, speed: 1.5, phase: Math.PI + 1.3, motion: "swing", renderOrder: 40 },
+  { id: "head", name: "Kepala", parent: "torso", a: 0, b: 7, radius: "head", amp: 0.035, speed: 0.9, phase: 0.3, renderOrder: 40 }
 ];
 
 function point(lm, w, h, idx) {
@@ -175,7 +175,7 @@ export function detectLowerGarmentRegion(mask, maskWidth, maskHeight, landmarks,
     pivot: { x: hipCenter, y: hipY }, shape: "polygon", polygon,
     width: medianWidth, jointPoints: [leftHip, rightHip],
     jointOverlap: Math.max(7, hipWidth * 0.18),
-    amp: 0.065, speed: 1.05, phase: 0.35, motion: "swing", renderOrder: 20
+    amp: 0.025, speed: 1.05, phase: 0.35, motion: "swing", renderOrder: 20
   };
 }
 
