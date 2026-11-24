@@ -789,7 +789,7 @@ export async function createCharacterRig(dataUrl, options = {}) {
     if (!segmentation || typeof segmentation.getAsFloat32Array !== "function") throw new Error("Model tidak mengembalikan mask siluet. Coba gambar lain atau gunakan gerak gambar utuh.");
     const maskWidth = segmentation.width, maskHeight = segmentation.height;
     const modelMask = segmentation.getAsFloat32Array();
-    if (!maskWidth || !maskHeight || rawMask.length < maskWidth * maskHeight) throw new Error("Mask siluet dari model tidak valid.");
+    if (!maskWidth || !maskHeight || modelMask.length < maskWidth * maskHeight) throw new Error("Mask siluet dari model tidak valid.");
     const rawMask = refineSegmentationMask(modelMask, maskWidth, maskHeight);
     // First assign only pixels that are anatomically close to a detected body
     // part, then use that accepted foreground as the sole matte for both
