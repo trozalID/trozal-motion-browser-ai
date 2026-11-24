@@ -46,15 +46,13 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   const firstPartToggle=page.locator('#trozalJsRigMaskParts input[type="checkbox"]').first();
   await firstPartToggle.uncheck();
   await page.waitForFunction(()=>{
-    const code=window.TROZAL_JS_MOTION.getCode(),match=code.match(/const rig=(\{[\s\S]*?\});/);
-    if(!match)return false;const rig=JSON.parse(match[1]);
-    return rig.parts.length===1&&rig.parts[0].id==='head'&&rig.parts[0].parent===null;
+    const object=window.TROZAL_JS_MOTION.getObjects()[0],rig=object&&object.rigData;
+    return !!rig&&rig.parts.length===1&&rig.parts[0].id==='head'&&rig.parts[0].parent===null;
   },null,{timeout:10000});
   await firstPartToggle.check();
   await page.waitForFunction(()=>{
-    const code=window.TROZAL_JS_MOTION.getCode(),match=code.match(/const rig=(\{[\s\S]*?\});/);
-    if(!match)return false;const rig=JSON.parse(match[1]);
-    return rig.parts.length===2&&rig.parts.some(part=>part.id==='torso')&&rig.parts.some(part=>part.id==='head');
+    const object=window.TROZAL_JS_MOTION.getObjects()[0],rig=object&&object.rigData;
+    return !!rig&&rig.parts.length===2&&rig.parts.some(part=>part.id==='torso')&&rig.parts.some(part=>part.id==='head');
   },null,{timeout:10000});
   const result=await page.evaluate(async()=>{
    const api=window.TROZAL_JS_MOTION;
