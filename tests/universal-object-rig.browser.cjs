@@ -58,15 +58,17 @@ const {chromium}=require('playwright');
   await page.mouse.click(box.x+box.width*(map.x+map.w*.72)/640,box.y+box.height*(map.y+map.h*.5)/360);
   await page.waitForFunction(()=>document.getElementById('itcvRigParts')?.querySelector('input[type="text"]')?.value.includes('Komponen manual'));
   await page.locator('#itcvBuildRig').click();
-  await page.waitForFunction(()=>{const html=document.getElementById('itcvHtml')?.value||'';return html.includes('@keyframes trozal-part-0')&&html.includes('class="part part-0"')&&html.includes('class="rig-canvas"');},{timeout:30000});
+  await page.waitForFunction(()=>{const html=document.getElementById('itcvHtml')?.value||'';return html.includes('@keyframes trozal-part-0')&&html.includes('class="part-0"')&&html.includes('class="rig-part-node rig-node-0"')&&html.includes('class="rig-canvas"');},{timeout:30000});
   const exported=await page.locator('#itcvHtml').inputValue();
   assert.doesNotMatch(exported,/<script\b|\bimport\s*\(/i,'Importer-safe HTML must not contain JavaScript or module imports.');
   assert.match(exported,/@keyframes trozal-part-0/,'Each segmented object must receive a CSS keyframe animation.');
-  const cssPreviewPart=page.frameLocator('#itcvPreview').locator('.part-0');
+  const cssPreviewNode=page.frameLocator('#itcvPreview').locator('.rig-node-0');
+  const cssPreviewPart=cssPreviewNode.locator('.part-0');
+  await cssPreviewNode.waitFor({state:'attached',timeout:15000});
   await cssPreviewPart.waitFor({state:'attached',timeout:15000});
-  const cssPreviewDiagnostics=await cssPreviewPart.evaluate(el=>{
-   const style=getComputedStyle(el),rect=el.getBoundingClientRect(),parent=el.parentElement?.getBoundingClientRect(),frame=el.ownerDocument.defaultView.frameElement?.getBoundingClientRect();
-   return {display:style.display,visibility:style.visibility,opacity:style.opacity,animationName:style.animationName,width:rect.width,height:rect.height,parentWidth:parent?.width,parentHeight:parent?.height,frameWidth:frame?.width,frameHeight:frame?.height,complete:el.complete,naturalWidth:el.naturalWidth,naturalHeight:el.naturalHeight,src:el.currentSrc?.slice(0,40)};
+  const cssPreviewDiagnostics=await cssPreviewNode.evaluate(node=>{
+   const image=node.querySelector('.part-0'),style=getComputedStyle(node),imgStyle=image?getComputedStyle(image):null,rect=image?.getBoundingClientRect(),frame=node.ownerDocument.defaultView.frameElement?.getBoundingClientRect();
+   return {display:imgStyle?.display,visibility:imgStyle?.visibility,opacity:imgStyle?.opacity,animationName:style.animationName,width:rect?.width,height:rect?.height,frameWidth:frame?.width,frameHeight:frame?.height,complete:image?.complete,naturalWidth:image?.naturalWidth,naturalHeight:image?.naturalHeight,src:image?.currentSrc?.slice(0,40)};
   });
   console.log('Mode 5 CSS preview diagnostics:',JSON.stringify(cssPreviewDiagnostics));
   assert.notEqual(cssPreviewDiagnostics.animationName,'none','Segmented object must animate in CSS preview: '+JSON.stringify(cssPreviewDiagnostics));
@@ -132,15 +134,17 @@ const {chromium}=require('playwright');
   // Verify the already-mounted CSS preview by attachment and computed animation,
   // not Playwright's visibility heuristic for a hidden parent workspace.
   const preview=page.frameLocator('#itcvPreview');
-  const previewPart=preview.locator('.part-0');
-  await previewPart.waitFor({state:'attached',timeout:10000});
-  const previewAnimation=await previewPart.evaluate(el=>getComputedStyle(el).animationName);
-  assert.notEqual(previewAnimation,'none','Mode 5 CSS preview must retain its independent part animation while Studio is open.');
+  const previewNode=preview.locator('.rig-node-0');
+  await previewNode.waitFor({state:'attached',timeout:10000});
+  const previewAnimation=await previewNode.evaluate(el=>getComputedStyle(el).animationName);
+  assert.notEqual(previewAnimation,'none','Mode 5 CSS preview hierarchy wrapper must retain its part animation while Studio is open.');
   await page.evaluate(()=>{const frame=document.createElement('iframe');frame.id='standalone-export-check';frame.style.cssText='position:fixed;left:-10000px;width:640px;height:360px';frame.srcdoc=document.getElementById('itcvHtml').value;document.body.appendChild(frame);});
   const standalone=page.frameLocator('#standalone-export-check');
-  const standalonePart=standalone.locator('.part-0');
+  const standaloneNode=standalone.locator('.rig-node-0');
+  const standalonePart=standaloneNode.locator('.part-0');
+  await standaloneNode.waitFor({state:'attached',timeout:10000});
   await standalonePart.waitFor({state:'attached',timeout:10000});
-  assert.notEqual(await standalonePart.evaluate(el=>getComputedStyle(el).animationName),'none','Standalone HTML must animate segmented objects without JavaScript.');
+  assert.notEqual(await standaloneNode.evaluate(el=>getComputedStyle(el).animationName),'none','Standalone HTML must animate segmented objects through hierarchy wrappers without JavaScript.');
   assert.deepEqual(errors,[],'Mode 5 Universal Rig must not produce uncaught page errors');
   console.log('PASS: Browser Mode 5 manual point -> mocked SAM mask -> transparent object layer -> self-contained HTML/JS preview.');
  }finally{await browser.close();}

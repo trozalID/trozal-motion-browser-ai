@@ -138,6 +138,10 @@ if(rig&&rig.background){
  const bg=imageFor(rig.background);if(bg)ctx.drawImage(bg,0,0,rw,rh);else{const fallback=imageFor((DATA.images||[])[0]);if(fallback)ctx.drawImage(fallback,0,0,rw,rh);}
  const parts=Array.isArray(rig.parts)?rig.parts:[];
  const children=Object.create(null);parts.forEach(p=>{const k=p.parent||'';(children[k]||(children[k]=[])).push(p);});
+ // Paint rear elements first: thighs -> skirt -> arms/hands -> head.
+ // This keeps the skirt above moving legs without covering hands that cross
+ // in front of the body. Stable order preserves legacy rigs without metadata.
+ Object.keys(children).forEach(k=>children[k].sort((a,b)=>(Number(a.renderOrder)||0)-(Number(b.renderOrder)||0)));
  function drawPart(p){const idx=parts.indexOf(p),speed=(Number(p.speed)||1)*(Number(DATA.config.rigSpeed)||1),amp=(Number(p.amp)||0)*(Number(DATA.config.rigAmplitude)||1),offset=(Number(p.phase)||0)+(DATA.config.rigStagger?idx*.43:0),kind=p.motion||'swing',wave=Math.sin(t*speed+offset),pivotX=Number.isFinite(Number(p.pivotX))?Number(p.pivotX):((Number(p.x)||0)+(Number(p.w)||0)/2),pivotY=Number.isFinite(Number(p.pivotY))?Number(p.pivotY):((Number(p.y)||0)+(Number(p.h)||0)/2);const angle=kind==='static'||kind==='bob'||kind==='float'||kind==='pulse'?0:(kind==='rotate'||kind==='wheel'?t*speed:wave*amp);ctx.save();ctx.translate(pivotX,pivotY);if(DATA.config.rigParallax){const depth=((Number(p.y)||0)+(Number(p.h)||0)/2)/rh-.5;ctx.translate(Math.sin(t*.65+offset)*depth*rw*.012,Math.cos(t*.52+offset)*depth*rh*.009);}if(kind==='bob')ctx.translate(0,wave*amp*rh*.16);else if(kind==='float')ctx.translate(Math.sin(t*speed+offset)*amp*rw*.18,Math.cos(t*speed*.83+offset)*amp*rh*.18);else if(kind==='pulse'){const pulse=1+wave*amp*.18;ctx.scale(pulse,pulse);}ctx.rotate(angle);ctx.translate(-pivotX,-pivotY);const im=imageFor(p.src);if(im&&p.enabled!==false){ctx.globalAlpha=Math.max(0,Math.min(1,Number(p.opacity==null?1:p.opacity)));ctx.drawImage(im,Number(p.x)||0,Number(p.y)||0,Number(p.w)||im.naturalWidth,Number(p.h)||im.naturalHeight);}(children[p.id]||[]).forEach(drawPart);ctx.restore();}
  (children['']||[]).forEach(drawPart);ctx.restore();
 }else{
@@ -162,12 +166,30 @@ function makeCssHtml(images,cfg,art,rig){
   const rw=Math.max(1,Number(rig.width)||1),rh=Math.max(1,Number(rig.height)||1);
   css.push('.rig-canvas{position:absolute;left:50%;top:50%;width:min(100%,'+(100*rw/rh)+'vh);height:min(100%,'+(100*rh/rw)+'vw);aspect-ratio:'+rw+'/'+rh+';transform:translate(-50%,-50%);overflow:hidden}.rig-canvas .source{object-fit:fill}');
   body+='<div class="rig-canvas"><img class="source" alt="Latar hasil segmentasi" src="'+esc(rig.background||images[0]||'')+'">';
-  rig.parts.forEach((part,index)=>{
-   if(part.enabled===false||!part.src)return;
+  const parts=rig.parts.filter(part=>part.enabled!==false&&part.src);
+  const partsById=new Map(parts.map(part=>[part.id,part]));
+  const children=Object.create(null);
+  parts.forEach(part=>{
+   const parent=part.parent&&partsById.has(part.parent)?part.parent:'';
+   (children[parent]||(children[parent]=[])).push(part);
+  });
+  // Draw each part inside its parent's animated coordinate space. A child
+  // therefore inherits every parent transform (torso -> arm -> forearm -> hand).
+  // Depth order paints thighs first, then skirt, then front-facing arms/hands.
+  Object.keys(children).forEach(parent=>{
+   children[parent].sort((a,b)=>(Number(a.renderOrder)||0)-(Number(b.renderOrder)||0));
+  });
+  function renderRigPart(part){
+   const index=rig.parts.indexOf(part);
    const x=clamp(part.x,0,rw),y=clamp(part.y,0,rh),w=clamp(part.w,1,rw),h=clamp(part.h,1,rh);
-   const px=clamp((Number(part.pivotX==null?x+w/2:part.pivotX)-x)/w*100,0,100),py=clamp((Number(part.pivotY==null?y+h/2:part.pivotY)-y)/h*100,0,100);
-   const motion=String(part.motion||'swing'),amp=clamp((part.amp==null?.15:part.amp)*(part.amplitudeMultiplier==null?1:clamp(part.amplitudeMultiplier,0,2.5))*clamp(cfg.rigAmplitude==null?1:cfg.rigAmplitude,0,2.5),0,2.5),speed=clamp((part.speed==null?1:part.speed)*(part.speedMultiplier==null?1:clamp(part.speedMultiplier,.1,3))*clamp(cfg.rigSpeed==null?1:cfg.rigSpeed,.25,3),.1,36);
-   const name='trozal-part-'+index,period=clamp(duration/Math.max(.25,speed),.6,duration*3),phase=-Math.abs(Number(part.phase)||0)-(cfg.rigStagger?index*.31:0);
+   const px=clamp((Number(part.pivotX==null?x+w/2:part.pivotX)-x)/w*100,0,100);
+   const py=clamp((Number(part.pivotY==null?y+h/2:part.pivotY)-y)/h*100,0,100);
+   const motion=String(part.motion||'swing');
+   const amp=clamp((part.amp==null?.15:part.amp)*(part.amplitudeMultiplier==null?1:clamp(part.amplitudeMultiplier,0,2.5))*clamp(cfg.rigAmplitude==null?1:cfg.rigAmplitude,0,2.5),0,2.5);
+   const speed=clamp((part.speed==null?1:part.speed)*(part.speedMultiplier==null?1:clamp(part.speedMultiplier,.1,3))*clamp(cfg.rigSpeed==null?1:cfg.rigSpeed,.25,3),.1,36);
+   const name='trozal-part-'+index;
+   const period=clamp(duration/Math.max(.25,speed),.6,duration*3);
+   const phase=-Math.abs(Number(part.phase)||0)-(cfg.rigStagger?index*.31:0);
    let a='transform:rotate('+(-amp*32)+'deg)',b='transform:rotate('+(amp*32)+'deg)';
    if(motion==='wheel'||motion==='rotate'){a='transform:rotate(0deg)';b='transform:rotate(360deg)';}
    else if(motion==='bob'){a='transform:translateY(-'+(amp*28)+'px)';b='transform:translateY('+(amp*28)+'px)';}
@@ -175,10 +197,16 @@ function makeCssHtml(images,cfg,art,rig){
    else if(motion==='pulse'){a='transform:scale('+(1-amp*.18)+')';b='transform:scale('+(1+amp*.18)+')';}
    else if(motion==='static'){a='transform:none';b='transform:none';}
    css.push('@keyframes '+name+'{0%,100%{'+a+'}50%{'+b+'}}');
-   css.push('.part-'+index+'{left:'+(x/rw*100)+'%;top:'+(y/rh*100)+'%;width:'+(w/rw*100)+'%;height:'+(h/rh*100)+'%;transform-origin:'+px+'% '+py+'%;animation-name:'+name+';animation-duration:'+period+'s;animation-delay:'+phase+'s}');
-   body+='<img class="part part-'+index+'" alt="'+esc(part.name||'Objek '+(index+1))+'" data-speedMultiplier="'+clamp(part.speedMultiplier==null?1:part.speedMultiplier,.1,3)+'" data-amplitudeMultiplier="'+clamp(part.amplitudeMultiplier==null?1:part.amplitudeMultiplier,0,2.5)+'" data-opacity="'+clamp(part.opacity==null?1:part.opacity,0,1)+'" data-pivotX="'+Number(part.pivotX||0)+'" data-pivotY="'+Number(part.pivotY||0)+'" style="opacity:'+clamp(part.opacity==null?1:part.opacity,0,1)+'" src="'+esc(part.src)+'">';
-  });
-  body+='</div>';
+   css.push('.rig-node-'+index+'{transform-origin:'+px+'% '+py+'%;animation-name:'+name+';animation-duration:'+period+'s;animation-delay:'+phase+'s;z-index:'+(Number(part.renderOrder)||0)+'}');
+   css.push('.part-'+index+'{position:absolute;left:'+(x/rw*100)+'%;top:'+(y/rh*100)+'%;width:'+(w/rw*100)+'%;height:'+(h/rh*100)+'%;object-fit:fill;max-width:none;max-height:none;opacity:'+clamp(part.opacity==null?1:part.opacity,0,1)+'}');
+   let html='<div class="rig-part-node rig-node-'+index+'"><img class="part-'+index+'" alt="'+esc(part.name||'Objek '+(index+1))+'" data-speedMultiplier="'+clamp(part.speedMultiplier==null?1:part.speedMultiplier,.1,3)+'" data-amplitudeMultiplier="'+clamp(part.amplitudeMultiplier==null?1:part.amplitudeMultiplier,0,2.5)+'" data-opacity="'+clamp(part.opacity==null?1:part.opacity,0,1)+'" data-pivotX="'+Number(part.pivotX||0)+'" data-pivotY="'+Number(part.pivotY||0)+'" src="'+esc(part.src)+'">';
+   (children[part.id]||[]).forEach(child=>{html+=renderRigPart(child);});
+   html+='</div>';
+   return html;
+  }
+  css.push('.rig-part-node{position:absolute;inset:0;width:100%;height:100%;transform-origin:0 0;animation-timing-function:ease-in-out;animation-iteration-count:infinite;will-change:transform}');
+  (children['']||[]).forEach(part=>{body+=renderRigPart(part);});
+
  }else{
   const list=(images||[]).filter(Boolean);
   list.forEach((src,index)=>{
