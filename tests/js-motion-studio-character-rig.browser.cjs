@@ -45,9 +45,17 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   assert.deepEqual(maskCanvas,{width:64,height:64},'Mask review overlay must preserve the source image dimensions.');
   const firstPartToggle=page.locator('#trozalJsRigMaskParts input[type="checkbox"]').first();
   await firstPartToggle.uncheck();
-  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"head"')&&!window.TROZAL_JS_MOTION.getCode().includes('"torso"'),null,{timeout:10000});
+  await page.waitForFunction(()=>{
+    const code=window.TROZAL_JS_MOTION.getCode(),match=code.match(/const rig=(\{[\s\S]*?\});/);
+    if(!match)return false;const rig=JSON.parse(match[1]);
+    return rig.parts.length===1&&rig.parts[0].id==='head'&&rig.parts[0].parent===null;
+  },null,{timeout:10000});
   await firstPartToggle.check();
-  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"torso"')&&window.TROZAL_JS_MOTION.getCode().includes('"head"'),null,{timeout:10000});
+  await page.waitForFunction(()=>{
+    const code=window.TROZAL_JS_MOTION.getCode(),match=code.match(/const rig=(\{[\s\S]*?\});/);
+    if(!match)return false;const rig=JSON.parse(match[1]);
+    return rig.parts.length===2&&rig.parts.some(part=>part.id==='torso')&&rig.parts.some(part=>part.id==='head');
+  },null,{timeout:10000});
   const result=await page.evaluate(async()=>{
    const api=window.TROZAL_JS_MOTION;
    const object=api.getObjects()[0];
