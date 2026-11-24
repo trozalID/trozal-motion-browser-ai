@@ -24,9 +24,13 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   const result=await page.evaluate(async()=>{
    const api=window.TROZAL_JS_MOTION;
    const object=api.getObjects()[0];
-   await api.renderFrame(0);
-   const first=await api.renderFrame(.8);
-   return {assetKeys:Object.keys(object.rigAssets||{}),code:api.getCode(),frameType:first?.constructor?.name};
+   const frame0=await api.renderFrame(0);
+   const frame1=await api.renderFrame(.8);
+   const probe=new OffscreenCanvas(1280,720),ctx=probe.getContext('2d',{willReadFrequently:true});
+   ctx.drawImage(frame0,0,0);const pixels0=ctx.getImageData(0,0,1280,720).data;
+   ctx.clearRect(0,0,1280,720);ctx.drawImage(frame1,0,0);const pixels1=ctx.getImageData(0,0,1280,720).data;
+   let changedPixels=0;for(let i=0;i<pixels0.length;i+=4)if(pixels0[i]!==pixels1[i]||pixels0[i+1]!==pixels1[i+1]||pixels0[i+2]!==pixels1[i+2]||pixels0[i+3]!==pixels1[i+3])changedPixels++;
+   return {assetKeys:Object.keys(object.rigAssets||{}),code:api.getCode(),frameType:frame1?.constructor?.name,changedPixels};
   });
   assert.ok(result.assetKeys.includes('background')&&result.assetKeys.includes('head'),'Rig PNG assets must be attached to the JavaScript Studio object');
   assert.match(result.code,/drawPart/,'Generated Canvas code must articulate the parent-child rig hierarchy');
