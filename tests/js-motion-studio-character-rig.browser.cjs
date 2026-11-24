@@ -35,6 +35,8 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   assert.ok(result.assetKeys.includes('background')&&result.assetKeys.includes('head'),'Rig PNG assets must be attached to the JavaScript Studio object');
   assert.match(result.code,/drawPart/,'Generated Canvas code must articulate the parent-child rig hierarchy');
   assert.match(result.code,/Math\.sin\(t\*p\.speed\+p\.phase\)/,'Body-part motion must be time dependent');
+  assert.ok(result.changedPixels>0,'Two different timestamps must produce visibly different rendered pixels; got '+result.changedPixels);
+  assert.match(result.code,/p\\.amp\\*1\\.85/,'Articulated joint motion must use visible motion gain');
   assert.equal(errors.length,0,'No browser runtime errors: '+errors.join('; '));
   console.log('PASS: JavaScript Studio imports Character Rig layers, loads PNG assets in its sandbox renderer, and renders articulated parent-child motion.');
  }finally{await browser.close();}
