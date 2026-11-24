@@ -130,7 +130,7 @@ rigBuild.addEventListener('click',async()=>{
  rigBuild.disabled=true;stop();
  try{
   rigStatus.textContent='Memuat model pose dan segmentasi lokal…';
-  const mod=await import('./js/character-rig.mjs');
+  const mod=await import('./js/character-rig.mjs?v=20261124-1');
   const rig=await mod.createCharacterRig(rigSourceDataUrl,{maxDimension:1280,onProgress:message=>{rigStatus.textContent=message;}});
   if(rig.height>rig.width)setPreviewAspect('9:16');
   const assets={background:rig.background};for(const part of rig.parts)assets[part.id]=part.src;
