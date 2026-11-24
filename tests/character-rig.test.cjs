@@ -53,6 +53,7 @@ const path=require('node:path');
   assert.ok(skirt,'A connected lower garment must be identified as one shared layer rather than split between the legs.');
   assert.equal(skirt.motion,'static','A skirt should remain a unified garment layer while the legs move underneath it.');
   assert.equal(skirt.parent,'torso','The skirt must follow the torso/pelvis as one coherent garment.');
+  assert.ok(skirtSpecs.indexOf(skirt)>skirtSpecs.findIndex(part=>part.id==='upperLegR'),'The unified skirt layer must be composited above both moving thighs.');
   const skirtAssigned=rig.assignPosePartLabels(skirtMask,100,100,landmarks,100,100);
   const skirtIndex=skirtAssigned.specs.findIndex(part=>part.id==='lowerGarment');
   assert.ok(skirtIndex>=0,'Connected skirt geometry must be present in the segmentation specs.');
