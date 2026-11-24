@@ -80,9 +80,10 @@ export function buildPosePartSpecs(landmarks, width, height) {
 }
 
 /* Pure segmentation assignment, exported for deterministic tests. */
-function keepLargestPartComponents(labels, width, height, partCount) {
+export function keepMeaningfulPartComponents(labels, width, height, partCount) {
   const visited = new Uint8Array(labels.length), queue = new Int32Array(labels.length);
-  const largest = new Array(partCount), largestSizes = new Int32Array(partCount);
+  const components = Array.from({ length: partCount }, () => []);
+  const largestSizes = new Int32Array(partCount);
   for (let start = 0; start < labels.length; start++) {
     const label = labels[start];
     if (label < 0 || visited[start]) continue;
@@ -104,14 +105,18 @@ function keepLargestPartComponents(labels, width, height, partCount) {
         }
       }
     }
-    if (tail > largestSizes[label]) {
-      largestSizes[label] = tail;
-      largest[label] = queue.slice(0, tail);
-    }
+    largestSizes[label] = Math.max(largestSizes[label], tail);
+    components[label].push(queue.slice(0, tail));
   }
   labels.fill(-1);
   for (let label = 0; label < partCount; label++) {
-    for (const index of largest[label] || []) labels[index] = label;
+    // Preserve substantial secondary regions (e.g. separated clothing/limb pixels),
+    // while rejecting tiny segmentation speckles. Threshold is per body part.
+    const minimumSize = Math.max(12, Math.ceil(largestSizes[label] * 0.025));
+    for (const component of components[label]) {
+      if (component.length < minimumSize) continue;
+      for (const index of component) labels[index] = label;
+    }
   }
 }
 
@@ -142,7 +147,7 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
       labels[idx] = bestIndex;
     }
   }
-  keepLargestPartComponents(labels, maskWidth, maskHeight, specs.length);
+  keepMeaningfulPartComponents(labels, maskWidth, maskHeight, specs.length);
   const bounds = specs.map(() => ({ minX: width, minY: height, maxX: -1, maxY: -1 }));
   for (let i = 0; i < labels.length; i++) {
     const label = labels[i];
