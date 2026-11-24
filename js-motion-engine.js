@@ -100,11 +100,11 @@ function buildCharacterRigCode(rig,preset='walk',intensity=1){
  const gain=(motion.gain*Math.max(.35,Math.min(2.5,Number(intensity)||1))).toFixed(3);
  return [
   'const rig='+meta+';',
-  'const assets=anim.__rigAssets||{};ctx.save();ctx.scale(w/rig.width,h/rig.height);',
+  'const assets=anim.__rigAssets||{};const fit=Math.min(w/rig.width,h/rig.height),offsetX=(w-rig.width*fit)/2,offsetY=(h-rig.height*fit)/2;ctx.save();ctx.translate(offsetX,offsetY);ctx.scale(fit,fit);',
   'if(assets.background)ctx.drawImage(assets.background,0,0,rig.width,rig.height);',
   'const children={};for(const p of rig.parts){const key=p.parent||"root";(children[key]||(children[key]=[])).push(p);}',
   'const motionGain='+gain+',motionTempo='+motion.tempo.toFixed(3)+',bodyBob='+motion.bob.toFixed(4)+';',
-  'function drawPart(p){ctx.save();if(p.id==="torso"){ctx.translate(Math.sin(t*motionTempo)*rig.width*.009,Math.sin(t*motionTempo*2)*rig.height*bodyBob);ctx.rotate(Math.sin(t*motionTempo)*.025*motionGain);}let swing=Math.sin(t*p.speed*motionTempo+p.phase);if(p.id==="upperArmR"&&'+JSON.stringify(preset)+'==="wave")swing=Math.sin(t*5.2);if(p.id==="forearmR"&&'+JSON.stringify(preset)+'==="wave")swing=Math.sin(t*5.2+1.1);let partGain=motionGain;if(p.id==="head")partGain*=.48;if(p.id==="torso")partGain*=.25;const angle=p.amp*partGain*swing;ctx.translate(p.pivotX,p.pivotY);ctx.rotate(angle);ctx.translate(-p.pivotX,-p.pivotY);const image=assets[p.id];if(image)ctx.drawImage(image,p.x,p.y,p.w,p.h);for(const child of children[p.id]||[])drawPart(child);ctx.restore();}',
+  'function drawPart(p){ctx.save();if(p.id==="torso"){ctx.translate(Math.sin(t*motionTempo)*rig.width*.009,Math.sin(t*motionTempo*2)*rig.height*bodyBob);ctx.rotate(Math.sin(t*motionTempo)*.025*motionGain);}let swing=Math.sin(t*p.speed*motionTempo+p.phase);if(p.id==="upperArmR"&&'+JSON.stringify(preset)+'==="wave")swing=Math.sin(t*5.2);if(p.id==="forearmR"&&'+JSON.stringify(preset)+'==="wave")swing=Math.sin(t*5.2+1.1);let partGain=motionGain;if(p.id==="head")partGain*=.48;if(p.id==="torso")partGain*=.25;const limbScale=/^(upper|lower)(Arm|Leg)/.test(p.id)?0.62:(/^(hand|foot)/.test(p.id)?0.72:1);const angle=Math.max(-0.42,Math.min(0.42,p.amp*partGain*swing*limbScale));ctx.translate(p.pivotX,p.pivotY);ctx.rotate(angle);ctx.translate(-p.pivotX,-p.pivotY);const image=assets[p.id];if(image)ctx.drawImage(image,p.x,p.y,p.w,p.h);for(const child of children[p.id]||[])drawPart(child);ctx.restore();}',
   'for(const p of children.root||[])drawPart(p);ctx.restore();'
  ].join('\n');
 }
