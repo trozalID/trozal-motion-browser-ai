@@ -138,6 +138,10 @@ if(rig&&rig.background){
  const bg=imageFor(rig.background);if(bg)ctx.drawImage(bg,0,0,rw,rh);else{const fallback=imageFor((DATA.images||[])[0]);if(fallback)ctx.drawImage(fallback,0,0,rw,rh);}
  const parts=Array.isArray(rig.parts)?rig.parts:[];
  const children=Object.create(null);parts.forEach(p=>{const k=p.parent||'';(children[k]||(children[k]=[])).push(p);});
+ // Paint rear elements first: thighs -> skirt -> arms/hands -> head.
+ // This keeps the skirt above moving legs without covering hands that cross
+ // in front of the body. Stable order preserves legacy rigs without metadata.
+ Object.keys(children).forEach(k=>children[k].sort((a,b)=>(Number(a.renderOrder)||0)-(Number(b.renderOrder)||0)));
  function drawPart(p){const idx=parts.indexOf(p),speed=(Number(p.speed)||1)*(Number(DATA.config.rigSpeed)||1),amp=(Number(p.amp)||0)*(Number(DATA.config.rigAmplitude)||1),offset=(Number(p.phase)||0)+(DATA.config.rigStagger?idx*.43:0),kind=p.motion||'swing',wave=Math.sin(t*speed+offset),pivotX=Number.isFinite(Number(p.pivotX))?Number(p.pivotX):((Number(p.x)||0)+(Number(p.w)||0)/2),pivotY=Number.isFinite(Number(p.pivotY))?Number(p.pivotY):((Number(p.y)||0)+(Number(p.h)||0)/2);const angle=kind==='static'||kind==='bob'||kind==='float'||kind==='pulse'?0:(kind==='rotate'||kind==='wheel'?t*speed:wave*amp);ctx.save();ctx.translate(pivotX,pivotY);if(DATA.config.rigParallax){const depth=((Number(p.y)||0)+(Number(p.h)||0)/2)/rh-.5;ctx.translate(Math.sin(t*.65+offset)*depth*rw*.012,Math.cos(t*.52+offset)*depth*rh*.009);}if(kind==='bob')ctx.translate(0,wave*amp*rh*.16);else if(kind==='float')ctx.translate(Math.sin(t*speed+offset)*amp*rw*.18,Math.cos(t*speed*.83+offset)*amp*rh*.18);else if(kind==='pulse'){const pulse=1+wave*amp*.18;ctx.scale(pulse,pulse);}ctx.rotate(angle);ctx.translate(-pivotX,-pivotY);const im=imageFor(p.src);if(im&&p.enabled!==false){ctx.globalAlpha=Math.max(0,Math.min(1,Number(p.opacity==null?1:p.opacity)));ctx.drawImage(im,Number(p.x)||0,Number(p.y)||0,Number(p.w)||im.naturalWidth,Number(p.h)||im.naturalHeight);}(children[p.id]||[]).forEach(drawPart);ctx.restore();}
  (children['']||[]).forEach(drawPart);ctx.restore();
 }else{
