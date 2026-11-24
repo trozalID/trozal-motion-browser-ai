@@ -218,12 +218,11 @@ rigBuild.addEventListener('click',async()=>{
   const mod=await import('./js/character-rig.mjs?v=20261124-2');
   const rig=await mod.createCharacterRig(rigSourceDataUrl,{maxDimension:1280,onProgress:message=>{rigStatus.textContent=message;}});
   renderRigDiagnostics(rig.diagnostics);
-  await renderRigMaskReview(rig);
   if(rig.height>rig.width)setPreviewAspect('9:16');
   const assets={background:rig.background};for(const part of rig.parts)assets[part.id]=part.src;
   const obj=currentObject();obj.rigAssets=assets;obj.rigData=rig;obj.name='Character Rig · '+rig.parts.length+' bagian';obj.code=buildCharacterRigCode(rig,rigMotionPreset.value,Number(rigIntensity.value)/100);
   code.value=obj.code;currentScene().code=obj.code;codeRevision++;syncSceneUI();
-  if(await apply()){await show(+time.value||0);rigStatus.textContent='BERHASIL · '+rig.parts.length+' layer tubuh terpisah. Gerakan sendi aktif di Preview dan siap diekspor.';}
+  if(await apply()){await show(+time.value||0);await renderRigMaskReview(rig);rigStatus.textContent='BERHASIL · '+rig.parts.length+' layer tubuh terpisah. Gerakan sendi aktif di Preview dan siap diekspor.';}
   else throw new Error('Kode rig gagal diterapkan ke Preview.');
  }catch(error){rigStatus.textContent='RIG GAGAL · '+(error?.message||String(error));}
  finally{rigBuild.disabled=false;}
