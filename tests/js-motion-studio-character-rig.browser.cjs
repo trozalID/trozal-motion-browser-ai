@@ -38,6 +38,11 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   assert.match(diagnosticsText,/91\.2%/,'Diagnostics should report foreground coverage.');
   assert.match(diagnosticsText,/Torso/);
   assert.match(diagnosticsText,/Kepala/);
+  await page.waitForSelector('#trozalJsRigMaskCanvas');
+  assert.equal(await page.locator('#trozalJsRigMaskParts input[type="checkbox"]').count(),2,
+    'Mask review must expose one manual inclusion control per body part.');
+  const maskCanvas=await page.locator('#trozalJsRigMaskCanvas').evaluate(canvas=>({width:canvas.width,height:canvas.height}));
+  assert.deepEqual(maskCanvas,{width:64,height:64},'Mask review overlay must preserve the source image dimensions.');
   const result=await page.evaluate(async()=>{
    const api=window.TROZAL_JS_MOTION;
    const object=api.getObjects()[0];
@@ -69,6 +74,19 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   await page.locator('#trozalJsRigIntensity').evaluate(el=>{el.value='160';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});
   await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('motionGain=2.640'),null,{timeout:10000});
   assert.equal(errors.length,0,'No browser runtime errors: '+errors.join('; '));
+
+  const firstPartToggle=page.locator('#trozalJsRigMaskParts input[type="checkbox"]').first();
+  await firstPartToggle.uncheck();
+  await page.waitForFunction(()=>{
+    const object=window.TROZAL_JS_MOTION.getObjects()[0],rig=object&&object.rigData;
+    return !!rig&&rig.parts.length===1&&rig.parts[0].id==='head'&&rig.parts[0].parent===null;
+  },null,{timeout:10000});
+  await firstPartToggle.check();
+  await page.waitForFunction(()=>{
+    const object=window.TROZAL_JS_MOTION.getObjects()[0],rig=object&&object.rigData;
+    return !!rig&&rig.parts.length===2&&rig.parts.some(part=>part.id==='torso')&&rig.parts.some(part=>part.id==='head');
+  },null,{timeout:10000});
+
   console.log('PASS: JavaScript Studio imports Character Rig layers, loads PNG assets in its sandbox renderer, and renders articulated parent-child motion.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});
