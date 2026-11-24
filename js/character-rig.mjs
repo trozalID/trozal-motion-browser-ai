@@ -524,6 +524,117 @@ export function keepMeaningfulPartComponents(labels, width, height, partCount, a
     }
   }
 }
+/* Stage 2 — anatomical mask coverage and connectivity diagnostics.
+ * This is observational only: it never edits the matte, labels, or part assets.
+ * The report helps identify missing and fragmented layers before animation.
+ */
+export function analyzeCharacterMaskQuality(mask, labels, maskWidth, maskHeight, specs, bounds = []) {
+  const total = Math.max(0, Number(maskWidth) * Number(maskHeight));
+  if (!mask || !labels || !maskWidth || !maskHeight || labels.length < total || mask.length < total || !Array.isArray(specs)) {
+    return null;
+  }
+  const partCount = specs.length;
+  const pixelCounts = new Uint32Array(partCount);
+  const confidenceSums = new Float64Array(partCount);
+  const confidenceMins = new Float32Array(partCount);
+  confidenceMins.fill(1);
+  const visited = new Uint8Array(total);
+  const queue = new Int32Array(total);
+  const componentCounts = new Uint32Array(partCount);
+  const largestComponentPixels = new Uint32Array(partCount);
+  let foregroundPixels = 0;
+  let assignedPixels = 0;
+
+  for (let index = 0; index < total; index++) {
+    const confidence = Number(mask[index]) || 0;
+    if (confidence >= CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) foregroundPixels++;
+    const label = Number(labels[index]);
+    if (!Number.isInteger(label) || label < 0 || label >= partCount) continue;
+    assignedPixels++;
+    pixelCounts[label]++;
+    confidenceSums[label] += confidence;
+    confidenceMins[label] = Math.min(confidenceMins[label], confidence);
+  }
+
+  for (let start = 0; start < total; start++) {
+    const label = Number(labels[start]);
+    if (!Number.isInteger(label) || label < 0 || label >= partCount || visited[start]) continue;
+    let head = 0, tail = 0;
+    queue[tail++] = start;
+    visited[start] = 1;
+    while (head < tail) {
+      const index = queue[head++];
+      const x = index % maskWidth;
+      const y = (index / maskWidth) | 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        const ny = y + dy;
+        if (ny < 0 || ny >= maskHeight) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = x + dx;
+          if (nx < 0 || nx >= maskWidth) continue;
+          const next = ny * maskWidth + nx;
+          if (!visited[next] && Number(labels[next]) === label) {
+            visited[next] = 1;
+            queue[tail++] = next;
+          }
+        }
+      }
+    }
+    componentCounts[label]++;
+    largestComponentPixels[label] = Math.max(largestComponentPixels[label], tail);
+  }
+
+  const parts = specs.map((spec, index) => {
+    const pixels = pixelCounts[index];
+    const componentCount = componentCounts[index];
+    const detachedPixels = Math.max(0, pixels - largestComponentPixels[index]);
+    const box = Array.isArray(bounds) ? bounds[index] : null;
+    const validBounds = box && Number.isFinite(box.minX) && Number.isFinite(box.minY) &&
+      Number.isFinite(box.maxX) && Number.isFinite(box.maxY) && box.maxX >= box.minX && box.maxY >= box.minY;
+    const confidence = pixels ? confidenceSums[index] / pixels : 0;
+    const warnings = [];
+    if (!pixels) warnings.push("Tidak ada piksel mask yang ditetapkan ke bagian ini.");
+    else if (pixels < 8) warnings.push("Lapisan sangat kecil; periksa apakah bagian tubuh terpotong.");
+    if (componentCount > 1 && detachedPixels >= Math.max(4, Math.ceil(pixels * 0.08))) {
+      warnings.push("Lapisan memiliki fragmen terpisah; tepi dan koneksi sendi perlu diperiksa.");
+    }
+    if (pixels && confidence < 0.28) warnings.push("Rata-rata confidence mask rendah.");
+    return {
+      id: String(spec.id || "part-" + index),
+      name: String(spec.name || spec.id || "Bagian " + (index + 1)),
+      pixels,
+      coveragePercent: assignedPixels ? +(pixels / assignedPixels * 100).toFixed(2) : 0,
+      foregroundCoveragePercent: foregroundPixels ? +(pixels / foregroundPixels * 100).toFixed(2) : 0,
+      meanConfidence: +confidence.toFixed(4),
+      minConfidence: pixels ? +confidenceMins[index].toFixed(4) : 0,
+      componentCount,
+      detachedPixels,
+      bounds: validBounds ? { minX: box.minX, minY: box.minY, maxX: box.maxX, maxY: box.maxY } : null,
+      warnings
+    };
+  });
+  const unassignedForegroundPixels = Math.max(0, foregroundPixels - assignedPixels);
+  const unassignedForegroundPercent = foregroundPixels
+    ? +(unassignedForegroundPixels / foregroundPixels * 100).toFixed(2) : 0;
+  const warnings = [];
+  if (!parts.some(part => part.id === "head" && part.pixels > 0)) warnings.push("Kepala tidak memiliki piksel mask yang terpasang.");
+  if (!parts.some(part => part.id === "torso" && part.pixels > 0)) warnings.push("Torso tidak memiliki piksel mask yang terpasang.");
+  if (unassignedForegroundPercent > 35) warnings.push("Lebih dari 35% foreground model tidak terpasang ke bagian anatomi; periksa pose atau mask sumber.");
+  return {
+    version: 1,
+    totalPixels: total,
+    foregroundPixels,
+    assignedPixels,
+    unassignedForegroundPixels,
+    unassignedForegroundPercent,
+    assignedForegroundPercent: foregroundPixels ? +(assignedPixels / foregroundPixels * 100).toFixed(2) : 0,
+    parts,
+    warningCount: warnings.length + parts.reduce((sum, part) => sum + part.warnings.length, 0),
+    warnings
+  };
+}
+
 export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, width, height) {
   const specs = buildPosePartSpecs(landmarks, width, height, mask, maskWidth, maskHeight);
   const labels = new Int16Array(maskWidth * maskHeight);
@@ -814,6 +925,8 @@ export async function createCharacterRig(dataUrl, options = {}) {
       if (labels[i] >= 0) acceptedMask[i] = rawMask[i];
     }
     activeMask = acceptedMask;
+    onProgress("Memeriksa cakupan anatomi dan fragmen mask…");
+    const diagnostics = analyzeCharacterMaskQuality(rawMask, labels, maskWidth, maskHeight, specs, bounds);
     const torsoUnderlay = buildTorsoUnderlay(source, labels, maskWidth, maskHeight, width, height, specs[0], maskAt);
     const background = reconstructBackground(source, rawMask, maskWidth, maskHeight, width, height, maskAt);
     const parts = [];
@@ -840,8 +953,8 @@ export async function createCharacterRig(dataUrl, options = {}) {
     return {
       version: 1, kind: "mediapipe-pose-character-rig",
       width, height, background: background.toDataURL("image/png"),
-      parts, detectedLandmarks: landmarks.length,
-      notes: "Bagian tubuh dihasilkan dari mask siluet manusia dan estimasi sendi. Rekonstruksi latar berupa inpainting lokal dan dapat kurang akurat pada latar kompleks."
+      parts, detectedLandmarks: landmarks.length, diagnostics,
+      notes: "Bagian tubuh dihasilkan dari mask siluet manusia dan estimasi sendi. Diagnostik mengukur cakupan dan fragmentasi layer; peringatan bukan pengganti pemeriksaan visual. Rekonstruksi latar berupa inpainting lokal dan dapat kurang akurat pada latar kompleks."
     };
   } finally {
     if (landmarker && typeof landmarker.close === "function") landmarker.close();
