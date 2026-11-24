@@ -196,7 +196,8 @@ const path=require('node:path');
 
   assert.match(moduleSource,/renderOrder: Number\.isFinite\(Number\(spec\.renderOrder\)\) \? Number\(spec\.renderOrder\) : 0/,'Exported rig layers must retain their render order metadata.');
   assert.match(moduleSource,/motion: spec\.motion \|\| "swing"/,'Exported rig assets must retain their explicit motion mode instead of silently falling back to a generic default.');
-  assert.match(directorSource,/characterRigEmbedded:!!DATA\.characterRig/);
+  assert.match(directorSource,/const runtimeRig=characterRig&&Array\.isArray\(characterRig\.parts\)/,'The JavaScript Studio runtime must normalize and embed the active character rig before rendering.');
+  assert.match(directorSource,/characterRig:runtimeRig/,'The generated JavaScript Studio payload must retain the character rig assets.');
   assert.match(directorSource,/createCharacterRig\(uris\[0\]/);
 
   console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments and self-contained export wiring');
