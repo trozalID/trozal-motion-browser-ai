@@ -9,6 +9,19 @@ const path=require('node:path');
   assert.equal(rig.shouldInpaintMaskPixel(0.20),true,'Faint subject-edge pixels used by part alpha must also be removed from the background');
   assert.equal(rig.shouldInpaintMaskPixel(0.18),true,'Pixels at the part alpha threshold must be inpainted');
   assert.equal(rig.shouldInpaintMaskPixel(0.11),false,'Pixels below the part alpha threshold must remain background');
+  const matteW=7,matteH=7,matte=new Float32Array(matteW*matteH);
+  for(let y=1;y<=5;y++)for(let x=1;x<=5;x++)matte[y*matteW+x]=0.92;
+  matte[3*matteW+3]=0.01;
+  const refinedMatte=rig.refineSegmentationMask(matte,matteW,matteH);
+  assert.ok(refinedMatte[3*matteW+3]>=rig.CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment,
+    'A one-pixel pinhole fully enclosed by foreground should be repaired.');
+  const openGap=new Float32Array(matte);
+  openGap[3*matteW+3]=0.01;openGap[3*matteW+2]=0.01;
+  const openGapRefined=rig.refineSegmentationMask(openGap,matteW,matteH);
+  assert.equal(openGapRefined[3*matteW+3],0.01,
+    'An open gap must remain transparent; refinement must not glue the arm to the torso.');
+  assert.equal(matte[3*matteW+3],0.01,'Mask refinement must not mutate the model output.');
+
   const flatW=32,flatH=24,flatData=new Uint8ClampedArray(flatW*flatH*4);
   for(let y=0;y<flatH;y++)for(let x=0;x<flatW;x++){
     const i=(y*flatW+x)*4;flatData[i]=198;flatData[i+1]=0;flatData[i+2]=0;flatData[i+3]=255;
