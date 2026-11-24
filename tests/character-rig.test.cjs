@@ -145,7 +145,7 @@ const path=require('node:path');
 
   const moduleSource=fs.readFileSync(path.join(__dirname,'../js/character-rig.mjs'),'utf8');
   const directorSource=fs.readFileSync(path.join(__dirname,'../trozal-image-to-code-video.js'),'utf8');
-  assert.match(moduleSource,/Array\.isArray\(bounds\) \? bounds\[partIndex\] : \(partIndex === 0 \? bounds : null\)/,'Torso underlay bounds object must be normalized alongside per-part bounds arrays.');
+  assert.match(moduleSource,/Array\.isArray\(bounds\) \? bounds\[partIndex\] : bounds/,'A single explicit bounds object and per-part bounds arrays must both be supported.');
   assert.match(moduleSource,/!box \|\| !Number\.isFinite\(box\.maxX\)/,'Missing or invalid part bounds must be rejected safely.');
   assert.match(moduleSource,/buildPartOcclusionUnderlayMap/,'Moving limbs must reconstruct pixels hidden behind overlapping foreground parts.');
   assert.match(moduleSource,/const featherStart = Math\.max\(0, CHARACTER_RIG_MASK_THRESHOLDS\.assetAlpha - 0\.045\)/,'The subject alpha feather must not discard pixels already removed from the background.');
