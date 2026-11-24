@@ -58,10 +58,10 @@ export function buildPosePartSpecs(landmarks, width, height) {
   const headRY = Math.max(headRX * 1.12, shoulderWidth * 0.24);
   const specs = [];
   const torsoPivot = { x: (leftHip.x + rightHip.x) / 2, y: (leftHip.y + rightHip.y) / 2 };
-  specs.push({ ...PARTS[0], pivot: torsoPivot, shape: "polygon", polygon: torsoPoly, width: shoulderWidth });
+  specs.push({ ...PARTS[0], pivot: torsoPivot, shape: "polygon", polygon: torsoPoly, width: shoulderWidth, jointPoints: [leftShoulder, rightShoulder, leftHip, rightHip], jointOverlap: Math.max(3, shoulderWidth * 0.055) });
   for (const p of PARTS.slice(1)) {
     if (p.id === "head") {
-      specs.push({ ...p, pivot: { x: headCenter.x, y: Math.max(headCenter.y + headRY * 0.72, (leftShoulder.y + rightShoulder.y) / 2 - 2) }, shape: "ellipse", center: headCenter, rx: headRX, ry: headRY });
+      specs.push({ ...p, pivot: { x: headCenter.x, y: Math.max(headCenter.y + headRY * 0.72, (leftShoulder.y + rightShoulder.y) / 2 - 2) }, shape: "ellipse", center: headCenter, rx: headRX, ry: headRY, jointPoints: [{ x: headCenter.x, y: headCenter.y + headRY * 0.72 }], jointOverlap: Math.max(3, headRX * 0.12) });
       continue;
     }
     const a = get(p.a), b = get(p.b);
@@ -73,18 +73,52 @@ export function buildPosePartSpecs(landmarks, width, height) {
     else if (p.radius === "shin") radius = shoulderWidth * 0.082;
     else if (p.radius === "hand") radius = shoulderWidth * 0.092;
     else if (p.radius === "foot") radius = shoulderWidth * 0.105;
-    specs.push({ ...p, aPoint: a, bPoint: b, radiusPx: radius, pivot: a, shape: "capsule" });
+    specs.push({ ...p, aPoint: a, bPoint: b, radiusPx: radius, pivot: a, shape: "capsule", jointPoints: [a, b], jointOverlap: Math.max(3, radius * 0.24) });
   }
   if (!specs.some(x => x.id === "head")) throw new Error("Landmark kepala tidak cukup jelas untuk membuat rig.");
   return specs;
 }
 
 /* Pure segmentation assignment, exported for deterministic tests. */
+function keepLargestPartComponents(labels, width, height, partCount) {
+  const visited = new Uint8Array(labels.length), queue = new Int32Array(labels.length);
+  const largest = new Array(partCount), largestSizes = new Int32Array(partCount);
+  for (let start = 0; start < labels.length; start++) {
+    const label = labels[start];
+    if (label < 0 || visited[start]) continue;
+    let head = 0, tail = 0;
+    queue[tail++] = start; visited[start] = 1;
+    while (head < tail) {
+      const index = queue[head++], x = index % width, y = (index / width) | 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        const ny = y + dy;
+        if (ny < 0 || ny >= height) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = x + dx;
+          if (nx < 0 || nx >= width) continue;
+          const next = ny * width + nx;
+          if (!visited[next] && labels[next] === label) {
+            visited[next] = 1; queue[tail++] = next;
+          }
+        }
+      }
+    }
+    if (tail > largestSizes[label]) {
+      largestSizes[label] = tail;
+      largest[label] = queue.slice(0, tail);
+    }
+  }
+  labels.fill(-1);
+  for (let label = 0; label < partCount; label++) {
+    for (const index of largest[label] || []) labels[index] = label;
+  }
+}
+
 export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, width, height) {
   const specs = buildPosePartSpecs(landmarks, width, height);
   const labels = new Int16Array(maskWidth * maskHeight);
   labels.fill(-1);
-  const bounds = specs.map(() => ({ minX: width, minY: height, maxX: -1, maxY: -1 }));
   const scaleX = width / maskWidth, scaleY = height / maskHeight;
   for (let y = 0; y < maskHeight; y++) {
     const py = (y + 0.5) * scaleY;
@@ -104,19 +138,26 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
         }
         if (score < best) { best = score; bestIndex = k; }
       }
-      const torso = specs[0];
-      if (polygonContains(px, py, torso.polygon) && best > 0.72) bestIndex = 0;
+      if (polygonContains(px, py, specs[0].polygon) && best > 0.72) bestIndex = 0;
       labels[idx] = bestIndex;
-      const box = bounds[bestIndex], imageX = Math.max(0, Math.min(width - 1, Math.floor(px))), imageY = Math.max(0, Math.min(height - 1, Math.floor(py)));
-      if (imageX < box.minX) box.minX = imageX;
-      if (imageY < box.minY) box.minY = imageY;
-      if (imageX > box.maxX) box.maxX = imageX;
-      if (imageY > box.maxY) box.maxY = imageY;
     }
+  }
+  keepLargestPartComponents(labels, maskWidth, maskHeight, specs.length);
+  const bounds = specs.map(() => ({ minX: width, minY: height, maxX: -1, maxY: -1 }));
+  for (let i = 0; i < labels.length; i++) {
+    const label = labels[i];
+    if (label < 0) continue;
+    const x = i % maskWidth, y = (i / maskWidth) | 0;
+    const imageX = Math.max(0, Math.min(width - 1, Math.floor((x + 0.5) * scaleX)));
+    const imageY = Math.max(0, Math.min(height - 1, Math.floor((y + 0.5) * scaleY)));
+    const box = bounds[label];
+    if (imageX < box.minX) box.minX = imageX;
+    if (imageY < box.minY) box.minY = imageY;
+    if (imageX > box.maxX) box.maxX = imageX;
+    if (imageY > box.maxY) box.maxY = imageY;
   }
   return { specs, labels, bounds };
 }
-
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -202,7 +243,7 @@ function rawCanvasFromImageData(data) {
 function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bounds, spec) {
   const box = bounds[partIndex];
   if (box.maxX < box.minX || box.maxY < box.minY) return null;
-  const pad = 3, x0 = Math.max(0, box.minX - pad), y0 = Math.max(0, box.minY - pad);
+  const pad = Math.max(3, Math.ceil(Number(spec.jointOverlap) || 0)), x0 = Math.max(0, box.minX - pad), y0 = Math.max(0, box.minY - pad);
   const x1 = Math.min(width - 1, box.maxX + pad), y1 = Math.min(height - 1, box.maxY + pad);
   const w = x1 - x0 + 1, h = y1 - y0 + 1;
   const canvas = document.createElement("canvas");
@@ -214,8 +255,15 @@ function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bou
     for (let x = x0; x <= x1; x++) {
       const mx = Math.min(maskAt.width - 1, Math.floor(x * maskAt.width / width));
       const label = labelMap[my * maskAt.width + mx];
-      if (label !== partIndex) continue;
-      const alpha = Math.round(255 * Math.max(0, Math.min(1, maskAt(mx, my))));
+      let include = label === partIndex;
+      if (!include && spec.jointPoints && spec.jointPoints.length) {
+        const overlap = Number(spec.jointOverlap) || 3;
+        include = spec.jointPoints.some(point => Math.hypot(x + 0.5 - point.x, y + 0.5 - point.y) <= overlap);
+      }
+      if (!include) continue;
+      const confidence = maskAt(mx, my);
+      const alpha = Math.round(255 * Math.max(0, Math.min(1, (confidence - 0.18) / 0.72)));
+      if (alpha < 8) continue;
       const si = (y * width + x) * 4, di = ((y - y0) * w + (x - x0)) * 4;
       image.data[di] = src[si]; image.data[di + 1] = src[si + 1]; image.data[di + 2] = src[si + 2]; image.data[di + 3] = alpha;
     }
