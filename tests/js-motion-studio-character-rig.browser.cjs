@@ -36,7 +36,7 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   });
   assert.ok(result.assetKeys.includes('background')&&result.assetKeys.includes('head'),'Rig PNG assets must be attached to the JavaScript Studio object');
   assert.match(result.code,/drawPart/,'Generated Canvas code must articulate the parent-child rig hierarchy');
-  assert.match(result.code,/Math\.sin\(t\*p\.speed\+p\.phase\)/,'Body-part motion must be time dependent');
+  assert.match(result.code,/Math\.sin\(t\*p\.speed(?:\*motionTempo)?\+p\.phase\)/,'Body-part motion must be time dependent');
   assert.ok(result.changedPixels>0,'Two different timestamps must produce visibly different rendered pixels; got '+result.changedPixels);
   assert.ok(result.code.includes('motionGain=2.700'),'Walk Cycle must use a strong default motion gain');
   assert.ok(result.code.includes('p.amp*partGain*swing'),'Each body part must receive its own animated joint rotation');
