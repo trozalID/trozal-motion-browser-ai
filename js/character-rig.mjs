@@ -5,7 +5,10 @@
 const MEDIAPIPE_BUNDLE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.mjs";
 const MEDIAPIPE_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
 const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
-export const CHARACTER_RIG_MASK_THRESHOLDS = Object.freeze({ assetAlpha: 0.18, labelAssignment: 0.26, backgroundInpaint: 0.18 });
+export const CHARACTER_RIG_MASK_THRESHOLDS = Object.freeze({ assetAlpha: 0.18, labelAssignment: 0.18, backgroundInpaint: 0.18 });
+export function shouldAssignMaskPixel(confidence) {
+  return Number(confidence) >= CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment;
+}
 export function shouldInpaintMaskPixel(confidence) {
   return Number(confidence) >= CHARACTER_RIG_MASK_THRESHOLDS.backgroundInpaint;
 }
@@ -142,7 +145,7 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
     const py = (y + 0.5) * scaleY;
     for (let x = 0; x < maskWidth; x++) {
       const idx = y * maskWidth + x;
-      if (Number(mask[idx]) < CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) continue;
+      if (!shouldAssignMaskPixel(mask[idx])) continue;
       const px = (x + 0.5) * scaleX;
       let best = 1.28, bestIndex = 0;
       for (let k = 1; k < specs.length; k++) {
