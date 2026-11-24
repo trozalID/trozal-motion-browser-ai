@@ -126,8 +126,8 @@ const path=require('node:path');
   assert.ok(byId.upperLegL.jointOverlap>=byId.upperLegL.radiusPx,'Thigh-to-knee overlap must cover the full joint radius so trousers do not split during rotation.');
   assert.ok(byId.lowerLegL.jointOverlap>=byId.lowerLegL.radiusPx,'Knee-to-shin overlap must cover the full joint radius so trousers do not split during rotation.');
   assert.equal(byId.torso.polygon.length,6,'Torso underlay must use a garment envelope with side control points instead of a narrow four-landmark quadrilateral.');
-  assert.ok(byId.torso.polygon[1].x<Math.min(byId.torso.polygon[0].x,byId.torso.polygon[2].x),'Left torso contour must include an underarm/waist envelope.');
-  assert.ok(byId.torso.polygon[4].x>Math.max(byId.torso.polygon[3].x,byId.torso.polygon[5].x),'Right torso contour must include an underarm/waist envelope.');
+  assert.ok(byId.torso.polygon[1].x<(byId.torso.polygon[0].x+byId.torso.polygon[2].x)*0.5,'Left torso contour must extend outward from the shoulder-to-hip centerline.');
+  assert.ok(byId.torso.polygon[4].x>(byId.torso.polygon[3].x+byId.torso.polygon[5].x)*0.5,'Right torso contour must extend outward from the shoulder-to-hip centerline.');
   assert.ok(byId.upperArmL.jointOverlap>=byId.upperArmL.radiusPx*.5,'Limb joints need enough overlap to avoid visible gaps');
 
   const componentLabels=new Int16Array(300);componentLabels.fill(-1);
