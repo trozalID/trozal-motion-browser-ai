@@ -11,7 +11,7 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   const page=await browser.newPage({viewport:{width:1440,height:1000}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/js/character-rig.mjs*',route=>route.fulfill({contentType:'text/javascript',body:
-   'export async function createCharacterRig(){return {width:64,height:64,background:'+JSON.stringify(png(8,12,20))+',parts:[{id:"torso",parent:null,x:20,y:20,w:20,h:24,pivotX:30,pivotY:20,amp:.03,speed:1,phase:0,src:'+JSON.stringify(png(40,180,140))+'},{id:"head",parent:"torso",x:25,y:4,w:12,h:12,pivotX:31,pivotY:16,amp:.45,speed:1.4,phase:0,src:'+JSON.stringify(png(240,180,70))+'}]};}'
+   'export async function createCharacterRig(){return {width:64,height:64,background:'+JSON.stringify(png(8,12,20))+',diagnostics:{assignedForegroundPercent:91.2,assignedPixels:912,foregroundPixels:1000,warningCount:1,warnings:["Satu fragmen mask perlu diperiksa."],parts:[{id:"torso",name:"Torso",pixels:700,componentCount:1,meanConfidence:.93,warnings:[]},{id:"head",name:"Kepala",pixels:212,componentCount:1,meanConfidence:.87,warnings:[]}]},parts:[{id:"torso",parent:null,x:20,y:20,w:20,h:24,pivotX:30,pivotY:20,amp:.03,speed:1,phase:0,src:'+JSON.stringify(png(40,180,140))+'},{id:"head",parent:"torso",x:25,y:4,w:12,h:12,pivotX:31,pivotY:16,amp:.45,speed:1.4,phase:0,src:'+JSON.stringify(png(240,180,70))+'}]};}'
   }));
   await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#trozalJsMotionBtn');
@@ -23,6 +23,8 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   const rigPanelDescription=await page.locator('#trozalJsCharacterRigPanel p').innerText();
   assert.match(rigPanelDescription,/Tahap 1 aktif/,
     'Mode 3 must describe the currently implemented mask-refinement stage.');
+  assert.equal(await page.locator('#trozalJsRigDiagnostics').count(),1,
+    'Mode 3 should expose a reconstruction diagnostics panel for the next stage.');
 
   await page.locator('#trozalJsRigFile').setInputFiles({name:'character.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64')});
   await page.waitForFunction(()=>document.querySelector('#trozalJsRigStatus')?.textContent.includes('Foto siap'),null,{timeout:10000});
@@ -30,6 +32,12 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   await page.waitForFunction(()=>{const s=document.querySelector('#trozalJsRigStatus')?.textContent||'';return s.includes('BERHASIL')||s.includes('RIG GAGAL');},null,{timeout:20000});
   const rigStatusText=await page.locator('#trozalJsRigStatus').textContent();
   assert.ok(rigStatusText.includes('BERHASIL'),'Character Rig pipeline did not complete: '+rigStatusText);
+  await page.waitForFunction(()=>!document.getElementById('trozalJsRigDiagnostics')?.hidden);
+  const diagnosticsText=await page.locator('#trozalJsRigDiagnostics').innerText();
+  assert.match(diagnosticsText,/TAHAP 2 · DIAGNOSTIK CAKUPAN ANATOMI/);
+  assert.match(diagnosticsText,/91\.2%/,'Diagnostics should report foreground coverage.');
+  assert.match(diagnosticsText,/Torso/);
+  assert.match(diagnosticsText,/Kepala/);
   const result=await page.evaluate(async()=>{
    const api=window.TROZAL_JS_MOTION;
    const object=api.getObjects()[0];
