@@ -182,7 +182,7 @@ const path=require('node:path');
   assert.match(moduleSource,/canvas\.toDataURL\("image\/png"\)/);
   assert.match(directorSource,/itcvAutoRig/);
   assert.match(directorSource,/itcvRigParts/);
-  assert.match(directorSource,/function drawRig\(t,w,h\)/);
+  assert.match(directorSource,/function drawPart\(p\)/,'JavaScript Studio must recursively draw each articulated rig part.');
   assert.match(directorSource,/children\[k\]\.sort\(\(a,b\)=>\(Number\(a\.renderOrder\)\|\|0\)-\(Number\(b\.renderOrder\)\|\|0\)\)/,'JavaScript Studio renderer must respect anatomical depth order so skirts cannot cover foreground hands.');
   assert.match(directorSource,/const parent=part\.parent&&partsById\.has\(part\.parent\)\?part\.parent:''/,'CSS HTML output must rebuild each rig part under its declared parent.');
   assert.match(directorSource,/function renderRigPart\(part\)/,'CSS HTML output must recursively render nested articulated part nodes.');
