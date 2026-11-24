@@ -39,6 +39,13 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   assert.ok(result.code.includes('motionGain=2.700'),'Walk Cycle must use a strong default motion gain');
   assert.ok(result.code.includes('p.amp*partGain*swing'),'Each body part must receive its own animated joint rotation');
   assert.ok(result.hasMotionControls,'Character Rig must expose motion preset and intensity controls');
+  await page.locator('#trozalJsRigMotionPreset').selectOption('wave');
+  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"wave"'),null,{timeout:10000});
+  const waveCode=await page.evaluate(()=>window.TROZAL_JS_MOTION.getCode());
+  assert.ok(waveCode.includes('Math.sin(t*5.2)'),'Wave preset must animate the right upper arm');
+  await page.locator('#trozalJsRigIntensity').fill('160');
+  await page.locator('#trozalJsRigIntensity').dispatchEvent('change');
+  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('motionGain=2.640'),null,{timeout:10000});
   assert.equal(errors.length,0,'No browser runtime errors: '+errors.join('; '));
   console.log('PASS: JavaScript Studio imports Character Rig layers, loads PNG assets in its sandbox renderer, and renders articulated parent-child motion.');
  }finally{await browser.close();}
