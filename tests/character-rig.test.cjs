@@ -4,6 +4,10 @@ const fs=require('node:fs');
 const path=require('node:path');
 (async()=>{
   const rig=await import('../js/character-rig.mjs');
+  assert.deepEqual(rig.CHARACTER_RIG_MASK_THRESHOLDS,{assetAlpha:0.18,labelAssignment:0.26,backgroundInpaint:0.18});
+  assert.equal(rig.shouldInpaintMaskPixel(0.20),true,'Faint subject-edge pixels used by part alpha must also be removed from the background');
+  assert.equal(rig.shouldInpaintMaskPixel(0.18),true,'Pixels at the part alpha threshold must be inpainted');
+  assert.equal(rig.shouldInpaintMaskPixel(0.17),false,'Pixels below the part alpha threshold must remain background');
   const landmarks=Array.from({length:33},()=>({x:.5,y:.5,z:0,visibility:1,presence:1}));
   const set=(id,x,y)=>{landmarks[id]={x,y,z:0,visibility:1,presence:1};};
   set(0,.50,.19);set(7,.45,.20);set(8,.55,.20);
