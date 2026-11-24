@@ -11,22 +11,29 @@ const {chromium}=require('playwright');
   await page.waitForSelector('#itcvModeBtn',{timeout:20000});
   await page.locator('#itcvModeBtn').click();
   await page.waitForSelector('#itcvRigSource');
+  await page.locator('#itcvFiles').setInputFiles({name:'unsupported.heic',mimeType:'image/heic',buffer:Buffer.from([0,1,2])});
+  assert.match(await page.locator('#itcvStatus').innerText(),/Format tidak didukung/,'Unsupported image formats must produce a visible explanation instead of silently disappearing.');
+  assert.equal(await page.locator('#itcvFiles').inputValue(),'','File input must reset after selection so the same image can be selected again after a failed attempt.');
   for (const id of ['itcvCameraShake','itcvColorGrade','itcvBackground','itcvVignette','itcvLoop','itcvRigSpeed','itcvRigAmplitude','itcvRigParallax','itcvRigShadow','itcvRigStagger','itcvCameraZoom','itcvFocusX','itcvFocusY','itcvFilmGrain','itcvLensSoftness']) {
    assert.equal(await page.locator('#'+id).count(),1,'New finishing control '+id+' must exist');
   }
-  await page.evaluate(async()=>{
+  const uploadBytes=await page.evaluate(async()=>{
    const canvas=document.createElement('canvas');canvas.width=320;canvas.height=180;
    const ctx=canvas.getContext('2d');ctx.fillStyle='#172a3c';ctx.fillRect(0,0,320,180);
    ctx.fillStyle='#d84e32';ctx.fillRect(55,42,95,82);
    ctx.fillStyle='#f4ce55';ctx.beginPath();ctx.arc(230,96,28,0,Math.PI*2);ctx.fill();
    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
-   const file=new File([blob],'universal-rig-test.png',{type:'image/png'});
-   const transfer=new DataTransfer();transfer.items.add(file);
-   const input=document.getElementById('itcvFiles');input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));
+   return Array.from(new Uint8Array(await blob.arrayBuffer()));
   });
+  const imageFile={name:'universal-rig-test.png',mimeType:'image/png',buffer:Buffer.from(uploadBytes)};
+  await page.locator('#itcvFiles').setInputFiles(imageFile);
+  assert.equal(await page.locator('#itcvFiles').inputValue(),'','Supported image input should also reset after its File object is captured.');
   await page.waitForFunction(()=>{const c=document.getElementById('itcvRigSource');return !!c&&c.__trozalImageStatus&&c.__trozalImageStatus!=='loading';},{timeout:12000}).catch(async error=>{const diagnostic=await page.locator('#itcvRigSource').evaluate(c=>({status:c.__trozalImageStatus||null,error:c.__trozalImageError||null,map:!!c.__trozalMap,files:document.getElementById('itcvFiles')?.files?.length||0,statusText:document.getElementById('itcvStatus')?.textContent||''}));throw new Error(error.message+' | imageDiagnostic='+JSON.stringify(diagnostic)+' | pageErrors='+JSON.stringify(errors));});
   const imageDiagnostic=await page.locator('#itcvRigSource').evaluate(c=>({status:c.__trozalImageStatus,error:c.__trozalImageError,map:!!c.__trozalMap}));
   assert.ok(imageDiagnostic.map,'Universal Rig source image must decode and create a coordinate map: '+JSON.stringify(imageDiagnostic));
+  await page.locator('#itcvFiles').setInputFiles(imageFile);
+  await page.waitForFunction(()=>document.getElementById('itcvRigSource')?.__trozalImageStatus==='ready');
+  assert.match(await page.locator('#itcvStatus').innerText(),/1 gambar siap/,'Selecting the exact same image again must trigger a fresh upload and redraw the Rig source preview.');
   await page.evaluate(()=>{
    window.__TROZAL_UNIVERSAL_RIG_TEST_PROVIDER__={
     width:0,height:0,
