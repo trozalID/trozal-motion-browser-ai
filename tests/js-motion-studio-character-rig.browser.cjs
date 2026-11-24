@@ -38,6 +38,16 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   assert.match(diagnosticsText,/91\.2%/,'Diagnostics should report foreground coverage.');
   assert.match(diagnosticsText,/Torso/);
   assert.match(diagnosticsText,/Kepala/);
+  await page.waitForSelector('#trozalJsRigMaskCanvas');
+  assert.equal(await page.locator('#trozalJsRigMaskParts input[type="checkbox"]').count(),2,
+    'Mask review must expose one manual inclusion control per body part.');
+  const maskCanvas=await page.locator('#trozalJsRigMaskCanvas').evaluate(canvas=>({width:canvas.width,height:canvas.height}));
+  assert.deepEqual(maskCanvas,{width:64,height:64},'Mask review overlay must preserve the source image dimensions.');
+  const firstPartToggle=page.locator('#trozalJsRigMaskParts input[type="checkbox"]').first();
+  await firstPartToggle.uncheck();
+  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"head"')&&!window.TROZAL_JS_MOTION.getCode().includes('"torso"'),null,{timeout:10000});
+  await firstPartToggle.check();
+  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"torso"')&&window.TROZAL_JS_MOTION.getCode().includes('"head"'),null,{timeout:10000});
   const result=await page.evaluate(async()=>{
    const api=window.TROZAL_JS_MOTION;
    const object=api.getObjects()[0];
