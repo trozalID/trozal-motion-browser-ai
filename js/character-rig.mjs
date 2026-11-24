@@ -56,6 +56,86 @@ function polygonEdgeDistance(x, y, poly) {
   return nearest;
 }
 
+/* Reconstruct the torso surface hidden by foreground limbs. The nearest
+ * visible torso patch is extended only inside the torso polygon and only where
+ * the segmentation mask confirms foreground. This gives the static torso an
+ * underlay instead of leaving a transparent hole when an arm/leg moves away.
+ */
+export function buildTorsoUnderlay(source, labels, maskWidth, maskHeight, width, height, torsoSpec, maskAt) {
+  if (!source || !source.data || !torsoSpec || !Array.isArray(torsoSpec.polygon)) return null;
+  const total = maskWidth * maskHeight;
+  if (labels.length < total || !maskWidth || !maskHeight) return null;
+  const owner = new Int32Array(total); owner.fill(-1);
+  const queue = new Int32Array(total);
+  let head = 0, tail = 0;
+  const inside = new Uint8Array(total);
+  for (let y = 0; y < maskHeight; y++) {
+    const py = (y + 0.5) * height / maskHeight;
+    for (let x = 0; x < maskWidth; x++) {
+      const i = y * maskWidth + x;
+      const px = (x + 0.5) * width / maskWidth;
+      if (!polygonContains(px, py, torsoSpec.polygon)) continue;
+      inside[i] = 1;
+      if (labels[i] === 0) {
+        owner[i] = i;
+        queue[tail++] = i;
+      }
+    }
+  }
+  if (!tail) return null;
+  while (head < tail) {
+    const i = queue[head++], x = i % maskWidth, y = (i / maskWidth) | 0;
+    const visit = next => {
+      if (inside[next] && owner[next] === -1) {
+        owner[next] = owner[i];
+        queue[tail++] = next;
+      }
+    };
+    if (x > 0) visit(i - 1);
+    if (x + 1 < maskWidth) visit(i + 1);
+    if (y > 0) visit(i - maskWidth);
+    if (y + 1 < maskHeight) visit(i + maskWidth);
+  }
+  const data = new Uint8ClampedArray(source.data);
+  const torsoLabels = new Int16Array(labels);
+  const bounds = { minX: width, minY: height, maxX: -1, maxY: -1 };
+  for (let my = 0; my < maskHeight; my++) {
+    const y0 = Math.floor(my * height / maskHeight);
+    const y1 = Math.max(y0, Math.floor((my + 1) * height / maskHeight) - 1);
+    for (let mx = 0; mx < maskWidth; mx++) {
+      const i = my * maskWidth + mx, seed = owner[i];
+      if (seed < 0 || labels[i] < 0 || labels[i] === 0 ||
+          Number(maskAt(mx, my)) < CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha) continue;
+      torsoLabels[i] = 0;
+      const sx0 = Math.floor((seed % maskWidth) * width / maskWidth);
+      const sy0 = Math.floor(Math.floor(seed / maskWidth) * height / maskHeight);
+      const x0 = Math.floor(mx * width / maskWidth);
+      const x1 = Math.min(width - 1, Math.floor((mx + 1) * width / maskWidth) - 1);
+      const sy1 = Math.min(height - 1, Math.floor((my + 1) * height / maskHeight) - 1);
+      for (let y = y0; y <= sy1; y++) {
+        const sy = Math.min(height - 1, sy0 + (y - y0));
+        for (let x = x0; x <= x1; x++) {
+          const sx = Math.min(width - 1, sx0 + (x - x0));
+          const from = (sy * width + sx) * 4, to = (y * width + x) * 4;
+          data[to] = source.data[from];
+          data[to + 1] = source.data[from + 1];
+          data[to + 2] = source.data[from + 2];
+          data[to + 3] = source.data[from + 3];
+        }
+      }
+      bounds.minX = Math.min(bounds.minX, x0);
+      bounds.minY = Math.min(bounds.minY, y0);
+      bounds.maxX = Math.max(bounds.maxX, x1);
+      bounds.maxY = Math.max(bounds.maxY, sy1);
+    }
+  }
+  return {
+    source: { data },
+    labels: torsoLabels,
+    bounds: { ...bounds, minX: Math.min(bounds.minX, width), minY: Math.min(bounds.minY, height) }
+  };
+}
+
 /* Keep a narrow duplicate of foreground pixels around each part's silhouette.
  * A pixel may belong to one segmentation label, but must be available to both
  * adjacent layers so a moving limb cannot expose a transparent hole in a still
@@ -372,10 +452,19 @@ export async function createCharacterRig(dataUrl, options = {}) {
     const maskAt = (x, y) => Number(rawMask[y * maskWidth + x]) || 0;
     maskAt.width = maskWidth; maskAt.height = maskHeight;
     const { specs, labels, bounds } = assignPosePartLabels(rawMask, maskWidth, maskHeight, landmarks, width, height);
+    const torsoUnderlay = buildTorsoUnderlay(source, labels, maskWidth, maskHeight, width, height, specs[0], maskAt);
     const background = reconstructBackground(source, rawMask, maskWidth, maskHeight, width, height, maskAt);
     const parts = [];
     for (let i = 0; i < specs.length; i++) {
-      const asset = createPartAsset(source, width, height, labels, maskAt, i, bounds, specs[i]);
+      const useUnderlay = i === 0 && torsoUnderlay;
+      const asset = createPartAsset(
+        useUnderlay ? torsoUnderlay.source : source,
+        width, height,
+        useUnderlay ? torsoUnderlay.labels : labels,
+        maskAt, i,
+        useUnderlay ? torsoUnderlay.bounds : bounds,
+        specs[i]
+      );
       if (asset) parts.push(asset);
     }
     if (!parts.some(p => p.id === "torso") || !parts.some(p => p.id === "head") || parts.length < 5) {
