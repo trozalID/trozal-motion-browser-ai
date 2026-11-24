@@ -12,15 +12,18 @@ const path=require('node:path');
   const matteWidth=7,matteHeight=7,matte=new Float32Array(matteWidth*matteHeight);
   for(let y=1;y<=5;y++)for(let x=1;x<=5;x++)matte[y*matteWidth+x]=0.92;
   matte[3*matteWidth+3]=0.01;
+  const originalMatte=new Float32Array(matte);
   const refinedMatte=rig.refineSegmentationMask(matte,matteWidth,matteHeight);
   assert.ok(refinedMatte[3*matteWidth+3]>=rig.CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment,
     'A single-pixel pinhole fully enclosed by confident subject pixels should be repaired.');
-  assert.equal(matte[3*matteWidth+3],0.01,'Refinement must not mutate the original model mask.');
+  assert.notStrictEqual(refinedMatte,matte,'Refinement must return a separate mask buffer.');
+  assert.deepEqual(matte,originalMatte,'Refinement must not mutate the original model mask.');
   const gapMask=new Float32Array(matte);
   gapMask[3*matteWidth+3]=0.01;
   gapMask[3*matteWidth+2]=0.01;
+  const originalGapMask=new Float32Array(gapMask);
   const refinedGap=rig.refineSegmentationMask(gapMask,matteWidth,matteHeight);
-  assert.equal(refinedGap[3*matteWidth+3],0.01,
+  assert.equal(refinedGap[3*matteWidth+3],originalGapMask[3*matteWidth+3],
     'An open two-pixel gap must remain transparent so arm and torso are not fused.');
   const invalidMask=rig.refineSegmentationMask(null,matteWidth,matteHeight);
   assert.equal(invalidMask,null,'Missing input must be handled safely.');
