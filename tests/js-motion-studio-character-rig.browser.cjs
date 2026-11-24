@@ -18,6 +18,7 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   await page.locator('#trozalJsMotionBtn').click();
   await page.waitForSelector('#trozalJsRigFile');
   await page.locator('#trozalJsRigFile').setInputFiles({name:'character.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64')});
+  await page.waitForFunction(()=>document.querySelector('#trozalJsRigStatus')?.textContent.includes('Foto siap'),null,{timeout:10000});
   await page.locator('#trozalJsRigBuild').click();
   await page.waitForFunction(()=>document.querySelector('#trozalJsRigStatus')?.textContent.includes('BERHASIL'),{timeout:20000});
   const result=await page.evaluate(async()=>{
