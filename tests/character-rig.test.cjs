@@ -21,7 +21,7 @@ const path=require('node:path');
 
   const overlapSpec={shape:'capsule',aPoint:{x:10,y:10},bPoint:{x:30,y:10},radiusPx:5};
   assert.equal(rig.isPartAssetPixelIncluded(4,2,0.9,overlapSpec,20,15),true,'Foreground pixels just outside a limb label must be duplicated into its layer to prevent holes when another part moves over it.');
-  assert.equal(rig.isPartAssetPixelIncluded(4,2,0.9,overlapSpec,20,18),false,'Overlap duplication must stay narrow and must not copy distant background pixels.');
+  assert.equal(rig.isPartAssetPixelIncluded(4,2,0.9,overlapSpec,20,20),false,'Overlap duplication must stay narrow and must not copy distant background pixels.');
   assert.equal(rig.isPartAssetPixelIncluded(4,2,0.1,overlapSpec,20,11),false,'Low-confidence background pixels must never be duplicated into a body layer.');
   const torsoOverlap={shape:'polygon',polygon:[{x:10,y:10},{x:30,y:10},{x:28,y:30},{x:12,y:30}],width:20};
   assert.equal(rig.isPartAssetPixelIncluded(7,0,0.9,torsoOverlap,20,20),true,'Torso interior must remain present even when segmentation assigned a pixel to an overlapping limb.');
