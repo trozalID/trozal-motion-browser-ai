@@ -10,6 +10,41 @@ export function shouldInpaintMaskPixel(confidence) {
   return Number(confidence) >= CHARACTER_RIG_MASK_THRESHOLDS.backgroundInpaint;
 }
 
+/* Stage 1 — conservative segmentation matte refinement.
+ * Repair only a one-pixel pinhole that is fully enclosed by confident
+ * foreground. Never grow the outer silhouette or bridge a real open gap
+ * between the arm and torso.
+ */
+export function refineSegmentationMask(mask, width, height, threshold = CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) {
+  if (!mask || !width || !height || mask.length < width * height) return mask;
+  const refined = new Float32Array(mask);
+  if (width < 3 || height < 3) return refined;
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const index = y * width + x;
+      if (Number(mask[index]) >= threshold) continue;
+      let enclosed = true;
+      let weakestNeighbor = Infinity;
+      for (let dy = -1; dy <= 1 && enclosed; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const neighbor = Number(mask[(y + dy) * width + x + dx]);
+          if (neighbor < threshold) {
+            enclosed = false;
+            break;
+          }
+          weakestNeighbor = Math.min(weakestNeighbor, neighbor);
+        }
+      }
+      // Use the weakest surrounding foreground confidence rather than the
+      // threshold literal: Float32Array may round 0.12 down to 0.11999999,
+      // which leaves a repaired pixel below the very threshold it must pass.
+      if (enclosed) refined[index] = weakestNeighbor;
+    }
+  }
+  return refined;
+}
+
 const PARTS = [
   { id: "torso", name: "Torso", parent: null, a: 11, b: 24, radius: 0, amp: 0.012, speed: 1.1, phase: 0.0 },
   { id: "upperLegL", name: "Paha kiri", parent: "torso", a: 23, b: 25, radius: "leg", amp: 0.055, speed: 1.55, phase: 0, renderOrder: 10 },
@@ -762,8 +797,10 @@ export async function createCharacterRig(dataUrl, options = {}) {
     if (!landmarks || landmarks.length < 29) throw new Error("Tidak menemukan satu karakter manusia yang cukup terlihat. Mode gerak gambar utuh tetap dapat digunakan.");
     if (!segmentation || typeof segmentation.getAsFloat32Array !== "function") throw new Error("Model tidak mengembalikan mask siluet. Coba gambar lain atau gunakan gerak gambar utuh.");
     const maskWidth = segmentation.width, maskHeight = segmentation.height;
-    const rawMask = segmentation.getAsFloat32Array();
-    if (!maskWidth || !maskHeight || rawMask.length < maskWidth * maskHeight) throw new Error("Mask siluet dari model tidak valid.");
+    const modelMask = segmentation.getAsFloat32Array();
+    if (!maskWidth || !maskHeight || modelMask.length < maskWidth * maskHeight) throw new Error("Mask siluet dari model tidak valid.");
+    onProgress("Memperbaiki pinhole mask karakter tanpa menutup celah anatomi…");
+    const rawMask = refineSegmentationMask(modelMask, maskWidth, maskHeight);
     // First assign only pixels that are anatomically close to a detected body
     // part, then use that accepted foreground as the sole matte for both
     // inpainting and part extraction. Using the raw model mask for background

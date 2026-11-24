@@ -10,13 +10,20 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1000}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.route('**/js/character-rig.mjs',route=>route.fulfill({contentType:'text/javascript',body:
+  await page.route('**/js/character-rig.mjs*',route=>route.fulfill({contentType:'text/javascript',body:
    'export async function createCharacterRig(){return {width:64,height:64,background:'+JSON.stringify(png(8,12,20))+',parts:[{id:"torso",parent:null,x:20,y:20,w:20,h:24,pivotX:30,pivotY:20,amp:.03,speed:1,phase:0,src:'+JSON.stringify(png(40,180,140))+'},{id:"head",parent:"torso",x:25,y:4,w:12,h:12,pivotX:31,pivotY:16,amp:.45,speed:1.4,phase:0,src:'+JSON.stringify(png(240,180,70))+'}]};}'
   }));
   await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#trozalJsMotionBtn');
   await page.locator('#trozalJsMotionBtn').click();
   await page.waitForSelector('#trozalJsRigFile');
+  const rigPanelTitle=await page.locator('#trozalJsCharacterRigPanel strong').innerText();
+  assert.match(rigPanelTitle,/AI CHARACTER MOTION RECONSTRUCTION · MODE 3/,
+    'The reconstruction feature must be clearly identified inside Mode 3 JavaScript Motion Studio.');
+  const rigPanelDescription=await page.locator('#trozalJsCharacterRigPanel p').innerText();
+  assert.match(rigPanelDescription,/Tahap 1 aktif/,
+    'Mode 3 must describe the currently implemented mask-refinement stage.');
+
   await page.locator('#trozalJsRigFile').setInputFiles({name:'character.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64')});
   await page.waitForFunction(()=>document.querySelector('#trozalJsRigStatus')?.textContent.includes('Foto siap'),null,{timeout:10000});
   await page.locator('#trozalJsRigBuild').click();
