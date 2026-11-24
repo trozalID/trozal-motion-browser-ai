@@ -668,6 +668,7 @@ function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bou
   return {
     id: spec.id, name: spec.name, parent: spec.parent,
     renderOrder: Number.isFinite(Number(spec.renderOrder)) ? Number(spec.renderOrder) : 0,
+    motion: spec.motion || "swing",
     src: canvas.toDataURL("image/png"),
     x: x0, y: y0, w, h,
     pivotX: spec.pivot.x, pivotY: spec.pivot.y,
