@@ -203,7 +203,7 @@ export function keepMeaningfulPartComponents(labels, width, height, partCount, a
   const largestSizes = new Int32Array(partCount);
   for (let start = 0; start < labels.length; start++) {
     const label = labels[start];
-    if (label < 0 || visited[start]) continue;
+    if (label < 0 || label >= partCount || visited[start]) continue;
     let head = 0, tail = 0;
     let minX = width, minY = height, maxX = -1, maxY = -1;
     queue[tail++] = start; visited[start] = 1;
@@ -225,6 +225,7 @@ export function keepMeaningfulPartComponents(labels, width, height, partCount, a
         }
       }
     }
+    if (label >= partCount) continue;
     largestSizes[label] = Math.max(largestSizes[label], tail);
     components[label].push({ pixels: queue.slice(0, tail), minX, minY, maxX, maxY });
   }
@@ -290,6 +291,7 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
     const imageX = Math.max(0, Math.min(width - 1, Math.floor((x + 0.5) * scaleX)));
     const imageY = Math.max(0, Math.min(height - 1, Math.floor((y + 0.5) * scaleY)));
     const box = bounds[label];
+    if (!box) { labels[i] = -1; continue; }
     if (imageX < box.minX) box.minX = imageX;
     if (imageY < box.minY) box.minY = imageY;
     if (imageX > box.maxX) box.maxX = imageX;
@@ -380,8 +382,12 @@ function rawCanvasFromImageData(data) {
   return canvas;
 }
 function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bounds, spec) {
-  const box = bounds[partIndex];
-  if (box.maxX < box.minX || box.maxY < box.minY) return null;
+  // Character torso underlay carries one bounds object, while the regular
+  // segmentation path carries an array indexed by part. Normalize both shapes.
+  const box = Array.isArray(bounds) ? bounds[partIndex] : (partIndex === 0 ? bounds : null);
+  if (!box || !Number.isFinite(box.maxX) || !Number.isFinite(box.maxY) ||
+      !Number.isFinite(box.minX) || !Number.isFinite(box.minY) ||
+      box.maxX < box.minX || box.maxY < box.minY) return null;
   const overlapPad = spec.shape === "capsule" ? Number(spec.radiusPx) * 0.38 :
     spec.shape === "ellipse" ? Math.max(Number(spec.rx), Number(spec.ry)) * 0.12 :
     spec.shape === "polygon" ? Number(spec.width) * 0.075 : 0;
