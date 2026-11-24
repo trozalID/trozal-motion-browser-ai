@@ -90,10 +90,17 @@ function keepLargestPartComponents(labels, width, height, partCount) {
     queue[tail++] = start; visited[start] = 1;
     while (head < tail) {
       const index = queue[head++], x = index % width, y = (index / width) | 0;
-      const neighbors = [x > 0 ? index - 1 : -1, x + 1 < width ? index + 1 : -1, y > 0 ? index - width : -1, y + 1 < height ? index + width : -1];
-      for (const next of neighbors) {
-        if (next >= 0 && !visited[next] && labels[next] === label) {
-          visited[next] = 1; queue[tail++] = next;
+      for (let dy = -1; dy <= 1; dy++) {
+        const ny = y + dy;
+        if (ny < 0 || ny >= height) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = x + dx;
+          if (nx < 0 || nx >= width) continue;
+          const next = ny * width + nx;
+          if (!visited[next] && labels[next] === label) {
+            visited[next] = 1; queue[tail++] = next;
+          }
         }
       }
     }
@@ -119,7 +126,7 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
       const idx = y * maskWidth + x;
       if (Number(mask[idx]) < 0.26) continue;
       const px = (x + 0.5) * scaleX;
-      let best = Infinity, bestIndex = -1;
+      let best = 1.28, bestIndex = 0;
       for (let k = 1; k < specs.length; k++) {
         const s = specs[k];
         let score = Infinity;
@@ -132,7 +139,6 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
         if (score < best) { best = score; bestIndex = k; }
       }
       if (polygonContains(px, py, specs[0].polygon) && best > 0.72) bestIndex = 0;
-      if (bestIndex < 0 || (bestIndex !== 0 && best > 1.7)) continue;
       labels[idx] = bestIndex;
     }
   }
