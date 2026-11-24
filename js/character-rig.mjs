@@ -528,10 +528,12 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
       } else if (polygonContains(px, py, specs[0].polygon) && best > 0.72) {
         bestIndex = 0;
       }
-      // In rare frames a pose landmark may be missing; keep the torso as a
-      // safe fallback only inside its actual polygon. Never route loose
-      // foreground outside the torso to an asset that cannot contain it.
+      // Do not force distant segmentation spill into the nearest limb. The
+      // old fallback assigned every foreground pixel to some body part, even
+      // when the mask had leaked onto grass, shadows or nearby scenery. Those
+      // pixels then became green fringes attached to legs in the exported rig.
       if (bestIndex < 0 && polygonContains(px, py, specs[0].polygon)) bestIndex = 0;
+      if (bestIndex < 0 || (bestIndex !== garmentIndex && best > CHARACTER_RIG_MASK_THRESHOLDS.maxPartAssignmentScore)) continue;
       labels[idx] = bestIndex;
     }
   }
@@ -720,9 +722,19 @@ export async function createCharacterRig(dataUrl, options = {}) {
     const maskWidth = segmentation.width, maskHeight = segmentation.height;
     const rawMask = segmentation.getAsFloat32Array();
     if (!maskWidth || !maskHeight || rawMask.length < maskWidth * maskHeight) throw new Error("Mask siluet dari model tidak valid.");
-    const maskAt = (x, y) => Number(rawMask[y * maskWidth + x]) || 0;
+    // First assign only pixels that are anatomically close to a detected body
+    // part, then use that accepted foreground as the sole matte for both
+    // inpainting and part extraction. Using the raw model mask for background
+    // removal while rejecting pixels from the rig creates green/blurred ghosts.
+    let activeMask = rawMask;
+    const maskAt = (x, y) => Number(activeMask[y * maskWidth + x]) || 0;
     maskAt.width = maskWidth; maskAt.height = maskHeight;
     const { specs, labels, bounds } = assignPosePartLabels(rawMask, maskWidth, maskHeight, landmarks, width, height);
+    const acceptedMask = new Float32Array(maskWidth * maskHeight);
+    for (let i = 0; i < acceptedMask.length; i++) {
+      if (labels[i] >= 0) acceptedMask[i] = rawMask[i];
+    }
+    activeMask = acceptedMask;
     const torsoUnderlay = buildTorsoUnderlay(source, labels, maskWidth, maskHeight, width, height, specs[0], maskAt);
     const background = reconstructBackground(source, rawMask, maskWidth, maskHeight, width, height, maskAt);
     const parts = [];
