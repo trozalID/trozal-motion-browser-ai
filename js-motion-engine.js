@@ -104,7 +104,7 @@ function buildCharacterRigCode(rig,preset='walk',intensity=1){
   'const motionGain='+gain+',motionTempo='+motion.tempo.toFixed(3)+',bodyBob='+motion.bob.toFixed(4)+';',
   'function drawPart(p){ctx.save();if(p.id==="torso"){ctx.translate(Math.sin(t*motionTempo)*rig.width*.009,Math.sin(t*motionTempo*2)*rig.height*bodyBob);ctx.rotate(Math.sin(t*motionTempo)*.025*motionGain);}let swing=Math.sin(t*p.speed*motionTempo+p.phase);if(p.id==="upperArmR"&&'+JSON.stringify(preset)+'==="wave")swing=Math.sin(t*5.2);if(p.id==="forearmR"&&'+JSON.stringify(preset)+'==="wave")swing=Math.sin(t*5.2+1.1);let partGain=motionGain;if(p.id==="head")partGain*=.48;if(p.id==="torso")partGain*=.25;const angle=p.amp*partGain*swing;ctx.translate(p.pivotX,p.pivotY);ctx.rotate(angle);ctx.translate(-p.pivotX,-p.pivotY);const image=assets[p.id];if(image)ctx.drawImage(image,p.x,p.y,p.w,p.h);for(const child of children[p.id]||[])drawPart(child);ctx.restore();}',
   'for(const p of children.root||[])drawPart(p);ctx.restore();'
- ].join('\\n');
+ ].join('\n');
 }
 const rigFile=$('trozalJsRigFile'),rigBuild=$('trozalJsRigBuild'),rigStatus=$('trozalJsRigStatus');let rigSourceDataUrl='';
 const rigMotionPreset=$('trozalJsRigMotionPreset'),rigIntensity=$('trozalJsRigIntensity'),rigIntensityValue=$('trozalJsRigIntensityValue');
