@@ -588,8 +588,50 @@ async function makePoseLandmarker(onProgress) {
   }
 }
 
+/* Detect a genuinely flat background from image-edge samples. When the
+ * border is nearly one color (studio/chroma/plain backdrop), copying nearest
+ * pixels from the subject boundary creates rectangular suit/skin smears.
+ * A robust border median gives an exact clean fill without blurring the matte.
+ */
+export function estimateUniformBackgroundColor(source, width, height) {
+  if (!source || !source.data || width < 2 || height < 2 || source.data.length < width * height * 4) return null;
+  const samples = [];
+  const stride = Math.max(1, Math.floor(Math.min(width, height) / 240));
+  const add = (x, y) => {
+    const i = (y * width + x) * 4;
+    samples.push([source.data[i], source.data[i + 1], source.data[i + 2]]);
+  };
+  for (let x = 0; x < width; x += stride) { add(x, 0); add(x, height - 1); }
+  for (let y = stride; y < height - 1; y += stride) { add(0, y); add(width - 1, y); }
+  const median = channel => {
+    const values = samples.map(sample => sample[channel]).sort((a, b) => a - b);
+    const mid = values.length >> 1;
+    return values.length % 2 ? values[mid] : Math.round((values[mid - 1] + values[mid]) * 0.5);
+  };
+  const color = [median(0), median(1), median(2)];
+  const deviations = samples.map(sample => Math.max(
+    Math.abs(sample[0] - color[0]), Math.abs(sample[1] - color[1]), Math.abs(sample[2] - color[2])
+  )).sort((a, b) => a - b);
+  const p95 = deviations[Math.min(deviations.length - 1, Math.floor((deviations.length - 1) * 0.95))];
+  return p95 <= 18 ? color : null;
+}
+
 function reconstructBackground(source, maskData, maskWidth, maskHeight, width, height, maskAt) {
   const src = source.data, total = width * height;
+  const flatColor = estimateUniformBackgroundColor(source, width, height);
+  if (flatColor) {
+    const flat = new ImageData(new Uint8ClampedArray(src), width, height);
+    for (let y = 0; y < height; y++) {
+      const my = Math.min(maskHeight - 1, Math.floor(y * maskHeight / height));
+      for (let x = 0; x < width; x++) {
+        const mx = Math.min(maskWidth - 1, Math.floor(x * maskWidth / width));
+        if (!shouldInpaintMaskPixel(maskAt(mx, my))) continue;
+        const i = (y * width + x) * 4;
+        flat.data[i] = flatColor[0]; flat.data[i + 1] = flatColor[1]; flat.data[i + 2] = flatColor[2]; flat.data[i + 3] = 255;
+      }
+    }
+    return rawCanvasFromImageData(flat);
+  }
   const owner = new Int32Array(total); owner.fill(-1);
   const queue = new Int32Array(total);
   let head = 0, tail = 0;

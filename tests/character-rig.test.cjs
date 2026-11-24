@@ -9,6 +9,18 @@ const path=require('node:path');
   assert.equal(rig.shouldInpaintMaskPixel(0.20),true,'Faint subject-edge pixels used by part alpha must also be removed from the background');
   assert.equal(rig.shouldInpaintMaskPixel(0.18),true,'Pixels at the part alpha threshold must be inpainted');
   assert.equal(rig.shouldInpaintMaskPixel(0.11),false,'Pixels below the part alpha threshold must remain background');
+  const flatW=32,flatH=24,flatData=new Uint8ClampedArray(flatW*flatH*4);
+  for(let y=0;y<flatH;y++)for(let x=0;x<flatW;x++){
+    const i=(y*flatW+x)*4;flatData[i]=198;flatData[i+1]=0;flatData[i+2]=0;flatData[i+3]=255;
+  }
+  // Simulate dark subject pixels in the interior while keeping a solid red frame border.
+  for(let y=6;y<19;y++)for(let x=12;x<20;x++){const i=(y*flatW+x)*4;flatData[i]=25;flatData[i+1]=25;flatData[i+2]=25;}
+  assert.deepEqual(rig.estimateUniformBackgroundColor({data:flatData},flatW,flatH),[198,0,0],
+    'A plain red backdrop must be recovered from clean border samples, not smeared subject-edge pixels.');
+  const texturedData=new Uint8ClampedArray(flatData);
+  for(let x=0;x<flatW;x++){const i=x*4;texturedData[i]=x*7%255;texturedData[i+1]=x*11%255;}
+  assert.equal(rig.estimateUniformBackgroundColor({data:texturedData},flatW,flatH),null,
+    'Non-uniform image borders must keep the conservative local inpainting fallback.');
   const landmarks=Array.from({length:33},()=>({x:.5,y:.5,z:0,visibility:1,presence:1}));
   const set=(id,x,y)=>{landmarks[id]={x,y,z:0,visibility:1,presence:1};};
   set(0,.50,.19);set(7,.45,.20);set(8,.55,.20);
