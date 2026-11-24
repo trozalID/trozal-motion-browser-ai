@@ -5,7 +5,7 @@
 const MEDIAPIPE_BUNDLE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.mjs";
 const MEDIAPIPE_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
 const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
-export const CHARACTER_RIG_MASK_THRESHOLDS = Object.freeze({ assetAlpha: 0.18, labelAssignment: 0.26, backgroundInpaint: 0.18 });
+export const CHARACTER_RIG_MASK_THRESHOLDS = Object.freeze({ assetAlpha: 0.18, labelAssignment: 0.26, backgroundInpaint: 0.18, maxPartAssignmentScore: 1.65 });
 export function shouldInpaintMaskPixel(confidence) {
   return Number(confidence) >= CHARACTER_RIG_MASK_THRESHOLDS.backgroundInpaint;
 }
@@ -144,7 +144,10 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
       const idx = y * maskWidth + x;
       if (Number(mask[idx]) < CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) continue;
       const px = (x + 0.5) * scaleX;
-      let best = 1.28, bestIndex = 0;
+      // Wider garments and loose silhouettes extend beyond the narrow joint capsules.
+      // Keep a wider nearest-part envelope so foreground pixels are not erased
+      // from the background without being copied into any movable body layer.
+      let best = CHARACTER_RIG_MASK_THRESHOLDS.maxPartAssignmentScore, bestIndex = 0;
       for (let k = 1; k < specs.length; k++) {
         const s = specs[k];
         let score = Infinity;
