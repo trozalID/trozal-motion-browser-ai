@@ -10,7 +10,7 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1000}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.route('**/js/character-rig.mjs',route=>route.fulfill({contentType:'text/javascript',body:
+  await page.route('**/js/character-rig.mjs*',route=>route.fulfill({contentType:'text/javascript',body:
    'export async function createCharacterRig(){return {width:64,height:64,background:'+JSON.stringify(png(8,12,20))+',parts:[{id:"torso",parent:null,x:20,y:20,w:20,h:24,pivotX:30,pivotY:20,amp:.03,speed:1,phase:0,src:'+JSON.stringify(png(40,180,140))+'},{id:"head",parent:"torso",x:25,y:4,w:12,h:12,pivotX:31,pivotY:16,amp:.45,speed:1.4,phase:0,src:'+JSON.stringify(png(240,180,70))+'}]};}'
   }));
   await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'domcontentloaded'});
