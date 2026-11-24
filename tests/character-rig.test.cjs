@@ -59,6 +59,10 @@ const path=require('node:path');
   assert.ok(limbUnderlay&&limbUnderlay.filledPixels>0,'An articulated limb should receive a local underlay for foreground pixels occluding its silhouette.');
   assert.equal(limbUnderlay.sourceMap[6*occlusionW+8],6*occlusionW+6,'Occluded limb pixels must be reconstructed from the nearest visible pixel belonging to the same limb.');
   assert.ok(limbUnderlay.bounds.maxX>=8,'Occlusion reconstruction must expand the limb asset bounds to include repaired pixels.');
+  const weakVisibilityLandmarks=landmarks.map(p=>({...p}));
+  weakVisibilityLandmarks[25]={x:.44,y:.76,z:0,visibility:.04,presence:.14};
+  const weakVisibilitySpecs=rig.buildPosePartSpecs(weakVisibilityLandmarks,100,100);
+  assert.ok(weakVisibilitySpecs.some(part=>part.id==='upperLegL'),'A partially occluded joint with usable presence confidence must not cause an entire limb to disappear.');
   const specs=rig.buildPosePartSpecs(landmarks,100,100);
 
   const skirtMask=new Float32Array(100*100);
@@ -73,6 +77,14 @@ const path=require('node:path');
   const skirtIndex=skirtAssigned.specs.findIndex(part=>part.id==='lowerGarment');
   assert.ok(skirtIndex>=0,'Connected skirt geometry must be present in the segmentation specs.');
   assert.equal(skirtAssigned.labels[66*100+50],skirtIndex,'The center of the skirt must stay assigned to the unified garment layer.');
+  assert.equal(rig.isPartAssetPixelIncluded(7,skirtIndex,.98,skirt,50,66),false,'The static skirt layer must not duplicate foreground pixels already owned by an articulated hand or arm.');
+  const handsOnSkirt=landmarks.map(p=>({...p}));
+  const setHandsOnSkirt=(id,x,y)=>{handsOnSkirt[id]={x,y,z:0,visibility:1,presence:1};};
+  setHandsOnSkirt(13,.45,.52);setHandsOnSkirt(15,.48,.62);setHandsOnSkirt(19,.49,.64);
+  setHandsOnSkirt(14,.55,.52);setHandsOnSkirt(16,.52,.62);setHandsOnSkirt(20,.51,.64);
+  const handsOnSkirtAssigned=rig.assignPosePartLabels(skirtMask,100,100,handsOnSkirt,100,100);
+  const handPixelLabel=handsOnSkirtAssigned.labels[63*100+50];
+  assert.ok(handPixelLabel>=0&&handsOnSkirtAssigned.specs[handPixelLabel].id!=='lowerGarment','Hands placed in front of a skirt must remain assigned to articulated hand/arm layers.');
   const pantsMask=new Float32Array(100*100);
   for(let y=58;y<=74;y++){for(let x=38;x<=46;x++)pantsMask[y*100+x]=.98;for(let x=54;x<=62;x++)pantsMask[y*100+x]=.98;}
   assert.equal(rig.detectLowerGarmentRegion(pantsMask,100,100,landmarks,100,100),null,'Separated trouser legs with an open center gap must not be incorrectly fused into a skirt layer.');
