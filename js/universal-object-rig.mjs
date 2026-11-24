@@ -159,13 +159,15 @@ function dilateOwnerMask(owner, best, alpha, width, height, bounds) {
     owner.set(expandedOwner);
     best.set(expandedBest);
   }
-  bounds.forEach(box => {
-    box.minX = width; box.minY = height; box.maxX = -1; box.maxY = -1;
+  bounds.forEach((box, index) => {
+    if (!box || typeof box !== "object") bounds[index] = { minX: width, minY: height, maxX: -1, maxY: -1 };
+    else { box.minX = width; box.minY = height; box.maxX = -1; box.maxY = -1; }
   });
   for (let index = 0; index < owner.length; index++) {
     const partIndex = owner[index];
     if (partIndex < 0) continue;
     const x = index % width, y = (index / width) | 0, box = bounds[partIndex];
+    if (!box) { owner[index] = -1; alpha[index] = 0; continue; }
     if (x < box.minX) box.minX = x;
     if (x > box.maxX) box.maxX = x;
     if (y < box.minY) box.minY = y;
