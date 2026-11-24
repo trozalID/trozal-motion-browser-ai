@@ -161,7 +161,8 @@ jobs:
       - name: Test floating render monitor interactions in Chromium
         run: node tests/floating-render-monitor.browser.cjs
       - name: Validate scene intelligence beat planning and continuity guidance
-        run: node tests/scene-intelligence.test.cjs
+        run: |
+          node tests/scene-intelligence.test.cjs
           node tests/character-rig.test.cjs
       - name: Verify Character Rig module and Mode 5 controls in Chromium
         run: node tests/character-rig-loading.browser.cjs
