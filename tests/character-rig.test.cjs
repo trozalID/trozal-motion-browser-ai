@@ -180,7 +180,7 @@ const path=require('node:path');
   assert.match(directorSource,/const parent=part\.parent&&partsById\.has\(part\.parent\)\?part\.parent:''/,'CSS HTML output must rebuild each rig part under its declared parent.');
   assert.match(directorSource,/function renderRigPart\(part\)/,'CSS HTML output must recursively render nested articulated part nodes.');
   assert.match(directorSource,/children\[part\.id\]\|\|\[\]\)\.forEach\(child=>\{html\+=renderRigPart\(child\);\}\)/,'CSS HTML children must inherit parent transforms rather than animate as unrelated siblings.');
-  assert.match(directorSource,/rig-node-\+'?\+index/,'CSS HTML output must apply per-part motion to hierarchy wrapper nodes.');
+  assert.match(directorSource,/rig-node-'\+index/,'CSS HTML output must apply per-part motion to hierarchy wrapper nodes.');
   assert.match(moduleSource,/renderOrder: Number\.isFinite\(Number\(spec\.renderOrder\)\) \? Number\(spec\.renderOrder\) : 0/,'Exported rig layers must retain their render order metadata.');
   assert.match(moduleSource,/motion: spec\.motion \|\| "swing"/,'Exported rig assets must retain their explicit motion mode instead of silently falling back to a generic default.');
   assert.match(directorSource,/characterRigEmbedded:!!DATA\.characterRig/);
