@@ -47,6 +47,39 @@ function polygonContains(x, y, poly) {
   return inside;
 }
 
+function polygonEdgeDistance(x, y, poly) {
+  let nearest = Infinity;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length];
+    nearest = Math.min(nearest, segmentDistance(x, y, a, b));
+  }
+  return nearest;
+}
+
+/* Keep a narrow duplicate of foreground pixels around each part's silhouette.
+ * A pixel may belong to one segmentation label, but must be available to both
+ * adjacent layers so a moving limb cannot expose a transparent hole in a still
+ * torso/limb underneath it.
+ */
+export function isPartAssetPixelIncluded(label, partIndex, confidence, spec, x, y) {
+  if (label === partIndex) return true;
+  if (Number(confidence) < CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha) return false;
+  if (spec.shape === "capsule") {
+    const overlap = Math.max(2, Number(spec.radiusPx) * 0.38);
+    return segmentDistance(x, y, spec.aPoint, spec.bPoint) <= Number(spec.radiusPx) + overlap;
+  }
+  if (spec.shape === "ellipse") {
+    const nx = (x - spec.center.x) / (spec.rx * 1.12);
+    const ny = (y - spec.center.y) / (spec.ry * 1.12);
+    return nx * nx + ny * ny <= 1;
+  }
+  if (spec.shape === "polygon") {
+    return polygonContains(x, y, spec.polygon) ||
+      polygonEdgeDistance(x, y, spec.polygon) <= Math.max(2, Number(spec.width) * 0.075);
+  }
+  return false;
+}
+
 export function buildPosePartSpecs(landmarks, width, height) {
   const lm = landmarks || [];
   const get = idx => point(lm, width, height, idx);
@@ -269,7 +302,11 @@ function rawCanvasFromImageData(data) {
 function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bounds, spec) {
   const box = bounds[partIndex];
   if (box.maxX < box.minX || box.maxY < box.minY) return null;
-  const pad = Math.max(3, Math.ceil(Number(spec.jointOverlap) || 0)), x0 = Math.max(0, box.minX - pad), y0 = Math.max(0, box.minY - pad);
+  const overlapPad = spec.shape === "capsule" ? Number(spec.radiusPx) * 0.38 :
+    spec.shape === "ellipse" ? Math.max(Number(spec.rx), Number(spec.ry)) * 0.12 :
+    spec.shape === "polygon" ? Number(spec.width) * 0.075 : 0;
+  const pad = Math.max(3, Math.ceil(Number(spec.jointOverlap) || 0), Math.ceil(overlapPad));
+  const x0 = Math.max(0, box.minX - pad), y0 = Math.max(0, box.minY - pad);
   const x1 = Math.min(width - 1, box.maxX + pad), y1 = Math.min(height - 1, box.maxY + pad);
   const w = x1 - x0 + 1, h = y1 - y0 + 1;
   const canvas = document.createElement("canvas");
@@ -281,13 +318,14 @@ function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bou
     for (let x = x0; x <= x1; x++) {
       const mx = Math.min(maskAt.width - 1, Math.floor(x * maskAt.width / width));
       const label = labelMap[my * maskAt.width + mx];
-      let include = label === partIndex;
+      const confidence = maskAt(mx, my);
+      let include = isPartAssetPixelIncluded(label, partIndex, confidence, spec, x + 0.5, y + 0.5);
       if (!include && spec.jointPoints && spec.jointPoints.length) {
         const overlap = Number(spec.jointOverlap) || 3;
-        include = spec.jointPoints.some(point => Math.hypot(x + 0.5 - point.x, y + 0.5 - point.y) <= overlap);
+        include = confidence >= CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha &&
+          spec.jointPoints.some(point => Math.hypot(x + 0.5 - point.x, y + 0.5 - point.y) <= overlap);
       }
       if (!include) continue;
-      const confidence = maskAt(mx, my);
       const alpha = Math.round(255 * Math.max(0, Math.min(1, (confidence - CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha) / (1 - CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha))));
       if (alpha < 8) continue;
       const si = (y * width + x) * 4, di = ((y - y0) * w + (x - x0)) * 4;
