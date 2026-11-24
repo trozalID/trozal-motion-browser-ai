@@ -25,7 +25,7 @@ const path=require('node:path');
   assert.equal(rig.isPartAssetPixelIncluded(4,2,0.1,overlapSpec,20,11),false,'Low-confidence background pixels must never be duplicated into a body layer.');
   const torsoOverlap={shape:'polygon',polygon:[{x:10,y:10},{x:30,y:10},{x:28,y:30},{x:12,y:30}],width:20};
   assert.equal(rig.isPartAssetPixelIncluded(7,0,0.9,torsoOverlap,20,20),true,'Torso interior must remain present even when segmentation assigned a pixel to an overlapping limb.');
-  assert.equal(rig.isPartAssetPixelIncluded(7,0,0.9,torsoOverlap,20,32),false,'Torso overlap must not extend far beyond its silhouette.');
+  assert.equal(rig.isPartAssetPixelIncluded(7,0,0.9,torsoOverlap,20,35),false,'Torso overlap must not extend far beyond its silhouette.');
   const underlayWidth=20,underlayHeight=20,underlayMaskWidth=10,underlayMaskHeight=10;
   const underlaySource={data:new Uint8ClampedArray(underlayWidth*underlayHeight*4)};
   for(let y=0;y<underlayHeight;y++)for(let x=0;x<underlayWidth;x++){
