@@ -87,8 +87,14 @@ const path=require('node:path');
   const scaled=rig.assignPosePartLabels(lowResolutionMask,25,25,landmarks,100,100);
   assert.ok(scaled.bounds.some(box=>box.minX<box.maxX&&box.minY<box.maxY&&box.minX>=0&&box.maxX<100&&box.maxY<100&&box.maxX>25&&box.maxY>25),'Part crop bounds must be expressed in original-image pixels, not low-resolution mask coordinates.');
 
+  const invalidLabels=new Int16Array(4);invalidLabels.fill(7);
+  rig.keepMeaningfulPartComponents(invalidLabels,2,2,1);
+  assert.deepEqual(Array.from(invalidLabels),[-1,-1,-1,-1],'Out-of-range segmentation labels must be discarded instead of indexing a missing part bounds object.');
+
   const moduleSource=fs.readFileSync(path.join(__dirname,'../js/character-rig.mjs'),'utf8');
   const directorSource=fs.readFileSync(path.join(__dirname,'../trozal-image-to-code-video.js'),'utf8');
+  assert.match(moduleSource,/Array\.isArray\(bounds\) \? bounds\[partIndex\] : \(partIndex === 0 \? bounds : null\)/,'Torso underlay bounds object must be normalized alongside per-part bounds arrays.');
+  assert.match(moduleSource,/!box \|\| !Number\.isFinite\(box\.maxX\)/,'Missing or invalid part bounds must be rejected safely.');
   assert.match(moduleSource,/outputSegmentationMasks:\s*true/);
   assert.match(moduleSource,/getAsFloat32Array\(\)/);
   assert.match(moduleSource,/canvas\.toDataURL\("image\/png"\)/);
