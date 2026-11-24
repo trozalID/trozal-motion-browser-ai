@@ -237,7 +237,7 @@ function rawCanvasFromImageData(data) {
 function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bounds, spec) {
   const box = bounds[partIndex];
   if (box.maxX < box.minX || box.maxY < box.minY) return null;
-  const pad = 3, x0 = Math.max(0, box.minX - pad), y0 = Math.max(0, box.minY - pad);
+  const pad = Math.max(3, Math.ceil(Number(spec.jointOverlap) || 0)), x0 = Math.max(0, box.minX - pad), y0 = Math.max(0, box.minY - pad);
   const x1 = Math.min(width - 1, box.maxX + pad), y1 = Math.min(height - 1, box.maxY + pad);
   const w = x1 - x0 + 1, h = y1 - y0 + 1;
   const canvas = document.createElement("canvas");
