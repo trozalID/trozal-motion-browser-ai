@@ -56,6 +56,73 @@ function polygonEdgeDistance(x, y, poly) {
   return nearest;
 }
 
+/* Detect a connected lower-body garment (for example a pencil skirt) from
+ * the person mask. A skirt remains one rigid visual surface; assigning its
+ * visible pixels to left/right leg capsules makes the garment split at the
+ * center seam as the legs animate. Pants are excluded when the center gap is
+ * open through most of the hip-to-knee interval.
+ */
+export function detectLowerGarmentRegion(mask, maskWidth, maskHeight, landmarks, width, height) {
+  if (!mask || !maskWidth || !maskHeight) return null;
+  const get = idx => point(landmarks || [], width, height, idx);
+  const leftHip = get(23), rightHip = get(24), leftKnee = get(25), rightKnee = get(26);
+  if (!leftHip || !rightHip || !leftKnee || !rightKnee) return null;
+  const hipY = (leftHip.y + rightHip.y) * 0.5;
+  const kneeY = (leftKnee.y + rightKnee.y) * 0.5;
+  const hipCenter = (leftHip.x + rightHip.x) * 0.5;
+  const hipWidth = Math.max(8, dist(leftHip, rightHip));
+  const span = kneeY - hipY;
+  if (span < hipWidth * 0.22) return null;
+  const rows = [];
+  const startY = hipY + span * 0.12, endY = kneeY - span * 0.10;
+  const samples = 11;
+  for (let n = 0; n < samples; n++) {
+    const py = startY + (endY - startY) * n / (samples - 1);
+    const my = Math.max(0, Math.min(maskHeight - 1, Math.floor(py * maskHeight / height)));
+    const centerX = Math.max(0, Math.min(maskWidth - 1, Math.floor(hipCenter * maskWidth / width)));
+    const centerRadius = Math.max(1, Math.round(hipWidth * 0.075 * maskWidth / width));
+    let centerCovered = false;
+    for (let dx = -centerRadius; dx <= centerRadius; dx++) {
+      const mx = centerX + dx;
+      if (mx >= 0 && mx < maskWidth && Number(mask[my * maskWidth + mx]) >= CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) {
+        centerCovered = true; break;
+      }
+    }
+    if (!centerCovered) { rows.push({ covered: false, y: py }); continue; }
+    let left = centerX, right = centerX;
+    const maxRadius = Math.ceil(hipWidth * 1.15 * maskWidth / width);
+    for (let mx = centerX - 1; mx >= Math.max(0, centerX - maxRadius); mx--) {
+      if (Number(mask[my * maskWidth + mx]) < CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) break;
+      left = mx;
+    }
+    for (let mx = centerX + 1; mx < Math.min(maskWidth, centerX + maxRadius + 1); mx++) {
+      if (Number(mask[my * maskWidth + mx]) < CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) break;
+      right = mx;
+    }
+    rows.push({ covered: true, y: py, left: left * width / maskWidth, right: (right + 1) * width / maskWidth });
+  }
+  const connected = rows.filter(row => row.covered);
+  if (connected.length / samples < 0.72) return null;
+  const widths = connected.map(row => row.right - row.left).sort((a,b)=>a-b);
+  const medianWidth = widths[Math.floor(widths.length / 2)];
+  if (medianWidth < hipWidth * 0.58) return null;
+  const first = connected[0], last = connected[connected.length - 1];
+  const topY = Math.max(hipY, first.y - span * 0.04);
+  const hemY = Math.min(kneeY - 2, last.y + span * 0.08);
+  if (hemY <= topY + 2) return null;
+  const polygon = [
+    { x: first.left, y: topY }, { x: first.right, y: topY },
+    { x: last.right, y: hemY }, { x: last.left, y: hemY }
+  ];
+  return {
+    id: "lowerGarment", name: "Rok / pakaian bawah", parent: "torso",
+    pivot: { x: hipCenter, y: hipY }, shape: "polygon", polygon,
+    width: medianWidth, jointPoints: [leftHip, rightHip],
+    jointOverlap: Math.max(5, hipWidth * 0.12),
+    amp: 0, speed: 0, phase: 0, motion: "static"
+  };
+}
+
 /* Reconstruct the torso surface hidden by foreground limbs. The nearest
  * visible torso patch is extended only inside the torso polygon and only where
  * the segmentation mask confirms foreground. This gives the static torso an
@@ -160,7 +227,7 @@ export function isPartAssetPixelIncluded(label, partIndex, confidence, spec, x, 
   return false;
 }
 
-export function buildPosePartSpecs(landmarks, width, height) {
+export function buildPosePartSpecs(landmarks, width, height, mask = null, maskWidth = 0, maskHeight = 0) {
   const lm = landmarks || [];
   const get = idx => point(lm, width, height, idx);
   const leftShoulder = get(11), rightShoulder = get(12), leftHip = get(23), rightHip = get(24);
@@ -176,6 +243,8 @@ export function buildPosePartSpecs(landmarks, width, height) {
   const specs = [];
   const torsoPivot = { x: (leftHip.x + rightHip.x) / 2, y: (leftHip.y + rightHip.y) / 2 };
   specs.push({ ...PARTS[0], pivot: torsoPivot, shape: "polygon", polygon: torsoPoly, width: shoulderWidth, jointPoints: [leftShoulder, rightShoulder, leftHip, rightHip], jointOverlap: Math.max(5, shoulderWidth * 0.11) });
+  const lowerGarment = detectLowerGarmentRegion(mask, maskWidth, maskHeight, lm, width, height);
+  if (lowerGarment) specs.push(lowerGarment);
   for (const p of PARTS.slice(1)) {
     if (p.id === "head") {
       specs.push({ ...p, pivot: { x: headCenter.x, y: Math.max(headCenter.y + headRY * 0.72, (leftShoulder.y + rightShoulder.y) / 2 - 2) }, shape: "ellipse", center: headCenter, rx: headRX, ry: headRY, jointPoints: [{ x: headCenter.x, y: headCenter.y + headRY * 0.72 }], jointOverlap: Math.max(5, headRX * 0.22) });
@@ -248,7 +317,7 @@ export function keepMeaningfulPartComponents(labels, width, height, partCount, a
   }
 }
 export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, width, height) {
-  const specs = buildPosePartSpecs(landmarks, width, height);
+  const specs = buildPosePartSpecs(landmarks, width, height, mask, maskWidth, maskHeight);
   const labels = new Int16Array(maskWidth * maskHeight);
   labels.fill(-1);
   const scaleX = width / maskWidth, scaleY = height / maskHeight;
@@ -273,6 +342,8 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
         }
         if (score < best) { best = score; bestIndex = k; }
       }
+      const garmentIndex = specs.findIndex(spec => spec.id === "lowerGarment");
+      if (garmentIndex >= 0 && polygonContains(px, py, specs[garmentIndex].polygon)) bestIndex = garmentIndex;
       if (polygonContains(px, py, specs[0].polygon) && best > 0.72) bestIndex = 0;
       labels[idx] = bestIndex;
     }
