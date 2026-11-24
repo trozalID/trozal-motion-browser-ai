@@ -132,6 +132,7 @@ rigBuild.addEventListener('click',async()=>{
   rigStatus.textContent='Memuat model pose dan segmentasi lokal…';
   const mod=await import('./js/character-rig.mjs');
   const rig=await mod.createCharacterRig(rigSourceDataUrl,{maxDimension:1280,onProgress:message=>{rigStatus.textContent=message;}});
+  if(rig.height>rig.width)setPreviewAspect('9:16');
   const assets={background:rig.background};for(const part of rig.parts)assets[part.id]=part.src;
   const obj=currentObject();obj.rigAssets=assets;obj.rigData=rig;obj.name='Character Rig · '+rig.parts.length+' bagian';obj.code=buildCharacterRigCode(rig,rigMotionPreset.value,Number(rigIntensity.value)/100);
   code.value=obj.code;currentScene().code=obj.code;codeRevision++;syncSceneUI();
@@ -167,6 +168,9 @@ if(updateTimeline&&!playing){
 return r.bitmap||r.dataUrl;
 }
 async function show(t){try{await renderFrame(t);status.textContent='Frame siap · '+Number(t).toFixed(3)+'s · '+$('trozalJsMotionFps').value+' FPS'}catch(e){status.textContent='Render frame gagal: '+e.message}}
+previewRatioSelect.addEventListener('change',()=>{setPreviewAspect(previewRatioSelect.value);show(Number(time.value)||0)});
+promptRatioSelect.addEventListener('change',()=>{setPreviewAspect(promptRatioSelect.value,false);show(Number(time.value)||0)});
+setPreviewAspect(promptRatioSelect.value||'16:9');
 function stop(){
 playing=false;
 const timelinePlayButton=$('trozalJsTimelinePlay');if(timelinePlayButton)timelinePlayButton.textContent='▶ Putar';
