@@ -10,6 +10,31 @@ const assert = require('node:assert/strict');
     await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
     await page.locator('#trozalJsMotionBtn').click();
     await page.waitForFunction(() => !!window.TROZAL_JS_MOTION?.renderFrame);
+
+    // Both Play entry points must initialize the iframe before requesting playback frames.
+    // This deliberately skips the explicit Run button to reproduce the first-click startup race.
+    await page.locator('#trozalJsMotionPlay').click();
+    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === true, null, { timeout: 8000 });
+    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().time > 0.2, null, { timeout: 5000 });
+    await page.locator('#trozalJsMotionPause').click();
+    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === false);
+    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().pendingMessages === 0);
+
+    await page.locator('#trozalJsTimelinePlay').click();
+    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === true, null, { timeout: 8000 });
+    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().time > 0.2, null, { timeout: 5000 });
+    await page.locator('#trozalJsMotionPause').click();
+    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === false);
+    await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().pendingMessages === 0);
+
+    // The startup regression checks intentionally advance the playhead; reset it so
+    // the pre-existing one-frame stepping assertions begin at frame zero.
+    await page.locator('#trozalJsTimelineStop').click();
+    await page.waitForFunction(() =>
+      Number(document.querySelector('#trozalJsMotionTime')?.value) === 0 &&
+      window.TROZAL_JS_MOTION?.getPlaybackState().playing === false
+    );
+
     await page.locator('#trozalJsMotionRun').click();
     await page.waitForFunction(() =>
       (document.querySelector('#trozalJsMotionStatus')?.textContent || '').includes('Frame siap')
