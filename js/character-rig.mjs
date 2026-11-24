@@ -5,7 +5,7 @@
 const MEDIAPIPE_BUNDLE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.mjs";
 const MEDIAPIPE_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
 const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
-export const CHARACTER_RIG_MASK_THRESHOLDS = Object.freeze({ assetAlpha: 0.18, labelAssignment: 0.18, backgroundInpaint: 0.18, maxPartAssignmentScore: 2.2 });
+export const CHARACTER_RIG_MASK_THRESHOLDS = Object.freeze({ assetAlpha: 0.12, labelAssignment: 0.12, backgroundInpaint: 0.12, maxPartAssignmentScore: 2.2 });
 export function shouldInpaintMaskPixel(confidence) {
   return Number(confidence) >= CHARACTER_RIG_MASK_THRESHOLDS.backgroundInpaint;
 }
@@ -282,7 +282,7 @@ export function buildPartOcclusionUnderlayMap(labels, maskWidth, maskHeight, wid
       const px = (x + 0.5) * scaleX;
       let inPart = false;
       if (spec.shape === "capsule") {
-        const pad = Math.max(2, Number(spec.radiusPx) * 0.42);
+        const pad = Math.max(3, Number(spec.radiusPx) * 0.58);
         inPart = segmentDistance(px, py, spec.aPoint, spec.bPoint) <= Number(spec.radiusPx) + pad;
       } else {
         const nx = (px - spec.center.x) / (spec.rx * 1.18);
@@ -347,7 +347,7 @@ export function isPartAssetPixelIncluded(label, partIndex, confidence, spec, x, 
   if (label === partIndex) return true;
   if (Number(confidence) < CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha) return false;
   if (spec.shape === "capsule") {
-    const overlap = Math.max(3, Number(spec.radiusPx) * 0.72);
+    const overlap = Math.max(4, Number(spec.radiusPx) * 0.95);
     return segmentDistance(x, y, spec.aPoint, spec.bPoint) <= Number(spec.radiusPx) + overlap;
   }
   if (spec.shape === "ellipse") {
@@ -373,7 +373,19 @@ export function buildPosePartSpecs(landmarks, width, height, mask = null, maskWi
   if (!leftShoulder || !rightShoulder || !leftHip || !rightHip) throw new Error("Tubuh tidak terdeteksi utuh. Pastikan bahu dan pinggul terlihat di foto.");
   const shoulderWidth = Math.max(18, dist(leftShoulder, rightShoulder));
   const hipWidth = Math.max(10, dist(leftHip, rightHip));
-  const torsoPoly = [leftShoulder, rightShoulder, rightHip, leftHip];
+  // Pose landmarks describe joints, not the actual clothing silhouette. A
+  // narrow four-point joint polygon cuts away loose shirts at the waist and
+  // underarm. Add modest side control points so the torso underlay follows a
+  // real garment envelope without swallowing the articulated sleeves.
+  const torsoMidY = (leftShoulder.y + rightShoulder.y + leftHip.y + rightHip.y) * 0.25;
+  const torsoPoly = [
+    { x: leftShoulder.x - shoulderWidth * 0.055, y: leftShoulder.y },
+    { x: (leftShoulder.x + leftHip.x) * 0.5 - shoulderWidth * 0.085, y: torsoMidY },
+    { x: leftHip.x - hipWidth * 0.10, y: leftHip.y },
+    { x: rightHip.x + hipWidth * 0.10, y: rightHip.y },
+    { x: (rightShoulder.x + rightHip.x) * 0.5 + shoulderWidth * 0.085, y: torsoMidY },
+    { x: rightShoulder.x + shoulderWidth * 0.055, y: rightShoulder.y }
+  ];
   const nose = get(0), leftEar = get(7), rightEar = get(8);
   const earMid = leftEar && rightEar ? { x: (leftEar.x + rightEar.x) / 2, y: (leftEar.y + rightEar.y) / 2 } : nose;
   const headCenter = earMid || nose || { x: (leftShoulder.x + rightShoulder.x) / 2, y: leftShoulder.y - shoulderWidth * 0.48 };
@@ -418,7 +430,7 @@ export function buildPosePartSpecs(landmarks, width, height, mask = null, maskWi
     else if (p.radius === "shin") radius = shoulderWidth * 0.082;
     else if (p.radius === "hand") radius = shoulderWidth * 0.125;
     else if (p.radius === "foot") radius = shoulderWidth * 0.105;
-    specs.push({ ...p, aPoint: a, bPoint: b, radiusPx: radius, pivot: a, shape: "capsule", jointPoints: [a, b], jointOverlap: Math.max(5, radius * 0.52) });
+    specs.push({ ...p, aPoint: a, bPoint: b, radiusPx: radius, pivot: a, shape: "capsule", jointPoints: [a, b], jointOverlap: Math.max(7, radius * 1.05) });
   }
   // Append the garment after leg parts so it is composited above the moving thighs.
   if (lowerGarment) specs.push(lowerGarment);
@@ -634,7 +646,7 @@ function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bou
   if (!box || !Number.isFinite(box.maxX) || !Number.isFinite(box.maxY) ||
       !Number.isFinite(box.minX) || !Number.isFinite(box.minY) ||
       box.maxX < box.minX || box.maxY < box.minY) return null;
-  const overlapPad = spec.shape === "capsule" ? Number(spec.radiusPx) * 0.72 :
+  const overlapPad = spec.shape === "capsule" ? Number(spec.radiusPx) * 0.95 :
     spec.shape === "ellipse" ? Math.max(Number(spec.rx), Number(spec.ry)) * 0.12 :
     spec.shape === "polygon" ? Number(spec.width) * 0.11 : 0;
   const pad = Math.max(3, Math.ceil(Number(spec.jointOverlap) || 0), Math.ceil(overlapPad));
