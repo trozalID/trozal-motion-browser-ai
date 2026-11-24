@@ -27,6 +27,14 @@ const assert = require('node:assert/strict');
     await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().playing === false);
     await page.waitForFunction(() => window.TROZAL_JS_MOTION?.getPlaybackState().pendingMessages === 0);
 
+    // The startup regression checks intentionally advance the playhead; reset it so
+    // the pre-existing one-frame stepping assertions begin at frame zero.
+    await page.locator('#trozalJsTimelineStop').click();
+    await page.waitForFunction(() =>
+      Number(document.querySelector('#trozalJsMotionTime')?.value) === 0 &&
+      window.TROZAL_JS_MOTION?.getPlaybackState().playing === false
+    );
+
     await page.locator('#trozalJsMotionRun').click();
     await page.waitForFunction(() =>
       (document.querySelector('#trozalJsMotionStatus')?.textContent || '').includes('Frame siap')
