@@ -24,16 +24,22 @@ export function refineSegmentationMask(mask, width, height, threshold = CHARACTE
       const index = y * width + x;
       if (Number(mask[index]) >= threshold) continue;
       let enclosed = true;
+      let weakestNeighbor = Infinity;
       for (let dy = -1; dy <= 1 && enclosed; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           if (dx === 0 && dy === 0) continue;
-          if (Number(mask[(y + dy) * width + x + dx]) < threshold) {
+          const neighbor = Number(mask[(y + dy) * width + x + dx]);
+          if (neighbor < threshold) {
             enclosed = false;
             break;
           }
+          weakestNeighbor = Math.min(weakestNeighbor, neighbor);
         }
       }
-      if (enclosed) refined[index] = threshold;
+      // Use the weakest surrounding foreground confidence rather than the
+      // threshold literal: Float32Array may round 0.12 down to 0.11999999,
+      // which leaves a repaired pixel below the very threshold it must pass.
+      if (enclosed) refined[index] = weakestNeighbor;
     }
   }
   return refined;
