@@ -244,7 +244,6 @@ export function buildPosePartSpecs(landmarks, width, height, mask = null, maskWi
   const torsoPivot = { x: (leftHip.x + rightHip.x) / 2, y: (leftHip.y + rightHip.y) / 2 };
   specs.push({ ...PARTS[0], pivot: torsoPivot, shape: "polygon", polygon: torsoPoly, width: shoulderWidth, jointPoints: [leftShoulder, rightShoulder, leftHip, rightHip], jointOverlap: Math.max(5, shoulderWidth * 0.11) });
   const lowerGarment = detectLowerGarmentRegion(mask, maskWidth, maskHeight, lm, width, height);
-  if (lowerGarment) specs.push(lowerGarment);
   for (const p of PARTS.slice(1)) {
     if (p.id === "head") {
       specs.push({ ...p, pivot: { x: headCenter.x, y: Math.max(headCenter.y + headRY * 0.72, (leftShoulder.y + rightShoulder.y) / 2 - 2) }, shape: "ellipse", center: headCenter, rx: headRX, ry: headRY, jointPoints: [{ x: headCenter.x, y: headCenter.y + headRY * 0.72 }], jointOverlap: Math.max(5, headRX * 0.22) });
@@ -261,6 +260,8 @@ export function buildPosePartSpecs(landmarks, width, height, mask = null, maskWi
     else if (p.radius === "foot") radius = shoulderWidth * 0.105;
     specs.push({ ...p, aPoint: a, bPoint: b, radiusPx: radius, pivot: a, shape: "capsule", jointPoints: [a, b], jointOverlap: Math.max(5, radius * 0.52) });
   }
+  // Append the garment after leg parts so it is composited above the moving thighs.
+  if (lowerGarment) specs.push(lowerGarment);
   if (!specs.some(x => x.id === "head")) throw new Error("Landmark kepala tidak cukup jelas untuk membuat rig.");
   return specs;
 }
