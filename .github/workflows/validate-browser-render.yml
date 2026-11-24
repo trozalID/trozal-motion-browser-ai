@@ -182,6 +182,11 @@ jobs:
         run: node tests/js-motion-studio-timeline.test.cjs
       - name: Test AI Prompt-to-JavaScript concepts and editor integration
         run: node tests/js-motion-studio-ai-prompt.browser.cjs
+      - name: Test JavaScript Studio Character Rig import and articulated rendering
+        run: |
+          node --check js-motion-engine.js
+          node --check tests/js-motion-studio-character-rig.browser.cjs
+          node tests/js-motion-studio-character-rig.browser.cjs
       - name: Test JavaScript Studio full Professional theme catalogue and prompt builder
         run: node tests/js-motion-studio-theme-prompt.browser.cjs
       - name: Export JavaScript Studio animation to PNG Sequence ZIP
