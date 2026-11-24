@@ -356,8 +356,12 @@ export function isPartAssetPixelIncluded(label, partIndex, confidence, spec, x, 
     return nx * nx + ny * ny <= 1;
   }
   if (spec.shape === "polygon") {
-    return polygonContains(x, y, spec.polygon) ||
-      polygonEdgeDistance(x, y, spec.polygon) <= Math.max(3, Number(spec.width) * 0.11);
+    const edgeOverlap = polygonEdgeDistance(x, y, spec.polygon) <= Math.max(3, Number(spec.width) * 0.11);
+    // The lower garment owns its interior only through explicit label assignment.
+    // This prevents hands/arms classified in front of the skirt being copied
+    // into the static garment and then visually buried.
+    if (spec.id === "lowerGarment") return edgeOverlap;
+    return polygonContains(x, y, spec.polygon) || edgeOverlap;
   }
   return false;
 }
@@ -467,6 +471,7 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
       // owner. Track the true nearest articulated part even outside the normal
       // capsule radius; otherwise wide sleeves, coat edges and limbs disappear.
       let best = Infinity, bestIndex = -1;
+      let bestArm = Infinity, bestArmIndex = -1;
       for (let k = 1; k < specs.length; k++) {
         const s = specs[k];
         let score = Infinity;
@@ -477,10 +482,16 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
           score = segmentDistance(px, py, s.aPoint, s.bPoint) / s.radiusPx;
         }
         if (score < best) { best = score; bestIndex = k; }
+        if (/^(upperArm|forearm|hand)/.test(s.id) && score < bestArm) {
+          bestArm = score;
+          bestArmIndex = k;
+        }
       }
       const garmentIndex = specs.findIndex(spec => spec.id === "lowerGarment");
       if (garmentIndex >= 0 && polygonContains(px, py, specs[garmentIndex].polygon)) {
-        bestIndex = garmentIndex;
+        // Hands and sleeves in front of a skirt must remain articulated parts,
+        // not be swallowed by the lower-garment polygon.
+        bestIndex = bestArmIndex >= 0 && bestArm <= 1.35 ? bestArmIndex : garmentIndex;
       } else if (polygonContains(px, py, specs[0].polygon) && best > 0.72) {
         bestIndex = 0;
       }
