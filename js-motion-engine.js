@@ -89,6 +89,45 @@ function studioBuildFullPrompt(){
 const props=['x','y','scale','rotation','opacity'];let scenes=[{id:1,name:'Scene 1',code:sample,objects:[{id:1,name:'Objek 1',code:sample,visible:true,x:0,y:0,scale:1,rotation:0,opacity:1}],keyframes:[]}],activeScene=1,nextSceneId=2,nextKeyId=1,nextObjectId=2,activeObjectId=1;
 const currentScene=()=>scenes.find(s=>s.id===activeScene)||scenes[0];const ensureObjects=s=>{if(!Array.isArray(s.objects)||!s.objects.length)s.objects=[{id:nextObjectId++,name:'Objek 1',code:s.code||sample,visible:true,x:0,y:0,scale:1,rotation:0,opacity:1}];return s.objects};const currentObject=()=>ensureObjects(currentScene()).find(o=>o.id===activeObjectId)||ensureObjects(currentScene())[0];
 code.addEventListener('input',()=>{currentScene().code=code.value;currentObject().code=code.value;const calibration=$('trozalJsTimelineCalibrationState');if(calibration)calibration.textContent='Belum dikalibrasi';});
+
+function buildCharacterRigCode(rig){
+ const parts=rig.parts.map(p=>({id:p.id,parent:p.parent||null,x:p.x,y:p.y,w:p.w,h:p.h,pivotX:p.pivotX,pivotY:p.pivotY,amp:Number(p.amp)||0,speed:Number(p.speed)||1,phase:Number(p.phase)||0}));
+ const meta=JSON.stringify({width:rig.width,height:rig.height,parts});
+ return [
+  'const rig='+meta+';',
+  'ctx.save();ctx.scale(w/rig.width,h/rig.height);',
+  'if(assets.background)ctx.drawImage(assets.background,0,0,rig.width,rig.height);',
+  'const children={};for(const p of rig.parts){const key=p.parent||"root";(children[key]||(children[key]=[])).push(p);}',
+  'function drawPart(p){ctx.save();const angle=p.amp*Math.sin(t*p.speed+p.phase);ctx.translate(p.pivotX,p.pivotY);ctx.rotate(angle);ctx.translate(-p.pivotX,-p.pivotY);const image=assets[p.id];if(image)ctx.drawImage(image,p.x,p.y,p.w,p.h);for(const child of children[p.id]||[])drawPart(child);ctx.restore();}',
+  'for(const p of children.root||[])drawPart(p);ctx.restore();'
+ ].join('\\n');
+}
+const rigFile=$('trozalJsRigFile'),rigBuild=$('trozalJsRigBuild'),rigStatus=$('trozalJsRigStatus');let rigSourceDataUrl='';
+rigFile.addEventListener('change',()=>{
+ const file=rigFile.files&&rigFile.files[0];if(!file){rigSourceDataUrl='';return;}
+ if(!/^image\\/(png|jpeg|webp)$/.test(file.type)){rigStatus.textContent='Format tidak didukung. Pilih PNG, JPEG, atau WebP.';rigFile.value='';return;}
+ if(file.size>15*1024*1024){rigStatus.textContent='Ukuran gambar maksimal 15 MB.';rigFile.value='';return;}
+ const reader=new FileReader();reader.onload=()=>{rigSourceDataUrl=String(reader.result||'');rigStatus.textContent='Foto siap · '+file.name+' · '+Math.round(file.size/1024)+' KB. Klik Buat Rig.';};reader.onerror=()=>{rigStatus.textContent='Gagal membaca file gambar.';};reader.readAsDataURL(file);
+});
+rigBuild.addEventListener('click',async()=>{
+ if(!rigSourceDataUrl){rigStatus.textContent='Pilih foto manusia terlebih dahulu.';return;}
+ rigBuild.disabled=true;stop();
+ try{
+  rigStatus.textContent='Memuat model pose dan segmentasi lokal…';
+  const mod=await import('./js/character-rig.mjs');
+  const rig=await mod.createCharacterRig(rigSourceDataUrl,{maxDimension:1280,onProgress:message=>{rigStatus.textContent=message;}});
+  const assets={background:rig.background};for(const part of rig.parts)assets[part.id]=part.src;
+  const obj=currentObject();obj.rigAssets=assets;obj.name='Character Rig · '+rig.parts.length+' bagian';obj.code=buildCharacterRigCode(rig);
+  code.value=obj.code;currentScene().code=obj.code;codeRevision++;syncSceneUI();
+  if(await apply()){await show(+time.value||0);rigStatus.textContent='BERHASIL · '+rig.parts.length+' layer tubuh terpisah. Gerakan sendi aktif di Preview dan siap diekspor.';}
+  else throw new Error('Kode rig gagal diterapkan ke Preview.');
+ }catch(error){rigStatus.textContent='RIG GAGAL · '+(error?.message||String(error));}
+ finally{rigBuild.disabled=false;}
+});
+$('trozalJsRigClear').addEventListener('click',async()=>{
+ delete currentObject().rigAssets;currentObject().code='ctx.fillStyle="#0a101b";ctx.fillRect(0,0,w,h);';code.value=currentObject().code;codeRevision++;await apply();await show(+time.value||0);rigStatus.textContent='Rig dihapus dari objek aktif.';
+});
+
 function syncObjectUI(){const sel=$('trozalJsObjectSelect');sel.innerHTML='';ensureObjects(currentScene()).forEach(o=>{const opt=document.createElement('option');opt.value=String(o.id);opt.textContent=(o.visible?'◉ ':'○ ')+o.name;sel.appendChild(opt)});sel.value=String(currentObject().id);$('trozalJsObjectName').value=currentObject().name;$('trozalJsObjectVisible').checked=currentObject().visible!==false;$('trozalJsObjectInfo').textContent=ensureObjects(currentScene()).length+' objek · editor mengubah kode objek terpilih';const obj=currentObject();[['X',obj.x??0],['Y',obj.y??0],['Scale',obj.scale??1],['Rotation',obj.rotation??0],['Opacity',obj.opacity??1]].forEach(([k,v])=>{const el=$('trozalJsObject'+k);if(el)el.value=String(v)});}function syncSceneUI(){const sel=$('trozalJsSceneSelect');sel.innerHTML='';scenes.forEach(s=>{const o=document.createElement('option');o.value=String(s.id);o.textContent=s.name;sel.appendChild(o)});sel.value=String(activeScene);syncObjectUI();$('trozalJsSceneInfo').textContent=currentScene().name+' · '+currentScene().keyframes.length+' keyframe';$('trozalJsKeyCount').textContent=currentScene().keyframes.length+' keyframe';const marks=$('trozalJsKeyMarkers');marks.innerHTML='';currentScene().keyframes.slice().sort((a,b)=>a.time-b.time).forEach(k=>{const b=document.createElement('button');b.type='button';b.textContent=k.time.toFixed(2)+'s';b.title='Pilih keyframe';b.addEventListener('click',()=>{time.value=String(k.time);$('trozalJsTimelineScrub').value=String(k.time);loadKeyInputs(k);show(k.time)});marks.appendChild(b)});}
 function readKeyInputs(){return {x:+$('trozalJsKeyX').value||0,y:+$('trozalJsKeyY').value||0,scale:Number.isFinite(+$('trozalJsKeyScale').value)?+$('trozalJsKeyScale').value:1,rotation:+$('trozalJsKeyRotation').value||0,opacity:Number.isFinite(+$('trozalJsKeyOpacity').value)?+$('trozalJsKeyOpacity').value:1};}
 function loadKeyInputs(k){props.forEach(p=>{const v=$(p==='rotation'?'trozalJsKeyRotation':'trozalJsKey'+p[0].toUpperCase()+p.slice(1));if(v&&k&&k.values[p]!==undefined)v.value=String(k.values[p])})}
