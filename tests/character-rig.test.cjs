@@ -187,11 +187,11 @@ const path=require('node:path');
   assert.match(directorSource,/function renderRigPart\(part\)/,'CSS HTML output must recursively render nested articulated part nodes.');
   assert.match(directorSource,/children\[part\.id\]\|\|\[\]\)\.forEach\(child=>\{html\+=renderRigPart\(child\);\}\)/,'CSS HTML children must inherit parent transforms rather than animate as unrelated siblings.');
   assert.match(directorSource,/rig-node-'\+index/,'CSS HTML output must apply per-part motion to hierarchy wrapper nodes.');
-  assert.match(directorSource,/const pivotX=clamp\\(part\\.pivotX==null\\?x\\+w\\/2:part\\.pivotX,0,rw\\)/,'Full-canvas hierarchy wrappers must calculate pivots in full-canvas coordinates, not cropped-part coordinates.');
-  assert.match(directorSource,/const px=pivotX\\/rw\\*100,py=pivotY\\/rh\\*100/,'CSS transform origins must use the source canvas dimensions.');
-  assert.match(directorSource,/const rotationDegrees=amp\\*180\\/Math\\.PI/,'CSS output must use the same radian-to-degree conversion as the JavaScript renderer.');
-  assert.match(directorSource,/const period=clamp\\(2\\*Math\\.PI\\/Math\\.max\\(\\.1,speed\\),\\.6,duration\\*3\\)/,'CSS output must use the same angular speed as the JavaScript renderer.');
-  assert.match(directorSource,/const phase=-phaseOffset\\/Math\\.max\\(\\.1,speed\\)/,'CSS animation delay must convert the phase offset from radians to seconds.');
+  assert.ok(directorSource.includes('const pivotX=clamp(part.pivotX==null?x+w/2:part.pivotX,0,rw)'), 'Full-canvas hierarchy wrappers must calculate pivots in full-canvas coordinates, not cropped-part coordinates.');
+  assert.ok(directorSource.includes('const px=pivotX/rw*100,py=pivotY/rh*100'), 'CSS transform origins must use the source canvas dimensions.');
+  assert.ok(directorSource.includes('const rotationDegrees=amp*180/Math.PI'), 'CSS output must use the same radian-to-degree conversion as the JavaScript renderer.');
+  assert.ok(directorSource.includes('const period=clamp(2*Math.PI/Math.max(.1,speed),.6,duration*3)'), 'CSS output must use the same angular speed as the JavaScript renderer.');
+  assert.ok(directorSource.includes('const phase=-phaseOffset/Math.max(.1,speed)'), 'CSS animation delay must convert the phase offset from radians to seconds.');
 
   assert.match(moduleSource,/renderOrder: Number\.isFinite\(Number\(spec\.renderOrder\)\) \? Number\(spec\.renderOrder\) : 0/,'Exported rig layers must retain their render order metadata.');
   assert.match(moduleSource,/motion: spec\.motion \|\| "swing"/,'Exported rig assets must retain their explicit motion mode instead of silently falling back to a generic default.');
