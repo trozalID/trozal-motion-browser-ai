@@ -172,7 +172,16 @@ async function renderRigMaskReview(rig){
   checkbox.addEventListener('change',async()=>{
    if(checkbox.checked)rigReviewExcluded.delete(part.id);else rigReviewExcluded.add(part.id);
    await paint();
-   const obj=currentObject(),effective={...rig,parts:rig.parts.filter(item=>!rigReviewExcluded.has(item.id))};
+   const obj=currentObject(),includedIds=new Set(rig.parts.filter(item=>!rigReviewExcluded.has(item.id)).map(item=>item.id));
+   const byId=new Map(rig.parts.map(item=>[item.id,item]));
+   const effective={...rig,parts:rig.parts.filter(item=>includedIds.has(item.id)).map(item=>{
+    let parent=item.parent||null,visited=new Set([item.id]);
+    while(parent&&!includedIds.has(parent)){
+     if(visited.has(parent)) {parent=null;break;}
+     visited.add(parent);parent=byId.get(parent)?.parent||null;
+    }
+    return {...item,parent};
+   })};
    if(!effective.parts.length){state.textContent='Pilih minimal satu bagian untuk membangun rig.';return;}
    obj.rigData=effective;obj.rigAssets={background:effective.background};
    effective.parts.forEach(item=>obj.rigAssets[item.id]=item.src);
