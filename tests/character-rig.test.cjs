@@ -4,11 +4,11 @@ const fs=require('node:fs');
 const path=require('node:path');
 (async()=>{
   const rig=await import('../js/character-rig.mjs');
-  assert.deepEqual(rig.CHARACTER_RIG_MASK_THRESHOLDS,{assetAlpha:0.18,labelAssignment:0.18,backgroundInpaint:0.18,maxPartAssignmentScore:2.2});
+  assert.deepEqual(rig.CHARACTER_RIG_MASK_THRESHOLDS,{assetAlpha:0.12,labelAssignment:0.12,backgroundInpaint:0.12,maxPartAssignmentScore:2.2});
   assert.equal(rig.CHARACTER_RIG_MASK_THRESHOLDS.maxPartAssignmentScore,2.2,'Part assignment must include a wider garment/silhouette envelope so valid foreground pixels are not left behind.');
   assert.equal(rig.shouldInpaintMaskPixel(0.20),true,'Faint subject-edge pixels used by part alpha must also be removed from the background');
   assert.equal(rig.shouldInpaintMaskPixel(0.18),true,'Pixels at the part alpha threshold must be inpainted');
-  assert.equal(rig.shouldInpaintMaskPixel(0.17),false,'Pixels below the part alpha threshold must remain background');
+  assert.equal(rig.shouldInpaintMaskPixel(0.11),false,'Pixels below the part alpha threshold must remain background');
   const landmarks=Array.from({length:33},()=>({x:.5,y:.5,z:0,visibility:1,presence:1}));
   const set=(id,x,y)=>{landmarks[id]={x,y,z:0,visibility:1,presence:1};};
   set(0,.50,.19);set(7,.45,.20);set(8,.55,.20);
@@ -123,6 +123,11 @@ const path=require('node:path');
   assert.equal(byId.lowerLegR.parent,'upperLegR');
   assert.equal(byId.footR.parent,'lowerLegR');
   for(const id of ['torso','head','upperArmL','forearmL','upperLegL','lowerLegL']){assert.ok(byId[id].jointOverlap>=5,'Joint overlap must cover shared pixels for '+id);}
+  assert.ok(byId.upperLegL.jointOverlap>=byId.upperLegL.radiusPx,'Thigh-to-knee overlap must cover the full joint radius so trousers do not split during rotation.');
+  assert.ok(byId.lowerLegL.jointOverlap>=byId.lowerLegL.radiusPx,'Knee-to-shin overlap must cover the full joint radius so trousers do not split during rotation.');
+  assert.equal(byId.torso.polygon.length,6,'Torso underlay must use a garment envelope with side control points instead of a narrow four-landmark quadrilateral.');
+  assert.ok(byId.torso.polygon[1].x<Math.min(byId.torso.polygon[0].x,byId.torso.polygon[2].x),'Left torso contour must include an underarm/waist envelope.');
+  assert.ok(byId.torso.polygon[4].x>Math.max(byId.torso.polygon[3].x,byId.torso.polygon[5].x),'Right torso contour must include an underarm/waist envelope.');
   assert.ok(byId.upperArmL.jointOverlap>=byId.upperArmL.radiusPx*.5,'Limb joints need enough overlap to avoid visible gaps');
 
   const componentLabels=new Int16Array(300);componentLabels.fill(-1);
