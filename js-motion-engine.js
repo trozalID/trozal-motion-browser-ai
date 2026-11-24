@@ -98,7 +98,7 @@ function buildCharacterRigCode(rig){
   'const assets=anim.__rigAssets||{};ctx.save();ctx.scale(w/rig.width,h/rig.height);',
   'if(assets.background)ctx.drawImage(assets.background,0,0,rig.width,rig.height);',
   'const children={};for(const p of rig.parts){const key=p.parent||"root";(children[key]||(children[key]=[])).push(p);}',
-  'function drawPart(p){ctx.save();const angle=p.amp*Math.sin(t*p.speed+p.phase);ctx.translate(p.pivotX,p.pivotY);ctx.rotate(angle);ctx.translate(-p.pivotX,-p.pivotY);const image=assets[p.id];if(image)ctx.drawImage(image,p.x,p.y,p.w,p.h);for(const child of children[p.id]||[])drawPart(child);ctx.restore();}',
+  'function drawPart(p){ctx.save();if(p.id==="torso")ctx.translate(0,Math.sin(t*2.4)*rig.height*.012);const angle=p.amp*1.85*Math.sin(t*p.speed+p.phase);ctx.translate(p.pivotX,p.pivotY);ctx.rotate(angle);ctx.translate(-p.pivotX,-p.pivotY);const image=assets[p.id];if(image)ctx.drawImage(image,p.x,p.y,p.w,p.h);for(const child of children[p.id]||[])drawPart(child);ctx.restore();}',
   'for(const p of children.root||[])drawPart(p);ctx.restore();'
  ].join('\n');
 }
