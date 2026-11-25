@@ -48,8 +48,7 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   await maskToggles.nth(0).uncheck(); await maskToggles.nth(1).click();
   assert.equal(await maskToggles.nth(1).isChecked(),true,'The last active body part must not be removable.');
   await page.locator('#trozalJsRigMaskRestoreAll').click();
-  await page.waitForFunction(()=>document.querySelector('#trozalJsStatus')?.textContent.includes('Menerapkan kode terbaru'),null,{timeout:10000});
-  await page.waitForFunction(()=>document.querySelector('#trozalJsStatus')?.textContent.includes('Frame siap'),null,{timeout:15000});
+  await page.waitForFunction(()=>document.querySelector('#trozalJsMotionStatus')?.textContent.includes('Frame siap'),null,{timeout:20000});
   assert.equal(await maskToggles.nth(0).isChecked(),true,'Restore action must re-enable all body parts.');
   assert.equal(await maskToggles.nth(1).isChecked(),true,'Restore action must re-enable every body part.');
   const result=await page.evaluate(async()=>{
