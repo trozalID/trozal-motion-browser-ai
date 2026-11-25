@@ -304,7 +304,7 @@ function renderRigDirector(rig){
  const panel=$('itcvRigPanel'),host=$('itcvRigParts'),info=$('itcvRigStatus');host.replaceChildren();panel.style.display='block';
  const items=rig&&Array.isArray(rig.parts)?rig.parts:currentComponents;
  if(!rig){info.textContent=items.length+' komponen siap diproses. '+(items.length?'Tekan AI SEGMENTASI untuk memotong mask piksel.':'Belum ada komponen AI. Klik objek pada gambar untuk memilih titik manual.');}
- else{info.textContent=(rig.model||'Universal Rig')+' · '+rig.parts.length+' PNG layer transparan · background reconstruction perkiraan. SAM hanya memisahkan mask; nama/jenis/gerak berasal dari Vision dan dapat diedit.';}
+ else{const report=rig.diagnostics||null;const partWarnings=report&&Array.isArray(report.parts)?report.parts.filter(part=>part.warnings&&part.warnings.length):[];const details=partWarnings.slice(0,4).map(part=>part.name+': '+part.warnings.join(' ')).join(' · ');info.textContent=(rig.model||'Universal Rig')+' · '+rig.parts.length+' PNG layer transparan · background reconstruction perkiraan.'+(report?' Cakupan anatomi '+report.assignedForegroundPercent+'% · '+report.warningCount+' peringatan mask. ':'')+(details?' Periksa: '+details+' ':'')+'Nama/jenis/gerak berasal dari Vision dan dapat diedit.';}
  items.forEach((part,index)=>{
   const row=document.createElement('div');row.className='scene-layer';row.style.display='block';
   const editor=document.createElement('div');editor.className='rig-part-editor';
