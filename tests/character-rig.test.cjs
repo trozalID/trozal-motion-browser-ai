@@ -175,6 +175,10 @@ const path=require('node:path');
   assert.ok(byId.footL.amp<=0.035&&byId.footR.amp<=0.035,'Ankle motion must stay restrained.');
   assert.ok(byId.upperArmL.amp<=0.08&&byId.forearmL.amp<=0.09&&byId.handL.amp<=0.055,'Arm-chain motion must preserve the original hand position.');
   assert.ok(byId.upperArmR.amp<=0.08&&byId.forearmR.amp<=0.09&&byId.handR.amp<=0.055,'The opposite arm chain must use the same natural-motion limits.');
+  assert.ok(byId.upperArmL.amp<=0.045&&byId.forearmL.amp<=0.05&&byId.handL.amp<=0.025,'Mode 3 arm-chain rotations must stay low enough to avoid stacked hand motion.');
+  assert.ok(byId.upperLegL.amp<=0.035&&byId.lowerLegL.amp<=0.045&&byId.footL.amp<=0.02,'Mode 3 leg-chain rotations must remain restrained to reduce knee and ankle tearing.');
+  assert.ok(byId.torso.jointOverlap>=byId.torso.width*0.15,'Torso underlay must overlap shoulder joints enough to prevent a split seam.');
+
   assert.ok(skirt.amp<=0.03,'The skirt should move only subtly with the hips.');
   assert.ok(byId.handL.radiusPx>20*0.09&&byId.handR.radiusPx>20*0.09,'Hand capsules must cover the palm using valid wrist and fingertip landmarks.');
   assert.ok(byId.handL.radiusPx<=20*0.22&&byId.handR.radiusPx<=20*0.22,'Outlier pinky/thumb landmarks must not inflate a hand capsule across the torso or garment.');
