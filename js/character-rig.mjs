@@ -881,6 +881,17 @@ function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bou
       const maskIndex = my * maskAt.width + mx;
       const seedIndex = underlayMap ? underlayMap[maskIndex] : -1;
       let include = seedIndex >= 0 || isPartAssetPixelIncluded(label, partIndex, confidence, spec, x + 0.5, y + 0.5);
+      let seamFeather = 1;
+      if (!include && confidence >= CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha &&
+          Array.isArray(spec.jointSeamPoints) && spec.jointSeamPoints.length) {
+        const seam = spec.jointSeamPoints.find(point =>
+          Math.hypot(x + 0.5 - point.x, y + 0.5 - point.y) < point.radius);
+        if (seam) {
+          const t = Math.max(0, Math.min(1, Math.hypot(x + 0.5 - seam.x, y + 0.5 - seam.y) / seam.radius));
+          seamFeather = 1 - t * t * (3 - 2 * t);
+          include = seamFeather > 0.015;
+        }
+      }
       if (!include && spec.jointPoints && spec.jointPoints.length) {
         const overlap = Number(spec.jointOverlap) || 3;
         include = confidence >= CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha &&
@@ -888,7 +899,7 @@ function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bou
       }
       if (!include) continue;
       const featherStart = Math.max(0, CHARACTER_RIG_MASK_THRESHOLDS.assetAlpha - 0.045);
-      const alpha = Math.round(255 * Math.max(0, Math.min(1, (confidence - featherStart) / (1 - featherStart))));
+      const alpha = Math.round(255 * Math.max(0, Math.min(1, (confidence - featherStart) / (1 - featherStart))) * seamFeather);
       if (alpha < 8) continue;
       const seedX = seedIndex >= 0 ? Math.max(0, Math.min(width - 1, Math.floor(((seedIndex % maskAt.width) + 0.5) * width / maskAt.width))) : x;
       const seedY = seedIndex >= 0 ? Math.max(0, Math.min(height - 1, Math.floor((Math.floor(seedIndex / maskAt.width) + 0.5) * height / maskAt.height))) : y;
@@ -978,12 +989,26 @@ export async function createCharacterRig(dataUrl, options = {}) {
     const maskAt = (x, y) => Number(activeMask[y * maskWidth + x]) || 0;
     maskAt.width = maskWidth; maskAt.height = maskHeight;
     const { specs, labels, bounds } = assignPosePartLabels(rawMask, maskWidth, maskHeight, landmarks, width, height);
+    // Give both connected layers the same accepted foreground pixels around
+    // their shared anatomical pivot. The matte remains the pose-filtered mask,
+    // so this cannot pull background pixels into either asset.
+    const jointSeams = [];
+    const specsById = new Map(specs.map(spec => [spec.id, spec]));
+    for (const child of specs) {
+      const parent = specsById.get(child.parent);
+      if (!parent || !child.pivot || !Number.isFinite(child.pivot.x) || !Number.isFinite(child.pivot.y)) continue;
+      const radius = Math.max(8, Math.min(38, Math.min(Number(child.radiusPx) || 12, Number(parent.radiusPx) || 12) * 1.25));
+      const seam = { parentId: parent.id, childId: child.id, x: child.pivot.x, y: child.pivot.y, radius };
+      jointSeams.push(seam);
+      parent.jointSeamPoints = (parent.jointSeamPoints || []).concat(seam);
+      child.jointSeamPoints = (child.jointSeamPoints || []).concat(seam);
+    }
     const acceptedMask = new Float32Array(maskWidth * maskHeight);
     for (let i = 0; i < acceptedMask.length; i++) {
       if (labels[i] >= 0) acceptedMask[i] = rawMask[i];
     }
     activeMask = acceptedMask;
-    onProgress("Memeriksa cakupan anatomi dan fragmen mask…");
+    onProgress("Memeriksa cakupan anatomi, fragmen mask, dan batas sendi bersama…");
     const diagnostics = analyzeCharacterMaskQuality(rawMask, labels, maskWidth, maskHeight, specs, bounds);
     const torsoUnderlay = buildTorsoUnderlay(source, labels, maskWidth, maskHeight, width, height, specs[0], maskAt);
     const background = reconstructBackground(source, rawMask, maskWidth, maskHeight, width, height, maskAt);
@@ -1011,7 +1036,7 @@ export async function createCharacterRig(dataUrl, options = {}) {
     return {
       version: 1, kind: "mediapipe-pose-character-rig",
       width, height, background: background.toDataURL("image/png"),
-      parts: parts.map(part => ({ ...part, motionProfile: getJointMotionProfile(part) })), detectedLandmarks: landmarks.length, diagnostics,
+      parts: parts.map(part => ({ ...part, motionProfile: getJointMotionProfile(part) })), detectedLandmarks: landmarks.length, diagnostics, jointSeams,
       notes: "Bagian tubuh dihasilkan dari mask siluet manusia dan estimasi sendi. Diagnostik mengukur cakupan dan fragmentasi layer; peringatan bukan pengganti pemeriksaan visual. Rekonstruksi latar berupa inpainting lokal dan dapat kurang akurat pada latar kompleks."
     };
   } finally {
