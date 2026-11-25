@@ -318,3 +318,7 @@ const path=require('node:path');
 assert.match(directorSource,/itcvContinuity/,'Mode 3 must expose cross-segment continuity control.');
 assert.match(directorSource,/crossSegmentContinuity/,'Mode 3 must serialize cross-segment continuity.');
 assert.match(directorSource,/drawPart\(p,parentWave\)/,'Mode 3 must propagate shared motion influence through connected rig parts.');
+
+assert.match(directorSource,/itcvContinuity/,'Mode 3 must expose cross-segment continuity control.');
+assert.match(directorSource,/crossSegmentContinuity/,'Mode 3 must serialize cross-segment continuity.');
+assert.match(directorSource,/drawPart\(p,parentWave\)/,'Mode 3 must propagate parent motion influence.');
