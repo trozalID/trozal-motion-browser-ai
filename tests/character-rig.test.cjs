@@ -294,6 +294,8 @@ const path=require('node:path');
   assert.ok(directorSource.includes('const px=pivotX/rw*100,py=pivotY/rh*100'), 'CSS transform origins must use the source canvas dimensions.');
   assert.ok(directorSource.includes('rotationMin=Math.max(profile.min,-Math.min(amp,limit))*180/Math.PI,rotationMax=Math.min(profile.max,Math.min(amp,limit))*180/Math.PI'), 'CSS output must clamp each joint to its asymmetric anatomical motion range.');
   assert.match(directorSource,/function jointProfile\(p\)/,'JavaScript Studio renderer must use the same joint-specific motion profiles.');
+  assert.match(directorSource,/function drawJointMesh\(/,'Mode 3 must deform limb and garment textures as segmented mesh strips, not only rotate rigid cut-outs.');
+  assert.match(directorSource,/drawJointMesh\(im,/,'Mode 3 canvas preview must route articulated parts through the mesh deformation renderer.');
   assert.ok(directorSource.includes('const period=clamp(2*Math.PI/Math.max(.1,speed),.6,duration*3)'), 'CSS output must use the same angular speed as the JavaScript renderer.');
   assert.ok(directorSource.includes('const phase=-phaseOffset/Math.max(.1,speed)'), 'CSS animation delay must convert the phase offset from radians to seconds.');
 
