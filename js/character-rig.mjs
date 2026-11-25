@@ -1011,7 +1011,7 @@ export async function createCharacterRig(dataUrl, options = {}) {
     return {
       version: 1, kind: "mediapipe-pose-character-rig",
       width, height, background: background.toDataURL("image/png"),
-      parts, detectedLandmarks: landmarks.length, diagnostics,
+      parts: parts.map(part => ({ ...part, motionProfile: getJointMotionProfile(part) })), detectedLandmarks: landmarks.length, diagnostics,
       notes: "Bagian tubuh dihasilkan dari mask siluet manusia dan estimasi sendi. Diagnostik mengukur cakupan dan fragmentasi layer; peringatan bukan pengganti pemeriksaan visual. Rekonstruksi latar berupa inpainting lokal dan dapat kurang akurat pada latar kompleks."
     };
   } finally {
