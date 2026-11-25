@@ -909,6 +909,39 @@ function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bou
   };
 }
 
+
+/* Joint-safe motion profiles keep a linked limb chain inside conservative
+ * anatomical limits. The same pure evaluator is consumed by preview/export. */
+export function getJointMotionProfile(part = {}) {
+  const id = String(part.id || "").toLowerCase();
+  const name = String(part.name || "").toLowerCase();
+  const isLeft = /left|kiri|l$/.test(id + " " + name);
+  const side = isLeft ? -1 : 1;
+  if (/lowerleg|betis|shin/.test(id + " " + name)) return { joint: "knee", min: -0.015, max: 0.105, phase: Math.PI * 0.82, side };
+  if (/foot|kaki|ankle/.test(id + " " + name)) return { joint: "ankle", min: -0.035, max: 0.035, phase: Math.PI, side };
+  if (/upperleg|paha|thigh/.test(id + " " + name)) return { joint: "hip", min: -0.045, max: 0.045, phase: 0, side };
+  if (/forearm|lengan bawah/.test(id + " " + name)) return { joint: "elbow", min: -0.025, max: 0.075, phase: Math.PI * 0.75, side };
+  if (/upperarm|lengan atas/.test(id + " " + name)) return { joint: "shoulder", min: -0.045, max: 0.045, phase: Math.PI, side };
+  if (/hand|tangan/.test(id + " " + name)) return { joint: "wrist", min: -0.035, max: 0.035, phase: Math.PI * 0.5, side };
+  if (/lowergarment|rok|skirt/.test(id + " " + name)) return { joint: "garment", min: -0.018, max: 0.018, phase: Math.PI * 0.5, side: 1 };
+  if (/torso|badan/.test(id + " " + name)) return { joint: "spine", min: -0.012, max: 0.012, phase: 0, side: 1 };
+  if (/head|kepala/.test(id + " " + name)) return { joint: "neck", min: -0.025, max: 0.025, phase: Math.PI * 0.5, side: 1 };
+  return { joint: "generic", min: -0.04, max: 0.04, phase: 0, side: 1 };
+}
+
+export function evaluateJointMotion(part = {}, time = 0, config = {}) {
+  const profile = getJointMotionProfile(part);
+  const speed = Math.max(0.1, Math.min(3, (Number(part.speed) || 1) * (Number(config.rigSpeed) || 1)));
+  const requested = Math.max(0, Number(part.amp) || 0) * Math.max(0, Math.min(2.5, Number(config.rigAmplitude) || 1));
+  const limit = Math.max(Math.abs(profile.min), Math.abs(profile.max));
+  const amplitude = Math.min(requested, limit);
+  const wave = Math.sin(Number(time || 0) * speed + (Number(part.phase) || 0) + profile.phase);
+  const normalized = (wave + 1) * 0.5;
+  return profile.min * (1 - normalized) + profile.max * normalized < 0
+    ? Math.max(profile.min, Math.min(profile.max, amplitude * wave * profile.side))
+    : Math.max(profile.min, Math.min(profile.max, amplitude * wave * profile.side));
+}
+
 export async function createCharacterRig(dataUrl, options = {}) {
   const onProgress = typeof options.onProgress === "function" ? options.onProgress : () => {};
   onProgress("Menyiapkan gambar…");
@@ -978,7 +1011,7 @@ export async function createCharacterRig(dataUrl, options = {}) {
     return {
       version: 1, kind: "mediapipe-pose-character-rig",
       width, height, background: background.toDataURL("image/png"),
-      parts, detectedLandmarks: landmarks.length, diagnostics,
+      parts: parts.map(part => ({ ...part, motionProfile: getJointMotionProfile(part) })), detectedLandmarks: landmarks.length, diagnostics,
       notes: "Bagian tubuh dihasilkan dari mask siluet manusia dan estimasi sendi. Diagnostik mengukur cakupan dan fragmentasi layer; peringatan bukan pengganti pemeriksaan visual. Rekonstruksi latar berupa inpainting lokal dan dapat kurang akurat pada latar kompleks."
     };
   } finally {
