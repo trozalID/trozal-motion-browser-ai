@@ -147,7 +147,7 @@ if(rig&&rig.background){
  // original pixels while adding local bend instead of relying on rigid rotation.
  function drawJointMesh(image,x,y,w,h,wave,joint){
   const type=String(joint||'').toLowerCase();
-  const limb=/knee|ankle|hip|elbow|shoulder|wrist/.test(type);
+  const limb=/knee|ankle|hip|elbow|shoulder|wrist|lower.?leg|shin|foot|upper.?leg|thigh|forearm|upper.?arm|hand/.test(type);
   const garment=/garment/.test(type),spine=/spine|neck/.test(type);
   const gain=limb?1:(garment?.28:(spine?.16:0));
   if(!gain||!image||w<=1||h<=1){ctx.drawImage(image,x,y,w,h);return;}
