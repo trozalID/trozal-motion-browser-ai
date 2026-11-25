@@ -47,10 +47,10 @@ export function refineSegmentationMask(mask, width, height, threshold = CHARACTE
 
 const PARTS = [
   { id: "torso", name: "Torso", parent: null, a: 11, b: 24, radius: 0, amp: 0.008, speed: 1.1, phase: 0.0 },
-  { id: "upperLegL", name: "Paha kiri", parent: "torso", a: 23, b: 25, radius: "leg", amp: 0.018, speed: 1.55, phase: 0, renderOrder: 10 },
+  { id: "upperLegL", name: "Paha kiri", parent: "torso", a: 23, b: 25, radius: "leg", amp: 0.03, speed: 1.55, phase: 0, renderOrder: 10 },
   { id: "lowerLegL", name: "Betis kiri", parent: "upperLegL", a: 25, b: 27, radius: "shin", amp: 0.04, speed: 1.55, phase: 1.0 },
   { id: "footL", name: "Kaki kiri", parent: "lowerLegL", a: 27, b: 31, radius: "foot", amp: 0.018, speed: 1.55, phase: 0.4 },
-  { id: "upperLegR", name: "Paha kanan", parent: "torso", a: 24, b: 26, radius: "leg", amp: 0.018, speed: 1.55, phase: Math.PI, renderOrder: 10 },
+  { id: "upperLegR", name: "Paha kanan", parent: "torso", a: 24, b: 26, radius: "leg", amp: 0.03, speed: 1.55, phase: Math.PI, renderOrder: 10 },
   { id: "lowerLegR", name: "Betis kanan", parent: "upperLegR", a: 26, b: 28, radius: "shin", amp: 0.04, speed: 1.55, phase: Math.PI + 1.0 },
   { id: "footR", name: "Kaki kanan", parent: "lowerLegR", a: 28, b: 32, radius: "foot", amp: 0.018, speed: 1.55, phase: Math.PI + 0.4 },
   { id: "upperArmL", name: "Lengan atas kiri", parent: "torso", a: 11, b: 13, radius: "upperArm", amp: 0.04, speed: 1.35, phase: Math.PI, renderOrder: 30 },
