@@ -464,8 +464,8 @@ export function buildPosePartSpecs(landmarks, width, height, mask = null, maskWi
     else if (p.radius === "leg") radius = Math.max(shoulderWidth * 0.105, hipWidth * 0.31);
     else if (p.radius === "shin") radius = shoulderWidth * 0.082;
     else if (p.radius === "hand") radius = shoulderWidth * 0.125;
-    else if (p.radius === "foot") radius = shoulderWidth * 0.105;
-    specs.push({ ...p, aPoint: a, bPoint: b, radiusPx: radius, pivot: a, shape: "capsule", jointPoints: [a, b], jointOverlap: Math.max(8, radius * 1.2) });
+    else if (p.radius === "foot") radius = Math.max(shoulderWidth * 0.125, Math.min(shoulderWidth * 0.14, dist(a, b) * 0.42));
+    specs.push({ ...p, aPoint: a, bPoint: b, radiusPx: radius, pivot: a, shape: "capsule", jointPoints: [a, b], jointOverlap: Math.max(8, radius * 1.35) });
   }
   // Append the garment after leg parts so it is composited above the moving thighs.
   if (lowerGarment) specs.push(lowerGarment);
@@ -659,6 +659,26 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
           score = Math.sqrt(nx * nx + ny * ny);
         } else if (s.shape === "capsule") {
           score = segmentDistance(px, py, s.aPoint, s.bPoint) / s.radiusPx;
+          // Keep left/right leg pixels attached to their own anatomical chain.
+          // A broad capsule around one leg must not absorb a thin strip from the
+          // neighboring leg when the knees/ankles are close together.
+          if (/^(upperLeg|lowerLeg|foot)[LR]$/.test(s.id)) {
+            const pairedId = s.id.slice(0, -1) + (s.id.endsWith("L") ? "R" : "L");
+            const paired = specs.find(part => part.id === pairedId);
+            if (paired && paired.aPoint && paired.bPoint) {
+              const dy = s.bPoint.y - s.aPoint.y;
+              const t = Math.max(0, Math.min(1, Math.abs(dy) > 1 ? (py - s.aPoint.y) / dy : 0.5));
+              const ownX = s.aPoint.x + (s.bPoint.x - s.aPoint.x) * t;
+              const pairedX = paired.aPoint.x + (paired.bPoint.x - paired.aPoint.x) * t;
+              const midlineX = (ownX + pairedX) * 0.5;
+              const ownSide = Math.sign(ownX - midlineX);
+              const signedDistance = (px - midlineX) * ownSide;
+              const sideMargin = Math.max(2, Number(s.radiusPx) * 0.12);
+              if (ownSide && signedDistance < -sideMargin) {
+                score += 0.9 + Math.min(1.1, Math.abs(signedDistance) / Math.max(8, Number(s.radiusPx)));
+              }
+            }
+          }
         }
         if (score < best) { best = score; bestIndex = k; }
         if (/^(upperArm|forearm|hand)/.test(s.id) && score < bestArm) {
@@ -667,12 +687,17 @@ export function assignPosePartLabels(mask, maskWidth, maskHeight, landmarks, wid
         }
       }
       const garmentIndex = specs.findIndex(spec => spec.id === "lowerGarment");
+      const insideTorso = polygonContains(px, py, specs[0].polygon);
       if (garmentIndex >= 0 && polygonContains(px, py, specs[garmentIndex].polygon)) {
         // Hands and sleeves in front of a skirt must remain articulated parts,
         // not be swallowed by the lower-garment polygon.
         bestIndex = bestArmIndex >= 0 && bestArm <= 1.35 ? bestArmIndex : garmentIndex;
-      } else if (polygonContains(px, py, specs[0].polygon) && best > 0.72) {
-        bestIndex = 0;
+      } else if (insideTorso) {
+        // The torso polygon is the shirt/body core. Do not let broad thigh or
+        // shin capsules steal its center pixels: that creates a frozen shirt
+        // patch beside a moving strip. Only a clearly detected arm may own
+        // pixels inside the torso envelope.
+        bestIndex = bestArmIndex >= 0 && bestArm <= 1.15 ? bestArmIndex : 0;
       }
       // Do not force distant segmentation spill into the nearest limb. The
       // old fallback assigned every foreground pixel to some body part, even
