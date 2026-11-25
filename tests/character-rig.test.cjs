@@ -284,7 +284,7 @@ const path=require('node:path');
   assert.match(directorSource,/itcvRigParts/);
   assert.match(directorSource,/report\.assignedForegroundPercent/,'Mode 3 must surface anatomical mask coverage in the rig review panel.');
   assert.match(directorSource,/report\.warningCount/,'Mode 3 must surface mask-quality warnings before animation review.');
-  assert.match(directorSource,/function drawPart\(p\)/,'JavaScript Studio must recursively draw each articulated rig part.');
+  assert.match(directorSource,/function drawPart\(p(?:,parentWave)?\)/,'JavaScript Studio must recursively draw each articulated rig part, optionally receiving its parent motion signal.');
   assert.match(directorSource,/children\[k\]\.sort\(\(a,b\)=>\(Number\(a\.renderOrder\)\|\|0\)-\(Number\(b\.renderOrder\)\|\|0\)\)/,'JavaScript Studio renderer must respect anatomical depth order so skirts cannot cover foreground hands.');
   assert.match(directorSource,/const parent=part\.parent&&partsById\.has\(part\.parent\)\?part\.parent:''/,'CSS HTML output must rebuild each rig part under its declared parent.');
   assert.match(directorSource,/function renderRigPart\(part\)/,'CSS HTML output must recursively render nested articulated part nodes.');
@@ -315,5 +315,8 @@ const path=require('node:path');
   assert.match(directorSource,/characterRig:runtimeRig/,'The generated JavaScript Studio payload must retain the character rig assets.');
   assert.match(directorSource,/createCharacterRig\(uris\[0\]/);
 
+  assert.match(directorSource,/itcvContinuity/,'Mode 3 must expose cross-segment continuity control.');
+  assert.match(directorSource,/crossSegmentContinuity/,'Mode 3 must serialize cross-segment continuity.');
+  assert.match(directorSource,/drawPart\(p,parentWave\)/,'Mode 3 must propagate parent motion influence.');
   console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments and self-contained export wiring');
 })().catch(error=>{console.error(error);process.exit(1);});
