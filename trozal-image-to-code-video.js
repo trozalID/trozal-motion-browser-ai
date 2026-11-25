@@ -178,7 +178,7 @@ if(rig&&rig.background){
     const F=a.dy-B*a.sx-D*a.sy;
     const cx=(a.dx+b.dx+c.dx)/3,cy=(a.dy+b.dy+c.dy)/3,pad=.32;
     ctx.save();ctx.beginPath();
-    [a,b,c].forEach((p,i)=>{const px=p.dx+(p.dx-cx)*pad,py=p.dy+(p.dy-cy)*pad;if(i)ctx.lineTo(px,py);else ctx.moveTo(px,py);});
+    [a,b,c].forEach((p,i)=>{const vx=p.dx-cx,vy=p.dy-cy,len=Math.hypot(vx,vy)||1,px=p.dx+vx/len*pad,py=p.dy+vy/len*pad;if(i)ctx.lineTo(px,py);else ctx.moveTo(px,py);});
     ctx.closePath();ctx.clip();ctx.transform(A,B,C,D,E,F);ctx.drawImage(image,0,0,iw,ih);ctx.restore();
   }
   for(let row=0;row<meshRows;row++)for(let col=0;col<meshCols;col++){
