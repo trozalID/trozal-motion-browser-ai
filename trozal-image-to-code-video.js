@@ -148,22 +148,42 @@ if(rig&&rig.background){
  function drawJointMesh(image,x,y,w,h,wave,joint){
   const type=String(joint||'').toLowerCase();
   const limb=/knee|ankle|hip|elbow|shoulder|wrist|lower.?leg|shin|foot|upper.?leg|thigh|forearm|upper.?arm|hand/.test(type);
-  const garment=/garment/.test(type),spine=/spine|neck/.test(type);
-  const gain=limb?1:(garment?.28:(spine?.16:0));
+  const garment=/garment|skirt|dress|cloth/.test(type),spine=/spine|neck|torso/.test(type);
+  const gain=limb?1:(garment?.24:(spine?.12:0));
   if(!gain||!image||w<=1||h<=1){ctx.drawImage(image,x,y,w,h);return;}
   const vertical=h>=w,extent=vertical?h:w;
-  const bend=Math.max(-14,Math.min(14,wave*Math.min(14,extent*.04)*gain));
-  const slices=12,iw=image.naturalWidth||image.width,ih=image.naturalHeight||image.height;
-  if(vertical){
-   for(let i=0;i<slices;i++){
-    const sy=ih*i/slices,sh=ih/slices+0.5,offset=Math.sin(Math.PI*(i+.5)/slices)*bend;
-    ctx.drawImage(image,0,sy,iw,sh,x+offset,y+h*i/slices,w,h/slices+.5);
-   }
-  }else{
-   for(let i=0;i<slices;i++){
-    const sx=iw*i/slices,sw=iw/slices+0.5,offset=Math.sin(Math.PI*(i+.5)/slices)*bend;
-    ctx.drawImage(image,sx,0,sw,ih,x+w*i/slices,y+offset,w/slices+.5,h);
-   }
+  const bend=Math.max(-16,Math.min(16,wave*Math.min(16,extent*.045)*gain));
+  const iw=image.naturalWidth||image.width,ih=image.naturalHeight||image.height;
+  if(!(iw>0&&ih>0)){ctx.drawImage(image,x,y,w,h);return;}
+  const meshCols=vertical?4:12,meshRows=vertical?12:4;
+  const vertices=[];
+  for(let row=0;row<=meshRows;row++){
+    const v=row/meshRows,line=Math.sin(Math.PI*v)*bend;
+    for(let col=0;col<=meshCols;col++){
+      const u=col/meshCols,shear=(u-.5)*line*.34;
+      const sx=u*iw,sy=v*ih;
+      const dx=x+u*w+(vertical?line+shear:0);
+      const dy=y+v*h+(vertical?0:line+shear);
+      vertices.push({sx,sy,dx,dy});
+    }
+  }
+  function drawTriangle(a,b,c){
+    const den=(b.sx-a.sx)*(c.sy-a.sy)-(c.sx-a.sx)*(b.sy-a.sy);
+    if(Math.abs(den)<1e-8)return;
+    const A=((b.dx-a.dx)*(c.sy-a.sy)-(c.dx-a.dx)*(b.sy-a.sy))/den;
+    const C=((c.dx-a.dx)*(b.sx-a.sx)-(b.dx-a.dx)*(c.sx-a.sx))/den;
+    const E=a.dx-A*a.sx-C*a.sy;
+    const B=((b.dy-a.dy)*(c.sy-a.sy)-(c.dy-a.dy)*(b.sy-a.sy))/den;
+    const D=((c.dy-a.dy)*(b.sx-a.sx)-(b.dy-a.dy)*(c.sx-a.sx))/den;
+    const F=a.dy-B*a.sx-D*a.sy;
+    const cx=(a.dx+b.dx+c.dx)/3,cy=(a.dy+b.dy+c.dy)/3,pad=.32;
+    ctx.save();ctx.beginPath();
+    [a,b,c].forEach((p,i)=>{const vx=p.dx-cx,vy=p.dy-cy,len=Math.hypot(vx,vy)||1,px=p.dx+vx/len*pad,py=p.dy+vy/len*pad;if(i)ctx.lineTo(px,py);else ctx.moveTo(px,py);});
+    ctx.closePath();ctx.clip();ctx.transform(A,B,C,D,E,F);ctx.drawImage(image,0,0,iw,ih);ctx.restore();
+  }
+  for(let row=0;row<meshRows;row++)for(let col=0;col<meshCols;col++){
+    const i=row*(meshCols+1)+col,a=vertices[i],b=vertices[i+1],c=vertices[i+meshCols+1],d=vertices[i+meshCols+2];
+    drawTriangle(a,b,d);drawTriangle(a,d,c);
   }
  }
 
