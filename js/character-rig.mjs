@@ -46,19 +46,19 @@ export function refineSegmentationMask(mask, width, height, threshold = CHARACTE
 }
 
 const PARTS = [
-  { id: "torso", name: "Torso", parent: null, a: 11, b: 24, radius: 0, amp: 0.012, speed: 1.1, phase: 0.0 },
-  { id: "upperLegL", name: "Paha kiri", parent: "torso", a: 23, b: 25, radius: "leg", amp: 0.055, speed: 1.55, phase: 0, renderOrder: 10 },
-  { id: "lowerLegL", name: "Betis kiri", parent: "upperLegL", a: 25, b: 27, radius: "shin", amp: 0.07, speed: 1.55, phase: 1.0 },
-  { id: "footL", name: "Kaki kiri", parent: "lowerLegL", a: 27, b: 31, radius: "foot", amp: 0.03, speed: 1.55, phase: 0.4 },
-  { id: "upperLegR", name: "Paha kanan", parent: "torso", a: 24, b: 26, radius: "leg", amp: 0.055, speed: 1.55, phase: Math.PI, renderOrder: 10 },
-  { id: "lowerLegR", name: "Betis kanan", parent: "upperLegR", a: 26, b: 28, radius: "shin", amp: 0.07, speed: 1.55, phase: Math.PI + 1.0 },
-  { id: "footR", name: "Kaki kanan", parent: "lowerLegR", a: 28, b: 32, radius: "foot", amp: 0.03, speed: 1.55, phase: Math.PI + 0.4 },
-  { id: "upperArmL", name: "Lengan atas kiri", parent: "torso", a: 11, b: 13, radius: "upperArm", amp: 0.075, speed: 1.35, phase: Math.PI, renderOrder: 30 },
-  { id: "forearmL", name: "Lengan bawah kiri", parent: "upperArmL", a: 13, b: 15, radius: "forearm", amp: 0.085, speed: 1.35, phase: 0.8 },
-  { id: "handL", name: "Tangan kiri", parent: "forearmL", a: 15, b: 19, radius: "hand", amp: 0.05, speed: 1.5, phase: 1.3, motion: "swing", renderOrder: 40 },
-  { id: "upperArmR", name: "Lengan atas kanan", parent: "torso", a: 12, b: 14, radius: "upperArm", amp: 0.075, speed: 1.35, phase: 0, renderOrder: 30 },
-  { id: "forearmR", name: "Lengan bawah kanan", parent: "upperArmR", a: 14, b: 16, radius: "forearm", amp: 0.085, speed: 1.35, phase: Math.PI + 0.8 },
-  { id: "handR", name: "Tangan kanan", parent: "forearmR", a: 16, b: 20, radius: "hand", amp: 0.05, speed: 1.5, phase: Math.PI + 1.3, motion: "swing", renderOrder: 40 },
+  { id: "torso", name: "Torso", parent: null, a: 11, b: 24, radius: 0, amp: 0.008, speed: 1.1, phase: 0.0 },
+  { id: "upperLegL", name: "Paha kiri", parent: "torso", a: 23, b: 25, radius: "leg", amp: 0.018, speed: 1.55, phase: 0, renderOrder: 10 },
+  { id: "lowerLegL", name: "Betis kiri", parent: "upperLegL", a: 25, b: 27, radius: "shin", amp: 0.04, speed: 1.55, phase: 1.0 },
+  { id: "footL", name: "Kaki kiri", parent: "lowerLegL", a: 27, b: 31, radius: "foot", amp: 0.018, speed: 1.55, phase: 0.4 },
+  { id: "upperLegR", name: "Paha kanan", parent: "torso", a: 24, b: 26, radius: "leg", amp: 0.018, speed: 1.55, phase: Math.PI, renderOrder: 10 },
+  { id: "lowerLegR", name: "Betis kanan", parent: "upperLegR", a: 26, b: 28, radius: "shin", amp: 0.04, speed: 1.55, phase: Math.PI + 1.0 },
+  { id: "footR", name: "Kaki kanan", parent: "lowerLegR", a: 28, b: 32, radius: "foot", amp: 0.018, speed: 1.55, phase: Math.PI + 0.4 },
+  { id: "upperArmL", name: "Lengan atas kiri", parent: "torso", a: 11, b: 13, radius: "upperArm", amp: 0.04, speed: 1.35, phase: Math.PI, renderOrder: 30 },
+  { id: "forearmL", name: "Lengan bawah kiri", parent: "upperArmL", a: 13, b: 15, radius: "forearm", amp: 0.045, speed: 1.35, phase: 0.8 },
+  { id: "handL", name: "Tangan kiri", parent: "forearmL", a: 15, b: 19, radius: "hand", amp: 0.02, speed: 1.5, phase: 1.3, motion: "swing", renderOrder: 40 },
+  { id: "upperArmR", name: "Lengan atas kanan", parent: "torso", a: 12, b: 14, radius: "upperArm", amp: 0.04, speed: 1.35, phase: 0, renderOrder: 30 },
+  { id: "forearmR", name: "Lengan bawah kanan", parent: "upperArmR", a: 14, b: 16, radius: "forearm", amp: 0.045, speed: 1.35, phase: Math.PI + 0.8 },
+  { id: "handR", name: "Tangan kanan", parent: "forearmR", a: 16, b: 20, radius: "hand", amp: 0.02, speed: 1.5, phase: Math.PI + 1.3, motion: "swing", renderOrder: 40 },
   { id: "head", name: "Kepala", parent: "torso", a: 0, b: 7, radius: "head", amp: 0.035, speed: 0.9, phase: 0.3, renderOrder: 40 }
 ];
 
@@ -414,12 +414,12 @@ export function buildPosePartSpecs(landmarks, width, height, mask = null, maskWi
   // real garment envelope without swallowing the articulated sleeves.
   const torsoMidY = (leftShoulder.y + rightShoulder.y + leftHip.y + rightHip.y) * 0.25;
   const torsoPoly = [
-    { x: leftShoulder.x - shoulderWidth * 0.055, y: leftShoulder.y },
-    { x: (leftShoulder.x + leftHip.x) * 0.5 - shoulderWidth * 0.085, y: torsoMidY },
+    { x: leftShoulder.x - shoulderWidth * 0.09, y: leftShoulder.y },
+    { x: (leftShoulder.x + leftHip.x) * 0.5 - shoulderWidth * 0.10, y: torsoMidY },
     { x: leftHip.x - hipWidth * 0.10, y: leftHip.y },
     { x: rightHip.x + hipWidth * 0.10, y: rightHip.y },
-    { x: (rightShoulder.x + rightHip.x) * 0.5 + shoulderWidth * 0.085, y: torsoMidY },
-    { x: rightShoulder.x + shoulderWidth * 0.055, y: rightShoulder.y }
+    { x: (rightShoulder.x + rightHip.x) * 0.5 + shoulderWidth * 0.10, y: torsoMidY },
+    { x: rightShoulder.x + shoulderWidth * 0.09, y: rightShoulder.y }
   ];
   const nose = get(0), leftEar = get(7), rightEar = get(8);
   const earMid = leftEar && rightEar ? { x: (leftEar.x + rightEar.x) / 2, y: (leftEar.y + rightEar.y) / 2 } : nose;
@@ -428,7 +428,7 @@ export function buildPosePartSpecs(landmarks, width, height, mask = null, maskWi
   const headRY = Math.max(headRX * 1.12, shoulderWidth * 0.24);
   const specs = [];
   const torsoPivot = { x: (leftHip.x + rightHip.x) / 2, y: (leftHip.y + rightHip.y) / 2 };
-  specs.push({ ...PARTS[0], pivot: torsoPivot, shape: "polygon", polygon: torsoPoly, width: shoulderWidth, jointPoints: [leftShoulder, rightShoulder, leftHip, rightHip], jointOverlap: Math.max(5, shoulderWidth * 0.11) });
+  specs.push({ ...PARTS[0], pivot: torsoPivot, shape: "polygon", polygon: torsoPoly, width: shoulderWidth, jointPoints: [leftShoulder, rightShoulder, leftHip, rightHip], jointOverlap: Math.max(8, shoulderWidth * 0.16) });
   const lowerGarment = detectLowerGarmentRegion(mask, maskWidth, maskHeight, lm, width, height);
   for (const p of PARTS.slice(1)) {
     if (p.id === "head") {
@@ -465,7 +465,7 @@ export function buildPosePartSpecs(landmarks, width, height, mask = null, maskWi
     else if (p.radius === "shin") radius = shoulderWidth * 0.082;
     else if (p.radius === "hand") radius = shoulderWidth * 0.125;
     else if (p.radius === "foot") radius = shoulderWidth * 0.105;
-    specs.push({ ...p, aPoint: a, bPoint: b, radiusPx: radius, pivot: a, shape: "capsule", jointPoints: [a, b], jointOverlap: Math.max(7, radius * 1.05) });
+    specs.push({ ...p, aPoint: a, bPoint: b, radiusPx: radius, pivot: a, shape: "capsule", jointPoints: [a, b], jointOverlap: Math.max(8, radius * 1.2) });
   }
   // Append the garment after leg parts so it is composited above the moving thighs.
   if (lowerGarment) specs.push(lowerGarment);
