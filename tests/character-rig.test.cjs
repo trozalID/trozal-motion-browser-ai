@@ -312,13 +312,11 @@ const path=require('node:path');
   assert.match(directorSource,/characterRig:runtimeRig/,'The generated JavaScript Studio payload must retain the character rig assets.');
   assert.match(directorSource,/createCharacterRig\(uris\[0\]/);
 
+
+  assert.match(directorSource,/itcvContinuity/,'Mode 3 must expose cross-segment continuity control.');
+  assert.match(directorSource,/crossSegmentContinuity/,'Mode 3 must serialize cross-segment continuity.');
+  assert.match(directorSource,/drawPart\\(p,parentWave\\)/,'Mode 3 must propagate parent motion influence.');
   console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments and self-contained export wiring');
 })().catch(error=>{console.error(error);process.exit(1);});
 
-assert.match(directorSource,/itcvContinuity/,'Mode 3 must expose cross-segment continuity control.');
-assert.match(directorSource,/crossSegmentContinuity/,'Mode 3 must serialize cross-segment continuity.');
-assert.match(directorSource,/drawPart\(p,parentWave\)/,'Mode 3 must propagate shared motion influence through connected rig parts.');
 
-assert.match(directorSource,/itcvContinuity/,'Mode 3 must expose cross-segment continuity control.');
-assert.match(directorSource,/crossSegmentContinuity/,'Mode 3 must serialize cross-segment continuity.');
-assert.match(directorSource,/drawPart\(p,parentWave\)/,'Mode 3 must propagate parent motion influence.');
