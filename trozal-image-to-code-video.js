@@ -142,9 +142,8 @@ if(rig&&rig.background){
  // This keeps the skirt above moving legs without covering hands that cross
  // in front of the body. Stable order preserves legacy rigs without metadata.
  Object.keys(children).forEach(k=>children[k].sort((a,b)=>(Number(a.renderOrder)||0)-(Number(b.renderOrder)||0)));
- // Lightweight 2D mesh skinning: subdivide a limb/garment texture into strips
- // and offset the strips along the perpendicular axis. This preserves the
- // original pixels while adding local bend instead of relying on rigid rotation.
+ // Joint-weighted 2D triangle skinning: every grid vertex blends proximal and distal joint transforms.
+ // Smooth weights and shared grid vertices keep deformation continuous across adjacent triangles.
  function drawJointMesh(image,x,y,w,h,wave,joint){
   const type=String(joint||'').toLowerCase();
   const limb=/knee|ankle|hip|elbow|shoulder|wrist|lower.?leg|shin|foot|upper.?leg|thigh|forearm|upper.?arm|hand/.test(type);
@@ -157,14 +156,20 @@ if(rig&&rig.background){
   if(!(iw>0&&ih>0)){ctx.drawImage(image,x,y,w,h);return;}
   const meshCols=vertical?4:12,meshRows=vertical?12:4;
   const vertices=[];
+  const bendRad=Math.max(-.32,Math.min(.32,bend*Math.PI/180));
+  const smoothWeight=value=>{const q=Math.max(0,Math.min(1,(value-.08)/.84));return q*q*(3-2*q);};
+  const rotateAround=(px,py,ax,ay,angle)=>{const c=Math.cos(angle),s=Math.sin(angle),dx=px-ax,dy=py-ay;return{x:ax+dx*c-dy*s,y:ay+dx*s+dy*c};};
+  const proximal=vertical?{x:x+w/2,y:y}:{x:x,y:y+h/2};
+  const distal=vertical?{x:x+w/2,y:y+h}:{x:x+w,y:y+h/2};
   for(let row=0;row<=meshRows;row++){
-    const v=row/meshRows,line=Math.sin(Math.PI*v)*bend;
+    const v=row/meshRows;
     for(let col=0;col<=meshCols;col++){
-      const u=col/meshCols,shear=(u-.5)*line*.34;
-      const sx=u*iw,sy=v*ih;
-      const dx=x+u*w+(vertical?line+shear:0);
-      const dy=y+v*h+(vertical?0:line+shear);
-      vertices.push({sx,sy,dx,dy});
+      const u=col/meshCols,longitudinal=vertical?v:u,weight=smoothWeight(longitudinal);
+      const sx=u*iw,sy=v*ih,baseX=x+u*w,baseY=y+v*h;
+      const distalPoint=rotateAround(baseX,baseY,distal.x,distal.y,bendRad);
+      const dx=baseX+(distalPoint.x-baseX)*weight;
+      const dy=baseY+(distalPoint.y-baseY)*weight;
+      vertices.push({sx,sy,dx,dy,proximalWeight:1-weight,distalWeight:weight});
     }
   }
   function drawTriangle(a,b,c){
