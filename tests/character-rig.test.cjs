@@ -127,11 +127,12 @@ const path=require('node:path');
     'Foot masks must cover the ankle-to-foot transition instead of leaving a clipped ankle edge.');
   assert.ok(footSpecs.footL.jointOverlap>=footSpecs.footL.radiusPx*1.3&&footSpecs.footR.jointOverlap>=footSpecs.footR.radiusPx*1.3,
     'Ankle joints need enough shared pixels to remain connected while the foot rotates.');
-  const shirtCoreMask=new Float32Array(100*100);
-  for(let y=47;y<=56;y++)for(let x=46;x<=54;x++)shirtCoreMask[y*100+x]=0.98;
-  const shirtCore=rig.assignPosePartLabels(shirtCoreMask,100,100,landmarks,100,100);
-  assert.equal(shirtCore.labels[52*100+50],0,
-    'Central shirt pixels inside the torso envelope must stay on the torso layer instead of being assigned to a moving leg capsule.');
+  const shirtCoreSpec=specs.find(part=>part.id==='torso');
+  assert.ok(rig.isPartAssetPixelIncluded(-1,0,0.98,shirtCoreSpec,50,52),
+    'Central shirt pixels inside the torso envelope must be retained by the torso asset even when a moving limb overlaps their segmentation label.');
+  assert.match((await fs.promises.readFile(path.join(__dirname,'../js/character-rig.mjs'),'utf8')),
+    /const insideTorso = polygonContains\(px, py, specs\[0\]\.polygon\);[\s\S]*?bestIndex = bestArmIndex >= 0 && bestArm <= 1\.15 \? bestArmIndex : 0;/,
+    'The torso envelope must take priority over broad leg capsules, while confident arm pixels remain articulated.');
 
   const skirtMask=new Float32Array(100*100);
   for(let y=58;y<=74;y++)for(let x=36;x<=64;x++)skirtMask[y*100+x]=.98;
