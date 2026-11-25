@@ -298,6 +298,8 @@ const path=require('node:path');
   assert.match(directorSource,/function drawTriangle\(/,'Mode 3 must rasterize a true triangle mesh with affine texture mapping.');
   assert.match(directorSource,/const meshCols=vertical\?4:12,meshRows=vertical\?12:4/,'Mode 3 mesh must use a two-dimensional vertex grid.');
   assert.match(directorSource,/ctx\.transform\(A,B,C,D,E,F\)/,'Mode 3 mesh triangles must map source texture coordinates onto deformed destination vertices.');
+  assert.match(directorSource,/smoothWeight=value=>/,'Mode 3 vertices must blend proximal/distal joint influences with smooth weights.');
+  assert.match(directorSource,/distalWeight:weight/,'Mode 3 must retain normalized joint influence weights per shared mesh vertex.');
   assert.match(directorSource,/drawJointMesh\(im,/,'Mode 3 canvas preview must route articulated parts through the mesh deformation renderer.');
   assert.ok(directorSource.includes('const period=clamp(2*Math.PI/Math.max(.1,speed),.6,duration*3)'), 'CSS output must use the same angular speed as the JavaScript renderer.');
   assert.ok(directorSource.includes('const phase=-phaseOffset/Math.max(.1,speed)'), 'CSS animation delay must convert the phase offset from radians to seconds.');
