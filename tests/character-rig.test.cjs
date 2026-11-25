@@ -171,6 +171,20 @@ const path=require('node:path');
   assert.ok(aLine,'A connected A-line skirt should be detected from its full scanline profile.');
   const leftContour=aLine.polygon.slice(0,25);
   assert.ok(leftContour[leftContour.length-1].x<leftContour[0].x,'The garment polygon must preserve a widening hem instead of flattening the skirt into a narrow trapezoid.');
+  const kneeProfile=rig.getJointMotionProfile({id:'lowerLegL',name:'Betis kiri'});
+  assert.equal(kneeProfile.joint,'knee','Lower-leg motion must use a knee-specific profile.');
+  assert.ok(kneeProfile.max>Math.abs(kneeProfile.min),'Knee motion must allow a controlled bend without equal unrestricted forward/backward rotation.');
+  const ankleProfile=rig.getJointMotionProfile({id:'footL',name:'Kaki kiri'});
+  assert.equal(ankleProfile.joint,'ankle','Foot motion must be constrained around the ankle.');
+  const garmentProfile=rig.getJointMotionProfile({id:'lowerGarment',name:'Rok / pakaian bawah'});
+  assert.equal(garmentProfile.joint,'garment','A lower garment must use a subtle hip-following motion profile.');
+  for(const part of [{id:'lowerLegL',amp:.5,speed:1.5},{id:'footL',amp:.5,speed:1.5},{id:'torso',amp:.5,speed:1.5}]){
+    for(let frame=0;frame<240;frame++){
+      const angle=rig.evaluateJointMotion(part,frame/30,{rigAmplitude:2,rigSpeed:1});
+      const profile=rig.getJointMotionProfile(part);
+      assert.ok(angle>=profile.min-1e-9&&angle<=profile.max+1e-9,'Joint motion must never exceed its anatomical angle limits.');
+    }
+  }
   const byId=Object.fromEntries(specs.map(p=>[p.id,p]));
   for(const id of ['head','torso','upperArmL','forearmL','handL','upperArmR','forearmR','handR','upperLegL','lowerLegL','footL','upperLegR','lowerLegR','footR']){
     assert.ok(byId[id], 'Missing body part spec: '+id);
@@ -278,7 +292,8 @@ const path=require('node:path');
   assert.match(directorSource,/rig-node-'\+index/,'CSS HTML output must apply per-part motion to hierarchy wrapper nodes.');
   assert.ok(directorSource.includes('const pivotX=clamp(part.pivotX==null?x+w/2:part.pivotX,0,rw)'), 'Full-canvas hierarchy wrappers must calculate pivots in full-canvas coordinates, not cropped-part coordinates.');
   assert.ok(directorSource.includes('const px=pivotX/rw*100,py=pivotY/rh*100'), 'CSS transform origins must use the source canvas dimensions.');
-  assert.ok(directorSource.includes('const rotationDegrees=amp*180/Math.PI'), 'CSS output must use the same radian-to-degree conversion as the JavaScript renderer.');
+  assert.ok(directorSource.includes('rotationMin=Math.max(profile.min,-Math.min(amp,limit))*180/Math.PI,rotationMax=Math.min(profile.max,Math.min(amp,limit))*180/Math.PI'), 'CSS output must clamp each joint to its asymmetric anatomical motion range.');
+  assert.match(directorSource,/function jointProfile\(p\)/,'JavaScript Studio renderer must use the same joint-specific motion profiles.');
   assert.ok(directorSource.includes('const period=clamp(2*Math.PI/Math.max(.1,speed),.6,duration*3)'), 'CSS output must use the same angular speed as the JavaScript renderer.');
   assert.ok(directorSource.includes('const phase=-phaseOffset/Math.max(.1,speed)'), 'CSS animation delay must convert the phase offset from radians to seconds.');
 
