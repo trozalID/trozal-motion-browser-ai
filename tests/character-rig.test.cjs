@@ -310,6 +310,12 @@ const path=require('node:path');
   assert.ok(directorSource.includes('const phase=-phaseOffset/Math.max(.1,speed)'), 'CSS animation delay must convert the phase offset from radians to seconds.');
 
   assert.match(moduleSource,/renderOrder: Number\.isFinite\(Number\(spec\.renderOrder\)\) \? Number\(spec\.renderOrder\) : 0/,'Exported rig layers must retain their render order metadata.');
+  assert.match(moduleSource,/const jointSeams = \[\]/,'Mode 3 must build shared seam descriptors for connected anatomical segments.');
+  assert.match(moduleSource,/jointSeamPoints = \(parent\.jointSeamPoints \|\| \[\]\)\.concat\(seam\)/,'Both parent and child layers must receive the same seam anchor.');
+  assert.match(moduleSource,/seamFeather = 1 - t \* t \* \(3 - 2 \* t\)/,'Duplicated foreground pixels must fade smoothly away from the shared joint pivot.');
+  assert.match(moduleSource,/confidence >= CHARACTER_RIG_MASK_THRESHOLDS\.assetAlpha/,'Joint overlap must use only accepted foreground confidence, never background pixels.');
+  assert.match(moduleSource,/jointSeams,\s*$/m,'Generated Mode 3 rig must retain joint seam diagnostics.');
+
   assert.match(moduleSource,/motion: spec\.motion \|\| "swing"/,'Exported rig assets must retain their explicit motion mode instead of silently falling back to a generic default.');
   assert.match(directorSource,/const runtimeRig=characterRig&&Array\.isArray\(characterRig\.parts\)/,'The JavaScript Studio runtime must normalize and embed the active character rig before rendering.');
   assert.match(directorSource,/characterRig:runtimeRig/,'The generated JavaScript Studio payload must retain the character rig assets.');
