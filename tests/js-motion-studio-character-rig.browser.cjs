@@ -43,6 +43,14 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
     'Mask review must expose one manual inclusion control per body part.');
   const maskCanvas=await page.locator('#trozalJsRigMaskCanvas').evaluate(canvas=>({width:canvas.width,height:canvas.height}));
   assert.deepEqual(maskCanvas,{width:64,height:64},'Mask review overlay must preserve the source image dimensions.');
+  assert.equal(await page.locator('#trozalJsRigMaskRestoreAll').count(),1,'Mask review must provide a one-click restore action.');
+  const maskToggles=page.locator('#trozalJsRigMaskParts input[type="checkbox"]');
+  await maskToggles.nth(0).uncheck(); await maskToggles.nth(1).click();
+  assert.equal(await maskToggles.nth(1).isChecked(),true,'The last active body part must not be removable.');
+  await page.locator('#trozalJsRigMaskRestoreAll').click();
+  await page.waitForFunction(()=>document.querySelector('#trozalJsMotionStatus')?.textContent.includes('Frame siap'),null,{timeout:20000});
+  assert.equal(await maskToggles.nth(0).isChecked(),true,'Restore action must re-enable all body parts.');
+  assert.equal(await maskToggles.nth(1).isChecked(),true,'Restore action must re-enable every body part.');
   const result=await page.evaluate(async()=>{
    const api=window.TROZAL_JS_MOTION;
    const object=api.getObjects()[0];

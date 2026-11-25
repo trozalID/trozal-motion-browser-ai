@@ -148,6 +148,7 @@ async function renderRigMaskReview(rig){
  const note=document.createElement('p');note.textContent='Warna menunjukkan layer hasil pemisahan. Matikan centang pada bagian yang salah/terkontaminasi untuk mengecualikannya dari rig, tanpa mengubah file sumber.';panel.append(note);
  const canvas=document.createElement('canvas');canvas.id='trozalJsRigMaskCanvas';canvas.width=rig.width;canvas.height=rig.height;panel.append(canvas);
  const controls=document.createElement('div');controls.id='trozalJsRigMaskParts';panel.append(controls);
+ const restore=document.createElement('button');restore.type='button';restore.id='trozalJsRigMaskRestoreAll';restore.textContent='Pulihkan semua bagian';restore.addEventListener('click',async()=>{rigReviewExcluded.clear();controls.querySelectorAll('input[type=checkbox]').forEach(input=>{input.checked=true;});await paint();const obj=currentObject();obj.rigData=rig;obj.rigAssets={background:rig.background};rig.parts.forEach(item=>obj.rigAssets[item.id]=item.src);obj.code=buildCharacterRigCode(rig,rigMotionPreset.value,Number(rigIntensity.value)/100);code.value=obj.code;currentScene().code=obj.code;codeRevision++;if(await apply())await show(Number(time.value)||0);});panel.append(restore);
  const state=document.createElement('div');state.id='trozalJsRigMaskReviewStatus';state.textContent='Semua bagian aktif.';panel.append(state);
  rigDiagnostics.append(panel);
  const source=new Image();source.src=rigSourceDataUrl;await source.decode();rigReviewSource=source;
@@ -170,6 +171,7 @@ async function renderRigMaskReview(rig){
   const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=true;checkbox.dataset.partId=part.id;
   const text=document.createElement('span');text.textContent=part.name||part.id;
   checkbox.addEventListener('change',async()=>{
+   if(!checkbox.checked&&rig.parts.every(item=>item.id===part.id||rigReviewExcluded.has(item.id))){checkbox.checked=true;state.textContent='Rig harus menyisakan minimal satu bagian aktif.';return;}
    if(checkbox.checked)rigReviewExcluded.delete(part.id);else rigReviewExcluded.add(part.id);
    await paint();
    const obj=currentObject(),includedIds=new Set(rig.parts.filter(item=>!rigReviewExcluded.has(item.id)).map(item=>item.id));
