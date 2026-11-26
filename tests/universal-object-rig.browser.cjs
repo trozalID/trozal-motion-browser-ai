@@ -53,10 +53,17 @@ const {chromium}=require('playwright');
     async dispose(){this.disposed=true;}
    };
   });
-  const box=await page.locator('#itcvRigSource').boundingBox();
-  const map=await page.locator('#itcvRigSource').evaluate(el=>el.__trozalMap);
-  await page.mouse.click(box.x+box.width*(map.x+map.w*.72)/640,box.y+box.height*(map.y+map.h*.5)/360);
-  await page.waitForFunction(()=>document.getElementById('itcvRigParts')?.querySelector('input[type="text"]')?.value.includes('Komponen manual'));
+  const rigCanvas=page.locator('#itcvRigSource');
+  const map=await rigCanvas.evaluate(el=>el.__trozalMap);
+  assert.ok(map&&map.w>0&&map.h>0,'Source canvas must expose a decoded image coordinate map before manual selection.');
+  // Use a locator-relative click so Chromium targets the canvas itself. A raw
+  // page.mouse coordinate can land on an overlapping panel and silently click
+  // the wrong element when the workspace layout changes.
+  await rigCanvas.click({position:{x:map.x+map.w*.72,y:map.y+map.h*.5},timeout:10000});
+  await page.waitForFunction(()=>document.getElementById('itcvRigParts')?.querySelector('input[type="text"]')?.value.includes('Komponen manual'),null,{timeout:10000}).catch(async error=>{
+   const diagnostic=await page.evaluate(()=>({map:document.getElementById('itcvRigSource')?.__trozalMap,components:document.getElementById('itcvRigParts')?.innerText||'',status:document.getElementById('itcvStatus')?.textContent||'',canvasRect:(()=>{const r=document.getElementById('itcvRigSource')?.getBoundingClientRect();return r?{x:r.x,y:r.y,width:r.width,height:r.height}:null;})()}));
+   throw new Error(error.message+' | manualPointDiagnostic='+JSON.stringify(diagnostic));
+  });
   await page.locator('#itcvBuildRig').click();
   await page.waitForFunction(()=>{const html=document.getElementById('itcvHtml')?.value||'';const status=document.getElementById('itcvStatus')?.textContent||'';return (html.includes('@keyframes trozal-part-0')&&html.includes('class="part-0"')&&html.includes('class="rig-part-node rig-node-0"')&&html.includes('class="rig-canvas"'))||/Universal Rig gagal:/.test(status);},{timeout:30000}).catch(async error=>{const diagnostic=await page.evaluate(()=>({status:document.getElementById('itcvStatus')?.textContent||'',rigStatus:document.getElementById('itcvRigStatus')?.textContent||'',htmlLength:document.getElementById('itcvHtml')?.value?.length||0,jsLength:document.getElementById('itcvJs')?.value?.length||0,pageErrors:window.__testPageErrors||[]}));throw new Error(error.message+' | rigBuildDiagnostic='+JSON.stringify(diagnostic));});
   const buildStatus=await page.locator('#itcvStatus').innerText();
