@@ -314,7 +314,7 @@ const path=require('node:path');
   assert.match(moduleSource,/jointSeamPoints = \(parent\.jointSeamPoints \|\| \[\]\)\.concat\(seam\)/,'Both parent and child layers must receive the same seam anchor.');
   assert.match(moduleSource,/seamFeather = \(1 - t \* t \* \(3 - 2 \* t\)\) \* jointSeamStrength/,'Joint overlap feather must honor the configured seam strength.');
   assert.match(moduleSource,/jointSeamRadiusScale/,'Mode 3 must support a configurable joint seam radius.');
-  assert.match(directorSource,/trozalJsJointSeamControls/,'Mode 3 must show visible joint seam controls.');
+  assert.match(directorSource,/itcvRigSeamEnabled/,'Mode 3 must show visible joint seam controls in the Character Rig workspace.');
   assert.match(directorSource,/jointSeamEnabled/,'Mode 3 controls must be passed into the rig builder.');
   assert.match(moduleSource,/confidence >= CHARACTER_RIG_MASK_THRESHOLDS\.assetAlpha/,'Joint overlap must use only accepted foreground confidence, never background pixels.');
   assert.match(moduleSource,/diagnostics, jointSeams/,'Generated Mode 3 rig must retain joint seam diagnostics.');
