@@ -4,6 +4,10 @@ const fs=require('node:fs');
 const path=require('node:path');
 (async()=>{
   const rig=await import('../js/character-rig.mjs');
+  assert.match(await fs.promises.readFile(path.join(__dirname,'../js/character-rig.mjs'),'utf8'),/const maskPreview = maskReviewCanvas\.toDataURL\("image\/png"\);[\s\S]*?parts: parts\.map\(part => \(\{ \.\.\.part, motionProfile: getJointMotionProfile\(part\) \}\)\), maskPreview/,
+    'Character Rig must return a reviewable overlay of assigned and unassigned foreground masks.');
+  assert.match(ui,/itcvRigMaskReviewImage/,
+    'Mode 3 must display the mask review overlay before the generated rig is edited or exported.');
   const ui=await fs.promises.readFile(path.join(__dirname,'../trozal-image-to-code-video.js'),'utf8');
   assert.deepEqual(rig.CHARACTER_RIG_MASK_THRESHOLDS,{assetAlpha:0.12,labelAssignment:0.12,backgroundInpaint:0.12,maxPartAssignmentScore:2.2});
   assert.equal(rig.CHARACTER_RIG_MASK_THRESHOLDS.maxPartAssignmentScore,2.2,'Part assignment must include a wider garment/silhouette envelope so valid foreground pixels are not left behind.');
