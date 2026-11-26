@@ -854,7 +854,7 @@ function rawCanvasFromImageData(data) {
   canvas.getContext("2d").putImageData(data, 0, 0);
   return canvas;
 }
-function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bounds, spec, underlayMap = null) {
+function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bounds, spec, underlayMap = null, jointSeamStrength = 0.85) {
   // Character torso underlay carries one bounds object, while the regular
   // segmentation path carries an array indexed by part. Normalize both shapes.
   const box = Array.isArray(bounds) ? bounds[partIndex] : bounds;
@@ -1061,7 +1061,8 @@ export async function createCharacterRig(dataUrl, options = {}) {
         maskAt, i,
         useUnderlay ? torsoUnderlay.bounds : (partUnderlay ? partUnderlay.bounds : bounds),
         specs[i],
-        partUnderlay ? partUnderlay.sourceMap : null
+        partUnderlay ? partUnderlay.sourceMap : null,
+        jointSeamStrength
       );
       if (asset) parts.push(asset);
     }

@@ -4,6 +4,12 @@ const fs=require('node:fs');
 const path=require('node:path');
 (async()=>{
   const rig=await import('../js/character-rig.mjs');
+  const rigSource=await fs.promises.readFile(path.join(__dirname,'../js/character-rig.mjs'),'utf8');
+  assert.ok(rigSource.includes('underlayMap = null, jointSeamStrength = 0.85'),
+    'createPartAsset must receive jointSeamStrength as a scoped parameter with a safe default.');
+  assert.ok(rigSource.includes('partUnderlay ? partUnderlay.sourceMap : null,\n        jointSeamStrength\n      );'),
+    'createCharacterRig must pass the configured joint seam strength into every part asset.');
+
   const ui=await fs.promises.readFile(path.join(__dirname,'../trozal-image-to-code-video.js'),'utf8');
   assert.deepEqual(rig.CHARACTER_RIG_MASK_THRESHOLDS,{assetAlpha:0.12,labelAssignment:0.12,backgroundInpaint:0.12,maxPartAssignmentScore:2.2});
   assert.equal(rig.CHARACTER_RIG_MASK_THRESHOLDS.maxPartAssignmentScore,2.2,'Part assignment must include a wider garment/silhouette envelope so valid foreground pixels are not left behind.');
