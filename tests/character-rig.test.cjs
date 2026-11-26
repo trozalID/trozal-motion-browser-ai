@@ -358,5 +358,6 @@ const path=require('node:path');
   const brokenHierarchy=[{id:'a',parent:'b'},{id:'b',parent:'a'}];
   assert.equal(rig.wouldCreateCharacterRigParentCycle(brokenHierarchy,'torso','a'),true,
     'An already cyclic ancestor graph must be treated as invalid.');
-console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments and self-contained export wiring');
+assert.match(directorSource,/itcvMotionAssistControls/,'Mode 3 must expose the visible pose preset, foot contact lock, and follow-through controls.');assert.match(directorSource,/cfg\.motionAssist=/,'Motion assist controls must be serialized into the generated runtime.');assert.match(directorSource,/footStance/,'Generated character runtime must reduce foot rotation during stance.');assert.match(directorSource,/followThrough/,'Generated character runtime must blend secondary follow-through motion.');assert.match(directorSource,/preset==="run"/,'Generated character runtime must adapt cadence for walk/run presets.');
+console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments, motion assist and self-contained export wiring');
 })().catch(error=>{console.error(error);process.exit(1);});
