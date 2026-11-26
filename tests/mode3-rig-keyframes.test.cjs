@@ -10,5 +10,12 @@ assert.match(source, /function sampleRigKeyframe\(keyframes,time,duration\)/, 'R
 assert.match(source, /Number\(keyframe\.rotation\)/, 'Runtime must apply keyframed rotation');
 assert.match(source, /Number\(keyframe\.x\)/, 'Runtime must apply keyframed horizontal offset');
 assert.match(source, /Number\(keyframe\.y\)/, 'Runtime must apply keyframed vertical offset');
+assert.match(source, /CHARACTER MOTION RECONSTRUCTION · MODE 3/, 'Mode 3 must expose a visible Character Motion Reconstruction panel');
+assert.match(source, /itcvReconEnabled/, 'Character reconstruction must be user-toggleable');
+assert.match(source, /itcvReconCoupling/, 'Character reconstruction must expose parent-child joint coupling');
+assert.match(source, /itcvReconAngle/, 'Character reconstruction must expose a joint rotation limit');
+assert.match(source, /cfg\.motionReconstruction/, 'Motion reconstruction settings must be serialized into the generated runtime');
+assert.match(source, /jointLimits=\{shoulder:65,elbow:115,wrist:70,hip:55,knee:115,ankle:40/, 'Runtime must apply conservative per-joint anatomical rotation limits');
+assert.match(source, /jointCoupling/, 'Runtime must blend child motion with parent motion');
 new Function(source);
 console.log('Mode 3 per-part keyframe timeline static regression checks passed.');
