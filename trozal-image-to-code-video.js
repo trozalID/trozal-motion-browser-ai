@@ -383,8 +383,23 @@ function renderRigDirector(rig){
  const items=rig&&Array.isArray(rig.parts)?rig.parts:currentComponents;
  if(!rig){info.textContent=items.length+' komponen siap diproses. '+(items.length?'Tekan AI SEGMENTASI untuk memotong mask piksel.':'Belum ada komponen AI. Klik objek pada gambar untuk memilih titik manual.');}
  else{const report=rig.diagnostics||null;const partWarnings=report&&Array.isArray(report.parts)?report.parts.filter(part=>part.warnings&&part.warnings.length):[];const details=partWarnings.slice(0,4).map(part=>part.name+': '+part.warnings.join(' ')).join(' · ');info.textContent=(rig.model||'Universal Rig')+' · '+rig.parts.length+' PNG layer transparan · background reconstruction perkiraan.'+(report?' Cakupan anatomi '+report.assignedForegroundPercent+'% · '+report.warningCount+' peringatan mask · '+(report.underlayParts||0)+' bagian mendapat underlay ('+(report.underlayPixels||0)+' px). ':'')+(details?' Periksa: '+details+' ':'')+'Nama/jenis/gerak berasal dari Vision dan dapat diedit.';}
+ let maskReview=$('itcvRigMaskReview');
+ if(!maskReview){
+  maskReview=document.createElement('section');maskReview.id='itcvRigMaskReview';
+  maskReview.style.cssText='margin:10px 0;padding:10px;border:1px solid #3c9f8c;border-radius:10px;background:linear-gradient(145deg,#103b38,#10242b);color:#e2fff8';
+  maskReview.innerHTML='<strong style="display:block;color:#a8ffe4;margin-bottom:6px">CHARACTER MASK REVIEW · PEMERIKSAAN SEBELUM ANIMASI</strong><p style="font-size:10px;line-height:1.45;margin:4px 0 8px">Hijau kebiruan: piksel foreground yang masuk ke layer anatomi. Jingga: foreground yang belum berhasil dipetakan ke bagian tubuh. Periksa bahu, siku, pergelangan, pinggul, lutut, dan pergelangan kaki.</p><img id="itcvRigMaskReviewImage" alt="Overlay mask karakter" style="display:block;width:100%;max-height:420px;object-fit:contain;background:#07131b;border:1px solid #367d91;border-radius:8px"><div id="itcvRigMaskReviewStats" style="font-size:10px;line-height:1.5;margin-top:7px"></div>';
+  info.insertAdjacentElement('afterend',maskReview);
+ }
+ const maskReviewImage=$('itcvRigMaskReviewImage'),maskReviewStats=$('itcvRigMaskReviewStats');
+ if(rig&&rig.maskPreview){
+  maskReview.hidden=false;maskReviewImage.src=rig.maskPreview;
+  const d=rig.diagnostics||{};
+  const warnings=d.parts&&Array.isArray(d.parts)?d.parts.filter(part=>part.warnings&&part.warnings.length):[];
+  maskReviewStats.textContent='Cakupan anatomi '+(d.assignedForegroundPercent??'—')+'% · foreground belum terpetakan '+(d.unassignedForegroundPercent??'—')+'% · '+(d.warningCount??warnings.length)+' peringatan · '+warnings.length+' layer perlu ditinjau. '+warnings.slice(0,6).map(part=>(part.name||part.id)+': '+part.warnings.join(', ')).join(' | ');
+ }else{maskReview.hidden=true;}
  items.forEach((part,index)=>{
   const row=document.createElement('div');row.className='scene-layer';row.style.display='block';
+  if(rig&&part.src){const thumb=document.createElement('img');thumb.src=part.src;thumb.alt='Layer '+(part.name||index+1);thumb.style.cssText='display:block;width:92px;height:64px;object-fit:contain;background:#07131b;border:1px solid #367d91;border-radius:6px;margin:0 0 7px';row.append(thumb);}
   const editor=document.createElement('div');editor.className='rig-part-editor';
   const check=document.createElement('input');check.type='checkbox';check.checked=part.enabled!==false;check.title='Tampilkan layer';
   check.addEventListener('change',()=>{part.enabled=check.checked;if(currentRig)output(currentScene||{description:'Universal Rig',layers:[]});});
