@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 (async()=>{
   const rig=await import('../js/character-rig.mjs');
+  const ui=await fs.promises.readFile(path.join(__dirname,'../trozal-image-to-code-video.js'),'utf8');
   assert.deepEqual(rig.CHARACTER_RIG_MASK_THRESHOLDS,{assetAlpha:0.12,labelAssignment:0.12,backgroundInpaint:0.12,maxPartAssignmentScore:2.2});
   assert.equal(rig.CHARACTER_RIG_MASK_THRESHOLDS.maxPartAssignmentScore,2.2,'Part assignment must include a wider garment/silhouette envelope so valid foreground pixels are not left behind.');
   assert.equal(rig.shouldInpaintMaskPixel(0.20),true,'Faint subject-edge pixels used by part alpha must also be removed from the background');
@@ -327,7 +328,10 @@ const path=require('node:path');
   assert.match(directorSource,/itcvContinuity/,'Mode 3 must expose cross-segment continuity control.');
   assert.match(directorSource,/crossSegmentContinuity/,'Mode 3 must serialize cross-segment continuity.');
   assert.match(directorSource,/drawPart\(p,parentWave\)/,'Mode 3 must propagate parent motion influence.');
-    const hierarchy=[
+    assert.match(ui,/function wouldCreateRigParentCycle\(/,'Mode 3 must validate parent changes in the visible rig editor.');
+  assert.match(ui,/!wouldCreateRigParentCycle\(rig\.parts,part\.id,p\.id\)/,'Mode 3 must hide descendant parts from invalid parent choices.');
+  assert.match(ui,/Perubahan parent ditolak/,'Mode 3 must give visible feedback when an invalid hierarchy change is rejected.');
+  const hierarchy=[
     {id:'torso',parent:null},{id:'upperArmL',parent:'torso'},
     {id:'forearmL',parent:'upperArmL'},{id:'handL',parent:'forearmL'},
     {id:'upperLegL',parent:'torso'},{id:'lowerLegL',parent:'upperLegL'}
