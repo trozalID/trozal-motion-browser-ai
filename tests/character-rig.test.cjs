@@ -359,5 +359,8 @@ const path=require('node:path');
   assert.equal(rig.wouldCreateCharacterRigParentCycle(brokenHierarchy,'torso','a'),true,
     'An already cyclic ancestor graph must be treated as invalid.');
 assert.match(ui,/id="itcvBuildCharacterParts"/,'Mode 3 must expose a dedicated Auto Character Parts action.');assert.match(ui,/AUTO CHARACTER PARTS · BUATKAN RIG/,'The human body rig entry point must be clearly named for users.');assert.match(ui,/buildCharacterRig\(false\)/,'Auto Character Parts must invoke the dedicated human character rig builder.');assert.match(directorSource,/itcvMotionAssistControls/,'Mode 3 must expose the visible pose preset, foot contact lock, and follow-through controls.');assert.match(directorSource,/cfg\.motionAssist=/,'Motion assist controls must be serialized into the generated runtime.');assert.match(directorSource,/footStance/,'Generated character runtime must reduce foot rotation during stance.');assert.match(directorSource,/followThrough/,'Generated character runtime must blend secondary follow-through motion.');assert.match(directorSource,/preset==="run"/,'Generated character runtime must adapt cadence for walk/run presets.');
+
+  for(const id of ['itcvGestureAction','itcvGazeDirection','itcvBreathing','itcvBodySway','itcvRootMotion']) assert.ok(ui.includes('id="'+id+'"'),'Mode 3 must expose '+id+'.');
+  for(const token of ['gestureAngle','gazeAngle','breathing','bodySway','rootPath']) assert.ok(ui.includes(token),'Generated character runtime must apply '+token+'.');
 console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments, motion assist and self-contained export wiring');
 })().catch(error=>{console.error(error);process.exit(1);});
