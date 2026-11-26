@@ -888,7 +888,7 @@ function createPartAsset(source, width, height, labelMap, maskAt, partIndex, bou
           Math.hypot(x + 0.5 - point.x, y + 0.5 - point.y) < point.radius);
         if (seam) {
           const t = Math.max(0, Math.min(1, Math.hypot(x + 0.5 - seam.x, y + 0.5 - seam.y) / seam.radius));
-          seamFeather = 1 - t * t * (3 - 2 * t);
+          seamFeather = (1 - t * t * (3 - 2 * t)) * jointSeamStrength;
           include = seamFeather > 0.015;
         }
       }
@@ -955,6 +955,9 @@ export function evaluateJointMotion(part = {}, time = 0, config = {}) {
 
 export async function createCharacterRig(dataUrl, options = {}) {
   const onProgress = typeof options.onProgress === "function" ? options.onProgress : () => {};
+  const jointSeamEnabled = options.jointSeamEnabled !== false;
+  const jointSeamStrength = Math.max(0, Math.min(1, Number(options.jointSeamStrength ?? 0.85)));
+  const jointSeamRadiusScale = Math.max(0.5, Math.min(1.8, Number(options.jointSeamRadiusScale ?? 1)));
   onProgress("Menyiapkan gambar…");
   const original = await loadImage(dataUrl);
   const maxDimension = Math.max(640, Math.min(1600, Number(options.maxDimension) || 1280));
@@ -995,9 +998,10 @@ export async function createCharacterRig(dataUrl, options = {}) {
     const jointSeams = [];
     const specsById = new Map(specs.map(spec => [spec.id, spec]));
     for (const child of specs) {
+      if (!jointSeamEnabled) continue;
       const parent = specsById.get(child.parent);
       if (!parent || !child.pivot || !Number.isFinite(child.pivot.x) || !Number.isFinite(child.pivot.y)) continue;
-      const radius = Math.max(8, Math.min(38, Math.min(Number(child.radiusPx) || 12, Number(parent.radiusPx) || 12) * 1.25));
+      const radius = Math.max(5, Math.min(52, Math.min(Number(child.radiusPx) || 12, Number(parent.radiusPx) || 12) * 1.25 * jointSeamRadiusScale));
       const seam = { parentId: parent.id, childId: child.id, x: child.pivot.x, y: child.pivot.y, radius };
       jointSeams.push(seam);
       parent.jointSeamPoints = (parent.jointSeamPoints || []).concat(seam);
@@ -1037,6 +1041,7 @@ export async function createCharacterRig(dataUrl, options = {}) {
       version: 1, kind: "mediapipe-pose-character-rig",
       width, height, background: background.toDataURL("image/png"),
       parts: parts.map(part => ({ ...part, motionProfile: getJointMotionProfile(part) })), detectedLandmarks: landmarks.length, diagnostics, jointSeams,
+      jointSeamSettings: { enabled: jointSeamEnabled, strength: jointSeamStrength, radiusScale: jointSeamRadiusScale },
       notes: "Bagian tubuh dihasilkan dari mask siluet manusia dan estimasi sendi. Diagnostik mengukur cakupan dan fragmentasi layer; peringatan bukan pengganti pemeriksaan visual. Rekonstruksi latar berupa inpainting lokal dan dapat kurang akurat pada latar kompleks."
     };
   } finally {

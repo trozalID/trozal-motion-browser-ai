@@ -312,7 +312,10 @@ const path=require('node:path');
   assert.match(moduleSource,/renderOrder: Number\.isFinite\(Number\(spec\.renderOrder\)\) \? Number\(spec\.renderOrder\) : 0/,'Exported rig layers must retain their render order metadata.');
   assert.match(moduleSource,/const jointSeams = \[\]/,'Mode 3 must build shared seam descriptors for connected anatomical segments.');
   assert.match(moduleSource,/jointSeamPoints = \(parent\.jointSeamPoints \|\| \[\]\)\.concat\(seam\)/,'Both parent and child layers must receive the same seam anchor.');
-  assert.match(moduleSource,/seamFeather = 1 - t \* t \* \(3 - 2 \* t\)/,'Duplicated foreground pixels must fade smoothly away from the shared joint pivot.');
+  assert.match(moduleSource,/seamFeather = \(1 - t \* t \* \(3 - 2 \* t\)\) \* jointSeamStrength/,'Joint overlap feather must honor the configured seam strength.');
+  assert.match(moduleSource,/jointSeamRadiusScale/,'Mode 3 must support a configurable joint seam radius.');
+  assert.match(directorSource,/itcvRigSeamControls/,'Mode 3 must render the visible joint seam controls panel in the Character Rig workspace.');
+  assert.match(directorSource,/jointSeamEnabled/,'Mode 3 controls must be passed into the rig builder.');
   assert.match(moduleSource,/confidence >= CHARACTER_RIG_MASK_THRESHOLDS\.assetAlpha/,'Joint overlap must use only accepted foreground confidence, never background pixels.');
   assert.match(moduleSource,/diagnostics, jointSeams/,'Generated Mode 3 rig must retain joint seam diagnostics.');
 

@@ -350,7 +350,8 @@ async function buildCharacterRig(auto=false){
   if(!uris[0])uris[0]=await read(files[0]);
   status('Menganalisis pose manusia dan memisahkan layer tubuh…');
   const mod=await import('./js/character-rig.mjs');
-  currentRig=await mod.createCharacterRig(uris[0],{maxDimension:1280,onProgress:message=>status(message)});
+  const seamEnabled=$('itcvRigSeamEnabled'),seamStrength=$('itcvRigSeamStrength'),seamRadius=$('itcvRigSeamRadius');
+  currentRig=await mod.createCharacterRig(uris[0],{maxDimension:1280,jointSeamEnabled:seamEnabled?seamEnabled.checked:true,jointSeamStrength:seamStrength?Number(seamStrength.value)/100:0.85,jointSeamRadiusScale:seamRadius?Number(seamRadius.value)/100:1,onProgress:message=>status(message)});
   renderRigDirector(currentRig);
   return true;
  }catch(error){currentRig=null;renderRigDirector(null);if(!auto)throw error;return false;}
@@ -358,6 +359,7 @@ async function buildCharacterRig(auto=false){
 }
 function renderRigDirector(rig){
  const panel=$('itcvRigPanel'),host=$('itcvRigParts'),info=$('itcvRigStatus');host.replaceChildren();panel.style.display='block';
+ let seamPanel=$('itcvRigSeamControls');if(!seamPanel){seamPanel=document.createElement('section');seamPanel.id='itcvRigSeamControls';seamPanel.style.cssText='margin:10px 0;padding:10px;border:1px solid #3d8da7;border-radius:9px;background:linear-gradient(145deg,#102d3d,#0a1c29);color:#e5f8ff';seamPanel.innerHTML='<strong style="display:block;color:#a9eaff;margin-bottom:7px">JOINT SEAM WELDING · KONTROL SAMBUNGAN</strong><label style="display:flex;align-items:center;gap:7px"><input id="itcvRigSeamEnabled" type="checkbox" checked style="width:auto"> Aktifkan overlap piksel sendi</label><label>Kekuatan sambungan <output id="itcvRigSeamStrengthValue">85%</output><input id="itcvRigSeamStrength" type="range" min="0" max="100" value="85"></label><label>Radius sambungan <output id="itcvRigSeamRadiusValue">100%</output><input id="itcvRigSeamRadius" type="range" min="50" max="180" value="100"></label><small>Overlap hanya menggunakan piksel foreground yang lolos confidence mask.</small>';info.insertAdjacentElement('afterend',seamPanel);const strength=seamPanel.querySelector('#itcvRigSeamStrength'),radius=seamPanel.querySelector('#itcvRigSeamRadius');strength.addEventListener('input',()=>seamPanel.querySelector('#itcvRigSeamStrengthValue').textContent=strength.value+'%');radius.addEventListener('input',()=>seamPanel.querySelector('#itcvRigSeamRadiusValue').textContent=radius.value+'%');}
  const items=rig&&Array.isArray(rig.parts)?rig.parts:currentComponents;
  if(!rig){info.textContent=items.length+' komponen siap diproses. '+(items.length?'Tekan AI SEGMENTASI untuk memotong mask piksel.':'Belum ada komponen AI. Klik objek pada gambar untuk memilih titik manual.');}
  else{const report=rig.diagnostics||null;const partWarnings=report&&Array.isArray(report.parts)?report.parts.filter(part=>part.warnings&&part.warnings.length):[];const details=partWarnings.slice(0,4).map(part=>part.name+': '+part.warnings.join(' ')).join(' · ');info.textContent=(rig.model||'Universal Rig')+' · '+rig.parts.length+' PNG layer transparan · background reconstruction perkiraan.'+(report?' Cakupan anatomi '+report.assignedForegroundPercent+'% · '+report.warningCount+' peringatan mask. ':'')+(details?' Periksa: '+details+' ':'')+'Nama/jenis/gerak berasal dari Vision dan dapat diedit.';}
