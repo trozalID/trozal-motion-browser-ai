@@ -327,5 +327,21 @@ const path=require('node:path');
   assert.match(directorSource,/itcvContinuity/,'Mode 3 must expose cross-segment continuity control.');
   assert.match(directorSource,/crossSegmentContinuity/,'Mode 3 must serialize cross-segment continuity.');
   assert.match(directorSource,/drawPart\(p,parentWave\)/,'Mode 3 must propagate parent motion influence.');
-  console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments and self-contained export wiring');
+    const hierarchy=[
+    {id:'torso',parent:null},{id:'upperArmL',parent:'torso'},
+    {id:'forearmL',parent:'upperArmL'},{id:'handL',parent:'forearmL'},
+    {id:'upperLegL',parent:'torso'},{id:'lowerLegL',parent:'upperLegL'}
+  ];
+  assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'handL','torso'),true,
+    'A hand cannot become an ancestor of its own arm chain.');
+  assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'torso','handL'),true,
+    'The torso cannot be parented to a descendant limb.');
+  assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'handL','upperLegL'),false,
+    'A valid parent change between separate branches must remain available.');
+  assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'handL','missing'),true,
+    'Unknown parent IDs must be rejected rather than silently flattening a rig.');
+  const brokenHierarchy=[{id:'a',parent:'b'},{id:'b',parent:'a'}];
+  assert.equal(rig.wouldCreateCharacterRigParentCycle(brokenHierarchy,'torso','a'),true,
+    'An already cyclic ancestor graph must be treated as invalid.');
+console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments and self-contained export wiring');
 })().catch(error=>{console.error(error);process.exit(1);});
