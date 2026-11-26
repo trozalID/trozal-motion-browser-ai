@@ -109,11 +109,6 @@ function buildCharacterRigCode(rig,preset='walk',intensity=1){
  ].join('\n');
 }
 const rigFile=$('trozalJsRigFile'),rigBuild=$('trozalJsRigBuild'),rigStatus=$('trozalJsRigStatus');let rigSourceDataUrl='';
-const seamPanel=document.createElement('section');seamPanel.id='trozalJsJointSeamControls';seamPanel.className='jsm-rig-diag';seamPanel.innerHTML='<div class="jsm-rig-diag-title">JOINT SEAM WELDING · KONTROL SAMBUNGAN</div><label><input id="trozalJsSeamEnabled" type="checkbox" checked> Aktifkan overlap piksel sendi</label><label>Kekuatan sambungan <output id="trozalJsSeamStrengthValue">85%</output><input id="trozalJsSeamStrength" type="range" min="0" max="100" value="85"></label><label>Radius sambungan <output id="trozalJsSeamRadiusValue">100%</output><input id="trozalJsSeamRadius" type="range" min="50" max="180" value="100"></label><p>Hanya piksel foreground yang lolos mask karakter yang dapat dibagikan pada kedua layer.</p>';
-rigStatus.insertAdjacentElement('afterend',seamPanel);
-const seamStrengthControl=seamPanel.querySelector('#trozalJsSeamStrength'),seamRadiusControl=seamPanel.querySelector('#trozalJsSeamRadius');
-seamStrengthControl.addEventListener('input',()=>seamPanel.querySelector('#trozalJsSeamStrengthValue').textContent=seamStrengthControl.value+'%');
-seamRadiusControl.addEventListener('input',()=>seamPanel.querySelector('#trozalJsSeamRadiusValue').textContent=seamRadiusControl.value+'%');
 const rigDiagnostics=document.createElement('section');rigDiagnostics.id='trozalJsRigDiagnostics';rigDiagnostics.hidden=true;rigDiagnostics.setAttribute('aria-live','polite');rigStatus.insertAdjacentElement('afterend',rigDiagnostics);
 function renderRigDiagnostics(report){
  rigDiagnostics.replaceChildren();
@@ -223,13 +218,13 @@ rigBuild.addEventListener('click',async()=>{
  try{
   rigStatus.textContent='Memuat model pose dan segmentasi lokal…';
   const mod=await import('./js/character-rig.mjs?v=20261124-2');
-  const rig=await mod.createCharacterRig(rigSourceDataUrl,{maxDimension:1280,jointSeamEnabled:seamPanel.querySelector('#trozalJsSeamEnabled').checked,jointSeamStrength:Number(seamStrengthControl.value)/100,jointSeamRadiusScale:Number(seamRadiusControl.value)/100,onProgress:message=>{rigStatus.textContent=message;}});
+  const rig=await mod.createCharacterRig(rigSourceDataUrl,{maxDimension:1280,onProgress:message=>{rigStatus.textContent=message;}});
   renderRigDiagnostics(rig.diagnostics);
   if(rig.height>rig.width)setPreviewAspect('9:16');
   const assets={background:rig.background};for(const part of rig.parts)assets[part.id]=part.src;
   const obj=currentObject();obj.rigAssets=assets;obj.rigData=rig;obj.name='Character Rig · '+rig.parts.length+' bagian';obj.code=buildCharacterRigCode(rig,rigMotionPreset.value,Number(rigIntensity.value)/100);
   code.value=obj.code;currentScene().code=obj.code;codeRevision++;syncSceneUI();
-  if(await apply()){await show(+time.value||0);await renderRigMaskReview(rig);rigStatus.textContent='BERHASIL · '+rig.parts.length+' layer · '+(rig.jointSeams||[]).length+' sambungan bersama · overlap '+(rig.jointSeamSettings?.enabled?'aktif':'nonaktif')+'. Preview siap diekspor.';}
+  if(await apply()){await show(+time.value||0);await renderRigMaskReview(rig);rigStatus.textContent='BERHASIL · '+rig.parts.length+' layer tubuh terpisah. Gerakan sendi aktif di Preview dan siap diekspor.';}
   else throw new Error('Kode rig gagal diterapkan ke Preview.');
  }catch(error){rigStatus.textContent='RIG GAGAL · '+(error?.message||String(error));}
  finally{rigBuild.disabled=false;}
