@@ -1069,10 +1069,33 @@ export async function createCharacterRig(dataUrl, options = {}) {
     if (!parts.some(p => p.id === "torso") || !parts.some(p => p.id === "head") || parts.length < 5) {
       throw new Error("Pemisahan bagian tubuh belum cukup baik. Gunakan foto dengan kepala, bahu, dan sebagian besar tubuh terlihat.");
     }
+    const maskReviewCanvas = document.createElement("canvas");
+    maskReviewCanvas.width = width; maskReviewCanvas.height = height;
+    const maskReviewContext = maskReviewCanvas.getContext("2d");
+    maskReviewContext.drawImage(sourceCanvas, 0, 0);
+    const maskOverlayCanvas = document.createElement("canvas");
+    maskOverlayCanvas.width = maskWidth; maskOverlayCanvas.height = maskHeight;
+    const maskOverlayContext = maskOverlayCanvas.getContext("2d");
+    const maskOverlay = maskOverlayContext.createImageData(maskWidth, maskHeight);
+    for (let i = 0; i < rawMask.length; i++) {
+      const confidence = Number(rawMask[i]) || 0;
+      if (confidence < CHARACTER_RIG_MASK_THRESHOLDS.labelAssignment) continue;
+      const offset = i * 4;
+      if (labels[i] >= 0) {
+        maskOverlay.data[offset] = 44; maskOverlay.data[offset + 1] = 220;
+        maskOverlay.data[offset + 2] = 177; maskOverlay.data[offset + 3] = Math.round(150 * confidence);
+      } else {
+        maskOverlay.data[offset] = 255; maskOverlay.data[offset + 1] = 151;
+        maskOverlay.data[offset + 2] = 75; maskOverlay.data[offset + 3] = Math.round(190 * confidence);
+      }
+    }
+    maskOverlayContext.putImageData(maskOverlay, 0, 0);
+    maskReviewContext.drawImage(maskOverlayCanvas, 0, 0, width, height);
+    const maskPreview = maskReviewCanvas.toDataURL("image/png");
     onProgress("Rig karakter berhasil dibuat: " + parts.length + " bagian tubuh.");
     return {
       version: 1, kind: "mediapipe-pose-character-rig",
-      width, height, background: background.toDataURL("image/png"),
+      width, height, background: background.toDataURL("image/png"), maskPreview,
       parts: parts.map(part => ({ ...part, motionProfile: getJointMotionProfile(part) })), detectedLandmarks: landmarks.length,
       diagnostics: { ...diagnostics, underlayParts, underlayPixels }, jointSeams,
       jointSeamSettings: { enabled: jointSeamEnabled, strength: jointSeamStrength, radiusScale: jointSeamRadiusScale },
