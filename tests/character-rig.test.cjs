@@ -318,7 +318,7 @@ const path=require('node:path');
   assert.match(directorSource,/itcvRigSeamControls/,'Mode 3 must render the visible joint seam controls panel in the Character Rig workspace.');
   assert.match(directorSource,/jointSeamEnabled/,'Mode 3 controls must be passed into the rig builder.');
   assert.match(moduleSource,/confidence >= CHARACTER_RIG_MASK_THRESHOLDS\.assetAlpha/,'Joint overlap must use only accepted foreground confidence, never background pixels.');
-  assert.match(moduleSource,/diagnostics:\\s*\\{\\s*\\.\\.\\.diagnostics,\\s*underlayParts,\\s*underlayPixels\\s*\\},\\s*jointSeams/,'Generated Mode 3 rig must retain the base diagnostics, underlay coverage metrics, and shared joint seam descriptors.');
+  assert.match(moduleSource,/diagnostics:\s*\{\s*\.\.\.diagnostics,\s*underlayParts,\s*underlayPixels\s*\},\s*jointSeams/,'Generated Mode 3 rig must retain the base diagnostics, underlay coverage metrics, and shared joint seam descriptors.');
 
   assert.match(moduleSource,/motion: spec\.motion \|\| "swing"/,'Exported rig assets must retain their explicit motion mode instead of silently falling back to a generic default.');
   assert.match(directorSource,/const runtimeRig=characterRig&&Array\.isArray\(characterRig\.parts\)/,'The JavaScript Studio runtime must normalize and embed the active character rig before rendering.');
