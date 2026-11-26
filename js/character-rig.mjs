@@ -1036,6 +1036,13 @@ export async function createCharacterRig(dataUrl, options = {}) {
     onProgress("Memeriksa cakupan anatomi, fragmen mask, dan batas sendi bersama…");
     const diagnostics = analyzeCharacterMaskQuality(rawMask, labels, maskWidth, maskHeight, specs, bounds);
     const torsoUnderlay = buildTorsoUnderlay(source, labels, maskWidth, maskHeight, width, height, specs[0], maskAt);
+    let underlayPixels = 0;
+    if (torsoUnderlay) {
+      for (let i = 0; i < labels.length; i++) {
+        if (torsoUnderlay.labels[i] === 0 && labels[i] !== 0) underlayPixels++;
+      }
+    }
+    let underlayParts = torsoUnderlay ? 1 : 0;
     const background = reconstructBackground(source, rawMask, maskWidth, maskHeight, width, height, maskAt);
     const parts = [];
     for (let i = 0; i < specs.length; i++) {
@@ -1043,6 +1050,10 @@ export async function createCharacterRig(dataUrl, options = {}) {
       const partUnderlay = !useUnderlay && i > 0 && specs[i].motion !== "static"
         ? buildPartOcclusionUnderlayMap(labels, maskWidth, maskHeight, width, height, specs[i], i, maskAt, bounds[i])
         : null;
+      if (partUnderlay) {
+        underlayPixels += partUnderlay.filledPixels;
+        underlayParts++;
+      }
       const asset = createPartAsset(
         useUnderlay ? torsoUnderlay.source : source,
         width, height,
@@ -1061,7 +1072,8 @@ export async function createCharacterRig(dataUrl, options = {}) {
     return {
       version: 1, kind: "mediapipe-pose-character-rig",
       width, height, background: background.toDataURL("image/png"),
-      parts: parts.map(part => ({ ...part, motionProfile: getJointMotionProfile(part) })), detectedLandmarks: landmarks.length, diagnostics, jointSeams,
+      parts: parts.map(part => ({ ...part, motionProfile: getJointMotionProfile(part) })), detectedLandmarks: landmarks.length,
+      diagnostics: { ...diagnostics, underlayParts, underlayPixels }, jointSeams,
       jointSeamSettings: { enabled: jointSeamEnabled, strength: jointSeamStrength, radiusScale: jointSeamRadiusScale },
       notes: "Bagian tubuh dihasilkan dari mask siluet manusia dan estimasi sendi. Diagnostik mengukur cakupan dan fragmentasi layer; peringatan bukan pengganti pemeriksaan visual. Rekonstruksi latar berupa inpainting lokal dan dapat kurang akurat pada latar kompleks."
     };
