@@ -336,8 +336,10 @@ const path=require('node:path');
     {id:'forearmL',parent:'upperArmL'},{id:'handL',parent:'forearmL'},
     {id:'upperLegL',parent:'torso'},{id:'lowerLegL',parent:'upperLegL'}
   ];
-  assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'handL','torso'),true,
-    'A hand cannot become an ancestor of its own arm chain.');
+  assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'upperArmL','handL'),true,
+    'A hand cannot become the parent of its own upper-arm ancestor chain.');
+  assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'handL','torso'),false,
+    'Reparenting a hand directly to an existing ancestor must remain valid because it does not create a cycle.');
   assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'torso','handL'),true,
     'The torso cannot be parented to a descendant limb.');
   assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'handL','upperLegL'),false,
