@@ -1095,7 +1095,7 @@ export async function createCharacterRig(dataUrl, options = {}) {
     onProgress("Rig karakter berhasil dibuat: " + parts.length + " bagian tubuh.");
     return {
       version: 1, kind: "mediapipe-pose-character-rig",
-      width, height, background: background.toDataURL("image/png"),
+      width, height, background: background.toDataURL("image/png"), maskPreview,
       parts: parts.map(part => ({ ...part, motionProfile: getJointMotionProfile(part) })), detectedLandmarks: landmarks.length,
       diagnostics: { ...diagnostics, underlayParts, underlayPixels }, jointSeams,
       jointSeamSettings: { enabled: jointSeamEnabled, strength: jointSeamStrength, radiusScale: jointSeamRadiusScale },
