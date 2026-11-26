@@ -11,7 +11,7 @@ const path=require('node:path');
     'createCharacterRig must pass the configured joint seam strength into every part asset.');
 
   const ui=await fs.promises.readFile(path.join(__dirname,'../trozal-image-to-code-video.js'),'utf8');
-  const rigSource=await fs.promises.readFile(path.join(__dirname,'../js/character-rig.mjs'),'utf8');
+
   assert.ok(rigSource.includes('const maskPreview = maskReviewCanvas.toDataURL("image/png");') && rigSource.includes('parts: parts.map(part => ({ ...part, motionProfile: getJointMotionProfile(part) })), maskPreview'), 'Character Rig must return a reviewable overlay of assigned and unassigned foreground masks.');
   assert.ok(ui.includes('itcvRigMaskReviewImage'), 'Mode 3 must display the mask review overlay before editing or export.');
   assert.deepEqual(rig.CHARACTER_RIG_MASK_THRESHOLDS,{assetAlpha:0.12,labelAssignment:0.12,backgroundInpaint:0.12,maxPartAssignmentScore:2.2});
