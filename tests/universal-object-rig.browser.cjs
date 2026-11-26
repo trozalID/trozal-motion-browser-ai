@@ -58,7 +58,7 @@ const {chromium}=require('playwright');
   await page.mouse.click(box.x+box.width*(map.x+map.w*.72)/640,box.y+box.height*(map.y+map.h*.5)/360);
   await page.waitForFunction(()=>document.getElementById('itcvRigParts')?.querySelector('input[type="text"]')?.value.includes('Komponen manual'));
   await page.locator('#itcvBuildRig').click();
-  await page.waitForFunction(()=>{const html=document.getElementById('itcvHtml')?.value||'';return html.includes('@keyframes trozal-part-0')&&html.includes('class="part-0"')&&html.includes('class="rig-part-node rig-node-0"')&&html.includes('class="rig-canvas"');},{timeout:30000});
+  await page.waitForFunction(()=>{const html=document.getElementById('itcvHtml')?.value||'';const status=document.getElementById('itcvStatus')?.textContent||'';return (html.includes('@keyframes trozal-part-0')&&html.includes('class="part-0"')&&html.includes('class="rig-part-node rig-node-0"')&&html.includes('class="rig-canvas"'))||/Universal Rig gagal:/.test(status);},{timeout:30000}).catch(async error=>{const diagnostic=await page.evaluate(()=>({status:document.getElementById('itcvStatus')?.textContent||'',rigStatus:document.getElementById('itcvRigStatus')?.textContent||'',htmlLength:document.getElementById('itcvHtml')?.value?.length||0,jsLength:document.getElementById('itcvJs')?.value?.length||0,pageErrors:window.__testPageErrors||[]}));throw new Error(error.message+' | rigBuildDiagnostic='+JSON.stringify(diagnostic));});
   const exported=await page.locator('#itcvHtml').inputValue();
   assert.doesNotMatch(exported,/<script\b|\bimport\s*\(/i,'Importer-safe HTML must not contain JavaScript or module imports.');
   assert.match(exported,/@keyframes trozal-part-0/,'Each segmented object must receive a CSS keyframe animation.');
