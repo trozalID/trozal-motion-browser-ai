@@ -53,10 +53,25 @@ const {chromium}=require('playwright');
     async dispose(){this.disposed=true;}
    };
   });
-  const box=await page.locator('#itcvRigSource').boundingBox();
-  const map=await page.locator('#itcvRigSource').evaluate(el=>el.__trozalMap);
-  await page.mouse.click(box.x+box.width*(map.x+map.w*.72)/640,box.y+box.height*(map.y+map.h*.5)/360);
-  await page.waitForFunction(()=>document.getElementById('itcvRigParts')?.querySelector('input[type="text"]')?.value.includes('Komponen manual'));
+  const rigCanvas=page.locator('#itcvRigSource');
+  const map=await rigCanvas.evaluate(el=>el.__trozalMap);
+  assert.ok(map&&map.w>0&&map.h>0,'Source canvas must expose a decoded image coordinate map before manual selection.');
+  // The map uses the canvas backing-store coordinate system, while Playwright
+  // locator positions use CSS pixels. Scale explicitly for the responsive
+  // canvas (its max-height can make CSS dimensions differ from 640x360).
+  const canvasBox=await rigCanvas.boundingBox();
+  const canvasSize=await rigCanvas.evaluate(el=>({width:el.width,height:el.height}));
+  assert.ok(canvasBox&&canvasBox.width>0&&canvasBox.height>0,'Rig canvas must have a visible CSS box.');
+  const clickPosition={
+   x:(map.x+map.w*.72)*(canvasBox.width/canvasSize.width),
+   y:(map.y+map.h*.5)*(canvasBox.height/canvasSize.height)
+  };
+  assert.ok(clickPosition.x>=0&&clickPosition.x<canvasBox.width&&clickPosition.y>=0&&clickPosition.y<canvasBox.height,'Mapped image point must land inside the responsive canvas: '+JSON.stringify({clickPosition,canvasBox,canvasSize,map}));
+  await rigCanvas.click({position:clickPosition,timeout:10000});
+  await page.waitForFunction(()=>document.getElementById('itcvRigParts')?.querySelector('input[type="text"]')?.value.includes('Komponen manual'),null,{timeout:10000}).catch(async error=>{
+   const diagnostic=await page.evaluate(()=>({map:document.getElementById('itcvRigSource')?.__trozalMap,components:document.getElementById('itcvRigParts')?.innerText||'',status:document.getElementById('itcvStatus')?.textContent||'',canvasRect:(()=>{const r=document.getElementById('itcvRigSource')?.getBoundingClientRect();return r?{x:r.x,y:r.y,width:r.width,height:r.height}:null;})()}));
+   throw new Error(error.message+' | manualPointDiagnostic='+JSON.stringify(diagnostic));
+  });
   await page.locator('#itcvBuildRig').click();
   await page.waitForFunction(()=>{const html=document.getElementById('itcvHtml')?.value||'';const status=document.getElementById('itcvStatus')?.textContent||'';return (html.includes('@keyframes trozal-part-0')&&html.includes('class="part-0"')&&html.includes('class="rig-part-node rig-node-0"')&&html.includes('class="rig-canvas"'))||/Universal Rig gagal:/.test(status);},{timeout:30000}).catch(async error=>{const diagnostic=await page.evaluate(()=>({status:document.getElementById('itcvStatus')?.textContent||'',rigStatus:document.getElementById('itcvRigStatus')?.textContent||'',htmlLength:document.getElementById('itcvHtml')?.value?.length||0,jsLength:document.getElementById('itcvJs')?.value?.length||0,pageErrors:window.__testPageErrors||[]}));throw new Error(error.message+' | rigBuildDiagnostic='+JSON.stringify(diagnostic));});
   const buildStatus=await page.locator('#itcvStatus').innerText();
