@@ -362,5 +362,7 @@ assert.match(ui,/id="itcvBuildCharacterParts"/,'Mode 3 must expose a dedicated A
 
   for(const id of ['itcvGestureAction','itcvGazeDirection','itcvBreathing','itcvBodySway','itcvRootMotion']) assert.ok(ui.includes('id="'+id+'"'),'Mode 3 must expose '+id+'.');
   for(const token of ['gestureAngle','gazeAngle','breathing','bodySway','rootPath']) assert.ok(ui.includes(token),'Generated character runtime must apply '+token+'.');
+for(const id of ['itcvMotionTempo','itcvMotionStrength','itcvJointLimit','itcvMirrorMotion','itcvLoopBlend']) assert.ok(ui.includes('id="'+id+'"'),'Mode 3 must expose '+id+'.');
+  for(const token of ['motionTempo','motionStrength','jointLimit','mirrorMotion','loopBlend','loopEnvelope','mirrorSign']) assert.ok(ui.includes(token),'Generated character runtime must apply '+token+'.');
 console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments, motion assist and self-contained export wiring');
 })().catch(error=>{console.error(error);process.exit(1);});
