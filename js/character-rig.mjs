@@ -953,6 +953,27 @@ export function evaluateJointMotion(part = {}, time = 0, config = {}) {
     : Math.max(profile.min, Math.min(profile.max, amplitude * wave * profile.side));
 }
 
+/* Reject invalid parent edits before the animation runtime traverses the rig tree.
+ * A cyclic parent graph can recurse forever and make the whole character appear
+ * to move as one flattened layer or disappear during export. */
+export function wouldCreateCharacterRigParentCycle(parts, childId, candidateParentId) {
+  if (!candidateParentId) return false;
+  const list = Array.isArray(parts) ? parts : [];
+  const byId = new Map(list.filter(part => part && part.id != null).map(part => [String(part.id), part]));
+  const child = String(childId || "");
+  const candidate = String(candidateParentId || "");
+  if (!byId.has(child) || !byId.has(candidate) || child === candidate) return true;
+  const visited = new Set();
+  let cursor = byId.get(candidate);
+  while (cursor) {
+    const id = String(cursor.id);
+    if (id === child || visited.has(id)) return true;
+    visited.add(id);
+    cursor = cursor.parent ? byId.get(String(cursor.parent)) : null;
+  }
+  return false;
+}
+
 export async function createCharacterRig(dataUrl, options = {}) {
   const onProgress = typeof options.onProgress === "function" ? options.onProgress : () => {};
   const jointSeamEnabled = options.jointSeamEnabled !== false;

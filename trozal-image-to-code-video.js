@@ -357,6 +357,20 @@ async function buildCharacterRig(auto=false){
  }catch(error){currentRig=null;renderRigDirector(null);if(!auto)throw error;return false;}
  finally{if(button)button.disabled=false;}
 }
+function wouldCreateRigParentCycle(parts,childId,candidateParentId){
+ if(!candidateParentId)return false;
+ const list=Array.isArray(parts)?parts:[];
+ const byId=new Map(list.filter(part=>part&&part.id!=null).map(part=>[String(part.id),part]));
+ const child=String(childId||''),candidate=String(candidateParentId||'');
+ if(!byId.has(child)||!byId.has(candidate)||child===candidate)return true;
+ const visited=new Set();let cursor=byId.get(candidate);
+ while(cursor){
+  const id=String(cursor.id);
+  if(id===child||visited.has(id))return true;
+  visited.add(id);cursor=cursor.parent?byId.get(String(cursor.parent)):null;
+ }
+ return false;
+}
 function renderRigDirector(rig){
  const panel=$('itcvRigPanel'),host=$('itcvRigParts'),info=$('itcvRigStatus');host.replaceChildren();panel.style.display='block';
  let seamPanel=$('itcvRigSeamControls');if(!seamPanel){seamPanel=document.createElement('section');seamPanel.id='itcvRigSeamControls';seamPanel.style.cssText='margin:10px 0;padding:10px;border:1px solid #3d8da7;border-radius:9px;background:linear-gradient(145deg,#102d3d,#0a1c29);color:#e5f8ff';seamPanel.innerHTML='<strong style="display:block;color:#a9eaff;margin-bottom:7px">JOINT SEAM WELDING · KONTROL SAMBUNGAN</strong><label style="display:flex;align-items:center;gap:7px"><input id="itcvRigSeamEnabled" type="checkbox" checked style="width:auto"> Aktifkan overlap piksel sendi</label><label>Kekuatan sambungan <output id="itcvRigSeamStrengthValue">85%</output><input id="itcvRigSeamStrength" type="range" min="0" max="100" value="85"></label><label>Radius sambungan <output id="itcvRigSeamRadiusValue">100%</output><input id="itcvRigSeamRadius" type="range" min="50" max="180" value="100"></label><small>Overlap hanya menggunakan piksel foreground yang lolos confidence mask.</small>';info.insertAdjacentElement('afterend',seamPanel);const strength=seamPanel.querySelector('#itcvRigSeamStrength'),radius=seamPanel.querySelector('#itcvRigSeamRadius');strength.addEventListener('input',()=>seamPanel.querySelector('#itcvRigSeamStrengthValue').textContent=strength.value+'%');radius.addEventListener('input',()=>seamPanel.querySelector('#itcvRigSeamRadiusValue').textContent=radius.value+'%');}
@@ -390,8 +404,17 @@ function renderRigDirector(rig){
   if(rig&&part.parent!==undefined){
    const parent=document.createElement('select');parent.title='Parent / hierarki';
    const root=document.createElement('option');root.value='';root.textContent='Root / tanpa parent';parent.append(root);
-   rig.parts.filter(p=>p.id!==part.id).forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;parent.append(o);});
-   parent.value=part.parent||'';parent.addEventListener('change',()=>{part.parent=parent.value||null;if(currentRig)output(currentScene||{description:'Universal Rig',layers:[]});});
+   rig.parts.filter(p=>p.id!==part.id&&!wouldCreateRigParentCycle(rig.parts,part.id,p.id)).forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;parent.append(o);});
+   parent.value=part.parent||'';
+   if(parent.value&&wouldCreateRigParentCycle(rig.parts,part.id,parent.value)){part.parent=null;parent.value='';}
+   parent.addEventListener('change',()=>{
+    const candidate=parent.value||'';
+    if(wouldCreateRigParentCycle(rig.parts,part.id,candidate)){
+     parent.value=part.parent||'';status('Perubahan parent ditolak: hubungan tersebut akan membuat siklus hierarki dan merusak transformasi anggota tubuh.');return;
+    }
+    part.parent=candidate||null;
+    if(currentRig)output(currentScene||{description:'Universal Rig',layers:[]});
+   });
    const parentLabel=document.createElement('label');parentLabel.style.margin='5px 0 0';parentLabel.textContent='Parent';parentLabel.append(parent);row.append(parentLabel);
   }
   host.append(row);

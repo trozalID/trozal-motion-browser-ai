@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 (async()=>{
   const rig=await import('../js/character-rig.mjs');
+  const ui=await fs.promises.readFile(path.join(__dirname,'../trozal-image-to-code-video.js'),'utf8');
   assert.deepEqual(rig.CHARACTER_RIG_MASK_THRESHOLDS,{assetAlpha:0.12,labelAssignment:0.12,backgroundInpaint:0.12,maxPartAssignmentScore:2.2});
   assert.equal(rig.CHARACTER_RIG_MASK_THRESHOLDS.maxPartAssignmentScore,2.2,'Part assignment must include a wider garment/silhouette envelope so valid foreground pixels are not left behind.');
   assert.equal(rig.shouldInpaintMaskPixel(0.20),true,'Faint subject-edge pixels used by part alpha must also be removed from the background');
@@ -327,5 +328,26 @@ const path=require('node:path');
   assert.match(directorSource,/itcvContinuity/,'Mode 3 must expose cross-segment continuity control.');
   assert.match(directorSource,/crossSegmentContinuity/,'Mode 3 must serialize cross-segment continuity.');
   assert.match(directorSource,/drawPart\(p,parentWave\)/,'Mode 3 must propagate parent motion influence.');
-  console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments and self-contained export wiring');
+    assert.match(ui,/function wouldCreateRigParentCycle\(/,'Mode 3 must validate parent changes in the visible rig editor.');
+  assert.match(ui,/!wouldCreateRigParentCycle\(rig\.parts,part\.id,p\.id\)/,'Mode 3 must hide descendant parts from invalid parent choices.');
+  assert.match(ui,/Perubahan parent ditolak/,'Mode 3 must give visible feedback when an invalid hierarchy change is rejected.');
+  const hierarchy=[
+    {id:'torso',parent:null},{id:'upperArmL',parent:'torso'},
+    {id:'forearmL',parent:'upperArmL'},{id:'handL',parent:'forearmL'},
+    {id:'upperLegL',parent:'torso'},{id:'lowerLegL',parent:'upperLegL'}
+  ];
+  assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'upperArmL','handL'),true,
+    'A hand cannot become the parent of its own upper-arm ancestor chain.');
+  assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'handL','torso'),false,
+    'Reparenting a hand directly to an existing ancestor must remain valid because it does not create a cycle.');
+  assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'torso','handL'),true,
+    'The torso cannot be parented to a descendant limb.');
+  assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'handL','upperLegL'),false,
+    'A valid parent change between separate branches must remain available.');
+  assert.equal(rig.wouldCreateCharacterRigParentCycle(hierarchy,'handL','missing'),true,
+    'Unknown parent IDs must be rejected rather than silently flattening a rig.');
+  const brokenHierarchy=[{id:'a',parent:'b'},{id:'b',parent:'a'}];
+  assert.equal(rig.wouldCreateCharacterRigParentCycle(brokenHierarchy,'torso','a'),true,
+    'An already cyclic ancestor graph must be treated as invalid.');
+console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments and self-contained export wiring');
 })().catch(error=>{console.error(error);process.exit(1);});
