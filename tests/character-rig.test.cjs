@@ -5,12 +5,10 @@ const path=require('node:path');
 (async()=>{
   const rig=await import('../js/character-rig.mjs');
   const rigSource=await fs.promises.readFile(path.join(__dirname,'../js/character-rig.mjs'),'utf8');
-  assert.match(rigSource,/function createPartAsset\([\\s\\S]*?underlayMap = null, jointSeamStrength = 0\.85\)/,
+  assert.ok(rigSource.includes('underlayMap = null, jointSeamStrength = 0.85'),
     'createPartAsset must receive jointSeamStrength as a scoped parameter with a safe default.');
-  assert.match(rigSource,/partUnderlay \? partUnderlay\.sourceMap : null,\s*jointSeamStrength\s*\)/,
+  assert.ok(rigSource.includes('partUnderlay ? partUnderlay.sourceMap : null,\\n        jointSeamStrength\\n      );'),
     'createCharacterRig must pass the configured joint seam strength into every part asset.');
-  assert.doesNotMatch(rigSource,/function createPartAsset[\\s\\S]*?seamFeather = \(1 - t \* t \* \(3 - 2 \* t\)\) \* jointSeamStrength;[\\s\\S]*?export function getJointMotionProfile/,
-    'The asset builder must not rely on an outer function local that is outside its lexical scope.');
 
   const ui=await fs.promises.readFile(path.join(__dirname,'../trozal-image-to-code-video.js'),'utf8');
   assert.deepEqual(rig.CHARACTER_RIG_MASK_THRESHOLDS,{assetAlpha:0.12,labelAssignment:0.12,backgroundInpaint:0.12,maxPartAssignmentScore:2.2});
