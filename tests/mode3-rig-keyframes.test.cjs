@@ -17,5 +17,21 @@ assert.match(source, /itcvReconAngle/, 'Character reconstruction must expose a j
 assert.match(source, /cfg\.motionReconstruction/, 'Motion reconstruction settings must be serialized into the generated runtime');
 assert.match(source, /jointLimits=\{shoulder:65,elbow:115,wrist:70,hip:55,knee:115,ankle:40/, 'Runtime must apply conservative per-joint anatomical rotation limits');
 assert.match(source, /jointCoupling/, 'Runtime must blend child motion with parent motion');
+const rigSource = fs.readFileSync('js/universal-object-rig.mjs', 'utf8');
+assert.match(rigSource, /export function inferParentJointPivots\(specs, width, height\)/, 'Universal Rig must infer child pivots at parent-facing joints');
+assert.match(rigSource, /inferParentJointPivots\(specs, width, height\)/, 'Pivot reconstruction must run before SAM segmentation and layer cropping');
 new Function(source);
+(async () => {
+  const { inferParentJointPivots } = await import('../js/universal-object-rig.mjs');
+  const specs = [
+    { id: 'torso', parent: null, bbox: { x: .4, y: .3, w: .2, h: .4 }, pivot: null },
+    { id: 'left-forearm', parent: 'torso', bbox: { x: .2, y: .32, w: .2, h: .1 }, pivot: null },
+    { id: 'hand', parent: 'left-forearm', bbox: { x: .1, y: .32, w: .1, h: .1 }, pivot: { x: .18, y: .37 } }
+  ];
+  const inferred = inferParentJointPivots(specs, 100, 100);
+  assert.equal(inferred, 1, 'Only missing child pivots should be inferred');
+  assert.deepEqual(specs[1].pivot, { x: .4, y: .42 }, 'Forearm pivot should be placed at its parent-facing elbow edge');
+  assert.deepEqual(specs[2].pivot, { x: .18, y: .37 }, 'Explicit AI/user pivots must be preserved');
+  console.log('Mode 3 Character Motion Reconstruction joint-pivot checks passed.');
+})().catch(error => { console.error(error); process.exitCode = 1; });
 console.log('Mode 3 per-part keyframe timeline static regression checks passed.');
