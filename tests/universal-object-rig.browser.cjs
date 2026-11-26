@@ -56,10 +56,18 @@ const {chromium}=require('playwright');
   const rigCanvas=page.locator('#itcvRigSource');
   const map=await rigCanvas.evaluate(el=>el.__trozalMap);
   assert.ok(map&&map.w>0&&map.h>0,'Source canvas must expose a decoded image coordinate map before manual selection.');
-  // Use a locator-relative click so Chromium targets the canvas itself. A raw
-  // page.mouse coordinate can land on an overlapping panel and silently click
-  // the wrong element when the workspace layout changes.
-  await rigCanvas.click({position:{x:map.x+map.w*.72,y:map.y+map.h*.5},timeout:10000});
+  // The map uses the canvas backing-store coordinate system, while Playwright
+  // locator positions use CSS pixels. Scale explicitly for the responsive
+  // canvas (its max-height can make CSS dimensions differ from 640x360).
+  const canvasBox=await rigCanvas.boundingBox();
+  const canvasSize=await rigCanvas.evaluate(el=>({width:el.width,height:el.height}));
+  assert.ok(canvasBox&&canvasBox.width>0&&canvasBox.height>0,'Rig canvas must have a visible CSS box.');
+  const clickPosition={
+   x:(map.x+map.w*.72)*(canvasBox.width/canvasSize.width),
+   y:(map.y+map.h*.5)*(canvasBox.height/canvasSize.height)
+  };
+  assert.ok(clickPosition.x>=0&&clickPosition.x<canvasBox.width&&clickPosition.y>=0&&clickPosition.y<canvasBox.height,'Mapped image point must land inside the responsive canvas: '+JSON.stringify({clickPosition,canvasBox,canvasSize,map}));
+  await rigCanvas.click({position:clickPosition,timeout:10000});
   await page.waitForFunction(()=>document.getElementById('itcvRigParts')?.querySelector('input[type="text"]')?.value.includes('Komponen manual'),null,{timeout:10000}).catch(async error=>{
    const diagnostic=await page.evaluate(()=>({map:document.getElementById('itcvRigSource')?.__trozalMap,components:document.getElementById('itcvRigParts')?.innerText||'',status:document.getElementById('itcvStatus')?.textContent||'',canvasRect:(()=>{const r=document.getElementById('itcvRigSource')?.getBoundingClientRect();return r?{x:r.x,y:r.y,width:r.width,height:r.height}:null;})()}));
    throw new Error(error.message+' | manualPointDiagnostic='+JSON.stringify(diagnostic));
