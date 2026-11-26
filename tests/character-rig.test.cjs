@@ -364,8 +364,7 @@ assert.match(ui,/id="itcvBuildCharacterParts"/,'Mode 3 must expose a dedicated A
   for(const token of ['gestureAngle','gazeAngle','breathing','bodySway','rootPath']) assert.ok(ui.includes(token),'Generated character runtime must apply '+token+'.');
 for(const id of ['itcvMotionTempo','itcvMotionStrength','itcvJointLimit','itcvMirrorMotion','itcvLoopBlend']) assert.ok(ui.includes('id="'+id+'"'),'Mode 3 must expose '+id+'.');
   for(const token of ['motionTempo','motionStrength','jointLimit','mirrorMotion','loopBlend','loopEnvelope','mirrorSign']) assert.ok(ui.includes(token),'Generated character runtime must apply '+token+'.');
-console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments, motion assist and self-contained export wiring');
-})().catch(error=>{console.error(error);process.exit(1);});
-
 for(const id of ['itcvGaitPhaseOffset','itcvStanceRatio','itcvKneeFlexAssist','itcvAnkleStabilization','itcvPoseBlend']) assert.ok(ui.includes('id="'+id+'"'),'Mode 3 must expose adaptive gait control '+id+'.');
 for(const token of ['gaitPhaseOffset','stanceRatio','kneeFlexAssist','ankleStabilization','poseBlend','gaitOffset','kneeAssist','ankleAssist']) assert.ok(ui.includes(token),'Generated Browser rig must apply '+token+'.');
+console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments, motion assist, adaptive gait and self-contained export wiring');
+})().catch(error=>{console.error(error);process.exit(1);});
