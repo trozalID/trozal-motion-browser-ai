@@ -312,6 +312,30 @@ function cropPart(source, width, height, owner, alpha, partIndex, bounds, spec) 
     speed: spec.speed, phase: spec.phase, enabled: true
   };
 }
+export function inferParentJointPivots(specs, width, height) {
+  const list = Array.isArray(specs) ? specs : [];
+  const byId = new Map(list.map(part => [part.id, part]));
+  let inferred = 0;
+  for (const part of list) {
+    if (!part || part.pivot || !part.parent || !part.bbox) continue;
+    const parent = byId.get(part.parent);
+    if (!parent || !parent.bbox) continue;
+    const parentCenterX = (parent.bbox.x + parent.bbox.w * 0.5) * width;
+    const parentCenterY = (parent.bbox.y + parent.bbox.h * 0.5) * height;
+    const childLeft = part.bbox.x * width;
+    const childTop = part.bbox.y * height;
+    const childRight = childLeft + part.bbox.w * width;
+    const childBottom = childTop + part.bbox.h * height;
+    // The child pivot is placed at the point on its mask box nearest the parent.
+    // This makes an elbow/wrist/knee/ankle rotate from its connection, not its center.
+    const anchorX = clamp(parentCenterX, childLeft, childRight);
+    const anchorY = clamp(parentCenterY, childTop, childBottom);
+    if (!Number.isFinite(anchorX) || !Number.isFinite(anchorY)) continue;
+    part.pivot = { x: clamp(anchorX / width, 0, 1), y: clamp(anchorY / height, 0, 1) };
+    inferred++;
+  }
+  return inferred;
+}
 function sanitizeParents(parts) {
   const ids = new Set(parts.map(part => part.id));
   for (const part of parts) {
@@ -336,6 +360,7 @@ export async function createUniversalObjectRig(dataUrl, components, options = {}
   const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
   const width = Math.max(1, Math.round(image.naturalWidth * scale));
   const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  inferParentJointPivots(specs, width, height);
   const sourceCanvas = makeCanvas(width, height);
   sourceCanvas.context.imageSmoothingEnabled = true;
   sourceCanvas.context.imageSmoothingQuality = "high";
