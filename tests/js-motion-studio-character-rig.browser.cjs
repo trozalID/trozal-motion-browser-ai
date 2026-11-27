@@ -27,7 +27,7 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
     'Mode 3 should expose a reconstruction diagnostics panel for the next stage.');
   assert.equal(await page.locator('#trozalJsAdaptiveRigControls input[type=range]').count(),15,
     'Mode 3 must expose the original eight adaptive controls plus seven new articulation controls.');
-  for(const id of ['trozalJsHipCounter','trozalJsArmLegSync','trozalJsGroundClearance','trozalJsGaitBalance','trozalJsJointDamping','trozalJsFootContactLock','trozalJsAlternatingGait','trozalJsKneeFlexAssist','trozalJsStrideLength','trozalJsArmSwing','trozalJsTorsoCounterSway','trozalJsLandingAbsorption','trozalJsMotionTempo','trozalJsUpperFollowThrough','trozalJsHeelToeRoll']){
+  for(const id of ['trozalJsHipCounter','trozalJsArmLegSync','trozalJsGroundClearance','trozalJsGaitBalance','trozalJsJointDamping','trozalJsFootContactLock','trozalJsAlternatingGait','trozalJsKneeFlexAssist','trozalJsStrideLength','trozalJsArmSwing','trozalJsTorsoCounterSway','trozalJsLandingAbsorption','trozalJsRigMotionTempo','trozalJsUpperFollowThrough','trozalJsHeelToeRoll']){
     assert.equal(await page.locator('#'+id).count(),1,'Mode 3 is missing adaptive control '+id+'.');
   }
   assert.equal(await page.locator('#trozalJsRigBodyPresets [data-rig-preset]').count(),3,
