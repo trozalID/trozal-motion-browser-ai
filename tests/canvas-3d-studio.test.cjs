@@ -13,7 +13,7 @@ for (const id of [
   'trozal3DAnimation','trozal3DSpeed','trozal3DAmount','trozal3DPlay','trozal3DPause',
   'trozal3DStop','trozal3DTime','trozal3DLoop','trozal3DDuration','trozal3DFps',
   'trozal3DSave','trozal3DExportJson','trozal3DExportPng','trozal3DParent','trozal3DAddKeyframe','trozal3DKeyframeInfo','trozal3DLightingControls',
-  'trozal3DCameraTools','trozal3DCameraProjection','trozal3DCameraFocus','trozal3DCameraFront','trozal3DCameraSide','trozal3DCameraTop','trozal3DOrthoScale'
+  'trozal3DRenderer','trozal3DCanvas2D','trozal3DCameraTools','trozal3DCameraProjection','trozal3DCameraFocus','trozal3DCameraFront','trozal3DCameraSide','trozal3DCameraTop','trozal3DOrthoScale'
 ]) assert.ok(source.includes('id=\''+id+'\'') || source.includes('id="'+id+'"') || source.includes(".id='"+id+"'"), 'Missing CANVAS 3D control: '+id);
 for (const token of [
   "getContext('webgl2'", 'drawArrays(gl.TRIANGLES', 'drawArrays(gl.LINES',
@@ -27,7 +27,7 @@ for (const token of [
 assert.ok(source.includes("Object.defineProperty(window,'TROZAL_CANVAS_3D'"), 'CANVAS 3D must expose its public scene API.');
 assert.ok(source.includes("document.querySelector('.topbar .topright')"), 'CANVAS 3D launcher must attach to the Browser AI topbar when available.');
 assert.ok(source.includes("PNG snapshot exported · ") && source.includes('canvas.width') && source.includes('canvas.height') && source.includes('b.size'), 'PNG export must report actual snapshot dimensions and byte count.');
-assert.match(source, /WebGL2 tidak tersedia/);
+assert.match(source, /WebGL2 tidak tersedia/);\nassert.ok(source.includes(\"getContext('2d'\") && source.includes(\"value=\\\"canvas2d\\\"\"), 'Canvas 2D CPU renderer must be a real selectable backend.');\nassert.ok(source.includes(\"state.renderer==='canvas2d'\"), 'PNG export must use the active renderer canvas.');
 assert.doesNotMatch(source, /three\.min\.js|cdnjs\.cloudflare\.com\/ajax\/libs\/three/i,
   'CANVAS 3D must not depend on an external Three.js CDN.');
 console.log('PASS: CANVAS 3D WebGL2 scene, geometry, transform, materials, three-point lighting, per-object motion, camera, timeline and exports are wired.');
