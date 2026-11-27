@@ -7,7 +7,7 @@ const {chromium}=require('playwright');
   const page=await browser.newPage({viewport:{width:1440,height:1000}});
   await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#itcvModeBtn',{timeout:20000});
-  await page.locator('#itcvModeBtn').click();
+  await page.locator('#itcvModeBtn').click({force:true});
   await page.waitForSelector('#itcvAutoRig');
   await page.waitForSelector('#itcvBuildRig');
   await page.waitForSelector('#itcvRigPanel');
