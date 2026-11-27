@@ -70,3 +70,8 @@ const assert = require('node:assert/strict');
   console.error(error);
   process.exit(1);
 });
+
+const ratioSource=require('node:fs').readFileSync('index.html','utf8');
+for(const ratio of ['16:9','9:16','1:1','4:5','3:4','2:3','3:2','4:3','5:4','21:9','custom']) assert.ok(ratioSource.includes('value="'+ratio+'"'),'Global preview ratio missing '+ratio);
+for(const id of ['trozalGlobalPreviewRatio','trozalGlobalRatioWidth','trozalGlobalRatioHeight','trozalGlobalRatioReset']) assert.ok(ratioSource.includes('id="'+id+'"'),'Global ratio control missing '+id);
+assert.ok(ratioSource.includes('PREVIEW RATIO · ALL MODES'),'Global ratio dock must be available across modes');
