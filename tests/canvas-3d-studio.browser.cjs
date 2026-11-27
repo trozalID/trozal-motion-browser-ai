@@ -22,6 +22,12 @@ const { chromium } = require('playwright');
     await page.locator('#trozalRenderEngineGroups summary').click();
     assert.equal(await page.locator('#trozalRenderEngineGroups [data-engine-group="3D RENDER"] .trozal-engine-row').count(),4);
     assert.equal(await page.locator('#trozalRenderEngineGroups [data-engine-group="2D / MOTION RENDER"] .trozal-engine-row').count(),4);
+    assert.equal(await page.locator('#trozalRenderEngineGroups [data-engine-select]').count(),2,'Only the two integrated 3D engines should expose quick-switch controls.');
+    await page.locator('#trozalRenderEngineGroups [data-engine-select="canvas2d"]').click();
+    await page.waitForFunction(()=>document.getElementById('trozal3DCanvas2D')?.style.display==='block');
+    await page.locator('#trozalRenderEngineGroups [data-engine-select="webgl2"]').click();
+    await page.waitForFunction(()=>document.getElementById('trozal3DCanvas')?.style.display==='block');
+
     await page.waitForFunction(()=>window.TROZAL_CANVAS_3D?.status?.webgl===true,null,{timeout:15000});
     const initial=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
     assert.equal(initial.objects.length,3,'The starter 3D scene should contain three independently editable meshes.');
