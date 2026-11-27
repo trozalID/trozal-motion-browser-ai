@@ -63,12 +63,22 @@
             action.className='trozal-engine-use';
             action.dataset.engineSelect=choice;
             action.textContent=select&&select.value===choice?'Aktif':'Gunakan';
-            action.addEventListener('click',()=>{
+            action.addEventListener('click',async()=>{
               const control=document.getElementById('trozal3DRenderer');
               if(!control)return;
-              control.value=choice;
-              control.dispatchEvent(new Event('change',{bubbles:true}));
-              refresh();
+              action.disabled=true;
+              try{
+                if(window.TROZAL_CANVAS_3D&&typeof window.TROZAL_CANVAS_3D.setRenderer==='function'){
+                  await window.TROZAL_CANVAS_3D.setRenderer(choice);
+                }else{
+                  control.value=choice;
+                  control.dispatchEvent(new Event('change',{bubbles:true}));
+                }
+                refresh();
+              }catch(error){
+                const status=document.getElementById('trozal3DStatus');
+                if(status)status.textContent='Gagal mengaktifkan '+choice+': '+(error&&error.message||error);
+              }finally{action.disabled=false;}
             });
             row.appendChild(action);
           }
