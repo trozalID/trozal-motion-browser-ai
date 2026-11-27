@@ -11,6 +11,8 @@ const { chromium } = require('playwright');
     page.on('pageerror',error=>errors.push(error.message));
     await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'domcontentloaded'});
     await page.waitForSelector('#trozalCanvas3DOpen',{timeout:15000});
+    const launcherReceivesPointer=await page.locator('#trozalCanvas3DOpen').evaluate(el=>{const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return hit===el||el.contains(hit);});
+    assert.equal(launcherReceivesPointer,true,'CANVAS 3D launcher must be the topmost hit target, not covered by the app/topbar.');
     await page.locator('#trozalCanvas3DOpen').click();
     await page.waitForSelector('#trozal3DCanvas',{timeout:10000});
     await page.waitForFunction(()=>window.TROZAL_CANVAS_3D?.status?.webgl===true,null,{timeout:15000});
