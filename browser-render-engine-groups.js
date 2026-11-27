@@ -42,7 +42,7 @@
     details.innerHTML='<summary>RENDER ENGINES · 2 GROUPS</summary><div class="trozal-engine-groups"><section><h4>3D RENDER</h4><div data-engine-group="3D RENDER"></div></section><section><h4>2D / MOTION RENDER</h4><div data-engine-group="2D / MOTION RENDER"></div></section><p>Catatan: status “Belum terintegrasi” berarti mesin belum bisa dipilih untuk merender proyek. Tidak ada opsi palsu atau fallback diam-diam.</p></div>';
     header.insertBefore(details,header.querySelector('#trozal3DSave'));
     const style=document.createElement('style');
-    style.textContent='#trozalRenderEngineGroups{position:relative;font-size:10px}#trozalRenderEngineGroups summary{cursor:pointer;color:#a9e6ff;font-weight:800;white-space:nowrap;padding:7px;border:1px solid #34546c;border-radius:6px;background:#0b2030}#trozalRenderEngineGroups[open] .trozal-engine-groups{position:absolute;z-index:1000;right:0;top:100%;width:min(570px,90vw);padding:10px;background:#0a1926;border:1px solid #3e718c;border-radius:9px;box-shadow:0 10px 28px #000b;display:grid;grid-template-columns:1fr 1fr;gap:10px}.trozal-engine-groups h4{margin:0 0 6px;color:#a9e6ff;font-size:10px}.trozal-engine-row{padding:6px;margin:4px 0;border:1px solid #2d4658;border-radius:6px;background:#102536}.trozal-engine-row b{display:block;color:#e5f5ff}.trozal-engine-row small{display:block;color:#a9bfd0;line-height:1.35}.trozal-engine-row .state{font-weight:800;color:#8de5b2}.trozal-engine-row .state.pending{color:#ffd17b}.trozal-engine-row .state.off{color:#ff9b9b}.trozal-engine-groups>p{grid-column:1/-1;margin:0;color:#a9bfd0;font-size:9px}@media(max-width:700px){#trozalRenderEngineGroups[open] .trozal-engine-groups{right:-8px;grid-template-columns:1fr;max-height:70vh;overflow:auto}}';
+    style.textContent='#trozalRenderEngineGroups{position:relative;font-size:10px}#trozalRenderEngineGroups summary{cursor:pointer;color:#a9e6ff;font-weight:800;white-space:nowrap;padding:7px;border:1px solid #34546c;border-radius:6px;background:#0b2030}#trozalRenderEngineGroups[open] .trozal-engine-groups{position:absolute;z-index:1000;right:0;top:100%;width:min(570px,90vw);padding:10px;background:#0a1926;border:1px solid #3e718c;border-radius:9px;box-shadow:0 10px 28px #000b;display:grid;grid-template-columns:1fr 1fr;gap:10px}.trozal-engine-groups h4{margin:0 0 6px;color:#a9e6ff;font-size:10px}.trozal-engine-row{padding:6px;margin:4px 0;border:1px solid #2d4658;border-radius:6px;background:#102536}.trozal-engine-row b{display:block;color:#e5f5ff}.trozal-engine-row small{display:block;color:#a9bfd0;line-height:1.35}.trozal-engine-row .state{font-weight:800;color:#8de5b2}.trozal-engine-row .state.pending{color:#ffd17b}.trozal-engine-row .state.off{color:#ff9b9b}.trozal-engine-groups>p{grid-column:1/-1;margin:0;color:#a9bfd0;font-size:9px}.trozal-engine-use{margin-top:6px;padding:5px 9px;border:1px solid #4b8ba7;border-radius:5px;background:#12384a;color:#bcefff;font-size:9px;font-weight:800;cursor:pointer}.trozal-engine-use:hover{background:#1a5269}@media(max-width:700px){#trozalRenderEngineGroups[open] .trozal-engine-groups{right:-8px;grid-template-columns:1fr;max-height:70vh;overflow:auto}}';
     document.head.appendChild(style);
     function refresh(){
       const rows=snapshot();
@@ -54,12 +54,32 @@
           const name=document.createElement('b');name.textContent=item.name;
           const status=document.createElement('span');status.className='state '+(!item.supported?'off':!item.integrated?'pending':'');status.textContent=item.status;
           const detail=document.createElement('small');detail.textContent=item.detail;
-          row.append(name,status,detail);host.appendChild(row);
+          row.append(name,status,detail);
+          if(group==='3D RENDER'&&item.integrated&&item.supported){
+            const choice=item.id==='cpu3d'?'canvas2d':item.id;
+            const select=document.getElementById('trozal3DRenderer');
+            const action=document.createElement('button');
+            action.type='button';
+            action.className='trozal-engine-use';
+            action.dataset.engineSelect=choice;
+            action.textContent=select&&select.value===choice?'Aktif':'Gunakan';
+            action.addEventListener('click',()=>{
+              const control=document.getElementById('trozal3DRenderer');
+              if(!control)return;
+              control.value=choice;
+              control.dispatchEvent(new Event('change',{bubbles:true}));
+              refresh();
+            });
+            row.appendChild(action);
+          }
+          host.appendChild(row);
         });
       }
     }
     refresh();
     details.addEventListener('toggle',()=>{if(details.open)refresh();});
+    const rendererControl=document.getElementById('trozal3DRenderer');
+    if(rendererControl)rendererControl.addEventListener('change',refresh);
     window.addEventListener('trozal:hybrid-canvas-status',refresh);
   }
   const observer=new MutationObserver(mount);
