@@ -25,6 +25,11 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
     'Mode 3 must describe the currently implemented mask-refinement stage.');
   assert.equal(await page.locator('#trozalJsRigDiagnostics').count(),1,
     'Mode 3 should expose a reconstruction diagnostics panel for the next stage.');
+  assert.equal(await page.locator('#trozalJsAdaptiveRigControls input[type=range]').count(),5,
+    'Mode 3 must expose all five adaptive Universal Rig character-motion controls.');
+  for(const id of ['trozalJsHipCounter','trozalJsArmLegSync','trozalJsGroundClearance','trozalJsGaitBalance','trozalJsJointDamping']){
+    assert.equal(await page.locator('#'+id).count(),1,'Mode 3 is missing adaptive control '+id+'.');
+  }
 
   await page.locator('#trozalJsRigFile').setInputFiles({name:'character.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64')});
   await page.waitForFunction(()=>document.querySelector('#trozalJsRigStatus')?.textContent.includes('Foto siap'),null,{timeout:10000});
@@ -71,6 +76,13 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   assert.ok(result.code.includes('motionGain=2.700'),'Walk Cycle must use a strong default motion gain');
   assert.ok(result.code.includes('p.amp*partGain*swing'),'Each body part must receive its own animated joint rotation');
   assert.ok(result.hasMotionControls,'Character Rig must expose motion preset and intensity controls');
+  for(const token of ['hipCounterRotation','armLegSync','groundClearance','gaitBalance','jointImpactDamping']){
+    assert.ok(result.code.includes(token),'Generated character runtime must apply '+token+' to articulated body parts.');
+  }
+  assert.match(result.code,/Math\.max\(0,Math\.sin\(gaitPhase/,'Ground clearance must create an animated foot-lift arc.');
+  assert.match(result.code,/torsoDamp/,'Gait balance must stabilize torso sway.');
+  await page.locator('#trozalJsArmLegSync').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});
+  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"armLegSync":1'),null,{timeout:10000});
   await page.locator('#trozalJsPreviewRatio').selectOption('9:16');
   await page.waitForTimeout(100);
   const portraitSize=await page.frameLocator('#trozalJsMotionFrame').locator('#c').evaluate(canvas=>({width:canvas.width,height:canvas.height}));
