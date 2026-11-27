@@ -20,7 +20,7 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   const rigPanelTitle=await page.locator('#trozalJsCharacterRigPanel strong').first().innerText();
   assert.match(rigPanelTitle,/AI CHARACTER MOTION RECONSTRUCTION · MODE 3/,
     'The reconstruction feature must be clearly identified inside Mode 3 JavaScript Motion Studio.');
-  const rigPanelDescription=await page.locator('#trozalJsCharacterRigPanel p').innerText();
+  const rigPanelDescription=await page.locator('#trozalJsCharacterRigPanel p').first().innerText();
   assert.match(rigPanelDescription,/Tahap 1 aktif/,
     'Mode 3 must describe the currently implemented mask-refinement stage.');
   assert.equal(await page.locator('#trozalJsRigDiagnostics').count(),1,
