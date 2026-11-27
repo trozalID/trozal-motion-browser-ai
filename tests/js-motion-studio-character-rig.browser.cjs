@@ -155,3 +155,7 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   console.log('PASS: JavaScript Studio imports Character Rig layers, loads PNG assets in its sandbox renderer, and renders articulated parent-child motion.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});
+
+assert.ok(fs.readFileSync('js-motion-engine.js','utf8').includes('trozalJsElbowFlex'),'Mode 3 must expose Elbow Flex Assist.');
+assert.ok(fs.readFileSync('js-motion-engine.js','utf8').includes('trozalJsAnklePlant'),'Mode 3 must expose Ankle Plant Stabilizer.');
+assert.ok(fs.readFileSync('js-motion-engine.js','utf8').includes('trozalJsShoulderArc'),'Mode 3 must expose Shoulder Arc Control.');
