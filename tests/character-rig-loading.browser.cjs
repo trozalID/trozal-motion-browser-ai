@@ -14,7 +14,7 @@ const {chromium}=require('playwright');
    return document.body.classList.contains('itcv-mode-active')&&workspace&&getComputedStyle(workspace).display!=='none'&&workspace.getBoundingClientRect().width>0;
   },null,{timeout:20000}).then(()=>true).catch(()=>false);
   if(!modeReady){
-   const diagnostic=await page.evaluate(()=>({bodyClass:document.body.className,workspaceDisplay:getComputedStyle(document.querySelector('#trozalImageCodeVideoWorkspace')).display,buildButton:!!document.querySelector('#itcvBuildRig')}));
+   const diagnostic=await page.evaluate(()=>({bodyClass:document.body.className,workspaceDisplay:getComputedStyle(document.querySelector('#trozalImageCodeVideoWorkspace')).display,buildButton:!!document.querySelector('#itcvBuildRig'),buttonConnected:!!document.querySelector('#itcvModeBtn')?.isConnected,buttonHandler:typeof document.querySelector('#itcvModeBtn')?.onclick,globalOpener:typeof window.trozalOpenImageToCodeVideo}));
    throw new Error('Mode 5 did not open: '+JSON.stringify({diagnostic,pageErrors}));
   }
   await page.waitForSelector('#itcvAutoRig',{state:'attached',timeout:20000});
@@ -29,8 +29,8 @@ const {chromium}=require('playwright');
   assert.equal(await page.locator('#itcvAutoRig').isChecked(),true,'Auto Character Rig should default on');
   assert.match(await page.locator('#itcvBuildRig').innerText(),/UNIVERSAL RIG/);
   const version=await page.locator('script[src*="trozal-image-to-code-video.js"]').getAttribute('src');
-  assert.match(version,/\?v=20261123-2(?:&|$)/,'Mode 5 asset URL must use the current cache-busting version');
-  assert.match(version,/rig=20261123-2/,'Universal Rig asset URL must use the current cache-busting version');
+  assert.match(version,/\?v=20261127-3(?:&|$)/,'Mode 5 asset URL must use the current cache-busting version');
+  assert.match(version,/rig=20261127-3/,'Universal Rig asset URL must use the current cache-busting version');
   console.log('PASS: Mode 5 Character Rig controls and browser ES module load.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});
