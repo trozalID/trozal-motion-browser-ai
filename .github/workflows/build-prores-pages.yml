@@ -26,6 +26,7 @@ on:
       - 'preview-proxy.js'
       - 'render-memory-manager.js'
       - 'render-frame-store.js'
+      - 'canvas-3d-studio.js'
       - 'logo-studio.js'
       - 'tests/logo-studio.browser.cjs'
       - 'tests/logo-studio-contract.test.cjs'
