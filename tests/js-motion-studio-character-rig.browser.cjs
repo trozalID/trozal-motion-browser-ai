@@ -98,6 +98,17 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   }
   assert.match(result.code,/motionTempo=1\.635/,'Mode 3 Motion Tempo slider must scale the generated gait-cycle tempo.');
   await page.locator('[data-rig-preset="idle"]').click();
+  await page.waitForTimeout(150);
+  const idlePresetDiagnostic=await page.evaluate(()=>({
+    status:document.querySelector('#trozalJsRigBodyPresetStatus')?.textContent||'',
+    preset:document.querySelector('#trozalJsRigMotionPreset')?.value||'',
+    stride:document.querySelector('#trozalJsStrideLength')?.value||'',
+    armSwing:document.querySelector('#trozalJsArmSwing')?.value||'',
+    rigReady:!!window.TROZAL_JS_MOTION.getObjects()[0]?.rigData,
+    codeHasStride:window.TROZAL_JS_MOTION.getCode().includes('"strideLength":0.08'),
+    codeTail:window.TROZAL_JS_MOTION.getCode().slice(-900)
+  }));
+  console.log('MODE3_IDLE_PRESET_DIAGNOSTIC '+JSON.stringify(idlePresetDiagnostic));
   await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"strideLength":0.08'),null,{timeout:10000});
   assert.equal(await page.locator('#trozalJsRigMotionPreset').inputValue(),'idle');
   assert.equal(await page.locator('#trozalJsStrideLength').inputValue(),'8');
