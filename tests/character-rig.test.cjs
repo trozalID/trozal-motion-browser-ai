@@ -366,5 +366,10 @@ for(const id of ['itcvMotionTempo','itcvMotionStrength','itcvJointLimit','itcvMi
   for(const token of ['motionTempo','motionStrength','jointLimit','mirrorMotion','loopBlend','loopEnvelope','mirrorSign']) assert.ok(ui.includes(token),'Generated character runtime must apply '+token+'.');
 for(const id of ['itcvGaitPhaseOffset','itcvStanceRatio','itcvKneeFlexAssist','itcvAnkleStabilization','itcvPoseBlend']) assert.ok(ui.includes('id="'+id+'"'),'Mode 3 must expose adaptive gait control '+id+'.');
 for(const token of ['gaitPhaseOffset','stanceRatio','kneeFlexAssist','ankleStabilization','poseBlend','gaitOffset','kneeAssist','ankleAssist']) assert.ok(ui.includes(token),'Generated Browser rig must apply '+token+'.');
+for(const id of ['itcvHipCounter','itcvArmLegSync','itcvGroundClearance','itcvGaitBalance','itcvJointDamping']) assert.ok(ui.includes('id="'+id+'"'),'Mode 3 must visibly expose adaptive motion control '+id+'.');
+for(const token of ['hipCounterRotation','armLegSync','groundClearance','gaitBalance','jointImpactDamping','armSyncAssist','hipCounterAssist']) assert.ok(ui.includes(token),'Generated Browser character runtime must apply '+token+'.');
+assert.match(ui,/1\+groundClearance\*\.9/,'Ground clearance must change the exported foot swing lift.');
+assert.match(ui,/1-gaitBalance\*\.5/,'Gait balance must damp torso sway in the exported runtime.');
+assert.match(ui,/jointImpactDamping\*\.24/,'Joint impact damping must soften knee and ankle angles.');
 console.log('PASS: pose body-part geometry, parent rig hierarchy, segmentation assignments, motion assist, adaptive gait and self-contained export wiring');
 })().catch(error=>{console.error(error);process.exit(1);});
