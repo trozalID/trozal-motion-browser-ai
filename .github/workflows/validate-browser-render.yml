@@ -71,6 +71,8 @@ jobs:
           node --check logo-studio.js
           node --check icon-logo-motion-studio.js
           node --check trozal-image-to-code-video.js
+          node --check canvas-3d-studio.js
+          node --check tests/canvas-3d-studio.test.cjs
           node --check js/character-rig.mjs
           node --check metadata-actions.js
           node --check browser-ai-gemini-cloud.js
@@ -133,7 +135,9 @@ jobs:
           node tests/browser-webgpu-local.test.cjs
           node tests/browser-gemini-vision-fallback.test.cjs
       - name: Guard central workspace and export capabilities
-        run: node tests/workspace-export-preservation.test.cjs
+        run: |
+          node tests/workspace-export-preservation.test.cjs
+          node tests/canvas-3d-studio.test.cjs
       - name: Verify checked-out test revision
         run: |
           echo "GITHUB_SHA=$GITHUB_SHA"
@@ -267,6 +271,9 @@ jobs:
 
       - name: Verify Mode 5 HTML and JavaScript Studio output contract
         run: node tests/image-to-code-output-contract.browser.cjs
+
+      - name: Test CANVAS 3D WebGL2 scene, transforms, motion and exports
+        run: node tests/canvas-3d-studio.browser.cjs
 
       - name: Stop local preview server
         if: always()

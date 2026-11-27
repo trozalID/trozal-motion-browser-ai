@@ -5,12 +5,30 @@ const {chromium}=require('playwright');
  const browser=await chromium.launch({headless:true});
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1000}});
+  const pageErrors=[];page.on('pageerror',error=>pageErrors.push(error.message));
   await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#itcvModeBtn',{timeout:20000});
-  await page.locator('#itcvModeBtn').click();
-  await page.waitForSelector('#itcvAutoRig');
-  await page.waitForSelector('#itcvBuildRig');
-  await page.waitForSelector('#itcvRigPanel');
+  await page.evaluate(()=>{
+   window.__itcvClickTrace=[];
+   ['pointerdown','mousedown','click'].forEach(type=>window.addEventListener(type,event=>{if(event.target?.closest?.('#itcvModeBtn'))window.__itcvClickTrace.push('window:'+type);},true));
+   const button=document.querySelector('#itcvModeBtn');
+   button.addEventListener('click',()=>window.__itcvClickTrace.push('target-listener:click'));
+   const original=button.onclick;
+   button.onclick=function(event){window.__itcvClickTrace.push('target-onclick');return original?.call(this,event);};
+  });
+  await page.locator('#itcvModeBtn').click({force:true});
+  const modeReady=await page.waitForFunction(()=>{
+   const workspace=document.querySelector('#trozalImageCodeVideoWorkspace');
+   return document.body.classList.contains('itcv-mode-active')&&workspace&&getComputedStyle(workspace).display!=='none'&&workspace.getBoundingClientRect().width>0;
+  },null,{timeout:20000}).then(()=>true).catch(()=>false);
+  if(!modeReady){
+   const diagnostic=await page.evaluate(()=>({bodyClass:document.body.className,workspaceDisplay:getComputedStyle(document.querySelector('#trozalImageCodeVideoWorkspace')).display,buildButton:!!document.querySelector('#itcvBuildRig'),buttonConnected:!!document.querySelector('#itcvModeBtn')?.isConnected,buttonHandler:typeof document.querySelector('#itcvModeBtn')?.onclick,globalOpener:typeof window.trozalOpenImageToCodeVideo,clickTrace:window.__itcvClickTrace,workspaceConnected:!!document.querySelector('#trozalImageCodeVideoWorkspace')?.isConnected}));
+   throw new Error('Mode 5 did not open: '+JSON.stringify({diagnostic,pageErrors}));
+  }
+  await page.waitForSelector('#itcvAutoRig',{state:'attached',timeout:20000});
+  await page.waitForSelector('#itcvBuildRig',{state:'visible',timeout:20000});
+  await page.waitForSelector('#itcvRigPanel',{state:'attached',timeout:20000});
+  assert.deepEqual(pageErrors,[],'Mode 5 must open without uncaught browser errors');
   const moduleCheck=await page.evaluate(async()=>{
    const mod=await import('./js/character-rig.mjs');
    return {create:typeof mod.createCharacterRig,geometry:typeof mod.buildPosePartSpecs,assignment:typeof mod.assignPosePartLabels};
@@ -19,8 +37,8 @@ const {chromium}=require('playwright');
   assert.equal(await page.locator('#itcvAutoRig').isChecked(),true,'Auto Character Rig should default on');
   assert.match(await page.locator('#itcvBuildRig').innerText(),/UNIVERSAL RIG/);
   const version=await page.locator('script[src*="trozal-image-to-code-video.js"]').getAttribute('src');
-  assert.match(version,/\?v=20261123-2(?:&|$)/,'Mode 5 asset URL must use the current cache-busting version');
-  assert.match(version,/rig=20261123-2/,'Universal Rig asset URL must use the current cache-busting version');
+  assert.match(version,/\?v=20261127-4(?:&|$)/,'Mode 5 asset URL must use the current cache-busting version');
+  assert.match(version,/rig=20261127-4/,'Universal Rig asset URL must use the current cache-busting version');
   console.log('PASS: Mode 5 Character Rig controls and browser ES module load.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});
