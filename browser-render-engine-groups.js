@@ -5,17 +5,27 @@
 (() => {
   'use strict';
   if (window.TrozalRenderEngineGroups) return;
+  const probeCache = Object.create(null);
   const probe = (kind) => {
+    if (Object.prototype.hasOwnProperty.call(probeCache, kind)) return probeCache[kind];
+    let supported = false, gl = null;
     try {
       const c = document.createElement('canvas');
-      if (kind === 'webgl2') return !!c.getContext('webgl2');
-      if (kind === 'webgl1') return !!(c.getContext('webgl') || c.getContext('experimental-webgl'));
-      if (kind === 'canvas2d') return !!c.getContext('2d');
-      if (kind === 'webgpu') return !!navigator.gpu;
-      if (kind === 'svg') return document.createElementNS('http://www.w3.org/2000/svg','svg').namespaceURI === 'http://www.w3.org/2000/svg';
-      if (kind === 'domcss') return !!(window.CSS && CSS.supports('transform','translate3d(1px,1px,1px)'));
-    } catch (_) {}
-    return false;
+      if (kind === 'webgl2') { gl = c.getContext('webgl2'); supported = !!gl; }
+      else if (kind === 'webgl1') { gl = c.getContext('webgl') || c.getContext('experimental-webgl'); supported = !!gl; }
+      else if (kind === 'canvas2d') supported = !!c.getContext('2d');
+      else if (kind === 'webgpu') supported = !!navigator.gpu;
+      else if (kind === 'svg') supported = document.createElementNS('http://www.w3.org/2000/svg','svg').namespaceURI === 'http://www.w3.org/2000/svg';
+      else if (kind === 'domcss') supported = !!(window.CSS && CSS.supports('transform','translate3d(1px,1px,1px)'));
+    } catch (_) { supported = false; }
+    // Capability probes must not keep GPU contexts alive or consume Chromium's
+    // limited WebGL context slots. Probe once, explicitly release the test context,
+    // and reuse the cached boolean for every subsequent panel refresh.
+    if (gl) {
+      try { const lose = gl.getExtension('WEBGL_lose_context'); if (lose) lose.loseContext(); } catch (_) {}
+    }
+    probeCache[kind] = supported;
+    return supported;
   };
   const definitions = [
     {group:'3D RENDER',id:'webgpu',name:'WebGPU',supported:()=>probe('webgpu'),integrated:true,detail:'Backend WebGPU native dengan WGSL, depth buffer, material, tiga lampu, dan scene state bersama; membutuhkan adapter WebGPU.'},
@@ -63,12 +73,22 @@
             action.className='trozal-engine-use';
             action.dataset.engineSelect=choice;
             action.textContent=select&&select.value===choice?'Aktif':'Gunakan';
-            action.addEventListener('click',()=>{
+            action.addEventListener('click',async()=>{
               const control=document.getElementById('trozal3DRenderer');
               if(!control)return;
-              control.value=choice;
-              control.dispatchEvent(new Event('change',{bubbles:true}));
-              refresh();
+              action.disabled=true;
+              try{
+                if(window.TROZAL_CANVAS_3D&&typeof window.TROZAL_CANVAS_3D.setRenderer==='function'){
+                  await window.TROZAL_CANVAS_3D.setRenderer(choice);
+                }else{
+                  control.value=choice;
+                  control.dispatchEvent(new Event('change',{bubbles:true}));
+                }
+                refresh();
+              }catch(error){
+                const status=document.getElementById('trozal3DStatus');
+                if(status)status.textContent='Gagal mengaktifkan '+choice+': '+(error&&error.message||error);
+              }finally{action.disabled=false;}
             });
             row.appendChild(action);
           }
