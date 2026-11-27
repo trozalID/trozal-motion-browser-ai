@@ -23,7 +23,7 @@ for (const token of [
   'uMetallic','uRoughness','function exportPng()', 'function save()',
   'pointerdown','pointermove','addEventListener(\'wheel\''
 ]) assert.ok(source.includes(token), 'Missing 3D renderer feature: '+token);
-assert.match(source, /window\.TROZAL_CANVAS_3D/);
+assert.ok(source.includes("Object.defineProperty(window,'TROZAL_CANVAS_3D'"), 'CANVAS 3D must expose its public scene API.');
 assert.match(source, /WebGL2 tidak tersedia/);
 assert.doesNotMatch(source, /three\.min\.js|cdnjs\.cloudflare\.com\/ajax\/libs\/three/i,
   'CANVAS 3D must not depend on an external Three.js CDN.');
