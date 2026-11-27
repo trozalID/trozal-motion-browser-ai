@@ -8,13 +8,21 @@ const {chromium}=require('playwright');
   const pageErrors=[];page.on('pageerror',error=>pageErrors.push(error.message));
   await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#itcvModeBtn',{timeout:20000});
+  await page.evaluate(()=>{
+   window.__itcvClickTrace=[];
+   ['pointerdown','mousedown','click'].forEach(type=>window.addEventListener(type,event=>{if(event.target?.closest?.('#itcvModeBtn'))window.__itcvClickTrace.push('window:'+type);},true));
+   const button=document.querySelector('#itcvModeBtn');
+   button.addEventListener('click',()=>window.__itcvClickTrace.push('target-listener:click'));
+   const original=button.onclick;
+   button.onclick=function(event){window.__itcvClickTrace.push('target-onclick');return original?.call(this,event);};
+  });
   await page.locator('#itcvModeBtn').click({force:true});
   const modeReady=await page.waitForFunction(()=>{
    const workspace=document.querySelector('#trozalImageCodeVideoWorkspace');
    return document.body.classList.contains('itcv-mode-active')&&workspace&&getComputedStyle(workspace).display!=='none'&&workspace.getBoundingClientRect().width>0;
   },null,{timeout:20000}).then(()=>true).catch(()=>false);
   if(!modeReady){
-   const diagnostic=await page.evaluate(()=>({bodyClass:document.body.className,workspaceDisplay:getComputedStyle(document.querySelector('#trozalImageCodeVideoWorkspace')).display,buildButton:!!document.querySelector('#itcvBuildRig'),buttonConnected:!!document.querySelector('#itcvModeBtn')?.isConnected,buttonHandler:typeof document.querySelector('#itcvModeBtn')?.onclick,globalOpener:typeof window.trozalOpenImageToCodeVideo}));
+   const diagnostic=await page.evaluate(()=>({bodyClass:document.body.className,workspaceDisplay:getComputedStyle(document.querySelector('#trozalImageCodeVideoWorkspace')).display,buildButton:!!document.querySelector('#itcvBuildRig'),buttonConnected:!!document.querySelector('#itcvModeBtn')?.isConnected,buttonHandler:typeof document.querySelector('#itcvModeBtn')?.onclick,globalOpener:typeof window.trozalOpenImageToCodeVideo,clickTrace:window.__itcvClickTrace,workspaceConnected:!!document.querySelector('#trozalImageCodeVideoWorkspace')?.isConnected}));
    throw new Error('Mode 5 did not open: '+JSON.stringify({diagnostic,pageErrors}));
   }
   await page.waitForSelector('#itcvAutoRig',{state:'attached',timeout:20000});
