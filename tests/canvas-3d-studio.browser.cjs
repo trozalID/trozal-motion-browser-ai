@@ -22,6 +22,23 @@ const { chromium } = require('playwright');
     assert.ok(initial.objects.some(o=>o.type==='sphere'));
     assert.ok(initial.objects.some(o=>o.type==='torus'));
     assert.equal(await page.locator('#trozal3DObjectList button').count(),3);
+    assert.equal(initial.version,2,'Scene data should use OLLAMA schema v2.');
+    assert.equal(initial.lights.length,3,'The scene should include independent Key, Fill and Rim lights.');
+    assert.equal(await page.locator('#trozal3DParent option').count(),3,'Parent selector should list the other two scene objects plus Root.');
+    for (const id of ['#trozal3DGizmoMove','#trozal3DGizmoRotate','#trozal3DGizmoScale','#trozal3DGizmoCamera','#trozal3DGizmoAxis','#trozal3DAddKeyframe']) {
+      assert.equal(await page.locator(id).count(),1,'Missing OLLAMA Canvas 3D control: '+id);
+    }
+    const initialIds=initial.objects.map(o=>o.id);
+    await page.locator('#trozal3DParent').selectOption(initialIds[1]);
+    await page.locator('#trozal3DAddKeyframe').click();
+    let advanced=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
+    assert.equal(advanced.objects.find(o=>o.id===initialIds[0]).parentId,initialIds[1],'Parent hierarchy should persist.');
+    assert.equal(advanced.objects.find(o=>o.id===initialIds[0]).keyframes.length,1,'Add Keyframe should persist the current transform.');
+    const keyIntensity=page.locator('[data-light-index="0"][data-light-field="intensity"]');
+    await keyIntensity.evaluate(el=>{el.value='1.65';el.dispatchEvent(new Event('input',{bubbles:true}));});
+    advanced=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
+    assert.equal(advanced.lights[0].intensity,1.65,'Key light intensity should update independently.');
+    assert.equal(advanced.lights.length,3,'All three studio lights should remain in scene data.');
     const ids=await page.evaluate(()=>[...document.querySelectorAll('#trozalCanvas3DOverlay [id]')].map(e=>e.id));
     assert.equal(ids.length,new Set(ids).size,'CANVAS 3D overlay must not contain duplicate element IDs.');
     await page.locator('#trozal3DNewType').selectOption('cylinder');
