@@ -19,6 +19,28 @@ const { chromium } = require('playwright');
     assert.ok(initial.objects.some(o=>o.type==='cube'));
     assert.ok(initial.objects.some(o=>o.type==='sphere'));
     assert.ok(initial.objects.some(o=>o.type==='torus'));
+    // Exercise the CPU software renderer without discarding the shared scene state.
+    await page.locator('#trozal3DRenderer').selectOption('canvas2d');
+    await page.waitForFunction(()=>document.getElementById('trozal3DCanvas2D')?.style.display==='block');
+    const cpuFrame=await page.locator('#trozal3DCanvas2D').evaluate(canvas=>{
+      const ctx=canvas.getContext('2d');
+      const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      let colored=0;
+      for(let i=0;i<pixels.length;i+=4) if(pixels[i]!==6||pixels[i+1]!==12||pixels[i+2]!==22) colored++;
+      return {width:canvas.width,height:canvas.height,colored};
+    });
+    assert.ok(cpuFrame.width>100&&cpuFrame.height>100,'Canvas 2D backend must allocate a real preview surface.');
+    assert.ok(cpuFrame.colored>100,'Canvas 2D CPU renderer must rasterize scene geometry and the floor grid.');
+    const cpuScene=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
+    assert.equal(cpuScene.objects.length,initial.objects.length,'Switching renderers must preserve the shared scene.');
+    const cpuPngDownload=page.waitForEvent('download');
+    await page.locator('#trozal3DExportPng').click();
+    const cpuPng=await cpuPngDownload;
+    assert.match(cpuPng.suggestedFilename(),/\\.png$/,'Canvas 2D backend must export PNG.');
+    assert.ok(require('node:fs').statSync(await cpuPng.path()).size>100,'Canvas 2D PNG export must contain image data.');
+    await page.locator('#trozal3DRenderer').selectOption('webgl2');
+    await page.waitForFunction(()=>document.getElementById('trozal3DCanvas')?.style.display==='block');
+
     assert.equal(await page.locator('#trozal3DObjectList button').count(),3);
     assert.equal(initial.camera.projection,'perspective','Perspective should be the default camera projection.');
     await page.locator('#trozal3DCameraProjection').selectOption('orthographic');
