@@ -96,7 +96,7 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   for(const expression of ['adaptive.armSwingAmplitude','adaptive.torsoCounterSway','adaptive.landingAbsorption','adaptive.upperBodyFollowThrough','adaptive.heelToeRoll']){
     assert.ok(result.code.includes(expression),'Generated runtime is missing articulation effect '+expression+'.');
   }
-  assert.match(result.code,/motionTempo=1\\.635/,'Mode 3 Motion Tempo slider must scale the generated gait-cycle tempo.');
+  assert.match(result.code,/motionTempo=1\.635/,'Mode 3 Motion Tempo slider must scale the generated gait-cycle tempo.');
   await page.locator('[data-rig-preset="idle"]').click();
   await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"strideLength":0.08'),null,{timeout:10000});
   assert.equal(await page.locator('#trozalJsRigMotionPreset').inputValue(),'idle');
