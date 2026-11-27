@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
     await page.waitForSelector('#trozalCanvas3DOpen',{timeout:15000});
     await page.locator('#trozalCanvas3DOpen').click();
     await page.waitForSelector('#trozal3DCanvas',{timeout:10000});
-    await page.waitForFunction(()=>window.TROZAL_CANVAS_3D?.status?.webgl===true,{timeout:15000});
+    await page.waitForFunction(()=>window.TROZAL_CANVAS_3D?.status?.webgl===true,null,{timeout:15000});
     const initial=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
     assert.equal(initial.objects.length,3,'The starter 3D scene should contain three independently editable meshes.');
     assert.ok(initial.objects.some(o=>o.type==='cube'));
