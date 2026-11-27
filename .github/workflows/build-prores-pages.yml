@@ -27,6 +27,8 @@ on:
       - 'render-memory-manager.js'
       - 'render-frame-store.js'
       - 'canvas-3d-studio.js'
+      - 'canvas-3d-ai-theme-studio.js'
+      - 'canvas-3d-terminal.js'
       - 'browser-render-engine-groups.js'
       - 'logo-studio.js'
       - 'tests/logo-studio.browser.cjs'
@@ -93,6 +95,8 @@ jobs:
           cp browser-gpu-frame-pipeline.js site/browser-gpu-frame-pipeline.js
           cp logo-studio.js site/logo-studio.js
           cp canvas-3d-studio.js site/canvas-3d-studio.js
+          cp canvas-3d-ai-theme-studio.js site/canvas-3d-ai-theme-studio.js
+          cp canvas-3d-terminal.js site/canvas-3d-terminal.js
           cp browser-render-engine-groups.js site/browser-render-engine-groups.js
           cp icon-logo-motion-studio.js site/icon-logo-motion-studio.js
           touch site/.nojekyll
