@@ -25,7 +25,8 @@ for (const token of [
 ]) assert.ok(source.includes(token), 'Missing 3D renderer feature: '+token);
 assert.ok(source.includes("Object.defineProperty(window,'TROZAL_CANVAS_3D'"), 'CANVAS 3D must expose its public scene API.');
 assert.ok(source.includes("right:260px"), 'Browser CANVAS 3D launcher must remain independently clickable.');
-assert.ok(source.includes("document.body.appendChild(link)"), 'Browser PNG export must attach its download anchor to the document.');
+assert.ok(source.includes("document.body.appendChild(a)"), 'Browser PNG export must attach its download anchor to the document.');
+assert.ok(source.includes('a.click()') && source.includes('a.remove()'), 'Browser PNG export must trigger and clean up its temporary download anchor.');
 assert.ok(source.includes("PNG snapshot exported · "), 'Browser PNG export must report actual snapshot dimensions and bytes.');
 assert.match(source, /WebGL2 tidak tersedia/);
 assert.doesNotMatch(source, /three\.min\.js|cdnjs\.cloudflare\.com\/ajax\/libs\/three/i,
