@@ -17,14 +17,19 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   await page.waitForSelector('#trozalJsMotionBtn');
   await page.locator('#trozalJsMotionBtn').click();
   await page.waitForSelector('#trozalJsRigFile');
-  const rigPanelTitle=await page.locator('#trozalJsCharacterRigPanel strong').innerText();
+  const rigPanelTitle=await page.locator('#trozalJsCharacterRigPanel strong').first().innerText();
   assert.match(rigPanelTitle,/AI CHARACTER MOTION RECONSTRUCTION · MODE 3/,
     'The reconstruction feature must be clearly identified inside Mode 3 JavaScript Motion Studio.');
-  const rigPanelDescription=await page.locator('#trozalJsCharacterRigPanel p').innerText();
+  const rigPanelDescription=await page.locator('#trozalJsCharacterRigPanel p').first().innerText();
   assert.match(rigPanelDescription,/Tahap 1 aktif/,
     'Mode 3 must describe the currently implemented mask-refinement stage.');
   assert.equal(await page.locator('#trozalJsRigDiagnostics').count(),1,
     'Mode 3 should expose a reconstruction diagnostics panel for the next stage.');
+  assert.equal(await page.locator('#trozalJsAdaptiveRigControls input[type=range]').count(),5,
+    'Mode 3 must expose all five adaptive Universal Rig character-motion controls.');
+  for(const id of ['trozalJsHipCounter','trozalJsArmLegSync','trozalJsGroundClearance','trozalJsGaitBalance','trozalJsJointDamping']){
+    assert.equal(await page.locator('#'+id).count(),1,'Mode 3 is missing adaptive control '+id+'.');
+  }
 
   await page.locator('#trozalJsRigFile').setInputFiles({name:'character.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64')});
   await page.waitForFunction(()=>document.querySelector('#trozalJsRigStatus')?.textContent.includes('Foto siap'),null,{timeout:10000});
@@ -32,6 +37,7 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   await page.waitForFunction(()=>{const s=document.querySelector('#trozalJsRigStatus')?.textContent||'';return s.includes('BERHASIL')||s.includes('RIG GAGAL');},null,{timeout:20000});
   const rigStatusText=await page.locator('#trozalJsRigStatus').textContent();
   assert.ok(rigStatusText.includes('BERHASIL'),'Character Rig pipeline did not complete: '+rigStatusText);
+  assert.match(rigStatusText,/AUTO CHARACTER PARTS \+ UNIVERSAL RIG/,'Mode 3 must confirm the Universal Rig pipeline, not only generic image motion.');
   await page.waitForFunction(()=>!document.getElementById('trozalJsRigDiagnostics')?.hidden);
   const diagnosticsText=await page.locator('#trozalJsRigDiagnostics').innerText();
   assert.match(diagnosticsText,/TAHAP 2 · DIAGNOSTIK CAKUPAN ANATOMI/);
@@ -63,6 +69,9 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
    return {assetKeys:Object.keys(object.rigAssets||{}),code:api.getCode(),frameType:frame1?.constructor?.name,changedPixels,hasMotionControls:!!document.querySelector('#trozalJsRigMotionPreset')&&!!document.querySelector('#trozalJsRigIntensity')};
   });
   assert.ok(result.assetKeys.includes('background')&&result.assetKeys.includes('head'),'Rig PNG assets must be attached to the JavaScript Studio object');
+  const universalState=await page.evaluate(()=>window.TROZAL_JS_MOTION.getObjects()[0]?.rigData?.universalRig);
+  assert.ok(universalState?.enabled,'Mode 3 must attach Universal Rig joint metadata to the active character object.');
+  assert.equal(universalState.partCount,2,'Universal Rig metadata must track independently segmented body parts.');
   assert.match(result.code,/drawPart/,'Generated Canvas code must articulate the parent-child rig hierarchy');
   assert.match(result.code,/Math\.min\(w\/rig\.width,h\/rig\.height\)/,'Character Rig must preserve source proportions inside the preview ratio');
   assert.match(result.code,/Math\.max\(-0\.42/,'Character Rig joint rotations must be bounded to prevent extreme limb separation');
@@ -71,6 +80,13 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   assert.ok(result.code.includes('motionGain=2.700'),'Walk Cycle must use a strong default motion gain');
   assert.ok(result.code.includes('p.amp*partGain*swing'),'Each body part must receive its own animated joint rotation');
   assert.ok(result.hasMotionControls,'Character Rig must expose motion preset and intensity controls');
+  for(const token of ['hipCounterRotation','armLegSync','groundClearance','gaitBalance','jointImpactDamping']){
+    assert.ok(result.code.includes(token),'Generated character runtime must apply '+token+' to articulated body parts.');
+  }
+  assert.match(result.code,/Math\.max\(0,Math\.sin\(gaitPhase/,'Ground clearance must create an animated foot-lift arc.');
+  assert.match(result.code,/torsoDamp/,'Gait balance must stabilize torso sway.');
+  await page.locator('#trozalJsArmLegSync').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});
+  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"armLegSync":1'),null,{timeout:10000});
   await page.locator('#trozalJsPreviewRatio').selectOption('9:16');
   await page.waitForTimeout(100);
   const portraitSize=await page.frameLocator('#trozalJsMotionFrame').locator('#c').evaluate(canvas=>({width:canvas.width,height:canvas.height}));
