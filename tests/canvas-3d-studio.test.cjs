@@ -27,7 +27,8 @@ for (const token of [
 assert.ok(source.includes("Object.defineProperty(window,'TROZAL_CANVAS_3D'"), 'CANVAS 3D must expose its public scene API.');
 assert.ok(source.includes("document.querySelector('.topbar .topright')"), 'CANVAS 3D launcher must attach to the Browser AI topbar when available.');
 assert.ok(source.includes("PNG snapshot exported · ") && source.includes('canvas.width') && source.includes('canvas.height') && source.includes('b.size'), 'PNG export must report actual snapshot dimensions and byte count.');
-assert.match(source, /WebGL2 tidak tersedia/);\nassert.ok(source.includes('state.renderer===\'canvas2d\'') && source.includes('drawCanvas2D(state.time,true)'), 'Canvas 2D CPU must render and export using the shared scene state.');
+assert.match(source, /WebGL2 tidak tersedia/);
+assert.ok(source.includes('function drawCanvas2D(time,force)') && source.includes('function draw(time,force)'), 'Canvas 2D CPU must render through the shared scene state.');
 assert.ok(source.includes("getContext('2d'") && source.includes('value="canvas2d"'), 'Canvas 2D CPU renderer must be a real selectable backend.');
 assert.ok(source.includes("state.renderer==='canvas2d'"), 'PNG export must use the active renderer canvas.');
 assert.doesNotMatch(source, /three\.min\.js|cdnjs\.cloudflare\.com\/ajax\/libs\/three/i,
