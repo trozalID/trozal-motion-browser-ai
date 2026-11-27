@@ -25,9 +25,9 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
     'Mode 3 must describe the currently implemented mask-refinement stage.');
   assert.equal(await page.locator('#trozalJsRigDiagnostics').count(),1,
     'Mode 3 should expose a reconstruction diagnostics panel for the next stage.');
-  assert.equal(await page.locator('#trozalJsAdaptiveRigControls input[type=range]').count(),5,
-    'Mode 3 must expose all five adaptive Universal Rig character-motion controls.');
-  for(const id of ['trozalJsHipCounter','trozalJsArmLegSync','trozalJsGroundClearance','trozalJsGaitBalance','trozalJsJointDamping']){
+  assert.equal(await page.locator('#trozalJsAdaptiveRigControls input[type=range]').count(),8,
+    'Mode 3 must expose all eight adaptive Universal Rig character-motion controls.');
+  for(const id of ['trozalJsHipCounter','trozalJsArmLegSync','trozalJsGroundClearance','trozalJsGaitBalance','trozalJsJointDamping','trozalJsFootContactLock','trozalJsAlternatingGait','trozalJsKneeFlexAssist']){
     assert.equal(await page.locator('#'+id).count(),1,'Mode 3 is missing adaptive control '+id+'.');
   }
 
@@ -80,11 +80,18 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   assert.ok(result.code.includes('motionGain=2.700'),'Walk Cycle must use a strong default motion gain');
   assert.ok(result.code.includes('p.amp*partGain*swing'),'Each body part must receive its own animated joint rotation');
   assert.ok(result.hasMotionControls,'Character Rig must expose motion preset and intensity controls');
-  for(const token of ['hipCounterRotation','armLegSync','groundClearance','gaitBalance','jointImpactDamping']){
+  for(const token of ['hipCounterRotation','armLegSync','groundClearance','gaitBalance','jointImpactDamping','footContactLock','alternatingGait','kneeFlexAssist']){
     assert.ok(result.code.includes(token),'Generated character runtime must apply '+token+' to articulated body parts.');
   }
   assert.match(result.code,/Math\.max\(0,Math\.sin\(gaitPhase/,'Ground clearance must create an animated foot-lift arc.');
   assert.match(result.code,/torsoDamp/,'Gait balance must stabilize torso sway.');
+  assert.match(result.code,/const stance=Math.max\(0,Math.cos\(gaitPhase/,'Foot contact lock must distinguish stance from swing phase.');
+  assert.match(result.code,/const kneeFlex=/,'Knee Flex Assist must add articulated knee bend to lower-leg joints.');
+  assert.match(result.code,/sidePhase\*adaptive.alternatingGait/,'Alternating Gait Phase must apply opposite phase to left and right legs.');
+  await page.locator('#trozalJsFootContactLock').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});
+  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"footContactLock":1'),null,{timeout:10000});
+  await page.locator('#trozalJsKneeFlexAssist').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});
+  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"kneeFlexAssist":1'),null,{timeout:10000});
   await page.locator('#trozalJsArmLegSync').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});
   await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"armLegSync":1'),null,{timeout:10000});
   await page.locator('#trozalJsPreviewRatio').selectOption('9:16');
