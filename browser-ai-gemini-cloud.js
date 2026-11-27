@@ -389,7 +389,7 @@
    reader.readAsDataURL(file);
   });
  }
- async function resizeDataUrl(dataUrl,maxSide){
+ async function resizeDataUrl(dataUrl,maxSide,quality){
   const image=new Image();
   image.src=dataUrl;
   await image.decode();
@@ -400,7 +400,7 @@
   const context=canvas.getContext('2d');
   if(!context)throw new Error('Canvas gambar tidak tersedia.');
   context.drawImage(image,0,0,canvas.width,canvas.height);
-  return canvas.toDataURL('image/jpeg',0.86);
+  return canvas.toDataURL('image/jpeg',Math.max(0.55,Math.min(0.9,Number(quality)||0.74)));
  }
  async function capturePreviewFrames(){
   if(typeof renderAt!=='function'||typeof ensureHtmlToImage!=='function')throw new Error('Renderer Preview belum siap.');
@@ -425,7 +425,7 @@
      const renderer=await ensureHtmlToImage();
      canvas=await renderer.toCanvas($('stage'),{pixelRatio:1,cacheBust:true,skipFonts:false});
     }
-    const jpeg=await resizeDataUrl(canvas.toDataURL('image/jpeg',0.86),1280);
+    const jpeg=await resizeDataUrl(canvas.toDataURL('image/jpeg',0.82),960,0.74);
     const image=splitDataUrl(jpeg);
     image.time=time;
     frames.push(image);
@@ -592,7 +592,7 @@
    if(selected.length){
     for(const file of selected){
      if(file.size>12*1024*1024)throw new Error('File '+file.name+' melebihi 12 MB. Kecilkan file terlebih dahulu.');
-     const dataUrl=await resizeDataUrl(await fileAsDataUrl(file),1280);
+     const dataUrl=await resizeDataUrl(await fileAsDataUrl(file),960,0.74);
      images.push(splitDataUrl(dataUrl));
     }
    }else{
@@ -600,6 +600,16 @@
     images.push(...await capturePreviewFrames());
    }
    if(!images.length)throw new Error('Tidak ada gambar untuk dianalisis.');
+   // Keep multi-frame evidence under a predictable upload budget.
+   const payloadBytes=()=>images.reduce((sum,image)=>sum+Math.floor(image.data.length*0.75),0);
+   if(payloadBytes()>3.5*1024*1024){
+    status('trozalGeminiStatus','Mengoptimalkan bukti visual agar analisis Gemini lebih ringan…');
+    const compact=await Promise.all(images.map(async image=>{
+     const dataUrl=await resizeDataUrl('data:'+image.mime_type+';base64,'+image.data,768,0.68);
+     return splitDataUrl(dataUrl);
+    }));
+    images.splice(0,images.length,...compact);
+   }
    renderContactSheet(images);
    const allowed=[...$('metadataCategory').options].map(option=>option.text);
    const prompt=[
