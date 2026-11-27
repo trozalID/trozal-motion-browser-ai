@@ -133,7 +133,11 @@ jobs:
           node tests/browser-webgpu-local.test.cjs
           node tests/browser-gemini-vision-fallback.test.cjs
       - name: Guard central workspace and export capabilities
-        run: node tests/workspace-export-preservation.test.cjs
+        run: |
+          node tests/workspace-export-preservation.test.cjs
+          node --check canvas-3d-studio.js
+          node --check tests/canvas-3d-studio.test.cjs
+          node tests/canvas-3d-studio.test.cjs
       - name: Verify checked-out test revision
         run: |
           echo "GITHUB_SHA=$GITHUB_SHA"
@@ -179,6 +183,8 @@ jobs:
         run: node tests/scene-intelligence-loading.browser.cjs
       - name: Test Gemini Cloud-only Scene Composer and Browser Vision
         run: node tests/browser-cloud-ai.browser.cjs
+      - name: Test rebuilt CANVAS 3D WebGL2 studio, camera, lighting, timeline and exports
+        run: node tests/canvas-3d-studio.browser.cjs
       - name: Test JavaScript Studio scenes and keyframe timeline
         run: node tests/js-motion-studio-timeline.test.cjs
       - name: Test AI Prompt-to-JavaScript concepts and editor integration
