@@ -12,7 +12,7 @@
       if (kind === 'webgl1') return !!(c.getContext('webgl') || c.getContext('experimental-webgl'));
       if (kind === 'canvas2d') return !!c.getContext('2d');
       if (kind === 'webgpu') return !!navigator.gpu;
-      if (kind === 'svg') return !!document.createElementNS('http://www.w3.org/2000/svg','svg').createSVGRect;
+      if (kind === 'svg') return document.createElementNS('http://www.w3.org/2000/svg','svg').namespaceURI === 'http://www.w3.org/2000/svg';
       if (kind === 'domcss') return !!(window.CSS && CSS.supports('transform','translate3d(1px,1px,1px)'));
     } catch (_) {}
     return false;
