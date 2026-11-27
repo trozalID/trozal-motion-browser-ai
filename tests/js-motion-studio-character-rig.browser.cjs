@@ -93,12 +93,9 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   for(const token of ['strideLength','armSwingAmplitude','torsoCounterSway','landingAbsorption','motionTempo','upperBodyFollowThrough','heelToeRoll']){
     assert.ok(result.code.includes(token),'Generated rig runtime must include '+token+'.');
   }
-  assert.match(result.code,/adaptive\\.motionTempo\\*\\.9/,'Motion Tempo must alter generated gait cycle frequency.');
-  assert.match(result.code,/adaptive\\.armSwingAmplitude/,'Arm Swing Amplitude must modulate arm joints.');
-  assert.match(result.code,/adaptive\\.torsoCounterSway/,'Torso Counter-Sway must counterbalance torso against gait phase.');
-  assert.match(result.code,/adaptive\\.landingAbsorption/,'Landing Impact Absorption must damp knee and torso impact.');
-  assert.match(result.code,/adaptive\\.upperBodyFollowThrough/,'Upper-Body Follow-Through must add delayed arm/head motion.');
-  assert.match(result.code,/adaptive\\.heelToeRoll/,'Heel-to-Toe Foot Roll must affect foot rotation.');
+  for(const expression of ['adaptive.motionTempo*.9','adaptive.armSwingAmplitude','adaptive.torsoCounterSway','adaptive.landingAbsorption','adaptive.upperBodyFollowThrough','adaptive.heelToeRoll']){
+    assert.ok(result.code.includes(expression),'Generated runtime is missing articulation effect '+expression+'.');
+  }
   await page.locator('[data-rig-preset="idle"]').click();
   await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"strideLength":0.08'),null,{timeout:10000});
   assert.equal(await page.locator('#trozalJsRigMotionPreset').inputValue(),'idle');
