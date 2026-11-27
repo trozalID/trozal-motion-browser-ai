@@ -143,6 +143,36 @@ function defaults(){return [
 {id:uid(),name:'Orbit Sphere',type:'sphere',x:1.25,y:.1,z:0,rx:0,ry:0,rz:0,sx:.72,sy:.72,sz:.72,color:'#f2a84b',metallic:.55,roughness:.22,emission:0,materialPreset:'custom',animation:'orbit',speed:.8,amount:.65,parentId:null,keyframes:[]},
 {id:uid(),name:'Torus Accent',type:'torus',x:0,y:1.35,z:-.25,rx:65,ry:0,rz:0,sx:.56,sy:.56,sz:.56,color:'#9a82f5',metallic:.7,roughness:.28,emission:0,materialPreset:'custom',animation:'spin',speed:.4,amount:.45,parentId:null,keyframes:[]}]}
 function project(){return {version:2,engine:'TROZAL CANVAS 3D · '+state.renderer,duration:state.duration,fps:state.fps,loop:state.loop,light:state.light,lights:state.lights.map(light=>({...light})),showGrid:state.showGrid,camera:{...state.camera},objects:state.objects.map(o=>({...o}))};}
+
+function applySceneProject(data){
+if(!data||typeof data!=='object'||data.version!==2||!Array.isArray(data.objects)||data.objects.length<1||data.objects.length>100)throw new Error('Invalid Scene JSON v2 or object count.');
+const types=new Set(['cube','sphere','torus','cylinder','cone','plane']),ids=new Set();
+const num=(v,def,min,max)=>{const n=Number(v);return Number.isFinite(n)?Math.max(min,Math.min(max,n)):def;};
+const hex=v=>/^#[0-9a-f]{6}$/i.test(String(v||''))?String(v):'#36c7dc';
+const objects=data.objects.map((raw,i)=>{
+if(!raw||typeof raw!=='object'||!types.has(raw.type))throw new Error('Unsupported object type at index '+i+'.');
+const id=String(raw.id||('terminal-object-'+(i+1)));if(ids.has(id))throw new Error('Duplicate object id: '+id);ids.add(id);
+const item={id,name:String(raw.name||('Object '+(i+1))).slice(0,40),type:raw.type};
+['x','y','z','rx','ry','rz'].forEach(k=>item[k]=num(raw[k],0,-10000,10000));
+['sx','sy','sz'].forEach(k=>item[k]=num(raw[k],1,.1,100));
+item.color=hex(raw.color);item.metallic=num(raw.metallic,.3,0,1);item.roughness=num(raw.roughness,.34,.04,1);item.emission=num(raw.emission,0,0,3);
+item.materialPreset=['custom','matte','plastic','ceramic','brushed-metal','polished-metal','neon'].includes(raw.materialPreset)?raw.materialPreset:'custom';
+item.animation=['none','spin','orbit','bounce','pulse'].includes(raw.animation)?raw.animation:'none';
+item.speed=num(raw.speed,.5,.1,3);item.amount=num(raw.amount,.5,0,1.5);item.parentId=raw.parentId?String(raw.parentId):null;
+item.keyframes=Array.isArray(raw.keyframes)?raw.keyframes.slice(0,500).map(k=>({time:num(k&&k.time,0,0,120),values:Object.fromEntries(['x','y','z','rx','ry','rz','sx','sy','sz'].map(key=>[key,num(k&&k.values&&k.values[key],item[key],-10000,10000)]))})).sort((a,b)=>a.time-b.time):[];
+return item;
+});
+objects.forEach(o=>{if(o.parentId&&(!ids.has(o.parentId)||o.parentId===o.id))throw new Error('Invalid hierarchy parent for '+o.name+'.');});
+objects.forEach(o=>{let p=objects.find(x=>x.id===o.parentId),seen=new Set([o.id]);while(p){if(seen.has(p.id))throw new Error('Hierarchy cycle detected for '+o.name+'.');seen.add(p.id);p=objects.find(x=>x.id===p.parentId);}});
+const c=data.camera&&typeof data.camera==='object'?data.camera:{};
+const camera={yaw:num(c.yaw,.72,-1000,1000),pitch:num(c.pitch,.32,-1.55,1.55),distance:num(c.distance,7.2,3,13),projection:c.projection==='orthographic'?'orthographic':'perspective',orthoScale:num(c.orthoScale,4.8,1,12),target:Array.isArray(c.target)&&c.target.length===3?c.target.map(v=>num(v,0,-10000,10000)):[0,.2,0]};
+const lights=Array.isArray(data.lights)&&data.lights.length===3?data.lights.map((l,i)=>({name:String(l.name||('Light '+(i+1))).slice(0,24),x:num(l.x,0,-20,20),y:num(l.y,3,-20,20),z:num(l.z,3,-20,20),color:hex(l.color),intensity:num(l.intensity,1,0,3)})):state.lights.map(l=>({...l}));
+pause();state.objects=objects;state.selected=ids.has(String(data.selected||''))?String(data.selected):objects[0].id;state.camera=camera;state.lights=lights;
+state.duration=num(data.duration,8,1,120);state.fps=[24,30,60].includes(Number(data.fps))?Number(data.fps):30;state.loop=data.loop!==false;state.light=num(data.light,1.25,0,3);state.showGrid=data.showGrid!==false;state.time=num(data.playhead,0,0,state.duration);
+$('trozal3DDuration').value=String(state.duration);$('trozal3DTime').max=String(state.duration);$('trozal3DFps').value=String(state.fps);$('trozal3DLoop').setAttribute('aria-pressed',String(state.loop));$('trozal3DLoop').textContent='↻ Loop: '+(state.loop?'ON':'OFF');$('trozal3DGrid').checked=state.showGrid;$('trozal3DLight').value=String(state.light);$('trozal3DCameraProjection').value=camera.projection;$('trozal3DZoom').value=String(camera.distance);$('trozal3DOrthoScale').value=String(camera.orthoScale);
+renderLights();renderList();inspector();outputs();clock();draw(state.time,true);say('Scene JSON v2 applied · '+objects.length+' objects.');
+return project();
+}
 function download(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1200);}
 function save(){download(new Blob([JSON.stringify(project(),null,2)],{type:'application/json'}),'trozal-canvas-3d-scene.json');say('Scene JSON exported.');}
 function exportPng(){const canvas=$(activeCanvas());draw(state.time,true);canvas.toBlob(b=>{if(b&&b.size>0){try{download(b,'trozal-canvas-3d-snapshot.png');say('PNG snapshot exported · '+canvas.width+'×'+canvas.height+' · '+b.size+' bytes');}catch(error){say('PNG export failed · '+(error?.message||'download error'));}}else say('PNG export failed · empty image blob');},'image/png');}
@@ -197,5 +227,5 @@ function openStudio(){if(!$('trozalCanvas3DOverlay'))mount();$('trozalCanvas3DOv
 function closeStudio(){pause();if($('trozalCanvas3DOverlay'))$('trozalCanvas3DOverlay').style.display='none';}
 function resize(){const viewport=$('trozal3DViewport');if(!viewport)return;const r=viewport.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1),w=Math.max(1,Math.floor(r.width*d)),h=Math.max(1,Math.floor(r.height*d));let changed=false;['trozal3DCanvas','trozal3DCanvas2D','trozal3DCanvasGL1','trozal3DCanvasGPU'].forEach(id=>{const c=$(id);if(c&&c.width!==w){c.width=w;changed=true;}if(c&&c.height!==h){c.height=h;changed=true;}});if(state.gpu&&changed)gpuDepthResize();if(changed)draw(state.time,true);}
 window.addEventListener('resize',resize,{passive:true});window.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('trozalCanvas3DOverlay')?.style.display==='block')closeStudio();});
-installButton();Object.defineProperty(window,'TROZAL_CANVAS_3D',{value:{open:openStudio,close:closeStudio,getProject:project,setRenderer, get status(){return {renderer:state.renderer,webgl:!!state.gl,webgl1:!!state.gl1,webgpu:!!state.gpu,canvas2d:!!state.ctx2d,objects:state.objects.length};},get capabilities(){return {webgl2:!!state.gl,webgl1:!!state.gl1,webgpu:!!state.gpu,canvas2d:!!state.ctx2d};}},configurable:false});
+installButton();Object.defineProperty(window,'TROZAL_CANVAS_3D',{value:{open:openStudio,close:closeStudio,getProject:project,applyProject:applySceneProject,setRenderer, get status(){return {renderer:state.renderer,webgl:!!state.gl,webgl1:!!state.gl1,webgpu:!!state.gpu,canvas2d:!!state.ctx2d,objects:state.objects.length};},get capabilities(){return {webgl2:!!state.gl,webgl1:!!state.gl1,webgpu:!!state.gpu,canvas2d:!!state.ctx2d};}},configurable:false});
 })();
