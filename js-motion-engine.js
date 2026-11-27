@@ -211,7 +211,22 @@ async function refreshRigMotion(){
 rigMotionPreset.addEventListener('change',refreshRigMotion);
 rigIntensity.addEventListener('input',()=>{rigIntensityValue.textContent=rigIntensity.value+'%';});
 rigIntensity.addEventListener('change',refreshRigMotion);
-[['trozalJsHipCounter','trozalJsHipCounterValue'],['trozalJsArmLegSync','trozalJsArmLegSyncValue'],['trozalJsGroundClearance','trozalJsGroundClearanceValue'],['trozalJsGaitBalance','trozalJsGaitBalanceValue'],['trozalJsJointDamping','trozalJsJointDampingValue'],['trozalJsFootContactLock','trozalJsFootContactLockValue'],['trozalJsAlternatingGait','trozalJsAlternatingGaitValue'],['trozalJsKneeFlexAssist','trozalJsKneeFlexAssistValue']].forEach(([id,out])=>{const input=$(id),label=$(out);if(!input||!label)return;const update=()=>{label.textContent=input.value+'%';};input.addEventListener('input',update);input.addEventListener('change',refreshRigMotion);update();});
+[['trozalJsHipCounter','trozalJsHipCounterValue'],['trozalJsArmLegSync','trozalJsArmLegSyncValue'],['trozalJsGroundClearance','trozalJsGroundClearanceValue'],['trozalJsGaitBalance','trozalJsGaitBalanceValue'],['trozalJsJointDamping','trozalJsJointDampingValue'],['trozalJsFootContactLock','trozalJsFootContactLockValue'],['trozalJsAlternatingGait','trozalJsAlternatingGaitValue'],['trozalJsKneeFlexAssist','trozalJsKneeFlexAssistValue'],['trozalJsStrideLength','trozalJsStrideLengthValue'],['trozalJsArmSwing','trozalJsArmSwingValue'],['trozalJsTorsoCounterSway','trozalJsTorsoCounterSwayValue'],['trozalJsLandingAbsorption','trozalJsLandingAbsorptionValue'],['trozalJsMotionTempo','trozalJsMotionTempoValue'],['trozalJsUpperFollowThrough','trozalJsUpperFollowThroughValue'],['trozalJsHeelToeRoll','trozalJsHeelToeRollValue']].forEach(([id,out])=>{const input=$(id),label=$(out);if(!input||!label)return;const update=()=>{label.textContent=input.value+'%';};input.addEventListener('input',update);input.addEventListener('change',refreshRigMotion);update();});
+const rigBodyPresetPanel=$('trozalJsRigBodyPresets'),rigBodyPresetStatus=$('trozalJsRigBodyPresetStatus');
+const bodyMotionProfiles={
+ natural:{preset:'walk',intensity:100,values:{trozalJsHipCounter:55,trozalJsArmLegSync:88,trozalJsGroundClearance:48,trozalJsGaitBalance:78,trozalJsJointDamping:42,trozalJsFootContactLock:86,trozalJsAlternatingGait:100,trozalJsKneeFlexAssist:58,trozalJsStrideLength:60,trozalJsArmSwing:62,trozalJsTorsoCounterSway:55,trozalJsLandingAbsorption:66,trozalJsMotionTempo:45,trozalJsUpperFollowThrough:48,trozalJsHeelToeRoll:56}},
+ idle:{preset:'idle',intensity:70,values:{trozalJsHipCounter:18,trozalJsArmLegSync:22,trozalJsGroundClearance:8,trozalJsGaitBalance:94,trozalJsJointDamping:72,trozalJsFootContactLock:96,trozalJsAlternatingGait:20,trozalJsKneeFlexAssist:12,trozalJsStrideLength:8,trozalJsArmSwing:10,trozalJsTorsoCounterSway:15,trozalJsLandingAbsorption:88,trozalJsMotionTempo:8,trozalJsUpperFollowThrough:24,trozalJsHeelToeRoll:8}},
+ run:{preset:'run',intensity:135,values:{trozalJsHipCounter:72,trozalJsArmLegSync:96,trozalJsGroundClearance:88,trozalJsGaitBalance:68,trozalJsJointDamping:72,trozalJsFootContactLock:72,trozalJsAlternatingGait:100,trozalJsKneeFlexAssist:92,trozalJsStrideLength:90,trozalJsArmSwing:92,trozalJsTorsoCounterSway:76,trozalJsLandingAbsorption:82,trozalJsMotionTempo:82,trozalJsUpperFollowThrough:68,trozalJsHeelToeRoll:78}}
+};
+if(rigBodyPresetPanel)rigBodyPresetPanel.addEventListener('click',async event=>{
+ const button=event.target.closest('[data-rig-preset]');if(!button)return;
+ const profile=bodyMotionProfiles[button.dataset.rigPreset];if(!profile)return;
+ rigMotionPreset.value=profile.preset;rigIntensity.value=String(profile.intensity);rigIntensityValue.textContent=rigIntensity.value+'%';
+ Object.entries(profile.values).forEach(([id,value])=>{const input=$(id);if(input){input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));}});
+ rigBodyPresetPanel.querySelectorAll('[data-rig-preset]').forEach(node=>node.classList.toggle('active',node===button));
+ if(rigBodyPresetStatus)rigBodyPresetStatus.textContent=button.textContent.trim()+' diterapkan · seluruh pengaturan gerak tubuh disesuaikan. Jalankan Build Preview untuk memeriksa hasil.';
+ await refreshRigMotion();
+});
 rigFile.addEventListener('change',()=>{
  renderRigDiagnostics(null);
  const file=rigFile.files&&rigFile.files[0];if(!file){rigSourceDataUrl='';return;}
