@@ -18,9 +18,9 @@
     return false;
   };
   const definitions = [
-    {group:'3D RENDER',id:'webgpu',name:'WebGPU',supported:()=>probe('webgpu'),integrated:false,detail:'API browser terdeteksi; backend CANVAS 3D belum terintegrasi.'},
+    {group:'3D RENDER',id:'webgpu',name:'WebGPU',supported:()=>probe('webgpu'),integrated:true,detail:'Backend WebGPU native dengan WGSL, depth buffer, material, tiga lampu, dan scene state bersama; membutuhkan adapter WebGPU.'},
     {group:'3D RENDER',id:'webgl2',name:'WebGL2',supported:()=>probe('webgl2'),integrated:true,detail:'Backend 3D aktif pada viewport CANVAS 3D.'},
-    {group:'3D RENDER',id:'webgl1',name:'WebGL1',supported:()=>probe('webgl1'),integrated:false,detail:'API terdeteksi; backend 3D WebGL1 belum terintegrasi.'},
+    {group:'3D RENDER',id:'webgl1',name:'WebGL1',supported:()=>probe('webgl1'),integrated:true,detail:'Backend WebGL1 native untuk browser/GPU kompatibilitas lama.'},
     {group:'3D RENDER',id:'cpu3d',name:'Canvas 2D CPU · Software 3D',supported:()=>probe('canvas2d'),integrated:true,detail:'Fallback software 3D; bukan akselerasi GPU.'},
     {group:'2D / MOTION RENDER',id:'canvas2d',name:'Canvas 2D Raster',supported:()=>probe('canvas2d'),integrated:true,detail:'Komposisi frame 2D dan jalur raster legacy.'},
     {group:'2D / MOTION RENDER',id:'svg',name:'SVG Vector / Raster',supported:()=>probe('svg'),integrated:true,detail:'SVG dirasterisasi untuk alur motion 2D.'},
@@ -81,6 +81,7 @@
     const rendererControl=document.getElementById('trozal3DRenderer');
     if(rendererControl)rendererControl.addEventListener('change',refresh);
     window.addEventListener('trozal:hybrid-canvas-status',refresh);
+    window.addEventListener('trozal:renderer-changed',refresh);
   }
   const observer=new MutationObserver(mount);
   observer.observe(document.documentElement,{childList:true,subtree:true});
