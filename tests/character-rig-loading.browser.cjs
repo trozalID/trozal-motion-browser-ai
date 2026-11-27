@@ -5,12 +5,22 @@ const {chromium}=require('playwright');
  const browser=await chromium.launch({headless:true});
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1000}});
+  const pageErrors=[];page.on('pageerror',error=>pageErrors.push(error.message));
   await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#itcvModeBtn',{timeout:20000});
   await page.locator('#itcvModeBtn').click({force:true});
+  const modeReady=await page.waitForFunction(()=>{
+   const workspace=document.querySelector('#trozalImageCodeVideoWorkspace');
+   return document.body.classList.contains('itcv-mode-active')&&workspace&&getComputedStyle(workspace).display!=='none'&&workspace.getBoundingClientRect().width>0;
+  },null,{timeout:20000}).then(()=>true).catch(()=>false);
+  if(!modeReady){
+   const diagnostic=await page.evaluate(()=>({bodyClass:document.body.className,workspaceDisplay:getComputedStyle(document.querySelector('#trozalImageCodeVideoWorkspace')).display,buildButton:!!document.querySelector('#itcvBuildRig')}));
+   throw new Error('Mode 5 did not open: '+JSON.stringify({diagnostic,pageErrors}));
+  }
   await page.waitForSelector('#itcvAutoRig',{state:'attached',timeout:20000});
-  await page.waitForSelector('#itcvBuildRig');
-  await page.waitForSelector('#itcvRigPanel');
+  await page.waitForSelector('#itcvBuildRig',{state:'visible',timeout:20000});
+  await page.waitForSelector('#itcvRigPanel',{state:'attached',timeout:20000});
+  assert.deepEqual(pageErrors,[],'Mode 5 must open without uncaught browser errors');
   const moduleCheck=await page.evaluate(async()=>{
    const mod=await import('./js/character-rig.mjs');
    return {create:typeof mod.createCharacterRig,geometry:typeof mod.buildPosePartSpecs,assignment:typeof mod.assignPosePartLabels};
