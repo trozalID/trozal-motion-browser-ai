@@ -6,6 +6,11 @@ const { chromium } = require('playwright');
     '--use-gl=angle','--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist'
   ]});
   try {
+    const studioSource=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','canvas-3d-studio.js'),'utf8');
+    assert.match(studioSource,/uniform mat3 uNormalMatrix/,'WebGL2 shader must use a dedicated normal matrix.');
+    assert.match(studioSource,/function normalMatrix\(m\)/,'Canvas 3D must calculate inverse-transpose normals for non-uniform scale.');
+    assert.match(studioSource,/worldNormal\(m,localN\)/,'Canvas 2D CPU renderer must transform mesh normals into world space.');
+    assert.match(studioSource,/light\.x-worldCenter\[0\]/,'Canvas 2D CPU lighting must use each triangle world position for light direction.');
     const page = await browser.newPage({viewport:{width:1440,height:900},acceptDownloads:true});
     const errors=[];
     page.on('pageerror',error=>errors.push(error.message));
