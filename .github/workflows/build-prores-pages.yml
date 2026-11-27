@@ -91,6 +91,7 @@ jobs:
           cp browser-gpu-health.js site/browser-gpu-health.js
           cp browser-gpu-frame-pipeline.js site/browser-gpu-frame-pipeline.js
           cp logo-studio.js site/logo-studio.js
+          cp canvas-3d-studio.js site/canvas-3d-studio.js
           cp icon-logo-motion-studio.js site/icon-logo-motion-studio.js
           touch site/.nojekyll
 
@@ -216,6 +217,7 @@ jobs:
           test -s site/index.html
           test -s site/logo-studio.js
           test -s site/icon-logo-motion-studio.js
+          test -s site/canvas-3d-studio.js
           node --check site/icon-logo-motion-studio.js
           test -s site/render-frame-store.js
           test -s site/js/scene-intelligence.js
