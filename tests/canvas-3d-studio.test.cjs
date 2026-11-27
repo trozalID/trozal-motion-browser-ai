@@ -48,4 +48,7 @@ assert.ok(!source.includes("Auto (WebGL2 → WebGL1 → CPU)"), 'Outdated auto r
 assert.ok(source.includes("setRenderer('auto').catch"), 'Opening Canvas 3D must invoke the automatic backend selector.');
 assert.ok(source.includes('state.gl.isContextLost&&state.gl.isContextLost()'), 'WebGL2 backend switching must detect and rebuild a lost context.');
 assert.ok(source.includes('state.gl1.isContextLost&&state.gl1.isContextLost()'), 'WebGL1 backend switching must detect and rebuild a lost context.');
+const engineGroupsSource=fs.readFileSync(path.join(__dirname,'..','browser-render-engine-groups.js'),'utf8');
+assert.ok(engineGroupsSource.includes('const probeCache = Object.create(null)'), 'Renderer capability probes must be cached between panel refreshes.');
+assert.ok(engineGroupsSource.includes('lose.loseContext()'), 'Temporary WebGL probe contexts must be explicitly released.');
 console.log('PASS: CANVAS 3D WebGL2 scene, geometry, transform, materials, three-point lighting, per-object motion, camera, timeline and exports are wired.');
