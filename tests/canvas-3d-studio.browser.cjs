@@ -65,13 +65,25 @@ const { chromium } = require('playwright');
     const jsonDownload=page.waitForEvent('download');
     await page.locator('#trozal3DExportJson').click();
     assert.match((await jsonDownload).suggestedFilename(),/\.json$/);
-    const pngDownload=page.waitForEvent('download',{timeout:15000});
+    const pngEvents=[];
+    page.on('download',download=>pngEvents.push({type:'download',name:download.suggestedFilename()}));
+    page.on('console',message=>{if(message.type()==='error')pngEvents.push({type:'console-error',text:message.text()});});
+    page.on('pageerror',error=>pngEvents.push({type:'pageerror',text:error.message}));
     await page.locator('#trozal3DExportPng').click();
     await page.waitForFunction(()=>/PNG snapshot exported|PNG export failed/.test(document.getElementById('trozal3DStatus')?.textContent||''),null,{timeout:10000});
     const pngStatus=await page.locator('#trozal3DStatus').innerText();
     assert.match(pngStatus,/PNG snapshot exported/, 'PNG export must finish successfully; actual status: '+pngStatus);
-    const png=await pngDownload;
-    assert.match(png.suggestedFilename(),/\.png$/);
+    const png=await page.waitForEvent('download',{timeout:3000}).catch(()=>null);
+    if(!png){
+      const diagnostics=await page.evaluate(()=>({
+        status:document.getElementById('trozal3DStatus')?.textContent||'',
+        activation:navigator.userActivation?{active:navigator.userActivation.isActive,hasBeenActive:navigator.userActivation.hasBeenActive}:null,
+        canvas:(()=>{const c=document.getElementById('trozal3DCanvas');return c?{width:c.width,height:c.height,connected:c.isConnected}:null;})(),
+        anchors:[...document.querySelectorAll('a[download]')].map(a=>({download:a.download,hrefPrefix:a.href.slice(0,48),hrefLength:a.href.length,connected:a.isConnected,outerHTML:a.outerHTML.slice(0,500)}))
+      }));
+      assert.fail('PNG export status reported success but Chromium emitted no download event. Browser diagnostics: '+JSON.stringify({diagnostics,pngEvents}));
+    }
+    assert.match(png.suggestedFilename(),/\\.png$/);
     const pngPath=await png.path();
     const pngBytes=require('node:fs').statSync(pngPath).size;
     assert.ok(pngBytes>100,'PNG download must contain actual image bytes.');
