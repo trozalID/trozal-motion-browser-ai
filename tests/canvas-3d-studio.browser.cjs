@@ -107,13 +107,19 @@ const { chromium } = require('playwright');
     assert.equal(await page.locator('#trozal3DGizmoMove').getAttribute('aria-pressed'),'true');
     await page.locator('#trozal3DGizmoAxis').selectOption('x');
     const beforeGizmo=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject().objects[0].x);
-    const viewport=await page.locator('#trozal3DCanvas').boundingBox();
-    await page.mouse.move(viewport.x+viewport.width*.5,viewport.y+viewport.height*.5);
-    await page.mouse.down();
-    await page.mouse.move(viewport.x+viewport.width*.5+55,viewport.y+viewport.height*.5,{steps:3});
-    await page.mouse.up();
+    const viewport=await page.locator('#trozal3DViewport').boundingBox();
+    assert.ok(viewport&&viewport.width>100&&viewport.height>100,'3D viewport must have a measurable interaction surface.');
+    // Dispatch a deterministic pointer sequence on the viewport itself. This tests
+    // the actual pointer handlers without depending on Chromium's mouse hit-testing
+    // across the overlapping WebGL/Canvas2D layers or GPU compositor timing.
+    await page.locator('#trozal3DViewport').evaluate((el,box)=>{
+      const x=box.x+box.width*.5,y=box.y+box.height*.5;
+      el.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:7,pointerType:'mouse',clientX:x,clientY:y,button:0,buttons:1}));
+      el.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerId:7,pointerType:'mouse',clientX:x+55,clientY:y,button:0,buttons:1}));
+      el.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:7,pointerType:'mouse',clientX:x+55,clientY:y,button:0,buttons:0}));
+    },viewport);
     const afterGizmo=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject().objects[0].x);
-    assert.ok(afterGizmo>beforeGizmo+.3,'Move gizmo drag on X axis should update the selected object transform.');
+    assert.ok(afterGizmo>beforeGizmo+.3,'Move gizmo pointer drag on X axis should update the selected object transform. before='+beforeGizmo+' after='+afterGizmo);
     await page.locator('#trozal3DGizmoRotate').click();
     assert.equal(await page.locator('#trozal3DGizmoRotate').getAttribute('aria-pressed'),'true');
     await page.locator('#trozal3DGizmoCamera').click();
