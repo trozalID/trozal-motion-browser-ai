@@ -6160,5 +6160,53 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
 <script src="./icon-logo-motion-studio.js" defer></script>
 <script src="./js-motion-engine.js?v=20261125-1" defer></script>
 <script src="./trozal-image-to-code-video.js?v=20261123-2&rig=20261123-2" defer></script>
+
+<!-- TROZAL GLOBAL PREVIEW RATIO CONTROLLER · available in every workspace mode -->
+<style id="trozalGlobalRatioStyle">
+#trozalGlobalRatioDock{position:fixed;z-index:99990;right:14px;top:54px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:min(96vw,560px);padding:8px 10px;border:1px solid #4b8297;border-radius:10px;background:rgba(10,25,36,.96);box-shadow:0 8px 28px #0008;color:#e8f7ff;font:11px/1.35 Inter,Segoe UI,Arial,sans-serif}
+#trozalGlobalRatioDock strong{color:#9fe8ff;letter-spacing:.04em}
+#trozalGlobalRatioDock select,#trozalGlobalRatioDock input{min-width:0;width:auto;max-width:105px;padding:5px 6px;border:1px solid #3d7084;border-radius:6px;background:#071721;color:#e8f7ff;font:11px Arial}
+#trozalGlobalRatioDock button{padding:5px 8px;border:1px solid #3d7084;border-radius:6px;background:#15394a;color:#e8f7ff;font:11px Arial;cursor:pointer}
+#trozalGlobalRatioDock output{color:#a8e9ff;font-variant-numeric:tabular-nums}
+#stage.trozal-ratio-active{margin-inline:auto!important;max-width:100%!important;min-height:0!important;overflow:hidden}
+@media(max-width:700px){#trozalGlobalRatioDock{left:8px;right:8px;top:48px;max-width:none;gap:4px}#trozalGlobalRatioDock select{max-width:82px}}
+</style>
+<div id="trozalGlobalRatioDock" role="region" aria-label="Rasio preview global">
+<strong>PREVIEW RATIO · ALL MODES</strong>
+<label for="trozalGlobalPreviewRatio" style="margin:0">Rasio</label>
+<select id="trozalGlobalPreviewRatio">
+<option value="16:9">16:9 Landscape</option><option value="9:16">9:16 Portrait</option><option value="1:1">1:1 Square</option><option value="4:5">4:5 Social</option><option value="3:4">3:4 Portrait</option><option value="2:3">2:3 Poster</option><option value="3:2">3:2 Photo</option><option value="4:3">4:3 Standard</option><option value="5:4">5:4 Classic</option><option value="21:9">21:9 Ultra-wide</option><option value="custom">Custom</option>
+</select>
+<span id="trozalGlobalCustomRatio" hidden><input id="trozalGlobalRatioWidth" type="number" min="1" max="16384" value="1920" aria-label="Lebar rasio custom"><span>:</span><input id="trozalGlobalRatioHeight" type="number" min="1" max="16384" value="1080" aria-label="Tinggi rasio custom"></span>
+<output id="trozalGlobalRatioStatus" aria-live="polite">16:9 · Landscape</output>
+<button type="button" id="trozalGlobalRatioReset">Reset</button>
+</div>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),dock=$('trozalGlobalRatioDock'),select=$('trozalGlobalPreviewRatio'),custom=$('trozalGlobalCustomRatio');
+if(!dock||!select||window.__TROZAL_GLOBAL_RATIO__)return;window.__TROZAL_GLOBAL_RATIO__=true;
+const presets={'16:9':[16,9],'9:16':[9,16],'1:1':[1,1],'4:5':[4,5],'3:4':[3,4],'2:3':[2,3],'3:2':[3,2],'4:3':[4,3],'5:4':[5,4],'21:9':[21,9]};
+function ratio(){const pair=presets[select.value]||(select.value==='custom'?[Number($('trozalGlobalRatioWidth').value),Number($('trozalGlobalRatioHeight').value)]:[16,9]);if(!pair.every(v=>Number.isFinite(v)&&v>0))return [16,9];return pair;}
+function apply(){const [w,h]=ratio(),r=w/h,label=select.value==='custom'?w+':'+h:select.value;
+custom.hidden=select.value!=='custom';
+const stage=$('stage');
+if(stage){stage.classList.add('trozal-ratio-active');const host=stage.parentElement;if(host){host.style.display='flex';host.style.justifyContent='center';host.style.alignItems='center';}
+const availableW=Math.max(240,stage.parentElement?.clientWidth||stage.clientWidth||960),availableH=Math.max(180,Math.min(window.innerHeight*.68,stage.parentElement?.clientHeight||window.innerHeight*.68));
+let width=Math.min(availableW,availableH*r);let height=width/r;if(height>availableH){height=availableH;width=height*r;}
+stage.style.width=Math.round(width)+'px';stage.style.height=Math.round(height)+'px';stage.style.aspectRatio=w+'/'+h;stage.style.maxWidth='100%';stage.style.maxHeight='68vh';}
+const mode5=$('itcvPreviewStage'),frame=$('itcvPreview');
+if(mode5&&frame){mode5.style.aspectRatio=w+'/'+h;mode5.style.width='100%';frame.style.aspectRatio=w+'/'+h;frame.style.width='100%';frame.style.height='auto';frame.style.display='block';}
+const status=$('trozalGlobalRatioStatus');if(status)status.textContent=label+' · '+Math.round(r*1000)/1000+' aspect';
+try{localStorage.setItem('trozal-global-preview-ratio',select.value);localStorage.setItem('trozal-global-preview-custom',JSON.stringify([Number($('trozalGlobalRatioWidth').value),Number($('trozalGlobalRatioHeight').value)]));}catch(_){}
+}
+select.addEventListener('change',apply);['trozalGlobalRatioWidth','trozalGlobalRatioHeight'].forEach(id=>$(id).addEventListener('input',apply));
+$('trozalGlobalRatioReset').addEventListener('click',()=>{select.value='16:9';$('trozalGlobalRatioWidth').value=1920;$('trozalGlobalRatioHeight').value=1080;apply();});
+try{const saved=localStorage.getItem('trozal-global-preview-ratio');if(saved&&([...Object.keys(presets),'custom'].includes(saved))select.value=saved;const dims=JSON.parse(localStorage.getItem('trozal-global-preview-custom')||'[1920,1080]');if(Array.isArray(dims)&&dims.length===2){$('trozalGlobalRatioWidth').value=dims[0];$('trozalGlobalRatioHeight').value=dims[1];}}catch(_){}
+window.addEventListener('resize',apply,{passive:true});
+const observer=new MutationObserver(()=>{if($('stage')&&!$('stage').classList.contains('trozal-ratio-active'))apply();});
+observer.observe(document.body,{childList:true,subtree:true});
+apply();
+})();
+</script>
 </body>
 </html>
