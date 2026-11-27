@@ -218,14 +218,15 @@ const bodyMotionProfiles={
  idle:{preset:'idle',intensity:70,values:{trozalJsHipCounter:18,trozalJsArmLegSync:22,trozalJsGroundClearance:8,trozalJsGaitBalance:94,trozalJsJointDamping:72,trozalJsFootContactLock:96,trozalJsAlternatingGait:20,trozalJsKneeFlexAssist:12,trozalJsStrideLength:8,trozalJsArmSwing:10,trozalJsTorsoCounterSway:15,trozalJsLandingAbsorption:88,trozalJsRigMotionTempo:8,trozalJsUpperFollowThrough:24,trozalJsHeelToeRoll:8}},
  run:{preset:'run',intensity:135,values:{trozalJsHipCounter:72,trozalJsArmLegSync:96,trozalJsGroundClearance:88,trozalJsGaitBalance:68,trozalJsJointDamping:72,trozalJsFootContactLock:72,trozalJsAlternatingGait:100,trozalJsKneeFlexAssist:92,trozalJsStrideLength:90,trozalJsArmSwing:92,trozalJsTorsoCounterSway:76,trozalJsLandingAbsorption:82,trozalJsRigMotionTempo:82,trozalJsUpperFollowThrough:68,trozalJsHeelToeRoll:78}}
 };
-if(rigBodyPresetPanel)rigBodyPresetPanel.addEventListener('click',async event=>{
- const button=event.target.closest('[data-rig-preset]');if(!button)return;
- const profile=bodyMotionProfiles[button.dataset.rigPreset];if(!profile)return;
- rigMotionPreset.value=profile.preset;rigIntensity.value=String(profile.intensity);rigIntensityValue.textContent=rigIntensity.value+'%';
- Object.entries(profile.values).forEach(([id,value])=>{const input=$(id);if(input){input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));}});
- rigBodyPresetPanel.querySelectorAll('[data-rig-preset]').forEach(node=>node.classList.toggle('active',node===button));
- if(rigBodyPresetStatus)rigBodyPresetStatus.textContent=button.textContent.trim()+' diterapkan · seluruh pengaturan gerak tubuh disesuaikan. Jalankan Build Preview untuk memeriksa hasil.';
- await refreshRigMotion();
+if(rigBodyPresetPanel)rigBodyPresetPanel.querySelectorAll('[data-rig-preset]').forEach(button=>{
+ button.addEventListener('click',async()=>{
+  const profile=bodyMotionProfiles[button.dataset.rigPreset];if(!profile)return;
+  rigMotionPreset.value=profile.preset;rigIntensity.value=String(profile.intensity);rigIntensityValue.textContent=rigIntensity.value+'%';
+  Object.entries(profile.values).forEach(([id,value])=>{const input=$(id);if(input){input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));}});
+  rigBodyPresetPanel.querySelectorAll('[data-rig-preset]').forEach(node=>node.classList.toggle('active',node===button));
+  if(rigBodyPresetStatus)rigBodyPresetStatus.textContent=button.textContent.trim()+' diterapkan · seluruh pengaturan gerak tubuh disesuaikan.';
+  await refreshRigMotion();
+ });
 });
 rigFile.addEventListener('change',()=>{
  renderRigDiagnostics(null);
