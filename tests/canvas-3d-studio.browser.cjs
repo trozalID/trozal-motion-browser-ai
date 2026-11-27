@@ -6,6 +6,12 @@ const { chromium } = require('playwright');
     '--use-gl=angle','--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist'
   ]});
   try {
+    const studioSource=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','canvas-3d-studio.js'),'utf8');
+    assert.match(studioSource,/function initGL1\(/,'WebGL1 must have a dedicated backend initializer.');
+    assert.match(studioSource,/function drawWebGL1\(/,'WebGL1 must render the shared scene.');
+    assert.match(studioSource,/async function initGPU\(/,'WebGPU must initialize a real device and pipeline.');
+    assert.match(studioSource,/createRenderPipelineAsync/,'WebGPU must compile native render pipelines.');
+    assert.match(studioSource,/const GPU_WGSL=/,'WebGPU must use native WGSL shaders.');
     const page = await browser.newPage({viewport:{width:1440,height:900},acceptDownloads:true});
     const errors=[];
     page.on('pageerror',error=>errors.push(error.message));
@@ -18,15 +24,34 @@ const { chromium } = require('playwright');
     assert.ok(engineGroups.some(item=>item.group==='3D RENDER'&&item.id==='webgl2'&&item.integrated),'3D group must identify the integrated WebGL2 backend.');
     assert.ok(engineGroups.some(item=>item.group==='3D RENDER'&&item.id==='cpu3d'&&item.integrated),'3D group must identify the integrated Canvas 2D software fallback.');
     assert.ok(engineGroups.some(item=>item.group==='2D / MOTION RENDER'&&item.id==='hybrid'),'2D/motion group must expose the separate Hybrid pipeline.');
-    assert.ok(engineGroups.some(item=>item.id==='webgpu'&&!item.integrated),'WebGPU must not be advertised as integrated before a real backend exists.');
+    assert.ok(engineGroups.some(item=>item.group==='3D RENDER'&&item.id==='webgpu'&&item.integrated),'WebGPU must be identified as an integrated native backend.');
+    assert.ok(engineGroups.some(item=>item.group==='3D RENDER'&&item.id==='webgl1'&&item.integrated),'WebGL1 must be identified as an integrated compatibility backend.');
     await page.locator('#trozalRenderEngineGroups summary').click();
     assert.equal(await page.locator('#trozalRenderEngineGroups [data-engine-group="3D RENDER"] .trozal-engine-row').count(),4);
     assert.equal(await page.locator('#trozalRenderEngineGroups [data-engine-group="2D / MOTION RENDER"] .trozal-engine-row').count(),4);
-    assert.equal(await page.locator('#trozalRenderEngineGroups [data-engine-select]').count(),2,'Only the two integrated 3D engines should expose quick-switch controls.');
+    assert.ok(await page.locator('#trozalRenderEngineGroups [data-engine-select]').count()>=2,'Integrated 3D backends should expose quick-switch controls.');
     await page.locator('#trozalRenderEngineGroups [data-engine-select="canvas2d"]').click();
     await page.waitForFunction(()=>document.getElementById('trozal3DCanvas2D')?.style.display==='block');
     await page.locator('#trozalRenderEngineGroups [data-engine-select="webgl2"]').click();
     await page.waitForFunction(()=>document.getElementById('trozal3DCanvas')?.style.display==='block');
+    const gl1Available=engineGroups.find(item=>item.id==='webgl1')?.supported;
+    if(gl1Available){
+      await page.locator('#trozalRenderEngineGroups [data-engine-select="webgl1"]').click();
+      await page.waitForFunction(()=>document.getElementById('trozal3DCanvasGL1')?.style.display==='block');
+      const gl1Project=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
+      assert.equal(gl1Project.objects.length,3,'WebGL1 must retain and render the same scene.');
+      await page.locator('#trozalRenderEngineGroups [data-engine-select="webgl2"]').click();
+      await page.waitForFunction(()=>document.getElementById('trozal3DCanvas')?.style.display==='block');
+    }
+    const gpuAdapterAvailable=await page.evaluate(async()=>Boolean(navigator.gpu && await navigator.gpu.requestAdapter()));
+    if(gpuAdapterAvailable){
+      await page.locator('#trozalRenderEngineGroups [data-engine-select="webgpu"]').click();
+      await page.waitForFunction(()=>document.getElementById('trozal3DCanvasGPU')?.style.display==='block',{timeout:20000});
+      const gpuProject=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
+      assert.equal(gpuProject.objects.length,3,'WebGPU must retain and render the same scene.');
+      await page.locator('#trozalRenderEngineGroups [data-engine-select="webgl2"]').click();
+      await page.waitForFunction(()=>document.getElementById('trozal3DCanvas')?.style.display==='block');
+    }
 
     await page.waitForFunction(()=>window.TROZAL_CANVAS_3D?.status?.webgl===true,null,{timeout:15000});
     const initial=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
