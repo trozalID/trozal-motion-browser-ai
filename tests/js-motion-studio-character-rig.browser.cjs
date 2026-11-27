@@ -26,10 +26,14 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
     'Mode 3 must describe the currently implemented mask-refinement stage.');
   assert.equal(await page.locator('#trozalJsRigDiagnostics').count(),1,
     'Mode 3 should expose a reconstruction diagnostics panel for the next stage.');
-  assert.equal(await page.locator('#trozalJsAdaptiveRigControls input[type=range]').count(),22,
-    'Mode 3 must expose the original eight adaptive controls plus seven new articulation controls.');
-  for(const id of ['trozalJsHipCounter','trozalJsArmLegSync','trozalJsGroundClearance','trozalJsGaitBalance','trozalJsJointDamping','trozalJsFootContactLock','trozalJsAlternatingGait','trozalJsKneeFlexAssist','trozalJsStrideLength','trozalJsArmSwing','trozalJsTorsoCounterSway','trozalJsLandingAbsorption','trozalJsRigMotionTempo','trozalJsUpperFollowThrough','trozalJsHeelToeRoll','trozalJsShoulderStability','trozalJsHeadLookAhead','trozalJsWristLag','trozalJsAnkleStiffness','trozalJsPelvisTilt','trozalJsStrideSymmetry','trozalJsMotionSmoothing']){
+  assert.equal(await page.locator('#trozalJsAdaptiveRigControls input[type=range]').count(),25,
+    'Mode 3 must expose all 22 existing adaptive controls plus three new articulation controls.');
+  for(const id of ['trozalJsHipCounter','trozalJsArmLegSync','trozalJsGroundClearance','trozalJsGaitBalance','trozalJsJointDamping','trozalJsFootContactLock','trozalJsAlternatingGait','trozalJsKneeFlexAssist','trozalJsElbowFlex','trozalJsAnklePlant','trozalJsShoulderArc','trozalJsStrideLength','trozalJsArmSwing','trozalJsTorsoCounterSway','trozalJsLandingAbsorption','trozalJsRigMotionTempo','trozalJsUpperFollowThrough','trozalJsHeelToeRoll','trozalJsShoulderStability','trozalJsHeadLookAhead','trozalJsWristLag','trozalJsAnkleStiffness','trozalJsPelvisTilt','trozalJsStrideSymmetry','trozalJsMotionSmoothing']){
     assert.equal(await page.locator('#'+id).count(),1,'Mode 3 is missing adaptive control '+id+'.');
+  }
+  const engineSource=fs.readFileSync('js-motion-engine.js','utf8');
+  for(const id of ['trozalJsElbowFlex','trozalJsAnklePlant','trozalJsShoulderArc']){
+    assert.ok(engineSource.includes(id),'Mode 3 engine must wire '+id+' into the visible adaptive controls.');
   }
   assert.equal(await page.locator('#trozalJsRigBodyPresets [data-rig-preset]').count(),3,
     'Mode 3 must expose Natural Walk, Idle and Run quick body presets.');
@@ -91,10 +95,10 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   assert.match(result.code,/const stance=Math.max\(0,Math.cos\(gaitPhase/,'Foot contact lock must distinguish stance from swing phase.');
   assert.match(result.code,/const kneeFlex=/,'Knee Flex Assist must add articulated knee bend to lower-leg joints.');
   assert.match(result.code,/sidePhase\*adaptive.alternatingGait/,'Alternating Gait Phase must apply opposite phase to left and right legs.');
-  for(const token of ['strideLength','armSwingAmplitude','torsoCounterSway','landingAbsorption','motionTempo','upperBodyFollowThrough','heelToeRoll','shoulderStabilization','headLookAhead','wristLag','ankleStiffness','pelvisTilt','strideSymmetry','motionSmoothing']){
+  for(const token of ['strideLength','armSwingAmplitude','torsoCounterSway','landingAbsorption','motionTempo','upperBodyFollowThrough','heelToeRoll','shoulderStabilization','headLookAhead','wristLag','ankleStiffness','pelvisTilt','strideSymmetry','motionSmoothing','elbowFlexAssist','anklePlantAssist','shoulderArcAssist']){
     assert.ok(result.code.includes(token),'Generated rig runtime must include '+token+'.');
   }
-  for(const expression of ['adaptive.armSwingAmplitude','adaptive.torsoCounterSway','adaptive.landingAbsorption','adaptive.upperBodyFollowThrough','adaptive.heelToeRoll','adaptive.shoulderStabilization','adaptive.headLookAhead','adaptive.wristLag','adaptive.ankleStiffness','adaptive.pelvisTilt','adaptive.strideSymmetry','adaptive.motionSmoothing']){
+  for(const expression of ['adaptive.armSwingAmplitude','adaptive.torsoCounterSway','adaptive.landingAbsorption','adaptive.upperBodyFollowThrough','adaptive.heelToeRoll','adaptive.shoulderStabilization','adaptive.headLookAhead','adaptive.wristLag','adaptive.ankleStiffness','adaptive.pelvisTilt','adaptive.strideSymmetry','adaptive.motionSmoothing','adaptive.elbowFlexAssist','adaptive.anklePlantAssist','adaptive.shoulderArcAssist']){
     assert.ok(result.code.includes(expression),'Generated runtime is missing articulation effect '+expression+'.');
   }
   assert.match(result.code,/motionTempo=1\.635/,'Mode 3 Motion Tempo slider must scale the generated gait-cycle tempo.');
