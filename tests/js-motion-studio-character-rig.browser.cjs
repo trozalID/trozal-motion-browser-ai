@@ -25,11 +25,13 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
     'Mode 3 must describe the currently implemented mask-refinement stage.');
   assert.equal(await page.locator('#trozalJsRigDiagnostics').count(),1,
     'Mode 3 should expose a reconstruction diagnostics panel for the next stage.');
-  assert.equal(await page.locator('#trozalJsAdaptiveRigControls input[type=range]').count(),8,
-    'Mode 3 must expose all eight adaptive Universal Rig character-motion controls.');
-  for(const id of ['trozalJsHipCounter','trozalJsArmLegSync','trozalJsGroundClearance','trozalJsGaitBalance','trozalJsJointDamping','trozalJsFootContactLock','trozalJsAlternatingGait','trozalJsKneeFlexAssist']){
+  assert.equal(await page.locator('#trozalJsAdaptiveRigControls input[type=range]').count(),15,
+    'Mode 3 must expose the original eight adaptive controls plus seven new articulation controls.');
+  for(const id of ['trozalJsHipCounter','trozalJsArmLegSync','trozalJsGroundClearance','trozalJsGaitBalance','trozalJsJointDamping','trozalJsFootContactLock','trozalJsAlternatingGait','trozalJsKneeFlexAssist','trozalJsStrideLength','trozalJsArmSwing','trozalJsTorsoCounterSway','trozalJsLandingAbsorption','trozalJsMotionTempo','trozalJsUpperFollowThrough','trozalJsHeelToeRoll']){
     assert.equal(await page.locator('#'+id).count(),1,'Mode 3 is missing adaptive control '+id+'.');
   }
+  assert.equal(await page.locator('#trozalJsRigBodyPresets [data-rig-preset]').count(),3,
+    'Mode 3 must expose Natural Walk, Idle and Run quick body presets.');
 
   await page.locator('#trozalJsRigFile').setInputFiles({name:'character.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64')});
   await page.waitForFunction(()=>document.querySelector('#trozalJsRigStatus')?.textContent.includes('Foto siap'),null,{timeout:10000});
@@ -88,6 +90,29 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   assert.match(result.code,/const stance=Math.max\(0,Math.cos\(gaitPhase/,'Foot contact lock must distinguish stance from swing phase.');
   assert.match(result.code,/const kneeFlex=/,'Knee Flex Assist must add articulated knee bend to lower-leg joints.');
   assert.match(result.code,/sidePhase\*adaptive.alternatingGait/,'Alternating Gait Phase must apply opposite phase to left and right legs.');
+  for(const token of ['strideLength','armSwingAmplitude','torsoCounterSway','landingAbsorption','motionTempo','upperBodyFollowThrough','heelToeRoll']){
+    assert.ok(result.code.includes(token),'Generated rig runtime must include '+token+'.');
+  }
+  assert.match(result.code,/adaptive\\.motionTempo\\*\\.9/,'Motion Tempo must alter generated gait cycle frequency.');
+  assert.match(result.code,/adaptive\\.armSwingAmplitude/,'Arm Swing Amplitude must modulate arm joints.');
+  assert.match(result.code,/adaptive\\.torsoCounterSway/,'Torso Counter-Sway must counterbalance torso against gait phase.');
+  assert.match(result.code,/adaptive\\.landingAbsorption/,'Landing Impact Absorption must damp knee and torso impact.');
+  assert.match(result.code,/adaptive\\.upperBodyFollowThrough/,'Upper-Body Follow-Through must add delayed arm/head motion.');
+  assert.match(result.code,/adaptive\\.heelToeRoll/,'Heel-to-Toe Foot Roll must affect foot rotation.');
+  await page.locator('[data-rig-preset="idle"]').click();
+  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"strideLength":0.08'),null,{timeout:10000});
+  assert.equal(await page.locator('#trozalJsRigMotionPreset').inputValue(),'idle');
+  assert.equal(await page.locator('#trozalJsStrideLength').inputValue(),'8');
+  assert.equal(await page.locator('#trozalJsArmSwing').inputValue(),'10');
+  await page.locator('[data-rig-preset="run"]').click();
+  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"motionTempo":0.82'),null,{timeout:10000});
+  assert.equal(await page.locator('#trozalJsRigMotionPreset').inputValue(),'run');
+  assert.equal(await page.locator('#trozalJsStrideLength').inputValue(),'90');
+  await page.locator('[data-rig-preset="natural"]').click();
+  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"heelToeRoll":0.56'),null,{timeout:10000});
+  assert.equal(await page.locator('#trozalJsRigMotionPreset').inputValue(),'walk');
+  await page.locator('#trozalJsLandingAbsorption').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});
+  await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"landingAbsorption":1'),null,{timeout:10000});
   await page.locator('#trozalJsFootContactLock').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});
   await page.waitForFunction(()=>window.TROZAL_JS_MOTION.getCode().includes('"footContactLock":1'),null,{timeout:10000});
   await page.locator('#trozalJsKneeFlexAssist').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});
