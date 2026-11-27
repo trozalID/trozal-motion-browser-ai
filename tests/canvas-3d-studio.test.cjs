@@ -37,4 +37,13 @@ assert.ok(source.includes('function easingProgress(u,mode)'), 'Keyframe easing e
 assert.ok(source.includes("case 'ease-in'" ) && source.includes("case 'ease-out'") && source.includes("case 'ease-in-out'") && source.includes("case 'smoothstep'") && source.includes("case 'hold'"), 'All supported interpolation modes must be implemented.');
 assert.ok(source.includes('trozal3DKeyframeEasing') && source.includes("easing:$(\'trozal3DKeyframeEasing\')?.value||\'ease-in-out\'"), 'Keyframe easing must be selectable and saved per keyframe.');
 assert.ok(source.includes("b.easing||a.easing||'linear'"), 'Each keyframe segment must apply its stored easing with a linear fallback for old projects.');
+assert.ok(source.includes("const order=['webgpu','webgl2','webgl1','canvas2d']"), 'Auto renderer must prefer WebGPU, then WebGL2, WebGL1 and Canvas 2D.');
+assert.ok(source.includes("Auto (WebGPU → WebGL2 → WebGL1 → CPU)"), 'Renderer selector must show the actual automatic fallback order.');
+assert.ok(source.includes("function recoverRenderer(excluded,reason)"), 'GPU/device or WebGL context loss must activate the next available backend.');
+assert.ok(source.includes("canvas.addEventListener('webglcontextlost'") && source.includes("if(state.renderer==='webgl2')recoverRenderer('webgl2'"), 'WebGL2 context loss must recover to WebGL1 or Canvas 2D.');
+assert.ok(source.includes("if(state.renderer==='webgl1')recoverRenderer('webgl1'"), 'WebGL1 context loss must recover to Canvas 2D.');
+assert.ok(source.includes("if(state.renderer==='webgpu')recoverRenderer('webgpu'"), 'WebGPU device loss must recover to WebGL2, WebGL1 or Canvas 2D.');
+assert.ok(source.includes("function resize(){const viewport=$('trozal3DViewport')") && source.includes("'trozal3DCanvas','trozal3DCanvas2D','trozal3DCanvasGL1','trozal3DCanvasGPU'"), 'All four canvases must share the same viewport pixel dimensions.');
+assert.ok(!source.includes("Auto (WebGL2 → WebGL1 → CPU)"), 'Outdated auto renderer label must be removed.');
+assert.ok(source.includes("setRenderer('auto').catch"), 'Opening Canvas 3D must invoke the automatic backend selector.');
 console.log('PASS: CANVAS 3D WebGL2 scene, geometry, transform, materials, three-point lighting, per-object motion, camera, timeline and exports are wired.');
