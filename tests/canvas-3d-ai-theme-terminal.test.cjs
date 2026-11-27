@@ -10,7 +10,7 @@ const terminal=fs.readFileSync(path.join(root,'canvas-3d-terminal.js'),'utf8');
 assert.ok(html.includes('./canvas-3d-ai-theme-studio.js'),'AI Theme Studio module must load.');
 assert.ok(html.includes('./canvas-3d-terminal.js'),'Terminal module must load.');
 assert.ok(canvas.includes('applyProject:applySceneProject'),'Canvas 3D must expose Scene JSON v2 import API.');
-for(const token of ['TROZAL_AI_THEMES','trozalGetThemeDomainProfile','Detail Tambahan','Generate 3 Concepts','TROZAL_THEME_RULES','trozalBrowserAI.generateText']) {
+for(const token of ['TROZAL_AI_THEMES','trozalGetThemeDomainProfile','trozal3DAIIPPanel','KEKAYAAN INTELEKTUAL','INTELLECTUAL PROPERTY POLICY','promptOne(index,attempt)','attempt<2','themeShuffleBag','3 konsep siap dipilih','Detail Tambahan','Generate 3 Concepts','TROZAL_THEME_RULES','trozalBrowserAI.generateText']) {
  if(token==='TROZAL_THEME_RULES') continue;
  assert.ok(theme.includes(token)||html.includes(token),'Missing AI Theme Studio capability: '+token);
 }
