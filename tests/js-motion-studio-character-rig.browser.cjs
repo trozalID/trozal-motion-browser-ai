@@ -17,7 +17,7 @@ function png(r,g,b){const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.wri
   await page.waitForSelector('#trozalJsMotionBtn');
   await page.locator('#trozalJsMotionBtn').click();
   await page.waitForSelector('#trozalJsRigFile');
-  const rigPanelTitle=await page.locator('#trozalJsCharacterRigPanel strong').innerText();
+  const rigPanelTitle=await page.locator('#trozalJsCharacterRigPanel strong').first().innerText();
   assert.match(rigPanelTitle,/AI CHARACTER MOTION RECONSTRUCTION · MODE 3/,
     'The reconstruction feature must be clearly identified inside Mode 3 JavaScript Motion Studio.');
   const rigPanelDescription=await page.locator('#trozalJsCharacterRigPanel p').innerText();
