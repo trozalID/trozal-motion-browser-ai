@@ -60,7 +60,7 @@ const { chromium } = require('playwright');
     await page.locator('#trozal3DTextureFile').setInputFiles({name:'material-test.png',mimeType:'image/png',buffer:texturePng});
     await page.waitForFunction(()=>Boolean(window.TROZAL_CANVAS_3D?.getProject?.().objects[0]?.textureDataUrl),null,{timeout:10000});
     const texturedScene=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
-    assert.match(texturedScene.objects[0].textureDataUrl,/^data:image\\/png;base64,/,'Image texture must be embedded in the selected object and Scene JSON.');
+    assert.match(texturedScene.objects[0].textureDataUrl,/^data:image\/png;base64,/,'Image texture must be embedded in the selected object and Scene JSON.');
     await page.locator('#trozal3DTextureRemove').click();
     const textureRemoved=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject().objects[0].textureDataUrl);
     assert.equal(textureRemoved,null,'Image texture removal must clear the selected object asset.');
