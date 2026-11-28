@@ -46,7 +46,7 @@
   }
   async function svgCanvas(source,width,height){
     const text=typeof source==='string'?source:new XMLSerializer().serializeToString(source);
-    if(!/<svg[\\s>]/i.test(text))throw new Error('Sumber SVG tidak valid.');
+    if(!/<svg[\s>]/i.test(text))throw new Error('Sumber SVG tidak valid.');
     const blob=new Blob([text],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob),image=new Image();
     try{image.src=url;if(image.decode)await image.decode();else await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error('SVG gagal dimuat.'));});return makeCanvas(image,width,height);}
     finally{URL.revokeObjectURL(url);}
