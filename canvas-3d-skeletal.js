@@ -238,7 +238,7 @@ function computePose(asset,clipIndex,time){
   const t=clip.start+(Math.max(0,Number(time)||0)%clip.duration);
   for(const channel of clip.channels){const value=sampleSampler(clip.samplers[channel.sampler],t,channel.path);trs[channel.node][channel.path]=channel.path==='rotation'?normalizeQuat(value):value;}
  }
- const locals=asset.nodes.map((n,i)=>localNodeMatrix(n,trs[i])),worlds=worldMatrices(asset.nodes,locals),skinsByNode={};
+ const locals=asset.nodes.map((n,i)=>n.matrix?n.matrix.slice():localNodeMatrix(n,trs[i])),worlds=worldMatrices(asset.nodes,locals),skinsByNode={};
  asset.nodes.forEach((node,nodeIndex)=>{
   if(node.skin==null)return;const skin=asset.skins[node.skin],inverseMesh=invert(worlds[nodeIndex]),matrices=[];
   skin.joints.forEach((jointIndex,j)=>{const m=multiply(multiply(inverseMesh,worlds[jointIndex]),skin.inverseBindMatrices.slice(j*16,(j+1)*16));matrices.push(...m);});
@@ -265,10 +265,11 @@ function sanitizeAsset(raw){
  const animations=raw.animations.map((a,i)=>{const samplers=a.samplers||[],channels=a.channels||[];if(channels.length>4096)fail('animation '+i+' channel count exceeds limit.');return {name:String(a.name||('Animation '+(i+1))),start:Number(a.start)||0,duration:Math.max(.001,Number(a.duration)||.001),samplers:samplers.map(s=>({times:s.times.map(Number),output:s.output.map(Number),outputSize:Number(s.outputSize),interpolation:s.interpolation})),channels:channels.map(c=>({node:Number(c.node),path:c.path,sampler:Number(c.sampler)}))};});
  const rootTransform=Array.isArray(raw.rootTransform)&&raw.rootTransform.length===16?raw.rootTransform.map(Number):identity();finiteArray(rootTransform,'root transform',16);
  if(animations.some(a=>a.channels.some(c=>c.node<0||c.node>=nodes.length||!['translation','rotation','scale'].includes(c.path)||c.sampler<0||c.sampler>=a.samplers.length)))fail('animation channels invalid.');
- return {version:1,id:String(raw.id||('skeletal-'+Math.random().toString(36).slice(2,10))),name:String(raw.name||'Imported Skeletal Model').slice(0,96),nodes,skins,primitives,animations,rootTransform,bounds:raw.bounds||null,warnings:Array.isArray(raw.warnings)?raw.warnings.map(String):[]};
+ return {version:1,id:String(raw.id||('skeletal-'+Math.random().toString(36).slice(2,10))),name:String(raw.name||'Imported Skeletal Model').slice(0,96),nodes,skins,primitives,animations,activeClip:Number.isInteger(raw.activeClip)&&raw.activeClip>=0&&raw.activeClip<animations.length?raw.activeClip:0,rootTransform,bounds:raw.bounds||null,warnings:Array.isArray(raw.warnings)?raw.warnings.map(String):[]};
 }
 async function parseFiles(files,rootFile){
  const {json,buffers}=await readContainer(files,rootFile);if(!Array.isArray(json.skins)||!json.skins.length)return null;const read=accessorReader(json,buffers),nodes=buildNodes(json),skins=buildSkins(json,read);
+ skins.forEach((skin,index)=>skin.joints.forEach(joint=>{if(joint<0||joint>=nodes.length)fail('skin '+index+' references a joint node outside the node list.');}));
  const primitives=buildPrimitives(json,read,nodes,skins),animations=buildAnimations(json,read,nodes);
  if(!primitives.some(p=>p.skinIndex!==null))return null;
  const asset={version:1,id:'skeletal-'+Math.random().toString(36).slice(2,10),name:String(json.asset?.generator||rootFile.name||'GLTF Skeletal Asset').slice(0,96),nodes,skins,primitives,animations,warnings:[]};
