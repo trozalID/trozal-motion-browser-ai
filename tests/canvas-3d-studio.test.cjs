@@ -57,7 +57,7 @@ assert.ok(source.includes("if(state.renderer==='webgpu')recoverRenderer('webgpu'
 assert.ok(source.includes("function resize(){const viewport=$('trozal3DViewport')") && source.includes("'trozal3DCanvas','trozal3DCanvas2D','trozal3DCanvasGL1','trozal3DCanvasGPU'"), 'All four canvases must share the same viewport pixel dimensions.');
 assert.ok(!source.includes("Auto (WebGL2 → WebGL1 → CPU)"), 'Outdated auto renderer label must be removed.');
 assert.ok(source.includes("setRenderer('auto').catch"), 'Opening Canvas 3D must invoke the automatic backend selector.');
-assert.ok(source.includes('Requested '+requested.toUpperCase()) && source.includes('secure context (HTTPS/localhost)'), 'Failed WebGPU selection must remain visible and report the browser/GPU activation requirements.');
+assert.ok(source.includes("Requested '+requested.toUpperCase()") && source.includes('secure context (HTTPS/localhost)'), 'Failed WebGPU selection must remain visible and report the browser/GPU activation requirements.');
 assert.ok(source.includes('state.gl.isContextLost&&state.gl.isContextLost()'), 'WebGL2 backend switching must detect and rebuild a lost context.');
 assert.ok(source.includes('state.gl1.isContextLost&&state.gl1.isContextLost()'), 'WebGL1 backend switching must detect and rebuild a lost context.');
 const engineGroupsSource=fs.readFileSync(path.join(__dirname,'..','browser-render-engine-groups.js'),'utf8');
