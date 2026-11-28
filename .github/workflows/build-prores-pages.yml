@@ -36,6 +36,7 @@ on:
       - 'tests/canvas-3d-multi-preview-gallery.browser.cjs'
       - 'tests/canvas-3d-skeletal-foundation.test.cjs'
       - 'tests/canvas-3d-skeletal-foundation.browser.cjs'
+      - 'tests/canvas-3d-animation-system.browser.cjs'
       - 'browser-render-engine-groups.js'
       - 'logo-studio.js'
       - 'tests/logo-studio.browser.cjs'
@@ -302,6 +303,8 @@ jobs:
           node tests/ffmpeg-wasm-runtime-smoke.browser.cjs
           node tests/js-motion-studio-real-video-export.browser.cjs
           node tests/js-motion-studio-export-matrix.browser.cjs
+          node --check tests/canvas-3d-animation-system.browser.cjs
+          node tests/canvas-3d-animation-system.browser.cjs
           kill "$(cat /tmp/trozal-pages-smoke.pid)" || true
           rm -rf site/trozal-motion-browser-ai
 
