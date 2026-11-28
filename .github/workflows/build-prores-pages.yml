@@ -232,11 +232,11 @@ jobs:
           test -s site/icon-logo-motion-studio.js
           test -s site/canvas-3d-studio.js
           test -s site/canvas-3d-multi-terminal.js
-           node --check site/canvas-3d-multi-terminal.js
-           test -s site/canvas-3d-preview-renderer.js
-           node --check site/canvas-3d-preview-renderer.js
-           test -s site/canvas-3d-multi-preview.js
-           node --check site/canvas-3d-multi-preview.js
+          node --check site/canvas-3d-multi-terminal.js
+          test -s site/canvas-3d-preview-renderer.js
+          node --check site/canvas-3d-preview-renderer.js
+          test -s site/canvas-3d-multi-preview.js
+          node --check site/canvas-3d-multi-preview.js
           node --check site/canvas-3d-multi-terminal.js
           test -s site/browser-render-engine-groups.js
           node --check site/browser-render-engine-groups.js
