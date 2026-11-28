@@ -34,7 +34,7 @@
     {group:'3D RENDER',id:'cpu3d',name:'Canvas 2D CPU · Software 3D',supported:()=>probe('canvas2d'),integrated:true,detail:'Fallback software 3D; bukan akselerasi GPU.'},
     {group:'2D / MOTION RENDER',id:'canvas2d',name:'Canvas 2D Raster',supported:()=>probe('canvas2d'),integrated:true,detail:'Komposisi frame 2D dan jalur raster legacy.'},
     {group:'2D / MOTION RENDER',id:'svg',name:'SVG Vector / Raster',supported:()=>probe('svg'),integrated:true,detail:'SVG dirasterisasi untuk alur motion 2D.'},
-    {group:'2D / MOTION RENDER',id:'domcss',name:'DOM / CSS Capture',supported:()=>probe('domcss'),integrated:()=>typeof window.htmlToImage!=='undefined'||typeof window.TrozalHybridCanvasRenderer!=='undefined',detail:'Capture HTML/CSS; sumber HTML tetap memakai jalur DOM capture.'},
+    {group:'2D / MOTION RENDER',id:'domcss',name:'DOM / CSS Capture',supported:()=>probe('domcss'),integrated:()=>typeof window.htmlToImage!=='undefined',detail:'Capture HTML/CSS; sumber HTML tetap memakai jalur DOM capture.'},
     {group:'2D / MOTION RENDER',id:'hybrid',name:'Hybrid · Canvas2D + GPU Assist',supported:()=>!!window.TrozalHybridCanvasRenderer,integrated:()=>!!window.TrozalHybridCanvasRenderer,detail:'Benchmark GPU Assist; fallback Canvas2D dipilih otomatis.'}
   ];
   let selected2D='canvas2d';
