@@ -25,6 +25,10 @@ for (const token of [
   'pointerdown','pointermove','addEventListener(\'wheel\'', 'function drawCanvas2D(time,force)', 'function setRenderer(choice)', 'function projectPoint(matrix,p)', 'function initCanvas2D()'
 ]) assert.ok(source.includes(token), 'Missing 3D renderer feature: '+token);
 assert.ok(source.includes("Object.defineProperty(window,'TROZAL_CANVAS_3D'"), 'CANVAS 3D must expose its public scene API.');
+assert.ok(source.includes('in vec2 aUv') && source.includes('out vec2 vUv') && source.includes('uniform sampler2D uTexture') && source.includes('texture(uTexture,vUv)'), 'WebGL2 must map image textures through mesh UV coordinates.');
+assert.ok(source.includes('attribute vec2 aUv') && source.includes('texture2D(uTexture,vUv)'), 'WebGL1 compatibility renderer must support image textures.');
+assert.ok(source.includes('id="trozal3DTextureFile"') && source.includes('id="trozal3DTextureRemove"') && source.includes('2*1024*1024'), 'Object inspector must expose safe image texture upload and removal.');
+assert.ok(source.includes('imageTexture(gl,o.textureDataUrl)') && source.includes('textureDataUrl.length<=2800000'), 'Image textures must upload to GPU and persist safely in Scene JSON.');
 assert.ok(source.includes('function snapValue(') && source.includes('transformSnap:{...state.transformSnap}'), 'Transform snapping must be implemented and serialized.');
 assert.ok(source.includes("$('trozal3DSnapEnabled').addEventListener('change'") && source.includes("$('trozal3DSnap'+label).addEventListener('change'") && source.includes("[['Move','move'],['Rotate','rotate'],['Scale','scale']]"), 'Snap toggle and per-transform increments must be wired through the shared control loop.');
 const terminal = fs.readFileSync(path.join(__dirname, '..', 'canvas-3d-terminal.js'), 'utf8');
