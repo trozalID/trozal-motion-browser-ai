@@ -110,6 +110,15 @@ function glbFixture() {
  await page.locator('#t3dMultiValidate').click();
  await page.waitForFunction(()=>document.getElementById('t3dMultiStatus').textContent.includes('GLSL'));
 
+ // Malformed JavaScript must report the worker's real error promptly, not wait for the timeout.
+ await page.locator('#t3dMultiMode').selectOption('js');
+ await page.locator('#t3dMultiCode').fill('return {version:2, objects: [');
+ await page.locator('#t3dMultiValidate').click();
+ await page.waitForFunction(()=>document.getElementById('t3dMultiStatus').textContent.includes('Validasi gagal'),{timeout:8000});
+ const workerError=await page.locator('#t3dMultiStatus').innerText();
+ assert.match(workerError,/worker error|could not start|SyntaxError|Unexpected token/i,'Worker startup/runtime errors should be surfaced immediately.');
+ assert.doesNotMatch(workerError,/timeout 15 seconds/i,'Worker errors must not be hidden behind the old 15-second timeout.');
+
  // JavaScript scene script is executed in a restricted worker and applied only after validation.
  await page.locator('#t3dMultiMode').selectOption('js');
  await page.locator('#t3dMultiCode').fill('return {version:2,objects:[{id:"js-cube",name:"JS Cube",type:"cube",x:0,y:0,z:0}]};');
