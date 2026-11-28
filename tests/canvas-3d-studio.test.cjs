@@ -26,7 +26,8 @@ for (const token of [
 ]) assert.ok(source.includes(token), 'Missing 3D renderer feature: '+token);
 assert.ok(source.includes("Object.defineProperty(window,'TROZAL_CANVAS_3D'"), 'CANVAS 3D must expose its public scene API.');
 const terminal = fs.readFileSync(path.join(__dirname, '..', 'canvas-3d-terminal.js'), 'utf8');
-assert.ok(html.includes('./canvas-3d-terminal.js'), 'Canvas 3D terminal must be loaded by the main application.');\nassert.ok(terminal.includes("addEventListener('paste'") && terminal.includes("getData('text/plain')") && terminal.includes('setRangeText'), 'Terminal must explicitly support pasting plain-text JavaScript and JSON into the editor.');
+assert.ok(html.includes('./canvas-3d-terminal.js'), 'Canvas 3D terminal must be loaded by the main application.');
+assert.ok(terminal.includes("addEventListener('paste'") && terminal.includes("getData('text/plain')") && terminal.includes('setRangeText'), 'Terminal must explicitly support pasting plain-text JavaScript and JSON into the editor.');
 assert.ok(source.includes("document.querySelector('.topbar .topright')"), 'CANVAS 3D launcher must attach to the Browser AI topbar when available.');
 assert.ok(source.includes("PNG snapshot exported · ") && source.includes('canvas.width') && source.includes('canvas.height') && source.includes('b.size'), 'PNG export must report actual snapshot dimensions and byte count.');
 assert.match(source, /WebGL2 tidak tersedia/);
@@ -35,7 +36,12 @@ assert.ok(source.includes("getContext('2d'") && source.includes('value="canvas2d
 assert.ok(source.includes("state.renderer==='canvas2d'"), 'PNG export must use the active renderer canvas.');
 assert.doesNotMatch(source, /three\.min\.js|cdnjs\.cloudflare\.com\/ajax\/libs\/three/i,
   'CANVAS 3D must not depend on an external Three.js CDN.');
-assert.ok(source.includes('function easingProgress(u,mode)'), 'Keyframe easing evaluator must be present.');\nassert.ok(source.includes('uColor*(.28+.16*uLight)') && source.includes('uColor*(0.28+0.16*uLight)'), 'WebGL2 and WebGL1 must retain the brighter ambient baseline.');\nconst engineGroups = fs.readFileSync(path.join(__dirname, '..', 'browser-render-engine-groups.js'), 'utf8');\nassert.ok(engineGroups.includes('window.TrozalMotion2DRenderEngines') && engineGroups.includes('function render2D(source,width,height)'), '2D engine selection must expose a real raster render adapter.');\nassert.ok(engineGroups.includes("if(group==='3D RENDER'&&item.integrated&&item.supported)")===false && engineGroups.includes("group==='2D / MOTION RENDER'"), 'Integrated 2D render engines must expose a usable selection action.');\nassert.ok(source.includes('let diffuse=.28;') && source.includes('diffuse+state.light*.16'), 'Canvas2D software renderer must retain the brighter ambient baseline.');
+assert.ok(source.includes('function easingProgress(u,mode)'), 'Keyframe easing evaluator must be present.');
+assert.ok(source.includes('uColor*(.28+.16*uLight)') && source.includes('uColor*(0.28+0.16*uLight)'), 'WebGL2 and WebGL1 must retain the brighter ambient baseline.');
+const engineGroups = fs.readFileSync(path.join(__dirname, '..', 'browser-render-engine-groups.js'), 'utf8');
+assert.ok(engineGroups.includes('window.TrozalMotion2DRenderEngines') && engineGroups.includes('function render2D(source,width,height)'), '2D engine selection must expose a real raster render adapter.');
+assert.ok(engineGroups.includes("if(group==='3D RENDER'&&item.integrated&&item.supported)")===false && engineGroups.includes("group==='2D / MOTION RENDER'"), 'Integrated 2D render engines must expose a usable selection action.');
+assert.ok(source.includes('let diffuse=.28;') && source.includes('diffuse+state.light*.16'), 'Canvas2D software renderer must retain the brighter ambient baseline.');
 assert.ok(source.includes("case 'ease-in'" ) && source.includes("case 'ease-out'") && source.includes("case 'ease-in-out'") && source.includes("case 'smoothstep'") && source.includes("case 'hold'"), 'All supported interpolation modes must be implemented.');
 assert.ok(source.includes('trozal3DKeyframeEasing') && source.includes("easing:$(\'trozal3DKeyframeEasing\')?.value||\'ease-in-out\'"), 'Keyframe easing must be selectable and saved per keyframe.');
 assert.ok(source.includes("b.easing||a.easing||'linear'"), 'Each keyframe segment must apply its stored easing with a linear fallback for old projects.');
