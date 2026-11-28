@@ -22,6 +22,8 @@ function glbFixture() {
  await page.locator('#trozalCanvas3DOpen').click();
  await page.waitForSelector('#trozal3DHeader');
  await page.locator('#t3dMultiOpen').click();
+ assert.equal(await page.locator('#t3dMultiGenerateAI').count(),1,'Multi Terminal should expose AI generation.');
+ assert.equal(await page.locator('#t3dMultiPrompt').count(),1,'Multi Terminal should expose a dedicated AI prompt.');
  const api=await page.evaluate(()=>!!window.TROZAL_CANVAS_3D);
  assert.equal(api,true,'Canvas 3D API should be ready');
 
