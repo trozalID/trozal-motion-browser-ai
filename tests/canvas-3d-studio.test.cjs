@@ -17,7 +17,7 @@ for (const id of [
 ]) assert.ok(source.includes('id=\''+id+'\'') || source.includes('id="'+id+'"') || source.includes(".id='"+id+"'"), 'Missing CANVAS 3D control: '+id);
 for (const token of [
   "getContext('webgl2'", 'drawArrays(gl.TRIANGLES', 'drawArrays(gl.LINES',
-  'function geometry(type)', "type==='cube'", "type==='sphere'", "type==='torus'",
+  'function geometry(type,custom)', "type==='cube'", "type==='sphere'", "type==='torus'",
   "type==='cylinder'", "type==='cone'", "type==='plane'", 'function localModel(o,t)', 'function model(o,t,seen=new Set())',
   "o.animation==='spin'", "o.animation==='orbit'", "o.animation==='bounce'",
   "o.animation==='pulse'", 'function camera(w,h)', 'function orthographic(scale,aspect,n,far)', 'function lookAt(eye,target)',
@@ -25,6 +25,8 @@ for (const token of [
   'pointerdown','pointermove','addEventListener(\'wheel\'', 'function drawCanvas2D(time,force)', 'function setRenderer(choice)', 'function projectPoint(matrix,p)', 'function initCanvas2D()'
 ]) assert.ok(source.includes(token), 'Missing 3D renderer feature: '+token);
 assert.ok(source.includes("Object.defineProperty(window,'TROZAL_CANVAS_3D'"), 'CANVAS 3D must expose its public scene API.');
+assert.ok(source.includes('function sanitizeMeshData(raw)') && source.includes("type==='mesh'") && source.includes('meshData:sanitizeMeshData(raw.meshData)'), 'Imported custom mesh geometry must be validated and preserved in Scene JSON.');
+assert.ok(source.includes('mesh(gl,o.meshData?') && source.includes('mesh1(gl,o.meshData?') && source.includes('gpuMesh(o.meshData?') && source.includes('geometry(o.type,o.meshData)'), 'Imported custom mesh data must reach all renderer backends.');
 assert.ok(source.includes('in vec2 aUv') && source.includes('out vec2 vUv') && source.includes('uniform sampler2D uTexture') && source.includes('texture(uTexture,vUv)'), 'WebGL2 must map image textures through mesh UV coordinates.');
 assert.ok(source.includes('attribute vec2 aUv') && source.includes('texture2D(uTexture,vUv)'), 'WebGL1 compatibility renderer must support image textures.');
 assert.ok(source.includes('id="trozal3DTextureFile"') && source.includes('id="trozal3DTextureRemove"') && source.includes('2*1024*1024'), 'Object inspector must expose safe image texture upload and removal.');
