@@ -38,6 +38,7 @@ function glbFixture() {
 
  const obj='o Triangle\nv -1 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n';
  await page.locator('#t3dMultiFile').setInputFiles({name:'triangle.obj',mimeType:'text/plain',buffer:Buffer.from(obj)});
+ await page.waitForFunction(()=>document.getElementById('t3dMultiStatus').textContent.includes('Model berhasil diparse.'),{timeout:10000});
  await page.waitForFunction(()=>!document.getElementById('t3dMultiApply').disabled);
  const modelPreview=page.locator('#t3dMultiPreview canvas[data-model-preview], #t3dMultiPreview svg[aria-label="Fallback 3D mesh preview"]');
  assert.ok(await modelPreview.count()>=1,'Model must have a visual preview (Canvas or SVG fallback) before Apply.');
