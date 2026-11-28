@@ -44,7 +44,7 @@ assert.ok(source.includes("state.renderer==='canvas2d'"), 'PNG export must use t
 assert.doesNotMatch(source, /three\.min\.js|cdnjs\.cloudflare\.com\/ajax\/libs\/three/i,
   'CANVAS 3D must not depend on an external Three.js CDN.');
 assert.ok(source.includes('function easingProgress(u,mode)'), 'Keyframe easing evaluator must be present.');
-assert.ok(source.includes('uColor*(.28+.16*uLight)') && source.includes('uColor*(0.28+0.16*uLight)'), 'WebGL2 and WebGL1 must retain the brighter ambient baseline.');
+assert.ok(source.includes('base*(.28+.16*uLight)') && source.includes('base*(0.28+0.16*uLight)'), 'WebGL2 and WebGL1 must retain the brighter ambient baseline with optional image textures.');
 const engineGroups = fs.readFileSync(path.join(__dirname, '..', 'browser-render-engine-groups.js'), 'utf8');
 assert.ok(engineGroups.includes('window.TrozalMotion2DRenderEngines') && engineGroups.includes('function render2D(source,width,height)'), '2D engine selection must expose a real raster render adapter.');
 assert.ok(engineGroups.includes("if(group==='3D RENDER'&&item.integrated&&item.supported)")===false && engineGroups.includes("group==='2D / MOTION RENDER'"), 'Integrated 2D render engines must expose a usable selection action.');
