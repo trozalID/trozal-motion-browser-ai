@@ -62,7 +62,7 @@ function dataUri(uri){
  if(/;base64/i.test(meta))return decodeBase64(body);
  const decoded=decodeURIComponent(body);return new TextEncoder().encode(decoded).buffer;
 }
-async async function readContainer(files,rootFile){
+async function readContainer(files,rootFile){
  if(!rootFile)fail('select a .glb or .gltf file.');
  const list=Array.from(files||[]),totalBytes=list.reduce((sum,file)=>sum+(Number(file.size)||0),0);if(totalBytes>MAX_FILE_BYTES)fail('combined GLB/glTF and external buffer files exceed 40 MB.');
  const map=new Map(list.map(f=>[String(f.name).toLowerCase(),f]));
