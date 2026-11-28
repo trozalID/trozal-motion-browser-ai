@@ -82,7 +82,7 @@ const {json,bin}=fixture();
 
  const ordinary=JSON.parse(JSON.stringify(json));ordinary.skins=[];ordinary.nodes[0].skin=undefined;
  const ordinaryRoot={name:'static.gltf',arrayBuffer:async()=>Buffer.from(JSON.stringify(ordinary))};
- assert.equal(await Skeletal.parseFiles([ordinaryRoot],ordinaryRoot),null,'Static glTF should remain on the legacy mesh import path.');
+ assert.equal(await Skeletal.parseFiles([ordinaryRoot,binFile],ordinaryRoot),null,'Static glTF should remain on the legacy mesh import path.');
 
  const malformed=JSON.parse(JSON.stringify(json));malformed.nodes[0].skin=4;
  const malformedRoot={name:'bad.gltf',arrayBuffer:async()=>Buffer.from(JSON.stringify(malformed))};
