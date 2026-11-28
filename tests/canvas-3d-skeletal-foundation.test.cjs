@@ -70,6 +70,8 @@ const {json,bin}=fixture();
  assert.ok(restSkin&&liftedSkin,'Skin matrices must be generated for the mesh node.');
  assert.ok(Math.abs(restSkin[16+13])<1e-5,'Inverse bind matrix should cancel the bind-pose joint translation.');
  assert.ok(Math.abs(liftedSkin[16+13]-.5)<1e-4,'Animation sampling should move the joint and update its skin matrix.');
+ const endPose=Skeletal.computePose(asset,0,1);
+ assert.ok(Math.abs(endPose.skinsByNode['0'][16+13]-1)<1e-4,'Non-looping timeline must hold the last animation pose at clip duration.');
  const saved=Skeletal.sanitizeAsset(JSON.parse(JSON.stringify(asset)));
  assert.equal(saved.activeClip,0);
  assert.equal(Skeletal.computePose(saved,0,.5).skinsByNode['0'][16+13],liftedSkin[16+13]);
