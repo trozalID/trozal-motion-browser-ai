@@ -79,6 +79,7 @@ jobs:
           node --check ip-guardrails-panel.js
           node --check browser-gpu-health.js
           node --check browser-gpu-frame-pipeline.js
+          node --check browser-render-engine-groups.js
           node <<'NODE'
           const fs = require('fs');
           const { spawnSync } = require('child_process');
@@ -191,6 +192,10 @@ jobs:
         run: node tests/canvas-3d-studio.browser.cjs
       - name: Test Canvas 3D AI Theme Studio and JavaScript / JSON Terminal
         run: node tests/canvas-3d-ai-theme-terminal.browser.cjs
+      - name: Test selectable 2D render engines and Terminal paste in Chromium
+        run: |
+          node --check tests/canvas-3d-2d-engines-terminal.browser.cjs
+          node tests/canvas-3d-2d-engines-terminal.browser.cjs
       - name: Test JavaScript Studio scenes and keyframe timeline
         run: node tests/js-motion-studio-timeline.test.cjs
       - name: Test AI Prompt-to-JavaScript concepts and editor integration
