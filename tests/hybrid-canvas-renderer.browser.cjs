@@ -10,6 +10,10 @@ const { chromium } = require('playwright');
   page.on('console', message => {
     if (message.type() === 'error') consoleErrors.push({ text: message.text(), location: message.location() });
   });
+  await page.addInitScript(() => {
+    window.__trozalWindowErrors = [];
+    window.addEventListener('error', event => window.__trozalWindowErrors.push({ message: event.message, filename: event.filename, line: event.lineno, column: event.colno }));
+  });
   try {
     await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
     await page.addScriptTag({ path: require.resolve('jszip/dist/jszip.min.js') });
