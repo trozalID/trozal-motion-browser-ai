@@ -25,7 +25,8 @@ for (const token of [
   'pointerdown','pointermove','addEventListener(\'wheel\'', 'function drawCanvas2D(time,force)', 'function setRenderer(choice)', 'function projectPoint(matrix,p)', 'function initCanvas2D()'
 ]) assert.ok(source.includes(token), 'Missing 3D renderer feature: '+token);
 assert.ok(source.includes("Object.defineProperty(window,'TROZAL_CANVAS_3D'"), 'CANVAS 3D must expose its public scene API.');
-const terminal = fs.readFileSync(path.join(__dirname, '..', 'canvas-3d-terminal.js'), 'utf8');\nassert.ok(html.includes('./canvas-3d-terminal.js'), 'Canvas 3D terminal must be loaded by the main application.');\nassert.ok(terminal.includes("addEventListener('paste'") && terminal.includes("getData('text/plain')") && terminal.includes('setRangeText'), 'Terminal must explicitly support pasting plain-text JavaScript and JSON into the editor.');
+const terminal = fs.readFileSync(path.join(__dirname, '..', 'canvas-3d-terminal.js'), 'utf8');
+assert.ok(html.includes('./canvas-3d-terminal.js'), 'Canvas 3D terminal must be loaded by the main application.');\nassert.ok(terminal.includes("addEventListener('paste'") && terminal.includes("getData('text/plain')") && terminal.includes('setRangeText'), 'Terminal must explicitly support pasting plain-text JavaScript and JSON into the editor.');
 assert.ok(source.includes("document.querySelector('.topbar .topright')"), 'CANVAS 3D launcher must attach to the Browser AI topbar when available.');
 assert.ok(source.includes("PNG snapshot exported · ") && source.includes('canvas.width') && source.includes('canvas.height') && source.includes('b.size'), 'PNG export must report actual snapshot dimensions and byte count.');
 assert.match(source, /WebGL2 tidak tersedia/);
