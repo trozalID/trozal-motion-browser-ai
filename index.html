@@ -6163,7 +6163,7 @@ $('generateMotionSvgBtn').addEventListener('click',generateMotionSvgLocally);
 
 <!-- TROZAL GLOBAL PREVIEW RATIO CONTROLLER · available in every workspace mode -->
 <style id="trozalGlobalRatioStyle">
-#trozalGlobalRatioDock{position:fixed;z-index:99990;pointer-events:none;right:14px;top:auto;bottom:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:min(96vw,560px);padding:8px 10px;border:1px solid #4b8297;border-radius:10px;background:rgba(10,25,36,.96);box-shadow:0 8px 28px #0008;color:#e8f7ff;font:11px/1.35 Inter,Segoe UI,Arial,sans-serif}
+#trozalGlobalRatioDock{position:fixed;z-index:2147483000;pointer-events:none;right:14px;top:auto;bottom:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:min(96vw,560px);padding:8px 10px;border:1px solid #4b8297;border-radius:10px;background:rgba(10,25,36,.96);box-shadow:0 8px 28px #0008;color:#e8f7ff;font:11px/1.35 Inter,Segoe UI,Arial,sans-serif}
 #trozalGlobalRatioDock>*{pointer-events:auto}#trozalGlobalRatioDock strong{color:#9fe8ff;letter-spacing:.04em}
 #trozalGlobalRatioDock select,#trozalGlobalRatioDock input{min-width:0;width:auto;max-width:105px;padding:5px 6px;border:1px solid #3d7084;border-radius:6px;background:#071721;color:#e8f7ff;font:11px Arial}
 #trozalGlobalRatioDock button{padding:5px 8px;border:1px solid #3d7084;border-radius:6px;background:#15394a;color:#e8f7ff;font:11px Arial;cursor:pointer}
@@ -6195,7 +6195,27 @@ const availableW=Math.max(240,stage.parentElement?.clientWidth||stage.clientWidt
 let width=Math.min(availableW,availableH*r);let height=width/r;if(height>availableH){height=availableH;width=height*r;}
 stage.style.width=Math.round(width)+'px';stage.style.height=Math.round(height)+'px';stage.style.aspectRatio=w+'/'+h;stage.style.maxWidth='100%';stage.style.maxHeight='68vh';}
 const mode5=$('itcvPreviewStage'),frame=$('itcvPreview');
-if(mode5&&frame){mode5.style.aspectRatio=w+'/'+h;mode5.style.width='100%';frame.style.aspectRatio=w+'/'+h;frame.style.width='100%';frame.style.height='auto';frame.style.display='block';}
+if(mode5){mode5.style.aspectRatio=w+'/'+h;mode5.style.width='100%';mode5.style.minHeight='0';}
+if(frame){frame.style.aspectRatio=w+'/'+h;frame.style.width='100%';frame.style.height='auto';frame.style.display='block';}
+const viewport=$('trozal3DViewport');
+if(viewport){
+  const main=viewport.parentElement;
+  const tracks=main?getComputedStyle(main).gridTemplateColumns.split(/\\s+/):[];
+  const centerTrack=tracks.length>=2?parseFloat(tracks[1]):0;
+  const availableW=Math.max(1,centerTrack||viewport.getBoundingClientRect().width);
+  const availableH=Math.max(1,main?.clientHeight||viewport.getBoundingClientRect().height);
+  let vw=Math.min(availableW,availableH*r),vh=vw/r;
+  if(vh>availableH){vh=availableH;vw=vh*r;}
+  viewport.style.width=Math.round(vw)+'px';viewport.style.height=Math.round(vh)+'px';
+  viewport.style.aspectRatio=w+'/'+h;viewport.style.justifySelf='center';viewport.style.alignSelf='center';
+  viewport.style.minHeight='0';viewport.style.minWidth='0';
+  for(const id of ['trozal3DCanvas','trozal3DCanvas2D','trozal3DCanvasGL1','trozal3DCanvasGPU']){
+    const canvas=$(id);if(canvas){canvas.style.width='100%';canvas.style.height='100%';canvas.style.minHeight='0';}
+  }
+}
+const visual=$('visualMotionPreview');
+if(visual){const width=visual.clientWidth||visual.getBoundingClientRect().width;visual.style.aspectRatio=w+'/'+h;visual.style.height=Math.max(120,Math.min(420,width/r))+'px';}
+document.querySelectorAll('#t3dMultiPreviewCards .t3d-preview-thumb').forEach(canvas=>{canvas.style.aspectRatio=w+'/'+h;canvas.style.height='auto';canvas.style.maxHeight='280px';});
 const status=$('trozalGlobalRatioStatus');if(status)status.textContent=label+' · '+Math.round(r*1000)/1000+' aspect';
 try{localStorage.setItem('trozal-global-preview-ratio',select.value);localStorage.setItem('trozal-global-preview-custom',JSON.stringify([Number($('trozalGlobalRatioWidth').value),Number($('trozalGlobalRatioHeight').value)]));}catch(_){}
 }
@@ -6203,7 +6223,7 @@ select.addEventListener('change',apply);['trozalGlobalRatioWidth','trozalGlobalR
 $('trozalGlobalRatioReset').addEventListener('click',()=>{select.value='16:9';$('trozalGlobalRatioWidth').value=1920;$('trozalGlobalRatioHeight').value=1080;apply();});
 try{const saved=localStorage.getItem('trozal-global-preview-ratio');if(saved&&([...Object.keys(presets),'custom'].includes(saved)))select.value=saved;const dims=JSON.parse(localStorage.getItem('trozal-global-preview-custom')||'[1920,1080]');if(Array.isArray(dims)&&dims.length===2){$('trozalGlobalRatioWidth').value=dims[0];$('trozalGlobalRatioHeight').value=dims[1];}}catch(_){}
 window.addEventListener('resize',apply,{passive:true});
-const observer=new MutationObserver(()=>{if($('stage')&&!$('stage').classList.contains('trozal-ratio-active'))apply();});
+let ratioApplyQueued=false;const observer=new MutationObserver(()=>{if(ratioApplyQueued)return;ratioApplyQueued=true;requestAnimationFrame(()=>{ratioApplyQueued=false;apply();});});
 observer.observe(document.body,{childList:true,subtree:true});
 apply();
 })();
