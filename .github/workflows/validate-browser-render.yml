@@ -142,6 +142,7 @@ jobs:
           node tests/canvas-3d-skeletal-foundation.test.cjs
           node --check tests/canvas-3d-studio.test.cjs
           node tests/canvas-3d-studio.test.cjs
+          node --check tests/canvas-3d-animation-system.browser.cjs
           node --check canvas-3d-ai-theme-studio.js
           node --check canvas-3d-terminal.js
           node --check tests/canvas-3d-ai-theme-terminal.test.cjs
@@ -215,6 +216,9 @@ jobs:
           node --check canvas-3d-skeletal.js
           node --check tests/canvas-3d-skeletal-foundation.browser.cjs
           node tests/canvas-3d-skeletal-foundation.browser.cjs
+
+      - name: Test Canvas 3D motion paths, per-object interpolation and 3-axis orbit
+        run: node tests/canvas-3d-animation-system.browser.cjs
 
       - name: Test selectable 2D render engines and Terminal paste in Chromium
         run: |

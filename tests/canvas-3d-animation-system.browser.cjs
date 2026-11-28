@@ -1,0 +1,53 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {chromium}=require('playwright');
+(async()=>{
+ const browser=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--enable-webgl']});
+ try{
+  const page=await browser.newPage({viewport:{width:1440,height:1000}});
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>!!window.TROZAL_CANVAS_3D,{timeout:15000});
+  await page.locator('#trozalCanvas3DOpen').click();
+  await page.waitForSelector('#trozal3DObjectInterpolation');
+  const result=await page.evaluate(()=>{
+   const base={id:'motion-test',name:'Motion Test',type:'cube',x:0,y:0,z:0,rx:0,ry:0,rz:0,sx:1,sy:1,sz:1,color:'#55c9df',metallic:.2,roughness:.4,emission:0,materialPreset:'custom',animation:'none',speed:.5,amount:1,parentId:null,keyframes:[],interpolation:'linear',motionPath:{enabled:true,closed:false,interpolation:'linear',points:[{time:0,x:0,y:0,z:0},{time:4,x:4,y:2,z:-2}]}};
+   TROZAL_CANVAS_3D.applyProject({version:2,duration:8,fps:30,loop:true,objects:[base]});
+   const pathMid=TROZAL_CANVAS_3D.evaluateObjectTransform('motion-test',2);
+   const pathPosition=[pathMid[12],pathMid[13],pathMid[14]];
+   const project=TROZAL_CANVAS_3D.getProject();
+   const pathRoundTrip=project.objects[0].motionPath.points.length===2;
+   const keyScene=JSON.parse(JSON.stringify(project));
+   keyScene.objects[0].motionPath.enabled=false;
+   keyScene.objects[0].x=0;
+   keyScene.objects[0].interpolation='ease-in';
+   keyScene.objects[0].keyframes=[{time:0,values:{x:0,y:0,z:0,rx:0,ry:0,rz:0,sx:1,sy:1,sz:1}},{time:4,values:{x:4,y:0,z:0,rx:0,ry:0,rz:0,sx:1,sy:1,sz:1}}];
+   TROZAL_CANVAS_3D.applyProject(keyScene);
+   const eased=TROZAL_CANVAS_3D.evaluateObjectTransform('motion-test',2)[12];
+   const linearScene=JSON.parse(JSON.stringify(keyScene));
+   linearScene.objects[0].interpolation='linear';
+   TROZAL_CANVAS_3D.applyProject(linearScene);
+   const linear=TROZAL_CANVAS_3D.evaluateObjectTransform('motion-test',2)[12];
+   const orbitScene=JSON.parse(JSON.stringify(linearScene));
+   orbitScene.objects[0].animation='orbit3d';
+   orbitScene.objects[0].keyframes=[];
+   orbitScene.objects[0].speed=.25;
+   orbitScene.objects[0].amount=1.5;
+   TROZAL_CANVAS_3D.applyProject(orbitScene);
+   const orbit=TROZAL_CANVAS_3D.evaluateObjectTransform('motion-test',.5);
+   const orbitPosition=[orbit[12],orbit[13],orbit[14]];
+   const saved=TROZAL_CANVAS_3D.getProject();
+   TROZAL_CANVAS_3D.applyProject(JSON.parse(JSON.stringify(saved)));
+   return {pathPosition,pathRoundTrip,eased,linear,orbitPosition,serializedAnimation:TROZAL_CANVAS_3D.getProject().objects[0].animation,controls:['trozal3DPathInterpolation','trozal3DPathClosed','trozal3DAddPathPoint','trozal3DClearPath'].every(id=>!!document.getElementById(id))};
+  });
+  assert.deepEqual(result.pathPosition,[2,1,-1],'Motion path should interpolate XYZ coordinates.'); 
+  assert.equal(result.pathRoundTrip,true,'Motion path points must survive Scene JSON round-trip.');
+  assert.ok(Math.abs(result.eased-1)<1e-5,'Per-object ease-in should place the midpoint at 25% of the segment.');
+  assert.ok(Math.abs(result.linear-2)<1e-5,'Per-object linear interpolation should place the midpoint at 50%.');
+  assert.ok(Math.abs(result.orbitPosition[0]-Math.SQRT2*.75)<1e-4&&Math.abs(result.orbitPosition[1]-.75)<1e-4&&Math.abs(result.orbitPosition[2]-Math.SQRT2*.75)<1e-4,'3-axis orbit must move on X, Y and Z within the supported motion amount.');
+  assert.equal(result.serializedAnimation,'orbit3d','3-axis orbit preset must persist through Scene JSON.');
+  assert.equal(result.controls,true,'Motion path editing controls must be mounted.');
+  assert.deepEqual(errors,[],'Unexpected browser runtime errors.');
+  console.log(JSON.stringify({result:'PASS',motionPath:'XYZ interpolation + Scene JSON round-trip',interpolation:'per-object ease-in and linear',orbit3d:'X/Y/Z elliptical motion',controls:'PASS'},null,2));
+ }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exit(1);});
