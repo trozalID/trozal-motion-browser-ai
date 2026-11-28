@@ -60,7 +60,7 @@ assert.ok(engineGroups.includes('window.TrozalMotion2DRenderEngines') && engineG
 assert.ok(engineGroups.includes("if(group==='3D RENDER'&&item.integrated&&item.supported)")===false && engineGroups.includes("group==='2D / MOTION RENDER'"), 'Integrated 2D render engines must expose a usable selection action.');
 assert.ok(source.includes('let diffuse=.28;') && source.includes('diffuse+state.light*.16'), 'Canvas2D software renderer must retain the brighter ambient baseline.');
 assert.ok(source.includes("case 'ease-in'" ) && source.includes("case 'ease-out'") && source.includes("case 'ease-in-out'") && source.includes("case 'smoothstep'") && source.includes("case 'hold'"), 'All supported interpolation modes must be implemented.');
-assert.ok(source.includes('trozal3DKeyframeEasing') && source.includes("easing:$(\'trozal3DKeyframeEasing\')?.value||\'ease-in-out\'"), 'Keyframe easing must be selectable and saved per keyframe.');
+assert.ok(source.includes('trozal3DKeyframeEasing') && source.includes('key={time:at,values,easing:') && source.includes("o.interpolation||'ease-in-out'"), 'Keyframe easing must be selectable and saved per keyframe using the object default.');
 assert.ok(source.includes("b.easing||a.easing||o.interpolation||'linear'"), 'Each keyframe segment must apply stored easing, then object interpolation, then legacy linear fallback.');
 assert.ok(source.includes("const order=['webgpu','webgl2','webgl1','canvas2d']"), 'Auto renderer must prefer WebGPU, then WebGL2, WebGL1 and Canvas 2D.');
 assert.ok(source.includes("Auto (WebGPU → WebGL2 → WebGL1 → CPU)"), 'Renderer selector must show the actual automatic fallback order.');
