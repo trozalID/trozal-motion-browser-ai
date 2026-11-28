@@ -6200,7 +6200,7 @@ if(frame){frame.style.aspectRatio=w+'/'+h;frame.style.width='100%';frame.style.h
 const viewport=$('trozal3DViewport');
 if(viewport){
   const main=viewport.parentElement;
-  const tracks=main?getComputedStyle(main).gridTemplateColumns.split(/\\s+/):[];
+  const tracks=main?getComputedStyle(main).gridTemplateColumns.split(/\s+/):[];
   const centerTrack=tracks.length>=2?parseFloat(tracks[1]):0;
   const availableW=Math.max(1,centerTrack||viewport.getBoundingClientRect().width);
   const availableH=Math.max(1,main?.clientHeight||viewport.getBoundingClientRect().height);
