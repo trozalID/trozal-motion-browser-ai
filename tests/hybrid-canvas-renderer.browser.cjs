@@ -61,7 +61,8 @@ const { chromium } = require('playwright');
     await page.waitForFunction(() => /PNG Sequence selesai|Render gagal|dibatalkan/i.test(document.getElementById('exportStatus')?.textContent || ''), null, { timeout: 30000 });
     const status = await page.locator('#exportStatus').innerText();
     assert.match(status, /PNG Sequence selesai/, 'Hybrid renderer must preserve PNG sequence export: ' + status);
-    const windowErrors = await page.evaluate(() => window.__trozalWindowErrors || []);\n    assert.deepEqual(errors, [], 'Unexpected uncaught browser errors:\n' + JSON.stringify({ errors, consoleErrors, windowErrors }, null, 2));
+    const windowErrors = await page.evaluate(() => window.__trozalWindowErrors || []);
+    assert.deepEqual(errors, [], 'Unexpected uncaught browser errors:\n' + JSON.stringify({ errors, consoleErrors, windowErrors }, null, 2));
     console.log('Hybrid Canvas Chromium benchmark + PNG export smoke passed:', JSON.stringify({ strategy: report.strategy, reason: report.reason, benchmark: report.benchmark?.results || null, status }));
   } finally {
     await browser.close();
