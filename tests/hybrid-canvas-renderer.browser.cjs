@@ -5,7 +5,15 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch({ headless: true, args: ['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = [];
-  page.on('pageerror', error => errors.push({ message: error.message, stack: error.stack || '' }));
+  const consoleErrors = [];
+  page.on('pageerror', error => errors.push({ name: error.name, message: error.message, stack: error.stack || '' }));
+  page.on('console', message => {
+    if (message.type() === 'error') consoleErrors.push({ text: message.text(), location: message.location() });
+  });
+  await page.addInitScript(() => {
+    window.__trozalWindowErrors = [];
+    window.addEventListener('error', event => window.__trozalWindowErrors.push({ message: event.message, filename: event.filename, line: event.lineno, column: event.colno }));
+  });
   try {
     await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
     await page.addScriptTag({ path: require.resolve('jszip/dist/jszip.min.js') });
@@ -53,7 +61,8 @@ const { chromium } = require('playwright');
     await page.waitForFunction(() => /PNG Sequence selesai|Render gagal|dibatalkan/i.test(document.getElementById('exportStatus')?.textContent || ''), null, { timeout: 30000 });
     const status = await page.locator('#exportStatus').innerText();
     assert.match(status, /PNG Sequence selesai/, 'Hybrid renderer must preserve PNG sequence export: ' + status);
-    assert.deepEqual(errors, [], 'Unexpected uncaught browser errors:\n' + JSON.stringify(errors, null, 2));
+    const windowErrors = await page.evaluate(() => window.__trozalWindowErrors || []);
+    assert.deepEqual(errors, [], 'Unexpected uncaught browser errors:\n' + JSON.stringify({ errors, consoleErrors, windowErrors }, null, 2));
     console.log('Hybrid Canvas Chromium benchmark + PNG export smoke passed:', JSON.stringify({ strategy: report.strategy, reason: report.reason, benchmark: report.benchmark?.results || null, status }));
   } finally {
     await browser.close();

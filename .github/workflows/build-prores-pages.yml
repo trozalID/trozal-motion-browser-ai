@@ -27,12 +27,15 @@ on:
       - 'render-memory-manager.js'
       - 'render-frame-store.js'
       - 'canvas-3d-studio.js'
+      - 'canvas-3d-skeletal.js'
       - 'canvas-3d-ai-theme-studio.js'
       - 'canvas-3d-terminal.js'
       - 'canvas-3d-multi-terminal.js'
       - 'canvas-3d-preview-renderer.js'
       - 'canvas-3d-multi-preview.js'
       - 'tests/canvas-3d-multi-preview-gallery.browser.cjs'
+      - 'tests/canvas-3d-skeletal-foundation.test.cjs'
+      - 'tests/canvas-3d-skeletal-foundation.browser.cjs'
       - 'browser-render-engine-groups.js'
       - 'logo-studio.js'
       - 'tests/logo-studio.browser.cjs'
@@ -99,6 +102,7 @@ jobs:
           cp browser-gpu-frame-pipeline.js site/browser-gpu-frame-pipeline.js
           cp logo-studio.js site/logo-studio.js
           cp canvas-3d-studio.js site/canvas-3d-studio.js
+          cp canvas-3d-skeletal.js site/canvas-3d-skeletal.js
           cp canvas-3d-ai-theme-studio.js site/canvas-3d-ai-theme-studio.js
           cp canvas-3d-terminal.js site/canvas-3d-terminal.js
           cp canvas-3d-multi-terminal.js site/canvas-3d-multi-terminal.js
@@ -231,6 +235,8 @@ jobs:
           test -s site/logo-studio.js
           test -s site/icon-logo-motion-studio.js
           test -s site/canvas-3d-studio.js
+          test -s site/canvas-3d-skeletal.js
+          node --check site/canvas-3d-skeletal.js
           test -s site/canvas-3d-multi-terminal.js
           node --check site/canvas-3d-multi-terminal.js
           test -s site/canvas-3d-preview-renderer.js
