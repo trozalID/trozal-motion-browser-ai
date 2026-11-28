@@ -6223,6 +6223,7 @@ select.addEventListener('change',apply);['trozalGlobalRatioWidth','trozalGlobalR
 $('trozalGlobalRatioReset').addEventListener('click',()=>{select.value='16:9';$('trozalGlobalRatioWidth').value=1920;$('trozalGlobalRatioHeight').value=1080;apply();});
 try{const saved=localStorage.getItem('trozal-global-preview-ratio');if(saved&&([...Object.keys(presets),'custom'].includes(saved)))select.value=saved;const dims=JSON.parse(localStorage.getItem('trozal-global-preview-custom')||'[1920,1080]');if(Array.isArray(dims)&&dims.length===2){$('trozalGlobalRatioWidth').value=dims[0];$('trozalGlobalRatioHeight').value=dims[1];}}catch(_){}
 window.addEventListener('resize',apply,{passive:true});
+document.addEventListener('click',()=>requestAnimationFrame(()=>apply()),{capture:true});
 let ratioApplyQueued=false;const observer=new MutationObserver(()=>{if(ratioApplyQueued)return;ratioApplyQueued=true;requestAnimationFrame(()=>{ratioApplyQueued=false;apply();});});
 observer.observe(document.body,{childList:true,subtree:true});
 apply();
