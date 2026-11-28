@@ -25,6 +25,10 @@ for (const token of [
   'pointerdown','pointermove','addEventListener(\'wheel\'', 'function drawCanvas2D(time,force)', 'function setRenderer(choice)', 'function projectPoint(matrix,p)', 'function initCanvas2D()'
 ]) assert.ok(source.includes(token), 'Missing 3D renderer feature: '+token);
 assert.ok(source.includes("Object.defineProperty(window,'TROZAL_CANVAS_3D'"), 'CANVAS 3D must expose its public scene API.');
+assert.ok(source.includes('in vec2 aUv') && source.includes('out vec2 vUv') && source.includes('uniform sampler2D uTexture') && source.includes('texture(uTexture,vUv)'), 'WebGL2 must map image textures through mesh UV coordinates.');
+assert.ok(source.includes('attribute vec2 aUv') && source.includes('texture2D(uTexture,vUv)'), 'WebGL1 compatibility renderer must support image textures.');
+assert.ok(source.includes('id="trozal3DTextureFile"') && source.includes('id="trozal3DTextureRemove"') && source.includes('2*1024*1024'), 'Object inspector must expose safe image texture upload and removal.');
+assert.ok(source.includes('imageTexture(gl,o.textureDataUrl)') && source.includes('textureDataUrl.length<=2800000'), 'Image textures must upload to GPU and persist safely in Scene JSON.');
 assert.ok(source.includes('function snapValue(') && source.includes('transformSnap:{...state.transformSnap}'), 'Transform snapping must be implemented and serialized.');
 assert.ok(source.includes("$('trozal3DSnapEnabled').addEventListener('change'") && source.includes("$('trozal3DSnap'+label).addEventListener('change'") && source.includes("[['Move','move'],['Rotate','rotate'],['Scale','scale']]"), 'Snap toggle and per-transform increments must be wired through the shared control loop.');
 const terminal = fs.readFileSync(path.join(__dirname, '..', 'canvas-3d-terminal.js'), 'utf8');
@@ -40,7 +44,7 @@ assert.ok(source.includes("state.renderer==='canvas2d'"), 'PNG export must use t
 assert.doesNotMatch(source, /three\.min\.js|cdnjs\.cloudflare\.com\/ajax\/libs\/three/i,
   'CANVAS 3D must not depend on an external Three.js CDN.');
 assert.ok(source.includes('function easingProgress(u,mode)'), 'Keyframe easing evaluator must be present.');
-assert.ok(source.includes('uColor*(.28+.16*uLight)') && source.includes('uColor*(0.28+0.16*uLight)'), 'WebGL2 and WebGL1 must retain the brighter ambient baseline.');
+assert.ok(source.includes('base*(.28+.16*uLight)') && source.includes('base*(0.28+0.16*uLight)'), 'WebGL2 and WebGL1 must retain the brighter ambient baseline with optional image textures.');
 const engineGroups = fs.readFileSync(path.join(__dirname, '..', 'browser-render-engine-groups.js'), 'utf8');
 assert.ok(engineGroups.includes('window.TrozalMotion2DRenderEngines') && engineGroups.includes('function render2D(source,width,height)'), '2D engine selection must expose a real raster render adapter.');
 assert.ok(engineGroups.includes("if(group==='3D RENDER'&&item.integrated&&item.supported)")===false && engineGroups.includes("group==='2D / MOTION RENDER'"), 'Integrated 2D render engines must expose a usable selection action.');
