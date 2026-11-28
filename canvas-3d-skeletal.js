@@ -268,7 +268,7 @@ function sanitizeAsset(raw){
  return {version:1,id:String(raw.id||('skeletal-'+Math.random().toString(36).slice(2,10))),name:String(raw.name||'Imported Skeletal Model').slice(0,96),nodes,skins,primitives,animations,rootTransform,bounds:raw.bounds||null,warnings:Array.isArray(raw.warnings)?raw.warnings.map(String):[]};
 }
 async function parseFiles(files,rootFile){
- const {json,buffers}=await readContainer(files,rootFile),read=accessorReader(json,buffers),nodes=buildNodes(json),skins=buildSkins(json,read);
+ const {json,buffers}=await readContainer(files,rootFile);if(!Array.isArray(json.skins)||!json.skins.length)return null;const read=accessorReader(json,buffers),nodes=buildNodes(json),skins=buildSkins(json,read);
  const primitives=buildPrimitives(json,read,nodes,skins),animations=buildAnimations(json,read,nodes);
  if(!primitives.some(p=>p.skinIndex!==null))return null;
  const asset={version:1,id:'skeletal-'+Math.random().toString(36).slice(2,10),name:String(json.asset?.generator||rootFile.name||'GLTF Skeletal Asset').slice(0,96),nodes,skins,primitives,animations,warnings:[]};
