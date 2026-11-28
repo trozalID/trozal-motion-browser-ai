@@ -235,7 +235,7 @@ function sampleSampler(sampler,time,path){
 function computePose(asset,clipIndex,time){
  const clip=asset.animations?.[clipIndex]||null,trs=asset.nodes.map(n=>({translation:n.translation.slice(),rotation:n.rotation.slice(),scale:n.scale.slice()}));
  if(clip){
-  const t=clip.start+(Math.max(0,Number(time)||0)%clip.duration);
+  const t=clip.start+Math.max(0,Math.min(clip.duration,Number(time)||0));
   for(const channel of clip.channels){const value=sampleSampler(clip.samplers[channel.sampler],t,channel.path);trs[channel.node][channel.path]=channel.path==='rotation'?normalizeQuat(value):value;}
  }
  const locals=asset.nodes.map((n,i)=>n.matrix?n.matrix.slice():localNodeMatrix(n,trs[i])),worlds=worldMatrices(asset.nodes,locals),skinsByNode={};
