@@ -129,8 +129,8 @@ function buildNodes(json){
  const parents=new Array(raw.length).fill(null);
  raw.forEach((node,i)=>{for(const child of node.children||[]){if(!Number.isInteger(child)||child<0||child>=raw.length)fail('node '+i+' references an invalid child.');if(parents[child]!=null)fail('node '+child+' has more than one parent.');parents[child]=i;}});
  const nodes=raw.map((node,i)=>{
-  const n={name:String(node.name||('Node '+(i+1))).slice(0,72),parent:parents[i],children:(node.children||[]).slice(),mesh:node.mesh==null?null:Number(node.mesh),skin:node.skin==null?null:Number(node.skin),
-   translation:(node.translation||[0,0,0]).map(Number),rotation:normalizeQuat((node.rotation||[0,0,0,1]).map(Number)),scale:(node.scale||[1,1,1]).map(Number),matrix:node.matrix?node.matrix.map(Number):null};
+  const translation=(node.translation||[0,0,0]).map(Number),rotation=(node.rotation||[0,0,0,1]).map(Number),scale=(node.scale||[1,1,1]).map(Number);if(translation.length!==3||rotation.length!==4||scale.length!==3)fail('node '+i+' TRS values must have 3/4/3 components.');
+  const n={name:String(node.name||('Node '+(i+1))).slice(0,72),parent:parents[i],children:(node.children||[]).slice(),mesh:node.mesh==null?null:Number(node.mesh),skin:node.skin==null?null:Number(node.skin),translation,rotation:normalizeQuat(rotation),scale,matrix:node.matrix?node.matrix.map(Number):null};
   if(n.matrix&&n.matrix.length!==16)fail('node '+i+' matrix must contain 16 values.');
   if(!n.matrix&&([...n.translation,...n.rotation,...n.scale].some(v=>!Number.isFinite(v))))fail('node '+i+' transform contains invalid values.');
   if(n.mesh!=null&&(!json.meshes||!json.meshes[n.mesh]))fail('node '+i+' references a missing mesh.');
@@ -263,7 +263,7 @@ function sanitizeAsset(raw){
  const nodes=raw.nodes.map((n,i)=>{
   if(!n||!Number.isInteger(n.parent===null?null:n.parent)&&n.parent!==null)fail('node '+i+' parent index invalid.');
   if(n.parent!==null&&(n.parent<0||n.parent>=raw.nodes.length||n.parent===i))fail('node '+i+' parent is out of range.');
-  const node={name:String(n.name||('Node '+(i+1))),parent:n.parent,children:Array.isArray(n.children)?n.children.slice():[],mesh:n.mesh==null?null:Number(n.mesh),skin:n.skin==null?null:Number(n.skin),translation:(n.translation||[0,0,0]).map(Number),rotation:normalizeQuat((n.rotation||[0,0,0,1]).map(Number)),scale:(n.scale||[1,1,1]).map(Number),matrix:n.matrix?n.matrix.map(Number):null};
+  const translation=(n.translation||[0,0,0]).map(Number),rotation=(n.rotation||[0,0,0,1]).map(Number),scale=(n.scale||[1,1,1]).map(Number);if(translation.length!==3||rotation.length!==4||scale.length!==3)fail('node '+i+' TRS values must have 3/4/3 components.');const node={name:String(n.name||('Node '+(i+1))),parent:n.parent,children:Array.isArray(n.children)?n.children.slice():[],mesh:n.mesh==null?null:Number(n.mesh),skin:n.skin==null?null:Number(n.skin),translation,rotation:normalizeQuat(rotation),scale,matrix:n.matrix?n.matrix.map(Number):null};
   if(node.children.some(child=>!Number.isInteger(child)||child<0||child>=raw.nodes.length))fail('node '+i+' children array contains an invalid node index.');
   return node;
  });
