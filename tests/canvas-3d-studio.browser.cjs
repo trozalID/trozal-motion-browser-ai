@@ -128,7 +128,46 @@ const { chromium } = require('playwright');
     await fillLightColor.evaluate(el=>{el.value='#22cc88';el.dispatchEvent(new Event('input',{bubbles:true}));});
     lightProject=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
     assert.equal(lightProject.lights[1].color,'#22cc88','Each light should support independent color editing.');
-    // Verify viewport gizmo controls are interactive, not decorative.
+    // Snap is opt-in and each transform mode must quantize to its own step.
+    const snapDefaults=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject().transformSnap);
+    assert.deepEqual(snapDefaults,{enabled:false,move:.25,rotate:15,scale:.1});
+    await page.locator('#trozal3DSnapMove').selectOption('0.5');
+    await page.locator('#trozal3DSnapRotate').selectOption('15');
+    await page.locator('#trozal3DSnapScale').selectOption('0.1');
+    await page.locator('#trozal3DSnapEnabled').check();
+    const snapSettings=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject().transformSnap);
+    assert.deepEqual(snapSettings,{enabled:true,move:.5,rotate:15,scale:.1});
+    const snapViewport=await page.locator('#trozal3DViewport').boundingBox();
+    const dragViewport=async(dx,dy)=>page.locator('#trozal3DViewport').evaluate((el,payload)=>{
+      const {box,delta}=payload,x=box.x+box.width*.5,y=box.y+box.height*.5;
+      el.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:8,pointerType:'mouse',clientX:x,clientY:y,button:0,buttons:1}));
+      el.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerId:8,pointerType:'mouse',clientX:x+delta.dx,clientY:y+delta.dy,button:0,buttons:1}));
+      el.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:8,pointerType:'mouse',clientX:x+delta.dx,clientY:y+delta.dy,button:0,buttons:0}));
+    },{box:snapViewport,delta:{dx,dy}});
+    await page.locator('#trozal3DGizmoAxis').selectOption('x');
+    await dragViewport(55,0);
+    let snapProject=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
+    assert.ok(Math.abs(snapProject.objects[0].x/.5-Math.round(snapProject.objects[0].x/.5))<.001,'Move gizmo must snap position to selected increment.');
+    await page.locator('#trozal3DGizmoRotate').click();
+    const rotationBefore=snapProject.objects[0].rx;
+    await dragViewport(50,0);
+    snapProject=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
+    assert.notEqual(snapProject.objects[0].rx,rotationBefore,'Rotate gizmo must change rotation.');
+    assert.ok(Math.abs(snapProject.objects[0].rx/15-Math.round(snapProject.objects[0].rx/15))<.001,'Rotate gizmo must snap degrees.');
+    await page.locator('#trozal3DGizmoScale').click();
+    await page.locator('#trozal3DGizmoAxis').selectOption('y');
+    const scaleBefore=snapProject.objects[0].sy;
+    await dragViewport(0,-45);
+    snapProject=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
+    assert.notEqual(snapProject.objects[0].sy,scaleBefore,'Scale gizmo must change scale.');
+    assert.ok(Math.abs(snapProject.objects[0].sy/.1-Math.round(snapProject.objects[0].sy/.1))<.001,'Scale gizmo must snap scale increments.');
+    await page.evaluate(()=>{const p=window.TROZAL_CANVAS_3D.getProject();p.transformSnap={enabled:true,move:.5,rotate:30,scale:.25};window.TROZAL_CANVAS_3D.applyProject(p);});
+    assert.deepEqual(await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject().transformSnap),{enabled:true,move:.5,rotate:30,scale:.25});
+    await page.evaluate(()=>{const p=window.TROZAL_CANVAS_3D.getProject();delete p.transformSnap;window.TROZAL_CANVAS_3D.applyProject(p);});
+    assert.deepEqual(await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject().transformSnap),{enabled:false,move:.25,rotate:15,scale:.1});
+    await page.locator('#trozal3DSnapEnabled').uncheck();
+    await page.locator('#trozal3DGizmoMove').click();
+    // Verify viewport gizmo controls remain interactive in free mode.
     assert.equal(await page.locator('#trozal3DGizmoMove').getAttribute('aria-pressed'),'true');
     await page.locator('#trozal3DGizmoAxis').selectOption('x');
     const beforeGizmo=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject().objects[0].x);

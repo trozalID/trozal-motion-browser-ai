@@ -13,7 +13,7 @@ for (const id of [
   'trozal3DAnimation','trozal3DSpeed','trozal3DAmount','trozal3DPlay','trozal3DPause',
   'trozal3DStop','trozal3DTime','trozal3DLoop','trozal3DDuration','trozal3DFps',
   'trozal3DSave','trozal3DExportJson','trozal3DExportPng','trozal3DParent','trozal3DAddKeyframe','trozal3DKeyframeInfo','trozal3DLightingControls',
-  'trozal3DRenderer','trozal3DCanvas2D','trozal3DCameraTools','trozal3DCameraProjection','trozal3DCameraFocus','trozal3DCameraFront','trozal3DCameraSide','trozal3DCameraTop','trozal3DOrthoScale'
+  'trozal3DSnapEnabled','trozal3DSnapMove','trozal3DSnapRotate','trozal3DSnapScale','trozal3DRenderer','trozal3DCanvas2D','trozal3DCameraTools','trozal3DCameraProjection','trozal3DCameraFocus','trozal3DCameraFront','trozal3DCameraSide','trozal3DCameraTop','trozal3DOrthoScale'
 ]) assert.ok(source.includes('id=\''+id+'\'') || source.includes('id="'+id+'"') || source.includes(".id='"+id+"'"), 'Missing CANVAS 3D control: '+id);
 for (const token of [
   "getContext('webgl2'", 'drawArrays(gl.TRIANGLES', 'drawArrays(gl.LINES',
@@ -25,9 +25,12 @@ for (const token of [
   'pointerdown','pointermove','addEventListener(\'wheel\'', 'function drawCanvas2D(time,force)', 'function setRenderer(choice)', 'function projectPoint(matrix,p)', 'function initCanvas2D()'
 ]) assert.ok(source.includes(token), 'Missing 3D renderer feature: '+token);
 assert.ok(source.includes("Object.defineProperty(window,'TROZAL_CANVAS_3D'"), 'CANVAS 3D must expose its public scene API.');
+assert.ok(source.includes('function snapValue(') && source.includes('transformSnap:{...state.transformSnap}'), 'Transform snapping must be implemented and serialized.');
+assert.ok(source.includes("$('trozal3DSnapEnabled').addEventListener('change'") && source.includes("$('trozal3DSnap'+label).addEventListener('change'") && source.includes("[['Move','move'],['Rotate','rotate'],['Scale','scale']]"), 'Snap toggle and per-transform increments must be wired through the shared control loop.');
 const terminal = fs.readFileSync(path.join(__dirname, '..', 'canvas-3d-terminal.js'), 'utf8');
 assert.ok(html.includes('./canvas-3d-terminal.js'), 'Canvas 3D terminal must be loaded by the main application.');
 assert.ok(terminal.includes("addEventListener('paste'") && terminal.includes("getData('text/plain')") && terminal.includes('setRangeText'), 'Terminal must explicitly support pasting plain-text JavaScript and JSON into the editor.');
+assert.ok(terminal.includes('id="t3dTerminalPaste"') && terminal.includes('navigator.clipboard.readText'), 'Terminal must expose a visible clipboard Paste action for JavaScript and JSON.');
 assert.ok(source.includes("document.querySelector('.topbar .topright')"), 'CANVAS 3D launcher must attach to the Browser AI topbar when available.');
 assert.ok(source.includes("PNG snapshot exported · ") && source.includes('canvas.width') && source.includes('canvas.height') && source.includes('b.size'), 'PNG export must report actual snapshot dimensions and byte count.');
 assert.match(source, /WebGL2 tidak tersedia/);
@@ -54,6 +57,7 @@ assert.ok(source.includes("if(state.renderer==='webgpu')recoverRenderer('webgpu'
 assert.ok(source.includes("function resize(){const viewport=$('trozal3DViewport')") && source.includes("'trozal3DCanvas','trozal3DCanvas2D','trozal3DCanvasGL1','trozal3DCanvasGPU'"), 'All four canvases must share the same viewport pixel dimensions.');
 assert.ok(!source.includes("Auto (WebGL2 → WebGL1 → CPU)"), 'Outdated auto renderer label must be removed.');
 assert.ok(source.includes("setRenderer('auto').catch"), 'Opening Canvas 3D must invoke the automatic backend selector.');
+assert.ok(source.includes("Requested '+requested.toUpperCase()") && source.includes('secure context (HTTPS/localhost)'), 'Failed WebGPU selection must remain visible and report the browser/GPU activation requirements.');
 assert.ok(source.includes('state.gl.isContextLost&&state.gl.isContextLost()'), 'WebGL2 backend switching must detect and rebuild a lost context.');
 assert.ok(source.includes('state.gl1.isContextLost&&state.gl1.isContextLost()'), 'WebGL1 backend switching must detect and rebuild a lost context.');
 const engineGroupsSource=fs.readFileSync(path.join(__dirname,'..','browser-render-engine-groups.js'),'utf8');
