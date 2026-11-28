@@ -36,6 +36,7 @@ function glbFixture() {
  const obj='o Triangle\nv -1 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n';
  await page.locator('#t3dMultiFile').setInputFiles({name:'triangle.obj',mimeType:'text/plain',buffer:Buffer.from(obj)});
  await page.waitForFunction(()=>!document.getElementById('t3dMultiApply').disabled);
+ assert.equal(await page.locator('#t3dMultiPreview canvas').count(),1,'Model must have a visual preview before Apply.');
  await page.locator('#t3dMultiApply').click();
  let imported=await page.evaluate(()=>TROZAL_CANVAS_3D.getProject().objects.at(-1));
  assert.equal(imported.type,'mesh');assert.equal(imported.meshData.positions.length,9);
@@ -57,6 +58,19 @@ function glbFixture() {
  // Mesh remains serializable and transformable through the same scene API.
  await page.evaluate(()=>{const p=TROZAL_CANVAS_3D.getProject();const o=p.objects.find(x=>x.type==='mesh');o.x=1.25;TROZAL_CANVAS_3D.applyProject(p);});
  assert.equal(await page.evaluate(()=>TROZAL_CANVAS_3D.getProject().objects.find(x=>x.type==='mesh').x),1.25);
+
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/kQAAAABJRU5ErkJggg==','base64');
+ await page.locator('#t3dMultiMode').selectOption('texture');
+ await page.locator('#t3dMultiFile').setInputFiles({name:'tiny.png',mimeType:'image/png',buffer:png});
+ await page.waitForFunction(()=>!document.getElementById('t3dMultiApply').disabled);
+ assert.equal(await page.locator('#t3dMultiPreview img').count(),1,'Texture must preview before Apply.');
+ await page.locator('#t3dMultiApply').click();
+ assert.ok(await page.evaluate(()=>TROZAL_CANVAS_3D.getProject().objects.find(x=>x.id===TROZAL_CANVAS_3D.getProject().selected)?.textureDataUrl?.startsWith('data:image/png;base64,')),'Texture should persist on selected material.');
+ await page.locator('#t3dMultiMode').selectOption('hdri');
+ await page.locator('#t3dMultiFile').setInputFiles({name:'studio.png',mimeType:'image/png',buffer:png});
+ await page.waitForFunction(()=>!document.getElementById('t3dMultiApply').disabled);
+ await page.locator('#t3dMultiApply').click();
+ assert.ok(await page.evaluate(()=>TROZAL_CANVAS_3D.getProject().hdriDataUrl?.startsWith('data:image/png;base64,')),'HDRI image should persist in Scene.');
 
  // HTML/SVG preview is sandboxed and cannot apply as a 3D scene.
  await page.locator('#t3dMultiMode').selectOption('html');
