@@ -193,6 +193,12 @@ jobs:
       - name: Test Canvas 3D AI Theme Studio and JavaScript / JSON Terminal
         run: node tests/canvas-3d-ai-theme-terminal.browser.cjs
 
+      - name: Test CANVAS 3D Multi Preview Gallery and scene isolation
+        run: |
+          node --check canvas-3d-preview-renderer.js
+          node --check canvas-3d-multi-preview.js
+          node --check tests/canvas-3d-multi-preview-gallery.browser.cjs
+          node tests/canvas-3d-multi-preview-gallery.browser.cjs
       - name: Test CANVAS 3D Multi Terminal formats and imported mesh rendering
         run: |
           node --check canvas-3d-multi-terminal.js

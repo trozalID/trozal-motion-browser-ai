@@ -21,7 +21,8 @@ function updateTheme(){
  const rows=[['Tujuan visual',p.purpose||'Bangun satu hero 3D yang relevan dan konsisten dengan tema utama.'],['Objek & aset',p.assets||'Pilih objek 3D yang benar-benar relevan dengan subtema.'],['Palet warna',p.palette||'Gunakan warna dominan, pendukung, dan aksen yang terkontrol.'],['Komposisi',p.composition||'Tetapkan focal object, hierarki, ruang negatif, dan kedalaman kamera.'],['Gerakan',p.motion||'Bangun establishing pose, reveal hero, detail motion, dan end pose.'],['Hindari',p.avoid||'Hindari elemen acak dan klaim visual tanpa dasar.']];
  $('trozal3DAIThemeSpecs').replaceChildren(...rows.map(r=>{const box=document.createElement('div'),b=document.createElement('b'),span=document.createElement('span');b.textContent=r[0];span.textContent=r[1];box.append(b,span);return box;}));
 }
-function render(){
+function publishConcepts(){window.TROZAL_CANVAS3D_CONCEPTS=concepts.map(item=>({title:item.title,pitch:item.pitch,scene:item.scene}));window.dispatchEvent(new CustomEvent('trozal:canvas3d-concepts-change'));}
+function render(){publishConcepts();
  const host=$('trozal3DAIThemeConcepts');host.replaceChildren();
  concepts.forEach((item,i)=>{const card=document.createElement('article');card.className='t3d-theme-concept';const pick=document.createElement('button');pick.type='button';pick.dataset.concept=String(i);pick.setAttribute('aria-pressed',String(i===selected));pick.textContent=(i+1)+'. '+item.title;const desc=document.createElement('p');desc.textContent=item.pitch||'Konsep 3D dari tema terpilih.';const apply=document.createElement('button');apply.type='button';apply.className='primary';apply.dataset.applyConcept=String(i);apply.textContent='Terapkan konsep';card.append(pick,desc,apply);host.appendChild(card);});
 }
@@ -77,7 +78,7 @@ async function generate(){
  const button=$('trozal3DAIThemeGenerate');if(button.disabled)return;
  if(!window.trozalBrowserAI||typeof window.trozalBrowserAI.generateText!=='function'){status('BROWSER AI belum siap. Periksa provider AI.',true);return;}
  if(!$('trozal3DAITheme').value){status('Pilih tema utama dahulu.',true);return;}
- button.disabled=true;concepts=[];selected=0;$('trozal3DAIThemeConcepts').replaceChildren();let failure='';
+ button.disabled=true;concepts=[];publishConcepts();selected=0;$('trozal3DAIThemeConcepts').replaceChildren();let failure='';
  try{
   if(!window.TROZAL_CANVAS_3D)throw Error('Canvas 3D belum siap.');
   for(let index=0;index<3;index++){

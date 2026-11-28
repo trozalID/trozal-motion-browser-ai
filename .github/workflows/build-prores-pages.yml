@@ -30,6 +30,9 @@ on:
       - 'canvas-3d-ai-theme-studio.js'
       - 'canvas-3d-terminal.js'
       - 'canvas-3d-multi-terminal.js'
+      - 'canvas-3d-preview-renderer.js'
+      - 'canvas-3d-multi-preview.js'
+      - 'tests/canvas-3d-multi-preview-gallery.browser.cjs'
       - 'browser-render-engine-groups.js'
       - 'logo-studio.js'
       - 'tests/logo-studio.browser.cjs'
@@ -99,6 +102,8 @@ jobs:
           cp canvas-3d-ai-theme-studio.js site/canvas-3d-ai-theme-studio.js
           cp canvas-3d-terminal.js site/canvas-3d-terminal.js
           cp canvas-3d-multi-terminal.js site/canvas-3d-multi-terminal.js
+          cp canvas-3d-preview-renderer.js site/canvas-3d-preview-renderer.js
+          cp canvas-3d-multi-preview.js site/canvas-3d-multi-preview.js
           cp browser-render-engine-groups.js site/browser-render-engine-groups.js
           cp icon-logo-motion-studio.js site/icon-logo-motion-studio.js
           touch site/.nojekyll
@@ -227,6 +232,11 @@ jobs:
           test -s site/icon-logo-motion-studio.js
           test -s site/canvas-3d-studio.js
           test -s site/canvas-3d-multi-terminal.js
+          node --check site/canvas-3d-multi-terminal.js
+          test -s site/canvas-3d-preview-renderer.js
+          node --check site/canvas-3d-preview-renderer.js
+          test -s site/canvas-3d-multi-preview.js
+          node --check site/canvas-3d-multi-preview.js
           node --check site/canvas-3d-multi-terminal.js
           test -s site/browser-render-engine-groups.js
           node --check site/browser-render-engine-groups.js
