@@ -1,6 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
+
 (async () => {
   const browser = await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist']});
   try {
@@ -12,8 +13,14 @@ const { chromium } = require('playwright');
     await dock.waitFor({state:'visible'});
     const ratio=page.locator('#trozalGlobalPreviewRatio');
     await ratio.selectOption('9:16');
-    await page.waitForFunction(()=>document.getElementById('stage')?.style.aspectRatio==='9/16');
-    assert.equal(await page.locator('#stage').evaluate(el=>el.style.aspectRatio),'9/16','Main preview must adopt portrait ratio.');
+    // CSSOM canonicalizes aspect-ratio serialization with optional spaces.
+    // Compare normalized values rather than relying on browser-specific formatting.
+    await page.waitForFunction(()=>{
+      const value=document.getElementById('stage')?.style.aspectRatio||'';
+      return value.replace(/\\s+/g,'')==='9/16';
+    });
+    const stageRatio=await page.locator('#stage').evaluate(el=>el.style.aspectRatio.replace(/\\s+/g,''));
+    assert.equal(stageRatio,'9/16','Main preview must adopt portrait ratio.');
 
     // Full-screen Canvas 3D must not cover the global aspect-ratio dock.
     await page.waitForSelector('#trozalCanvas3DOpen',{timeout:15000});
