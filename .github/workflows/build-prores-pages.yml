@@ -34,6 +34,8 @@ on:
       - 'canvas-3d-preview-renderer.js'
       - 'canvas-3d-multi-preview.js'
       - 'tests/canvas-3d-multi-preview-gallery.browser.cjs'
+      - 'tests/canvas-3d-skeletal-foundation.test.cjs'
+      - 'tests/canvas-3d-skeletal-foundation.browser.cjs'
       - 'browser-render-engine-groups.js'
       - 'logo-studio.js'
       - 'tests/logo-studio.browser.cjs'
@@ -233,6 +235,8 @@ jobs:
           test -s site/logo-studio.js
           test -s site/icon-logo-motion-studio.js
           test -s site/canvas-3d-studio.js
+          test -s site/canvas-3d-skeletal.js
+          node --check site/canvas-3d-skeletal.js
           test -s site/canvas-3d-multi-terminal.js
           node --check site/canvas-3d-multi-terminal.js
           test -s site/canvas-3d-preview-renderer.js
