@@ -37,6 +37,7 @@ function glbFixture(){
   assert.equal(result.renderer,'webgl2','Skinned asset should switch to the WebGL2 GPU skinning path.');
   assert.equal(result.imported.nodes,3);assert.equal(result.imported.joints,2);assert.equal(result.imported.clips.length,1);
   assert.equal(result.project.skeletalAssets.length,1,'Skeletal asset must survive Scene JSON save/load.');
+  await page.waitForSelector('#t3dMultiOpen',{timeout:10000});
   await page.locator('#t3dMultiOpen').click();
   await page.waitForFunction(()=>document.getElementById('t3dMultiPanel')&&!document.getElementById('t3dMultiPanel').hidden);
   await page.locator('#t3dMultiMode').selectOption('json');
