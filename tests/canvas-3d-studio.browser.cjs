@@ -54,6 +54,18 @@ const { chromium } = require('playwright');
     }
 
     await page.waitForFunction(()=>window.TROZAL_CANVAS_3D?.status?.webgl===true,null,{timeout:15000});
+    const previewQuality=page.locator('#trozal3DPreviewResolution');
+    assert.ok(await previewQuality.count(),'Canvas 3D must expose the preview resolution selector.');
+    for (const [preset,longEdge] of [['480p',854],['720p',1280],['1080p',1920],['1440p',2560],['2160p',3840]]) {
+      await previewQuality.selectOption(preset);
+      const dims=await page.locator('#trozal3DCanvas').evaluate(canvas=>({width:canvas.width,height:canvas.height}));
+      assert.equal(Math.max(dims.width,dims.height),longEdge,'Preview preset '+preset+' must allocate the selected pixel resolution.');
+      assert.ok(dims.width>0&&dims.height>0,'Preview preset '+preset+' must preserve a valid aspect ratio.');
+    }
+    await previewQuality.selectOption('auto');
+    const autoPreview=await page.locator('#trozal3DCanvas').evaluate(canvas=>({width:canvas.width,height:canvas.height}));
+    assert.ok(autoPreview.width>0&&autoPreview.height>0,'Auto preview resolution must restore device-scaled viewport rendering.');
+    assert.match(await page.locator('#trozal3DPreviewResolutionInfo').innerText(),/^\\d+ × \\d+ px$/,'Preview resolution readout must show the actual backing-buffer dimensions.');
     const initial=await page.evaluate(()=>window.TROZAL_CANVAS_3D.getProject());
     assert.equal(initial.objects.length,3,'The starter 3D scene should contain three independently editable meshes.');
     const texturePng=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=','base64');
