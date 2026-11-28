@@ -33,7 +33,7 @@ assert.ok(source.includes("getContext('2d'") && source.includes('value="canvas2d
 assert.ok(source.includes("state.renderer==='canvas2d'"), 'PNG export must use the active renderer canvas.');
 assert.doesNotMatch(source, /three\.min\.js|cdnjs\.cloudflare\.com\/ajax\/libs\/three/i,
   'CANVAS 3D must not depend on an external Three.js CDN.');
-assert.ok(source.includes('function easingProgress(u,mode)'), 'Keyframe easing evaluator must be present.');
+assert.ok(source.includes('function easingProgress(u,mode)'), 'Keyframe easing evaluator must be present.');\nassert.ok(source.includes('uColor*(.28+.16*uLight)') && source.includes('uColor*(0.28+0.16*uLight)'), 'WebGL2 and WebGL1 must retain the brighter ambient baseline.');\nassert.ok(source.includes('let diffuse=.28;') && source.includes('diffuse+state.light*.16'), 'Canvas2D software renderer must retain the brighter ambient baseline.');
 assert.ok(source.includes("case 'ease-in'" ) && source.includes("case 'ease-out'") && source.includes("case 'ease-in-out'") && source.includes("case 'smoothstep'") && source.includes("case 'hold'"), 'All supported interpolation modes must be implemented.');
 assert.ok(source.includes('trozal3DKeyframeEasing') && source.includes("easing:$(\'trozal3DKeyframeEasing\')?.value||\'ease-in-out\'"), 'Keyframe easing must be selectable and saved per keyframe.');
 assert.ok(source.includes("b.easing||a.easing||'linear'"), 'Each keyframe segment must apply its stored easing with a linear fallback for old projects.');
