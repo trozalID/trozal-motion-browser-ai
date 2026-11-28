@@ -27,7 +27,8 @@ function mount(){
   $('t3dTerminalCodeMode').textContent=js?'JavaScript · return Scene JSON v2':'JSON · schema version 2';
   $('t3dTerminalValidate').textContent=js?'Jalankan & Validasi JS':'Validasi JSON';$('t3dTerminalSave').textContent=js?'Simpan .JS':'Simpan .JSON';reset();
  });
- $('t3dTerminalCode').addEventListener('input',reset);\n $('t3dTerminalCode').addEventListener('paste',event=>{const pasted=event.clipboardData&&event.clipboardData.getData('text/plain');if(typeof pasted!=='string'||!pasted)return;event.preventDefault();const editor=event.currentTarget,start=editor.selectionStart,end=editor.selectionEnd;editor.setRangeText(pasted,start,end,'end');editor.dispatchEvent(new Event('input',{bubbles:true}));status('Kode berhasil ditempel · '+pasted.length+' karakter.');});
+ $('t3dTerminalCode').addEventListener('input',reset);
+ $('t3dTerminalCode').addEventListener('paste',event=>{const pasted=event.clipboardData&&event.clipboardData.getData('text/plain');if(typeof pasted!=='string'||!pasted)return;event.preventDefault();const editor=event.currentTarget,start=editor.selectionStart,end=editor.selectionEnd;editor.setRangeText(pasted,start,end,'end');editor.dispatchEvent(new Event('input',{bubbles:true}));status('Kode berhasil ditempel · '+pasted.length+' karakter.');});
  $('t3dTerminalThemeBrief').addEventListener('click',themeBrief);
  $('t3dTerminalGenerate').addEventListener('click',generate);
  $('t3dTerminalValidate').addEventListener('click',validateEditor);
