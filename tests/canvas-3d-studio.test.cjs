@@ -13,7 +13,7 @@ for (const id of [
   'trozal3DAnimation','trozal3DSpeed','trozal3DAmount','trozal3DPlay','trozal3DPause',
   'trozal3DStop','trozal3DTime','trozal3DLoop','trozal3DDuration','trozal3DFps',
   'trozal3DSave','trozal3DExportJson','trozal3DExportPng','trozal3DParent','trozal3DAddKeyframe','trozal3DKeyframeInfo','trozal3DLightingControls',
-  'trozal3DSnapEnabled','trozal3DSnapMove','trozal3DSnapRotate','trozal3DSnapScale','trozal3DRenderer','trozal3DCanvas2D','trozal3DCameraTools','trozal3DCameraProjection','trozal3DCameraFocus','trozal3DCameraFront','trozal3DCameraSide','trozal3DCameraTop','trozal3DOrthoScale','trozal3DHdriFile','trozal3DHdriIntensity','trozal3DHdriRemove','trozal3DHdriInfo'
+  'trozal3DSnapEnabled','trozal3DSnapMove','trozal3DSnapRotate','trozal3DSnapScale','trozal3DRenderer','trozal3DCanvas2D','trozal3DCameraTools','trozal3DCameraProjection','trozal3DCameraFocus','trozal3DCameraFront','trozal3DCameraSide','trozal3DCameraTop','trozal3DOrthoScale','trozal3DHdriFile','trozal3DHdriIntensity','trozal3DHdriRemove','trozal3DHdriInfo','trozal3DObjectInterpolation','trozal3DPathInterpolation','trozal3DPathClosed','trozal3DAddPathPoint','trozal3DClearPath'
 ]) assert.ok(source.includes('id=\''+id+'\'') || source.includes('id="'+id+'"') || source.includes(".id='"+id+"'"), 'Missing CANVAS 3D control: '+id);
 for (const token of [
   "getContext('webgl2'", 'drawArrays(gl.TRIANGLES', 'drawArrays(gl.LINES',
@@ -48,6 +48,12 @@ assert.ok(source.includes("state.renderer==='canvas2d'"), 'PNG export must use t
 assert.doesNotMatch(source, /three\.min\.js|cdnjs\.cloudflare\.com\/ajax\/libs\/three/i,
   'CANVAS 3D must not depend on an external Three.js CDN.');
 assert.ok(source.includes('function easingProgress(u,mode)'), 'Keyframe easing evaluator must be present.');
+assert.ok(source.includes('function motionPathPosition(o,t)') && source.includes("path.interpolation==='catmull-rom'"), '3D motion path must support linear and Catmull-Rom interpolation.');
+assert.ok(source.includes("o.animation==='orbit3d'") && source.includes('Math.sin(phase*2)') && source.includes('Math.cos(phase)'), '3-axis orbit must animate X, Y and Z.');
+assert.ok(source.includes("o.interpolation||'linear'") && source.includes('trozal3DObjectInterpolation'), 'Each object must retain its own default interpolation.');
+assert.ok(source.includes('item.motionPath=') && source.includes('easing:[\'linear\''), 'Motion paths and per-keyframe easing must survive Scene JSON validation.');
+assert.ok(source.includes('evaluateObjectTransform(id,time)'), 'Browser regression tests must be able to evaluate the object transform deterministically.');
+assert.ok(source.includes('trozal3DPathClosed') && source.includes('trozal3DClearPath'), 'Motion path loop and clear controls must be mounted.');
 assert.ok(source.includes('base*(.28+.16*uLight)') && source.includes('base*(0.28+0.16*uLight)'), 'WebGL2 and WebGL1 must retain the brighter ambient baseline with optional image textures.');
 const engineGroups = fs.readFileSync(path.join(__dirname, '..', 'browser-render-engine-groups.js'), 'utf8');
 assert.ok(engineGroups.includes('window.TrozalMotion2DRenderEngines') && engineGroups.includes('function render2D(source,width,height)'), '2D engine selection must expose a real raster render adapter.');
@@ -55,7 +61,7 @@ assert.ok(engineGroups.includes("if(group==='3D RENDER'&&item.integrated&&item.s
 assert.ok(source.includes('let diffuse=.28;') && source.includes('diffuse+state.light*.16'), 'Canvas2D software renderer must retain the brighter ambient baseline.');
 assert.ok(source.includes("case 'ease-in'" ) && source.includes("case 'ease-out'") && source.includes("case 'ease-in-out'") && source.includes("case 'smoothstep'") && source.includes("case 'hold'"), 'All supported interpolation modes must be implemented.');
 assert.ok(source.includes('trozal3DKeyframeEasing') && source.includes("easing:$(\'trozal3DKeyframeEasing\')?.value||\'ease-in-out\'"), 'Keyframe easing must be selectable and saved per keyframe.');
-assert.ok(source.includes("b.easing||a.easing||'linear'"), 'Each keyframe segment must apply its stored easing with a linear fallback for old projects.');
+assert.ok(source.includes("b.easing||a.easing||o.interpolation||'linear'"), 'Each keyframe segment must apply stored easing, then object interpolation, then legacy linear fallback.');
 assert.ok(source.includes("const order=['webgpu','webgl2','webgl1','canvas2d']"), 'Auto renderer must prefer WebGPU, then WebGL2, WebGL1 and Canvas 2D.');
 assert.ok(source.includes("Auto (WebGPU → WebGL2 → WebGL1 → CPU)"), 'Renderer selector must show the actual automatic fallback order.');
 assert.ok(source.includes("function recoverRenderer(excluded,reason)"), 'GPU/device or WebGL context loss must activate the next available backend.');
