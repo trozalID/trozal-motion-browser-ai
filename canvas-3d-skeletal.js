@@ -84,6 +84,7 @@ async function readContainer(files,rootFile){
  else fail('supported skeletal files: GLB and glTF 2.0.');
  if(!json.asset||String(json.asset.version)!=='2.0')fail('asset.version must be 2.0.');
  if(!Array.isArray(json.skins)||!json.skins.length)return {json,buffers:[]};
+ for(let i=0;i<(json.nodes||[]).length;i++){const node=json.nodes[i];if(node.skin!==undefined&&(!Number.isInteger(node.skin)||node.skin<0||node.skin>=json.skins.length))fail('node '+i+' references a missing skin.');}
  const buffers=[];
  for(let i=0;i<(json.buffers||[]).length;i++){
   const def=json.buffers[i];let bytes;
