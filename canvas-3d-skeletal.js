@@ -62,9 +62,10 @@ function dataUri(uri){
  if(/;base64/i.test(meta))return decodeBase64(body);
  const decoded=decodeURIComponent(body);return new TextEncoder().encode(decoded).buffer;
 }
-async function readContainer(files,rootFile){
+async async function readContainer(files,rootFile){
  if(!rootFile)fail('select a .glb or .gltf file.');
- const list=Array.from(files||[]),map=new Map(list.map(f=>[String(f.name).toLowerCase(),f]));
+ const list=Array.from(files||[]),totalBytes=list.reduce((sum,file)=>sum+(Number(file.size)||0),0);if(totalBytes>MAX_FILE_BYTES)fail('combined GLB/glTF and external buffer files exceed 40 MB.');
+ const map=new Map(list.map(f=>[String(f.name).toLowerCase(),f]));
  let json=null,binaryChunks=[];
  const rootBytes=await rootFile.arrayBuffer();if(rootBytes.byteLength>MAX_FILE_BYTES)fail('file exceeds 40 MB limit.');
  const ext=String(rootFile.name).split('.').pop().toLowerCase();
@@ -86,7 +87,7 @@ async function readContainer(files,rootFile){
  for(let i=0;i<(json.buffers||[]).length;i++){
   const def=json.buffers[i];let bytes;
   if(def.uri&&def.uri.startsWith('data:'))bytes=dataUri(def.uri);
-  else if(def.uri){const decoded=decodeURIComponent(def.uri.split(/[?#]/)[0]),name=decoded.split('/').pop().toLowerCase(),file=map.get(name);if(!file)fail('external buffer "'+name+'" is missing. Select the .gltf and its .bin file together.');bytes=await file.arrayBuffer();}
+  else if(def.uri){const decoded=decodeURIComponent(def.uri.split(/[?#]/)[0]),name=decoded.split('/').pop().toLowerCase(),file=map.get(name);if(!file)fail('external buffer "'+name+'" is missing. Select the .gltf and its .bin file together.');if(Number(file.size)>MAX_FILE_BYTES)fail('external buffer exceeds 40 MB.');bytes=await file.arrayBuffer();}
   else if(binaryChunks[i])bytes=binaryChunks[i];
   else if(binaryChunks.length===1)bytes=binaryChunks[0];
   else fail('buffer '+i+' has no embedded data.');
@@ -212,10 +213,12 @@ function buildAnimations(json,read,nodes){
    if(sampler.outputSize!==expected||sampler.output.length!==expectedCount*expected)fail('animation '+index+' channel '+ci+' output size does not match '+path+'.');
    channels.push({node,path,sampler:channel.sampler});
   });
-  if(!channels.length)fail('animation '+index+' contains no supported translation/rotation/scale channels.');
+  // Clips containing only morph-target weights are intentionally skipped in this first skeletal release.
+  if(!channels.length)return null;
+  if(!samplers.length)fail('animation '+index+' contains channels but no samplers.');
   const start=Math.min(...samplers.map(s=>s.times[0]||0)),end=Math.max(...samplers.map(s=>s.times[s.times.length-1]||0));
   return {name:String(animation.name||('Animation '+(index+1))).slice(0,72),samplers,channels,start,duration:Math.max(.001,end-start)};
- });
+ }).filter(Boolean);
 }
 function quatLerp(a,b,t){return quatSlerp(a,b,t);}
 function sampleSampler(sampler,time,path){
@@ -257,14 +260,56 @@ function boundsAndRoot(asset){
 function sanitizeAsset(raw){
  if(!raw||raw.version!==1||!Array.isArray(raw.nodes)||!Array.isArray(raw.skins)||!Array.isArray(raw.primitives)||!Array.isArray(raw.animations))fail('skeletal asset structure/version is invalid.');
  if(raw.nodes.length<1||raw.nodes.length>MAX_NODES||raw.skins.length<1||raw.skins.length>MAX_SKINS||raw.primitives.length<1||raw.primitives.length>MAX_PRIMITIVES||raw.animations.length>MAX_ANIMATIONS)fail('skeletal asset count exceeds supported limits.');
- const nodes=raw.nodes.map((n,i)=>{if(!n||!Number.isInteger(n.parent===null?null:n.parent)&&n.parent!==null)fail('node '+i+' parent index invalid.');if(n.parent!==null&&(n.parent<0||n.parent>=raw.nodes.length||n.parent===i))fail('node '+i+' parent is out of range.');return {name:String(n.name||('Node '+(i+1))),parent:n.parent,children:Array.isArray(n.children)?n.children.slice():[],mesh:n.mesh==null?null:Number(n.mesh),skin:n.skin==null?null:Number(n.skin),translation:(n.translation||[0,0,0]).map(Number),rotation:normalizeQuat((n.rotation||[0,0,0,1]).map(Number)),scale:(n.scale||[1,1,1]).map(Number),matrix:n.matrix?n.matrix.map(Number):null};});
- nodes.forEach((n,i)=>{if([...n.translation,...n.rotation,...n.scale].some(v=>!Number.isFinite(v))||(n.matrix&& (n.matrix.length!==16||n.matrix.some(v=>!Number.isFinite(v)))))fail('node '+i+' transform invalid.');});
- const skins=raw.skins.map((s,i)=>{if(!Array.isArray(s.joints)||s.joints.length<1||s.joints.length>MAX_JOINTS||!Array.isArray(s.inverseBindMatrices)||s.inverseBindMatrices.length!==s.joints.length*16)fail('skin '+i+' data invalid.');if(s.joints.some(j=>!Number.isInteger(j)||j<0||j>=nodes.length))fail('skin '+i+' joint node out of range.');finiteArray(s.inverseBindMatrices,'inverse bind matrices',MAX_JOINTS*16);return {name:String(s.name||('Skin '+(i+1))),joints:s.joints.slice(),skeleton:s.skeleton==null?null:Number(s.skeleton),inverseBindMatrices:s.inverseBindMatrices.map(Number)};});
+ const nodes=raw.nodes.map((n,i)=>{
+  if(!n||!Number.isInteger(n.parent===null?null:n.parent)&&n.parent!==null)fail('node '+i+' parent index invalid.');
+  if(n.parent!==null&&(n.parent<0||n.parent>=raw.nodes.length||n.parent===i))fail('node '+i+' parent is out of range.');
+  const node={name:String(n.name||('Node '+(i+1))),parent:n.parent,children:Array.isArray(n.children)?n.children.slice():[],mesh:n.mesh==null?null:Number(n.mesh),skin:n.skin==null?null:Number(n.skin),translation:(n.translation||[0,0,0]).map(Number),rotation:normalizeQuat((n.rotation||[0,0,0,1]).map(Number)),scale:(n.scale||[1,1,1]).map(Number),matrix:n.matrix?n.matrix.map(Number):null};
+  if(node.children.some(child=>!Number.isInteger(child)||child<0||child>=raw.nodes.length))fail('node '+i+' children array contains an invalid node index.');
+  return node;
+ });
+ nodes.forEach((n,i)=>{if([...n.translation,...n.rotation,...n.scale].some(v=>!Number.isFinite(v))||(n.matrix&&(n.matrix.length!==16||n.matrix.some(v=>!Number.isFinite(v)))))fail('node '+i+' transform invalid.');});
+ const skins=raw.skins.map((s,i)=>{
+  if(!Array.isArray(s.joints)||s.joints.length<1||s.joints.length>MAX_JOINTS||!Array.isArray(s.inverseBindMatrices)||s.inverseBindMatrices.length!==s.joints.length*16)fail('skin '+i+' data invalid.');
+  if(s.joints.some(j=>!Number.isInteger(j)||j<0||j>=nodes.length))fail('skin '+i+' joint node out of range.');
+  if(s.skeleton!=null&&(!Number.isInteger(Number(s.skeleton))||Number(s.skeleton)<0||Number(s.skeleton)>=nodes.length))fail('skin '+i+' skeleton node out of range.');
+  finiteArray(s.inverseBindMatrices,'inverse bind matrices',MAX_JOINTS*16);
+  return {name:String(s.name||('Skin '+(i+1))),joints:s.joints.slice(),skeleton:s.skeleton==null?null:Number(s.skeleton),inverseBindMatrices:s.inverseBindMatrices.map(Number)};
+ });
+ nodes.forEach((node,i)=>{if(node.skin!==null&&(!Number.isInteger(node.skin)||node.skin<0||node.skin>=skins.length))fail('node '+i+' references a missing skin.');});
+ // Resolve every node once to reject cycles before any GPU resources are created.
+ const restLocals=nodes.map(n=>n.matrix?n.matrix.slice():composeTRS(n.translation,n.rotation,n.scale));
+ worldMatrices(nodes,restLocals);
  let vertexCount=0;
- const primitives=raw.primitives.map((p,i)=>{if(!Number.isInteger(p.nodeIndex)||p.nodeIndex<0||p.nodeIndex>=nodes.length||!Number.isInteger(p.skinIndex===null?null:p.skinIndex)&&p.skinIndex!==null)fail('primitive '+i+' node/skin reference invalid.');if(p.skinIndex!==null&&(p.skinIndex<0||p.skinIndex>=skins.length||nodes[p.nodeIndex].skin!==p.skinIndex))fail('primitive '+i+' skin binding invalid.');const n=p.positions?.length/3;if(!Number.isInteger(n)||n<3||!Array.isArray(p.normals)||p.normals.length!==n*3||!Array.isArray(p.uvs)||p.uvs.length!==n*2||!Array.isArray(p.joints)||p.joints.length!==n*4||!Array.isArray(p.weights)||p.weights.length!==n*4)fail('primitive '+i+' vertex attribute lengths invalid.');vertexCount+=n;if(vertexCount>MAX_VERTICES)fail('asset vertex count exceeds limit.');for(const [a,name] of [[p.positions,'positions'],[p.normals,'normals'],[p.uvs,'UV'],[p.joints,'joint indices'],[p.weights,'weights']])finiteArray(a,'primitive '+i+' '+name,MAX_VERTICES*4);if(p.skinIndex!==null){for(let k=0;k<p.joints.length;k++)if(!Number.isInteger(p.joints[k])||p.joints[k]<0||p.joints[k]>=skins[p.skinIndex].joints.length)fail('primitive '+i+' joint index invalid.');}return {name:String(p.name||('Primitive '+(i+1))),nodeIndex:p.nodeIndex,skinIndex:p.skinIndex,sourceMesh:Number(p.sourceMesh||0),sourcePrimitive:Number(p.sourcePrimitive||0),material:p.material==null?null:Number(p.material),positions:p.positions.map(Number),normals:p.normals.map(Number),uvs:p.uvs.map(Number),joints:p.joints.map(Number),weights:p.weights.map(Number),vertexCount:n};});
- const animations=raw.animations.map((a,i)=>{const samplers=a.samplers||[],channels=a.channels||[];if(channels.length>4096)fail('animation '+i+' channel count exceeds limit.');return {name:String(a.name||('Animation '+(i+1))),start:Number(a.start)||0,duration:Math.max(.001,Number(a.duration)||.001),samplers:samplers.map(s=>({times:s.times.map(Number),output:s.output.map(Number),outputSize:Number(s.outputSize),interpolation:s.interpolation})),channels:channels.map(c=>({node:Number(c.node),path:c.path,sampler:Number(c.sampler)}))};});
+ const primitives=raw.primitives.map((p,i)=>{
+  if(!Number.isInteger(p.nodeIndex)||p.nodeIndex<0||p.nodeIndex>=nodes.length||!Number.isInteger(p.skinIndex===null?null:p.skinIndex)&&p.skinIndex!==null)fail('primitive '+i+' node/skin reference invalid.');
+  if(p.skinIndex!==null&&(p.skinIndex<0||p.skinIndex>=skins.length||nodes[p.nodeIndex].skin!==p.skinIndex))fail('primitive '+i+' skin binding invalid.');
+  const n=p.positions?.length/3;
+  if(!Number.isInteger(n)||n<3||!Array.isArray(p.normals)||p.normals.length!==n*3||!Array.isArray(p.uvs)||p.uvs.length!==n*2||!Array.isArray(p.joints)||p.joints.length!==n*4||!Array.isArray(p.weights)||p.weights.length!==n*4)fail('primitive '+i+' vertex attribute lengths invalid.');
+  vertexCount+=n;if(vertexCount>MAX_VERTICES)fail('asset vertex count exceeds limit.');
+  for(const [a,name] of [[p.positions,'positions'],[p.normals,'normals'],[p.uvs,'UV'],[p.joints,'joint indices'],[p.weights,'weights']])finiteArray(a,'primitive '+i+' '+name,MAX_VERTICES*4);
+  if(p.skinIndex!==null){
+   for(let k=0;k<p.joints.length;k++)if(!Number.isInteger(p.joints[k])||p.joints[k]<0||p.joints[k]>=skins[p.skinIndex].joints.length)fail('primitive '+i+' joint index invalid.');
+   for(let k=0;k<p.weights.length;k+=4){const w=p.weights.slice(k,k+4);if(w.some(v=>v<0)||w.reduce((sum,v)=>sum+v,0)<=1e-8)fail('primitive '+i+' contains invalid skin weights.');}
+  }
+  return {name:String(p.name||('Primitive '+(i+1))),nodeIndex:p.nodeIndex,skinIndex:p.skinIndex,sourceMesh:Number(p.sourceMesh||0),sourcePrimitive:Number(p.sourcePrimitive||0),material:p.material==null?null:Number(p.material),positions:p.positions.map(Number),normals:p.normals.map(Number),uvs:p.uvs.map(Number),joints:p.joints.map(Number),weights:p.weights.map(Number),vertexCount:n};
+ });
+ const animations=raw.animations.map((a,i)=>{
+  const samplers=a.samplers||[],channels=a.channels||[];if(channels.length>4096)fail('animation '+i+' channel count exceeds limit.');
+  const normalizedSamplers=samplers.map((sampler,si)=>{
+   if(!Array.isArray(sampler.times)||!Array.isArray(sampler.output)||!Number.isInteger(sampler.outputSize)||![3,4].includes(sampler.outputSize))fail('animation '+i+' sampler '+si+' is invalid.');
+   finiteArray(sampler.times,'animation '+i+' sampler timestamps',MAX_VERTICES);
+   finiteArray(sampler.output,'animation '+i+' sampler outputs',MAX_VERTICES*12);
+   if(!sampler.times.length||sampler.times.some((v,k)=>v<0||(k&&v<sampler.times[k-1])))fail('animation '+i+' sampler timestamps must be ascending and non-negative.');
+   const interpolation=['STEP','LINEAR','CUBICSPLINE'].includes(sampler.interpolation)?sampler.interpolation:'LINEAR';
+   const factor=interpolation==='CUBICSPLINE'?3:1;if(sampler.output.length!==sampler.times.length*sampler.outputSize*factor)fail('animation '+i+' sampler output length is invalid.');
+   return {times:sampler.times.map(Number),output:sampler.output.map(Number),outputSize:sampler.outputSize,interpolation};
+  });
+  const normalizedChannels=channels.map(c=>({node:Number(c.node),path:String(c.path),sampler:Number(c.sampler)}));
+  for(const c of normalizedChannels){if(!Number.isInteger(c.node)||c.node<0||c.node>=nodes.length||!['translation','rotation','scale'].includes(c.path)||!Number.isInteger(c.sampler)||c.sampler<0||c.sampler>=normalizedSamplers.length)fail('animation '+i+' channel reference invalid.');if(nodes[c.node].matrix)fail('animated node '+c.node+' must use TRS properties.');const expected=c.path==='rotation'?4:3;if(normalizedSamplers[c.sampler].outputSize!==expected)fail('animation '+i+' channel output size invalid.');}
+  const start=Number(a.start)||0,duration=Number(a.duration);if(!Number.isFinite(start)||!Number.isFinite(duration)||duration<=0)fail('animation '+i+' duration is invalid.');
+  return {name:String(a.name||('Animation '+(i+1))),start,duration,samplers:normalizedSamplers,channels:normalizedChannels};
+ });
  const rootTransform=Array.isArray(raw.rootTransform)&&raw.rootTransform.length===16?raw.rootTransform.map(Number):identity();finiteArray(rootTransform,'root transform',16);
- if(animations.some(a=>a.channels.some(c=>c.node<0||c.node>=nodes.length||!['translation','rotation','scale'].includes(c.path)||c.sampler<0||c.sampler>=a.samplers.length)))fail('animation channels invalid.');
  return {version:1,id:String(raw.id||('skeletal-'+Math.random().toString(36).slice(2,10))),name:String(raw.name||'Imported Skeletal Model').slice(0,96),nodes,skins,primitives,animations,activeClip:Number.isInteger(raw.activeClip)&&raw.activeClip>=0&&raw.activeClip<animations.length?raw.activeClip:0,rootTransform,bounds:raw.bounds||null,warnings:Array.isArray(raw.warnings)?raw.warnings.map(String):[]};
 }
 async function parseFiles(files,rootFile){
