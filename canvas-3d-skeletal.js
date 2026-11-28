@@ -83,6 +83,7 @@ async function readContainer(files,rootFile){
  }else if(ext==='gltf'){json=JSON.parse(new TextDecoder().decode(rootBytes));}
  else fail('supported skeletal files: GLB and glTF 2.0.');
  if(!json.asset||String(json.asset.version)!=='2.0')fail('asset.version must be 2.0.');
+ if(!Array.isArray(json.skins)||!json.skins.length)return {json,buffers:[]};
  const buffers=[];
  for(let i=0;i<(json.buffers||[]).length;i++){
   const def=json.buffers[i];let bytes;
