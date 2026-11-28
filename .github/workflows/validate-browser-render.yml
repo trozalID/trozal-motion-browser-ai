@@ -190,6 +190,8 @@ jobs:
         run: node tests/browser-cloud-ai.browser.cjs
       - name: Test rebuilt CANVAS 3D WebGL2 studio, camera, lighting, timeline and exports
         run: node tests/canvas-3d-studio.browser.cjs
+      - name: Verify global preview aspect ratios across all modes
+        run: node tests/preview-ratio-all-modes.browser.cjs
       - name: Test Canvas 3D AI Theme Studio and JavaScript / JSON Terminal
         run: node tests/canvas-3d-ai-theme-terminal.browser.cjs
 
