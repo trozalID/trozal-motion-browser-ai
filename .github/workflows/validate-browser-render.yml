@@ -137,6 +137,9 @@ jobs:
         run: |
           node tests/workspace-export-preservation.test.cjs
           node --check canvas-3d-studio.js
+          node --check canvas-3d-skeletal.js
+          node --check tests/canvas-3d-skeletal-foundation.test.cjs
+          node tests/canvas-3d-skeletal-foundation.test.cjs
           node --check tests/canvas-3d-studio.test.cjs
           node tests/canvas-3d-studio.test.cjs
           node --check canvas-3d-ai-theme-studio.js
@@ -207,6 +210,12 @@ jobs:
           node --check canvas-3d-studio.js
           node --check tests/canvas-3d-multi-terminal.browser.cjs
           node tests/canvas-3d-multi-terminal.browser.cjs
+      - name: Test GLTF skeletal import, inverse bind matrices and WebGL2 GPU skinning
+        run: |
+          node --check canvas-3d-skeletal.js
+          node --check tests/canvas-3d-skeletal-foundation.browser.cjs
+          node tests/canvas-3d-skeletal-foundation.browser.cjs
+
       - name: Test selectable 2D render engines and Terminal paste in Chromium
         run: |
           node --check tests/canvas-3d-2d-engines-terminal.browser.cjs
