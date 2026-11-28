@@ -78,7 +78,7 @@ async function generate(){
  const button=$('trozal3DAIThemeGenerate');if(button.disabled)return;
  if(!window.trozalBrowserAI||typeof window.trozalBrowserAI.generateText!=='function'){status('BROWSER AI belum siap. Periksa provider AI.',true);return;}
  if(!$('trozal3DAITheme').value){status('Pilih tema utama dahulu.',true);return;}
- button.disabled=true;concepts=[];selected=0;$('trozal3DAIThemeConcepts').replaceChildren();let failure='';
+ button.disabled=true;concepts=[];publishConcepts();selected=0;$('trozal3DAIThemeConcepts').replaceChildren();let failure='';
  try{
   if(!window.TROZAL_CANVAS_3D)throw Error('Canvas 3D belum siap.');
   for(let index=0;index<3;index++){
