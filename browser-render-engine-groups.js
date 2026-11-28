@@ -37,6 +37,35 @@
     {group:'2D / MOTION RENDER',id:'domcss',name:'DOM / CSS Capture',supported:()=>probe('domcss'),integrated:()=>typeof window.htmlToImage!=='undefined'||typeof window.TrozalHybridCanvasRenderer!=='undefined',detail:'Capture HTML/CSS; sumber HTML tetap memakai jalur DOM capture.'},
     {group:'2D / MOTION RENDER',id:'hybrid',name:'Hybrid · Canvas2D + GPU Assist',supported:()=>!!window.TrozalHybridCanvasRenderer,integrated:()=>!!window.TrozalHybridCanvasRenderer,detail:'Benchmark GPU Assist; fallback Canvas2D dipilih otomatis.'}
   ];
+  let selected2D='canvas2d';
+  function makeCanvas(source,width,height){
+    const w=Math.max(1,Math.min(8192,Math.round(Number(width)||1))),h=Math.max(1,Math.min(8192,Math.round(Number(height)||1)));
+    const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext('2d',{alpha:true});if(!ctx)throw new Error('Canvas2D tidak tersedia.');
+    ctx.clearRect(0,0,w,h);ctx.drawImage(source,0,0,w,h);return canvas;
+  }
+  async function svgCanvas(source,width,height){
+    const text=typeof source==='string'?source:new XMLSerializer().serializeToString(source);
+    if(!/<svg[\\s>]/i.test(text))throw new Error('Sumber SVG tidak valid.');
+    const blob=new Blob([text],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob),image=new Image();
+    try{image.src=url;if(image.decode)await image.decode();else await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error('SVG gagal dimuat.'));});return makeCanvas(image,width,height);}
+    finally{URL.revokeObjectURL(url);}
+  }
+  async function select2D(id){
+    if(!['canvas2d','svg','domcss','hybrid'].includes(id))throw new Error('Mesin 2D tidak dikenal: '+id);
+    if(id==='domcss'&&typeof window.htmlToImage==='undefined')throw new Error('DOM/CSS Capture belum tersedia: adapter htmlToImage belum dimuat.');
+    if(id==='hybrid'){if(!window.TrozalHybridCanvasRenderer)throw new Error('Hybrid Canvas belum dimuat.');await window.TrozalHybridCanvasRenderer.prepare();}
+    selected2D=id;window.dispatchEvent(new CustomEvent('trozal:2d-renderer-changed',{detail:{engine:id}}));return {engine:id,ready:true};
+  }
+  async function render2D(source,width,height){
+    if(selected2D==='svg')return svgCanvas(source,width,height);
+    if(selected2D==='domcss'){if(!window.htmlToImage||typeof window.htmlToImage.toCanvas!=='function')throw new Error('Adapter DOM/CSS Capture tidak menyediakan toCanvas().');return window.htmlToImage.toCanvas(source,{canvasWidth:width,canvasHeight:height});}
+    if(selected2D==='hybrid'){
+      const input=typeof source==='string'||(source&&source.namespaceURI==='http://www.w3.org/2000/svg')?await svgCanvas(source,width,height):source;
+      const gpu=window.TrozalGpuFramePipeline&&window.TrozalGpuFramePipeline.render(input,width,height);if(gpu)return gpu;
+    }
+    return makeCanvas(source,width,height);
+  }
   function snapshot(){
     return definitions.map(item=>{
       const supported=!!item.supported();
@@ -65,25 +94,22 @@
           const status=document.createElement('span');status.className='state '+(!item.supported?'off':!item.integrated?'pending':'');status.textContent=item.status;
           const detail=document.createElement('small');detail.textContent=item.detail;
           row.append(name,status,detail);
-          if(group==='3D RENDER'&&item.integrated&&item.supported){
-            const choice=item.id==='cpu3d'?'canvas2d':item.id;
-            const select=document.getElementById('trozal3DRenderer');
+          if(item.integrated&&item.supported&&(group==='3D RENDER'||group==='2D / MOTION RENDER')){
+            const is2D=group==='2D / MOTION RENDER';const choice=is2D?item.id:(item.id==='cpu3d'?'canvas2d':item.id);
+            const select=is2D?null:document.getElementById('trozal3DRenderer');
             const action=document.createElement('button');
             action.type='button';
             action.className='trozal-engine-use';
             action.dataset.engineSelect=choice;
-            action.textContent=select&&select.value===choice?'Aktif':'Gunakan';
+            action.textContent=(is2D?selected2D===choice:select&&select.value===choice)?'Aktif':'Gunakan';
             action.addEventListener('click',async()=>{
               const control=document.getElementById('trozal3DRenderer');
-              if(!control)return;
+              if(!is2D&&!control)return;
               action.disabled=true;
               try{
-                if(window.TROZAL_CANVAS_3D&&typeof window.TROZAL_CANVAS_3D.setRenderer==='function'){
-                  await window.TROZAL_CANVAS_3D.setRenderer(choice);
-                }else{
-                  control.value=choice;
-                  control.dispatchEvent(new Event('change',{bubbles:true}));
-                }
+                if(is2D)await select2D(choice);
+                else if(window.TROZAL_CANVAS_3D&&typeof window.TROZAL_CANVAS_3D.setRenderer==='function')await window.TROZAL_CANVAS_3D.setRenderer(choice);
+                else{control.value=choice;control.dispatchEvent(new Event('change',{bubbles:true}));}
                 refresh();
               }catch(error){
                 const status=document.getElementById('trozal3DStatus');
@@ -106,5 +132,6 @@
   const observer=new MutationObserver(mount);
   observer.observe(document.documentElement,{childList:true,subtree:true});
   mount();
+  window.TrozalMotion2DRenderEngines=Object.freeze({select:select2D,render:render2D,getSelected:()=>selected2D});
   window.TrozalRenderEngineGroups=Object.freeze({getStatus:snapshot,refresh:mount});
 })();
