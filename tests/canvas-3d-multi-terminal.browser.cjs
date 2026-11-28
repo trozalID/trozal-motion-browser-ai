@@ -29,12 +29,31 @@ function glbFixture() {
  assert.equal(api,true,'Canvas 3D API should be ready');
 
  const scene={version:2,duration:6,fps:30,loop:true,objects:[{id:'json-cube',name:'JSON Cube',type:'cube',x:0,y:0,z:0,sx:1,sy:1,sz:1,color:'#36c7dc'}]};
- await page.locator('#t3dMultiMode').selectOption('json');
+ // Auto Detect must classify JSON (including non-Scene JSON) as JSON, never execute it as JavaScript.
+ await page.locator('#t3dMultiMode').selectOption('auto');
+ await page.locator('#t3dMultiCode').fill(JSON.stringify({hello:'plain JSON, not a Scene'}));
+ await page.locator('#t3dMultiValidate').click();
+ await page.waitForFunction(()=>document.getElementById('t3dMultiStatus').textContent.includes('Root JSON harus Scene v2.'));
+ assert.equal(await page.locator('#t3dMultiMode').inputValue(),'json','Valid JSON must not fall through to the JavaScript sandbox.');
+ assert.doesNotMatch(await page.locator('#t3dMultiStatus').innerText(),/timeout/i);
+
+ // Correct Scene v2 JSON should validate directly in Auto Detect mode.
+ await page.locator('#t3dMultiMode').selectOption('auto');
  await page.locator('#t3dMultiCode').fill(JSON.stringify(scene));
  await page.locator('#t3dMultiValidate').click();
+ await page.waitForFunction(()=>document.getElementById('t3dMultiStatus').textContent.includes('Validasi berhasil · JSON.'));
+ assert.equal(await page.locator('#t3dMultiMode').inputValue(),'json');
  await page.waitForFunction(()=>!document.getElementById('t3dMultiApply').disabled);
  await page.locator('#t3dMultiApply').click();
  assert.equal(await page.evaluate(()=>TROZAL_CANVAS_3D.getProject().objects[0].id),'json-cube');
+
+ // If JSON is pasted while JavaScript mode is selected, auto-switch to JSON instead of timing out in runJS().
+ await page.locator('#t3dMultiMode').selectOption('js');
+ await page.locator('#t3dMultiCode').fill(JSON.stringify(scene));
+ await page.locator('#t3dMultiValidate').click();
+ await page.waitForFunction(()=>document.getElementById('t3dMultiStatus').textContent.includes('Validasi berhasil · JSON.'));
+ assert.equal(await page.locator('#t3dMultiMode').inputValue(),'json','Plain JSON in JS mode must be redirected to JSON Scene mode.');
+ assert.doesNotMatch(await page.locator('#t3dMultiStatus').innerText(),/timeout/i);
 
  const obj='o Triangle\nv -1 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n';
  await page.locator('#t3dMultiFile').setInputFiles({name:'triangle.obj',mimeType:'text/plain',buffer:Buffer.from(obj)});
