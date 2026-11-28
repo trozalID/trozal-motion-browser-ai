@@ -64,7 +64,7 @@ function compile(gl,type,src){const s=gl.createShader(type);gl.shaderSource(s,sr
 function makeProgram(gl){const p=gl.createProgram();gl.attachShader(p,compile(gl,gl.VERTEX_SHADER,VS));gl.attachShader(p,compile(gl,gl.FRAGMENT_SHADER,FS));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p)||'Shader link failed');return p;}
 function tri(o,a,b,c,na,nb,nc){[a,b,c].forEach((p,i)=>{o.p.push(...p);o.n.push(...[na,nb,nc][i]);const uv=o.type==='plane'?[(p[0]/1.7)+.5,(p[2]/1.7)+.5]:[.5+Math.atan2(p[2],p[0])/(Math.PI*2),.5-Math.asin(Math.max(-1,Math.min(1,p[1]*2)))/Math.PI];o.uv.push(...uv);});}
 function geometry(type,custom){
-if(type==='mesh'&&custom){const p=custom.positions||[],n=custom.normals||[],uv=custom.uvs||[];return {p,n,uv,type};}
+if(custom){const p=custom.positions||[],n=custom.normals||[],uv=custom.uvs||[];return {p,n,uv,type};}
 const o={p:[],n:[],uv:[],type};
 if(type==='cube'){const f=[[[1,0,0],[[.5,-.5,-.5],[.5,.5,-.5],[.5,.5,.5],[.5,-.5,.5]]],[[-1,0,0],[[-.5,-.5,.5],[-.5,.5,.5],[-.5,.5,-.5],[-.5,-.5,-.5]]],[[0,1,0],[[-.5,.5,-.5],[-.5,.5,.5],[.5,.5,.5],[.5,.5,-.5]]],[[0,-1,0],[[-.5,-.5,.5],[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5]]],[[0,0,1],[[-.5,-.5,.5],[.5,-.5,.5],[.5,.5,.5],[-.5,.5,.5]]],[[0,0,-1],[[.5,-.5,-.5],[-.5,-.5,-.5],[-.5,.5,-.5],[.5,.5,-.5]]]];f.forEach(x=>{const n=x[0],v=x[1];tri(o,v[0],v[1],v[2],n,n,n);tri(o,v[0],v[2],v[3],n,n,n);});return o;}
 const rings=18,sides=type==='torus'?28:26;
