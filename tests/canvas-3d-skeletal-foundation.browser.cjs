@@ -37,6 +37,15 @@ function glbFixture(){
   assert.equal(result.renderer,'webgl2','Skinned asset should switch to the WebGL2 GPU skinning path.');
   assert.equal(result.imported.nodes,3);assert.equal(result.imported.joints,2);assert.equal(result.imported.clips.length,1);
   assert.equal(result.project.skeletalAssets.length,1,'Skeletal asset must survive Scene JSON save/load.');
+  await page.locator('#t3dMultiOpen').click();
+  await page.waitForFunction(()=>document.getElementById('t3dMultiPanel')&&!document.getElementById('t3dMultiPanel').hidden);
+  await page.locator('#t3dMultiMode').selectOption('json');
+  const savedScene=await page.evaluate(()=>JSON.stringify(TROZAL_CANVAS_3D.getProject()));
+  await page.locator('#t3dMultiCode').fill(savedScene);
+  await page.locator('#t3dMultiValidate').click();
+  await page.waitForFunction(()=>document.getElementById('t3dMultiStatus').textContent.includes('Validasi berhasil · JSON.'));
+  await page.locator('#t3dMultiApply').click();
+  await page.waitForFunction(()=>TROZAL_CANVAS_3D.getProject().skeletalAssets?.length===1);
   assert.ok(result.project.objects.some(o=>o.skeletal),'Scene objects must retain skeletal primitive references.');
   assert.equal(result.clipValue,'0');assert.equal(result.clipOptions,2);
   assert.ok(result.skinInfo.includes('WebGL2 GPU skinning'));
