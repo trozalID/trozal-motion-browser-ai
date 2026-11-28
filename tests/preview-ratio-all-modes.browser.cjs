@@ -17,9 +17,9 @@ const { chromium } = require('playwright');
     // Compare normalized values rather than relying on browser-specific formatting.
     await page.waitForFunction(()=>{
       const value=document.getElementById('stage')?.style.aspectRatio||'';
-      return value.replace(/\\s+/g,'')==='9/16';
+      return value.replace(/\s+/g,'')==='9/16';
     });
-    const stageRatio=await page.locator('#stage').evaluate(el=>el.style.aspectRatio.replace(/\\s+/g,''));
+    const stageRatio=await page.locator('#stage').evaluate(el=>el.style.aspectRatio.replace(/\s+/g,''));
     assert.equal(stageRatio,'9/16','Main preview must adopt portrait ratio.');
 
     // Full-screen Canvas 3D must not cover the global aspect-ratio dock.
